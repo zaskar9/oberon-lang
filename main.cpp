@@ -13,5 +13,10 @@ int main(int argc, const char * argv[])
         return 1;
     }
     Scanner sc(argv[1]);
+    Token token = sc.nextToken();
+    while (token != Token::eof)
+    {
+        token = sc.nextToken();
+    }
     return 0;
 }
