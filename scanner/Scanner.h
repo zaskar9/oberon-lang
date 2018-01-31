@@ -27,21 +27,23 @@ private:
     const int maxIdentifierLen = 32;
     std::ifstream _file;
     std::unordered_map<std::string, Token> _keywords;
-    std::string _ident;
+    std::string _ident = "";
+    int _value = -1;
     char _ch;
     int _lineNo, _charNo;
 
     void initTable();
     void read();
     void comment();
-    Token ident();
+    const Token ident();
     void number();
 
 public:
-    explicit Scanner(const char *filename);
+    explicit Scanner(const std::string& filename);
     ~Scanner();
-    Token nextToken();
-    int getPosition();
+    const Token nextToken();
+    const int getCharNo() const;
+    const int getLineNo() const;
 
 };
 

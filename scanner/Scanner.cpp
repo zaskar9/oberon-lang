@@ -5,7 +5,10 @@
 #include "Scanner.h"
 #include <iostream>
 
-Scanner::Scanner(const char *filename)
+Scanner::Scanner(const std::string& filename) :
+        _lineNo(1),
+        _charNo(1),
+        _ident()
 {
     _file.open(filename, std::ios::in);
     if (!_file.is_open())
@@ -13,19 +16,19 @@ Scanner::Scanner(const char *filename)
         std::cout << "Cannot open file." << std::endl;
         exit(1);
     }
-    _lineNo = 1;
-    _charNo = 1;
-    _ident = "";
     read();
     initTable();
 }
 
 Scanner::~Scanner()
 {
-
+    if (_file.is_open())
+    {
+        _file.close();
+    }
 }
 
-Token Scanner::nextToken()
+const Token Scanner::nextToken()
 {
     Token token;
     // Skip whitespace
@@ -40,12 +43,17 @@ Token Scanner::nextToken()
             token = ident();
         }
     }
-    return token;
+    return Token::eof;
 }
 
-int Scanner::getPosition()
+const int Scanner::getCharNo() const
 {
-    return 0;
+    return _charNo;
+}
+
+const int Scanner::getLineNo() const
+{
+    return _lineNo;
 }
 
 void Scanner::initTable()
@@ -112,7 +120,7 @@ void Scanner::comment()
     }
 }
 
-Token Scanner::ident()
+const Token Scanner::ident()
 {
     char s[maxIdentifierLen];
     int i = 0;
@@ -124,13 +132,62 @@ Token Scanner::ident()
             s[i++] = _ch;
         }
         read();
-    } while (((_ch >= '0') && (_ch <= '9')) ||
-             ((_ch >= 'a') && (_ch <= 'z')) ||
-             ((_ch >= 'A') && (_ch <= 'Z')));
-    _ident = std::string(s);
-    if ((token = _keywords[_ident]))
-    {
-        _ident = "";
     }
+    while (((_ch >= '0') && (_ch <= '9')) ||
+           ((_ch >= 'a') && (_ch <= 'z')) ||
+           ((_ch >= 'A') && (_ch <= 'Z')));
+    _ident = std::string(s);
+    std::unordered_map<std::string, Token>::const_iterator it = _keywords.find(_ident);
+    if (it != _keywords.end())
+    {
+        token = it->second;
+    }
+    _ident = "";
     return token;
+}
+
+void Scanner::number()
+{
+    bool isHex = false;
+    int hexValue = 0;
+    _value = 0;
+
+    do
+    {
+        isHex = isHex | ((_ch >= 'A') && (_ch <= 'F'));
+        if (_value <= ((INT_MAX - _ch + '0') / 10))
+        {
+            if ((_ch >= '0') && (_ch <= '9'))
+            {
+                _value = 10 * _value + (_ch - '0');
+                hexValue = 16 * hexValue + (_ch - '0');
+            }
+            else // A - F
+            {
+                hexValue = 16 * hexValue + (_ch - 'A' + 10);
+            }
+        }
+        else
+        {
+            // TODO exception: number too large
+            std::cout << "Comment not terminated." << std::endl;
+            _value = 0;
+            hexValue = 0;
+        }
+        read();
+    }
+    while (((_ch >= '0') && (_ch <= '9')) ||
+           ((_ch >= 'A') && (_ch <= 'F')));
+
+    if (_ch == 'H')
+    {
+        // hexadecimal number identified by trailing 'H'
+        isHex = true;
+        read();
+    }
+
+    if (isHex)
+    {
+        _value = hexValue;
+    }
 }
