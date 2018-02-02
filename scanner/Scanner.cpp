@@ -5,14 +5,9 @@
 #include "Scanner.h"
 #include <iostream>
 
-Scanner::Scanner(const std::string& filename) :
-        _lineNo(1),
-        _charNo(1),
-        _ident()
-{
+Scanner::Scanner(const std::string& filename) : _ident(), _value(-1), _lineNo(1), _charNo(0) {
     _file.open(filename, std::ios::in);
-    if (!_file.is_open())
-    {
+    if (!_file.is_open()) {
         std::cout << "Cannot open file." << std::endl;
         exit(1);
     }
@@ -20,45 +15,148 @@ Scanner::Scanner(const std::string& filename) :
     initTable();
 }
 
-Scanner::~Scanner()
-{
-    if (_file.is_open())
-    {
+Scanner::~Scanner() {
+    if (_file.is_open()) {
         _file.close();
     }
 }
 
-const Token Scanner::nextToken()
-{
+const Token Scanner::nextToken() {
     Token token;
+    _value = -1;
+    _ident = "";
     // Skip whitespace
-    while ((_ch != -1) && (_ch <= ' '))
-    {
+    while ((_ch != -1) && (_ch <= ' ')) {
         read();
     }
-    if (_ch != -1)
-    {
-        if (((_ch >= 'A') && (_ch <= 'Z')) || ((_ch >= 'a') && (_ch <= 'z')))
-        {
+    if (_ch != -1) {
+        if (((_ch >= 'A') && (_ch <= 'Z')) || ((_ch >= 'a') && (_ch <= 'z'))) {
+            // Scan identifier
             token = ident();
+        } else if ((_ch >= '0') && (_ch <= '9')) {
+            // Scan number
+            token = Token::const_number;
+            number();
+        } else {
+            switch (_ch) {
+                case '&':
+                    token = Token::op_and;
+                    read();
+                    break;
+                case '*':
+                    token = Token::op_mult;
+                    read();
+                    break;
+                case '+':
+                    token = Token::op_plus;
+                    read();
+                    break;
+                case '-':
+                    token = Token::op_minus;
+                    read();
+                    break;
+                case '=':
+                    token = Token::op_eq;
+                    read();
+                    break;
+                case '#':
+                    token = Token::op_neq;
+                    read();
+                    break;
+                case '<':
+                    read();
+                    if (_ch == '=') {
+                        token = Token::op_leq;
+                        read();
+                    } else {
+                        token = Token::op_lt;
+                    }
+                    break;
+                case '>':
+                    read();
+                    if (_ch == '=') {
+                        token = Token::op_geq;
+                        read();
+                    } else {
+                        token = Token::op_gt;
+                    }
+                    break;
+                case ';':
+                    token = Token::semicolon;
+                    read();
+                    break;
+                case ',':
+                    token = Token::comma;
+                    read();
+                    break;
+                case ':':
+                    read();
+                    if (_ch == '=') {
+                        token = Token::op_assign;
+                        read();
+                    } else {
+                        token = Token::colon;
+                    }
+                    break;
+                case '.':
+                    token = Token::period;
+                    read();
+                    break;
+                case '(':
+                    read();
+                    if (_ch == '*') {
+                        comment();
+                        token = nextToken();
+                    } else {
+                        token = Token::lparen;
+                    }
+                    break;
+                case ')':
+                    token = Token::rparen;
+                    read();
+                    break;
+                case '[':
+                    token = Token::rbrack;
+                    read();
+                    break;
+                case ']':
+                    token = Token::lbrack;
+                    read();
+                    break;
+                case '~':
+                    token = Token::op_not;
+                    read();
+                    break;
+                default:
+                    token = Token::null;
+                    read();
+                    break;
+            }
         }
+    } else {
+        token = Token::eof;
     }
-    return Token::eof;
+    return token;
 }
 
-const int Scanner::getCharNo() const
-{
+const int Scanner::getCharNo() const {
     return _charNo;
 }
 
-const int Scanner::getLineNo() const
-{
+const int Scanner::getLineNo() const {
     return _lineNo;
 }
 
-void Scanner::initTable()
-{
-    _keywords = { { "DIV", Token::op_div }, { "MOD", Token::op_or }, { "OR", Token::op_or },
+const int Scanner::getValue() const {
+    return _value;
+}
+
+const std::string Scanner::getIdent() const {
+    return _ident;
+}
+
+void Scanner::initTable() {
+    _keywords = { { "DIV", Token::op_div }, { "MOD", Token::op_mod }, { "OR", Token::op_or },
                   { "MODULE", Token::kw_module }, { "PROCEDURE", Token::kw_procedure },
                   { "BEGIN", Token::kw_begin }, { "END", Token::kw_end },
                   { "WHILE", Token::kw_while }, { "DO", Token::kw_do},
@@ -70,124 +168,111 @@ void Scanner::initTable()
                   { "TRUE", Token::const_true }, { "FALSE", Token::const_false } };
 }
 
-void Scanner::read()
-{
-    _file.get(_ch);
-    _charNo++;
-    if (_ch == '\n')
-    {
+void Scanner::read() {
+    if (_ch == '\n') {
         _lineNo++;
-        _charNo = 1;
+        _charNo = 0;
+    }
+    if (_file.get(_ch)) {
+        _charNo++;
+    } else {
+        if (_file.eof()) {
+            _ch = -1;
+        } else {
+            // TODO I/O Exception
+            logError("Error reading file.");
+        }
     }
 }
 
-void Scanner::comment()
-{
+void Scanner::logError(const std::string &error) {
+    std::cout << "[" << _lineNo << ":" << _charNo << "]: " << error << std::endl;
+}
+
+void Scanner::comment() {
     read();
-    while (true)
-    {
-        while (true)
-        {
-            while (_ch == '(')
-            {
+    while (true) {
+        while (true) {
+            while (_ch == '(') {
                 read();
-                if (_ch == '*')
-                {
+                if (_ch == '*') {
                     comment();
                 }
             }
-            if (_ch == '*')
-            {
+            if (_ch == '*') {
                 read();
                 break;
             }
-            if (_ch == -1)
-            {
+            if (_ch == -1) {
                 break;
             }
             read();
         }
-        if (_ch == ')')
-        {
+        if (_ch == ')') {
             read();
             break;
         }
         if (_ch == -1) {
             // TODO exception: comment not terminated
-            std::cout << "Comment not terminated." << std::endl;
+            logError("Comment not terminated.");
             break;
         }
     }
 }
 
-const Token Scanner::ident()
-{
+const Token Scanner::ident() {
     char s[maxIdentifierLen];
     int i = 0;
     Token token = Token::const_ident;
-    do
-    {
-        if (i < maxIdentifierLen)
-        {
+    do {
+        if (i < maxIdentifierLen - 1) {
             s[i++] = _ch;
         }
         read();
-    }
-    while (((_ch >= '0') && (_ch <= '9')) ||
-           ((_ch >= 'a') && (_ch <= 'z')) ||
-           ((_ch >= 'A') && (_ch <= 'Z')));
+    } while (((_ch >= '0') && (_ch <= '9')) ||
+             ((_ch >= 'a') && (_ch <= 'z')) ||
+             ((_ch >= 'A') && (_ch <= 'Z')));
+    s[i] = '\0';
     _ident = std::string(s);
     std::unordered_map<std::string, Token>::const_iterator it = _keywords.find(_ident);
-    if (it != _keywords.end())
-    {
+    if (it != _keywords.end()) {
         token = it->second;
+        _ident = "";
     }
-    _ident = "";
     return token;
 }
 
-void Scanner::number()
-{
+void Scanner::number() {
     bool isHex = false;
     int hexValue = 0;
     _value = 0;
 
-    do
-    {
+    do {
         isHex = isHex | ((_ch >= 'A') && (_ch <= 'F'));
-        if (_value <= ((INT_MAX - _ch + '0') / 10))
-        {
-            if ((_ch >= '0') && (_ch <= '9'))
-            {
+        if (_value <= ((INT_MAX - _ch + '0') / 10)) {
+            if ((_ch >= '0') && (_ch <= '9')) {
                 _value = 10 * _value + (_ch - '0');
                 hexValue = 16 * hexValue + (_ch - '0');
-            }
-            else // A - F
-            {
+            } else { // A - F
                 hexValue = 16 * hexValue + (_ch - 'A' + 10);
             }
-        }
-        else
-        {
+        } else {
             // TODO exception: number too large
-            std::cout << "Comment not terminated." << std::endl;
+            logError("Number too large.");
             _value = 0;
             hexValue = 0;
         }
         read();
-    }
-    while (((_ch >= '0') && (_ch <= '9')) ||
-           ((_ch >= 'A') && (_ch <= 'F')));
+    } while (((_ch >= '0') && (_ch <= '9')) ||
+             ((_ch >= 'A') && (_ch <= 'F')));
 
-    if (_ch == 'H')
-    {
+    if (_ch == 'H') {
         // hexadecimal number identified by trailing 'H'
         isHex = true;
         read();
     }
 
-    if (isHex)
-    {
+    if (isHex) {
         _value = hexValue;
     }
 }

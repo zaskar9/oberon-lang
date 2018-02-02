@@ -5,17 +5,15 @@
 #include <iostream>
 #include "scanner/Scanner.h"
 
-int main(const int argc, const char * argv[])
-{
-    if (argc != 2)
-    {
+int main(const int argc, const char * argv[]) {
+    if (argc != 2) {
         std::cout << "Usage: oberon0c <filename>" << std::endl;
         return 1;
     }
     std::shared_ptr<Scanner> sc(new Scanner(argv[1]));
-    Token token = sc->nextToken();
-    while (token != Token::eof)
-    {
+    Token token = sc->nextToken();;
+    while (token != Token::eof) {
+        std::cout << sc->getLineNo() << ":" << sc->getCharNo() << std::endl;
         token = sc->nextToken();
     }
     return 0;
