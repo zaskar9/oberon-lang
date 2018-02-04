@@ -5,8 +5,9 @@
 #include "Scanner.h"
 #include <iostream>
 
-Scanner::Scanner(const std::string& filename) : _ident(), _value(-1), _lineNo(1), _charNo(0) {
-    _file.open(filename, std::ios::in);
+Scanner::Scanner(const std::string& filename) : _ident(), _value(-1), _lineNo(1), _charNo(0), _token(Token::null) {
+    _filename = filename;
+    _file.open(_filename, std::ios::in);
     if (!_file.is_open()) {
         std::cout << "Cannot open file." << std::endl;
         exit(1);
@@ -23,6 +24,11 @@ Scanner::~Scanner() {
 
 const Token Scanner::nextToken() {
     Token token;
+    if (_token != Token::null) {
+        token = _token;
+        _token = Token::null;
+        return token;
+    }
     _value = -1;
     _ident = "";
     // Skip whitespace
@@ -92,7 +98,7 @@ const Token Scanner::nextToken() {
                 case ':':
                     read();
                     if (_ch == '=') {
-                        token = Token::op_assign;
+                        token = Token::op_becomes;
                         read();
                     } else {
                         token = Token::colon;
@@ -116,11 +122,11 @@ const Token Scanner::nextToken() {
                     read();
                     break;
                 case '[':
-                    token = Token::rbrack;
+                    token = Token::lbrack;
                     read();
                     break;
                 case ']':
-                    token = Token::lbrack;
+                    token = Token::rbrack;
                     read();
                     break;
                 case '~':
@@ -139,6 +145,13 @@ const Token Scanner::nextToken() {
     return token;
 }
 
+const Token Scanner::peekToken() {
+    if (_token == Token::null) {
+        _token = nextToken();
+    }
+    return _token;
+}
+
 const int Scanner::getCharNo() const {
     return _charNo;
 }
@@ -153,6 +166,10 @@ const int Scanner::getValue() const {
 
 const std::string Scanner::getIdent() const {
     return _ident;
+}
+
+const std::string Scanner::getFileName() const {
+    return _filename;
 }
 
 void Scanner::initTable() {
@@ -186,7 +203,7 @@ void Scanner::read() {
 }
 
 void Scanner::logError(const std::string &error) {
-    std::cout << "[" << _lineNo << ":" << _charNo << "]: " << error << std::endl;
+    std::cerr << _filename << ":" << _lineNo << ":" << _charNo << ": error:" << error << std::endl;
 }
 
 void Scanner::comment() {

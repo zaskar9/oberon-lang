@@ -3,4 +3,4 @@ project(oberon0c)
 
 set(CMAKE_CXX_STANDARD 11)
 
-add_executable(oberon0c main.cpp scanner/Scanner.cpp scanner/Scanner.h)
+add_executable(oberon0c main.cpp scanner/Scanner.cpp scanner/Scanner.h parser/ASTNode.cpp parser/ASTNode.h parser/Parser.cpp parser/Parser.h)

@@ -22,8 +22,8 @@ BEGIN
 END Swap;
 	
 
-PROCEDURE Bubble();
-VAR i, j: INTEGER;
+PROCEDURE Bubble;
+VAR i, j : INTEGER;
 BEGIN
 	i := Dim;
 	WHILE i > 1 DO
@@ -37,6 +37,6 @@ BEGIN
 END Bubble;
 
 BEGIN
-	Init();
+	Init;
 	Bubble()
-END.
+END BubbleSort.
