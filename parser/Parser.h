@@ -1,13 +1,15 @@
-//
-// Created by Michael Grossniklaus on 2/2/18.
-//
+/*
+ * Header file of the parser class used by the Oberon-0 compiler.
+ *
+ * Created by Michael Grossniklaus on 2/2/18.
+ */
 
 #ifndef OBERON0C_PARSER_H
 #define OBERON0C_PARSER_H
 
 
 #include "../scanner/Scanner.h"
-#include "ASTNode.h"
+#include "../cmake-build-debug/ast/ASTNode.h"
 
 class Parser
 {

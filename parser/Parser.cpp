@@ -1,6 +1,8 @@
-//
-// Created by Michael Grossniklaus on 2/2/18.
-//
+/*
+ * Header file of the parser class used by the Oberon-0 compiler.
+ *
+ * Created by Michael Grossniklaus on 2/2/18.
+ */
 
 #include <iostream>
 #include "Parser.h"
@@ -38,12 +40,14 @@ const ASTNode* Parser::module() {
 }
 
 const ASTNode* Parser::ident() {
-    std::cout << "ident" << std::endl;
+    std::cout << "ident";
     if (_sc->nextToken() == Token::const_ident) {
         std::string ident = _sc->getIdent();
+        std::cout << ": " << ident;
     } else {
         logError("identifier expected.");
     }
+    std::cout << std::endl;
     return NULL;
 }
 
@@ -185,7 +189,7 @@ const ASTNode* Parser::term() {
     return NULL;
 }
 
-// factor = ident { selector } | integer | "TRUE" | "FALSE" | "(" expression ")" | "~" factor .
+// factor = ident { selector } | number | string | "TRUE" | "FALSE" | "(" expression ")" | "~" factor .
 const ASTNode* Parser::factor() {
     std::cout << "factor" << std::endl;
     Token token = _sc->peekToken();
@@ -197,7 +201,10 @@ const ASTNode* Parser::factor() {
         }
     } else if (token == Token::const_number) {
         _sc->nextToken();
-        const int value = _sc->getValue();
+        const int numValue = _sc->getNumValue();
+    } else if (token == Token::const_string) {
+        _sc->nextToken();
+        const std::string strValue = _sc->getStrValue();
     } else if (token == Token::const_true) {
         _sc->nextToken();
     } else if (token == Token::const_false) {

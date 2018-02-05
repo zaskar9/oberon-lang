@@ -1,11 +1,14 @@
-//
-// Created by Michael Grossniklaus on 12/15/17.
-//
+/*
+ * Implementation of the scanner class used by the Oberon-0 compiler.
+ *
+ * Created by Michael Grossniklaus on 12/15/17.
+ */
 
 #include "Scanner.h"
 #include <iostream>
+#include <sstream>
 
-Scanner::Scanner(const std::string& filename) : _ident(), _value(-1), _lineNo(1), _charNo(0), _token(Token::null) {
+Scanner::Scanner(const std::string& filename) : _ident(), _numValue(-1), _lineNo(1), _charNo(0), _token(Token::null) {
     _filename = filename;
     _file.open(_filename, std::ios::in);
     if (!_file.is_open()) {
@@ -22,6 +25,43 @@ Scanner::~Scanner() {
     }
 }
 
+const int Scanner::getCharNo() const {
+    return _charNo;
+}
+
+const int Scanner::getLineNo() const {
+    return _lineNo;
+}
+
+const int Scanner::getNumValue() const {
+    return _numValue;
+}
+
+const std::string Scanner::getStrValue() const {
+    return _strValue;
+}
+
+const std::string Scanner::getIdent() const {
+    return _ident;
+}
+
+const std::string Scanner::getFileName() const {
+    return _filename;
+}
+
+void Scanner::initTable() {
+    _keywords = { { "DIV", Token::op_div }, { "MOD", Token::op_mod }, { "OR", Token::op_or },
+                  { "MODULE", Token::kw_module }, { "PROCEDURE", Token::kw_procedure },
+                  { "BEGIN", Token::kw_begin }, { "END", Token::kw_end },
+                  { "WHILE", Token::kw_while }, { "DO", Token::kw_do},
+                  { "IF", Token::kw_if }, { "THEN", Token::kw_then },
+                  { "ELSE", Token::kw_else }, { "ELSIF", Token::kw_elsif },
+                  { "VAR", Token::kw_var }, { "CONST", Token::kw_const },
+                  { "TYPE", Token::kw_type }, { "ARRAY", Token::kw_array },
+                  { "RECORD", Token::kw_record }, { "OF", Token::kw_of },
+                  { "TRUE", Token::const_true }, { "FALSE", Token::const_false } };
+}
+
 const Token Scanner::nextToken() {
     Token token;
     if (_token != Token::null) {
@@ -29,7 +69,7 @@ const Token Scanner::nextToken() {
         _token = Token::null;
         return token;
     }
-    _value = -1;
+    _numValue = -1;
     _ident = "";
     // Skip whitespace
     while ((_ch != -1) && (_ch <= ' ')) {
@@ -42,7 +82,7 @@ const Token Scanner::nextToken() {
         } else if ((_ch >= '0') && (_ch <= '9')) {
             // Scan number
             token = Token::const_number;
-            number();
+            _numValue = number();
         } else {
             switch (_ch) {
                 case '&':
@@ -133,6 +173,11 @@ const Token Scanner::nextToken() {
                     token = Token::op_not;
                     read();
                     break;
+                case '"':
+                    token = Token::const_string;
+                    _strValue = string();
+                    read();
+                    break;
                 default:
                     token = Token::null;
                     read();
@@ -150,39 +195,6 @@ const Token Scanner::peekToken() {
         _token = nextToken();
     }
     return _token;
-}
-
-const int Scanner::getCharNo() const {
-    return _charNo;
-}
-
-const int Scanner::getLineNo() const {
-    return _lineNo;
-}
-
-const int Scanner::getValue() const {
-    return _value;
-}
-
-const std::string Scanner::getIdent() const {
-    return _ident;
-}
-
-const std::string Scanner::getFileName() const {
-    return _filename;
-}
-
-void Scanner::initTable() {
-    _keywords = { { "DIV", Token::op_div }, { "MOD", Token::op_mod }, { "OR", Token::op_or },
-                  { "MODULE", Token::kw_module }, { "PROCEDURE", Token::kw_procedure },
-                  { "BEGIN", Token::kw_begin }, { "END", Token::kw_end },
-                  { "WHILE", Token::kw_while }, { "DO", Token::kw_do},
-                  { "IF", Token::kw_if }, { "THEN", Token::kw_then },
-                  { "ELSE", Token::kw_else }, { "ELSIF", Token::kw_elsif },
-                  { "VAR", Token::kw_var }, { "CONST", Token::kw_const },
-                  { "TYPE", Token::kw_type }, { "ARRAY", Token::kw_array },
-                  { "RECORD", Token::kw_record }, { "OF", Token::kw_of },
-                  { "TRUE", Token::const_true }, { "FALSE", Token::const_false } };
 }
 
 void Scanner::read() {
@@ -203,7 +215,7 @@ void Scanner::read() {
 }
 
 void Scanner::logError(const std::string &error) {
-    std::cerr << _filename << ":" << _lineNo << ":" << _charNo << ": error:" << error << std::endl;
+    std::cerr << _filename << ":" << _lineNo << ":" << _charNo << ": error: " << error << std::endl;
 }
 
 void Scanner::comment() {
@@ -230,7 +242,6 @@ void Scanner::comment() {
             break;
         }
         if (_ch == -1) {
-            // TODO exception: comment not terminated
             logError("Comment not terminated.");
             break;
         }
@@ -238,19 +249,15 @@ void Scanner::comment() {
 }
 
 const Token Scanner::ident() {
-    char s[maxIdentifierLen];
-    int i = 0;
     Token token = Token::const_ident;
+    std::stringstream ss;
     do {
-        if (i < maxIdentifierLen - 1) {
-            s[i++] = _ch;
-        }
+        ss << _ch;
         read();
     } while (((_ch >= '0') && (_ch <= '9')) ||
              ((_ch >= 'a') && (_ch <= 'z')) ||
              ((_ch >= 'A') && (_ch <= 'Z')));
-    s[i] = '\0';
-    _ident = std::string(s);
+    _ident = ss.str();
     std::unordered_map<std::string, Token>::const_iterator it = _keywords.find(_ident);
     if (it != _keywords.end()) {
         token = it->second;
@@ -259,37 +266,48 @@ const Token Scanner::ident() {
     return token;
 }
 
-void Scanner::number() {
+const int Scanner::number() {
     bool isHex = false;
+    int decValue = 0;
     int hexValue = 0;
-    _value = 0;
-
     do {
         isHex = isHex | ((_ch >= 'A') && (_ch <= 'F'));
-        if (_value <= ((INT_MAX - _ch + '0') / 10)) {
+        if (decValue <= ((INT_MAX - _ch + '0') / 10)) {
             if ((_ch >= '0') && (_ch <= '9')) {
-                _value = 10 * _value + (_ch - '0');
+                decValue = 10 * decValue + (_ch - '0');
                 hexValue = 16 * hexValue + (_ch - '0');
             } else { // A - F
                 hexValue = 16 * hexValue + (_ch - 'A' + 10);
             }
         } else {
-            // TODO exception: number too large
             logError("Number too large.");
-            _value = 0;
-            hexValue = 0;
+            return 0;
         }
         read();
     } while (((_ch >= '0') && (_ch <= '9')) ||
              ((_ch >= 'A') && (_ch <= 'F')));
-
     if (_ch == 'H') {
         // hexadecimal number identified by trailing 'H'
         isHex = true;
         read();
     }
-
     if (isHex) {
-        _value = hexValue;
+        return hexValue;
     }
+    return decValue;
+}
+
+const std::string Scanner::string() {
+    std::stringstream ss;
+    do {
+        ss << _ch;
+        if (_ch == '\\') {
+            read();
+            ss << _ch;
+        }
+        read();
+    } while (_ch != '"');
+    ss << _ch;
+    std::string s = ss.str();
+    return s;
 }

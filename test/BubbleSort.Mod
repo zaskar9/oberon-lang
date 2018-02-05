@@ -1,8 +1,13 @@
+(* Implementation of the Bubble Sort algorithm. *)
 MODULE BubbleSort;
 
+(* Length of the array to be sorted. *)
 CONST Dim = 20;
+
+(* Array to be sorted. *)
 VAR a: ARRAY Dim OF INTEGER;
 
+(* Initializes the array. *)
 PROCEDURE Init();
 VAR i: INTEGER;
 BEGIN
@@ -13,6 +18,7 @@ BEGIN
     END
 END Init;
 
+(* Swaps the two values passed as var-parameters. *)
 PROCEDURE Swap(VAR a, b: INTEGER);
 VAR t: INTEGER;
 BEGIN
@@ -21,7 +27,7 @@ BEGIN
     b := t
 END Swap;
     
-
+(* Applies the bubble sort algorithm to the array. *)
 PROCEDURE Bubble;
 VAR i, j: INTEGER;
 BEGIN
@@ -32,10 +38,12 @@ BEGIN
             IF a[i] > a[j] THEN Swap(a[i], a[j]) END;
             j := j + 1
         END;
-        i := i + 1
+        i := i + 1;
+        s := "Hello \"World\"!\n"
     END
 END Bubble;
 
+(* Main program. *)
 BEGIN
     Init;
     Bubble()

@@ -1,6 +1,8 @@
-//
-// Created by Michael Grossniklaus on 12/15/17.
-//
+/*
+ * Header file of the scanner class used by the Oberon-0 compiler.
+ *
+ * Created by Michael Grossniklaus on 12/15/17.
+ */
 
 #ifndef OBERON0C_SCANNER_H
 #define OBERON0C_SCANNER_H
@@ -11,7 +13,7 @@
 
 enum class Token : char {
     eof, null,
-    const_true, const_false, const_number, const_ident,
+    const_true, const_false, const_number, const_string, const_ident,
     period, comma, colon, semicolon, rparen, lparen, lbrack, rbrack,
     op_mult, op_div, op_mod, op_plus, op_minus, op_and, op_or, op_not,
     op_eq, op_neq, op_lt, op_gt, op_leq, op_geq, op_becomes,
@@ -22,22 +24,23 @@ enum class Token : char {
 class Scanner {
 
 private:
-    const int maxIdentifierLen = 32;
     std::string _filename;
     std::ifstream _file;
     std::unordered_map<std::string, Token> _keywords;
-    std::string _ident;
-    int _value;
+    Token _token;
     char _ch;
     int _lineNo, _charNo;
-    Token _token;
+    int _numValue;
+    std::string _strValue;
+    std::string _ident;
 
     void initTable();
     void read();
     void logError(const std::string& msg);
     void comment();
     const Token ident();
-    void number();
+    const int number();
+    const std::string string();
 
 public:
     explicit Scanner(const std::string& filename);
@@ -46,7 +49,8 @@ public:
     const Token peekToken();
     const int getCharNo() const;
     const int getLineNo() const;
-    const int getValue() const;
+    const int getNumValue() const;
+    const std::string getStrValue() const;
     const std::string getIdent() const;
     const std::string getFileName() const;
 

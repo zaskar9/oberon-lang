@@ -1,6 +1,8 @@
-//
-// Created by Michael Grossniklaus on 12/14/17.
-//
+/*
+ * Main class of the Oberon-0 compiler.
+ *
+ * Created by Michael Grossniklaus on 12/14/17.
+ */
 
 #include <iostream>
 #include "scanner/Scanner.h"
@@ -11,8 +13,10 @@ int main(const int argc, const char * argv[]) {
         std::cout << "Usage: oberon0c <filename>" << std::endl;
         return 1;
     }
-    auto sc = new Scanner(argv[1]);
-    auto parser = new Parser(sc);
+    auto scanner = new Scanner(argv[1]);
+    auto parser = new Parser(scanner);
     const ASTNode* node = parser->parse();
+    delete parser;
+    delete scanner;
     return 0;
 }
