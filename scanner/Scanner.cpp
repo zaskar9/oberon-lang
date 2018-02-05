@@ -8,10 +8,10 @@
 #include <iostream>
 #include <sstream>
 
-Scanner::Scanner(const std::string& filename) : _ident(), _numValue(-1), _lineNo(1), _charNo(0), _token(Token::null) {
-    _filename = filename;
-    _file.open(_filename, std::ios::in);
-    if (!_file.is_open()) {
+Scanner::Scanner(const std::string& filename) : ident_(), numValue_(-1), lineNo_(1), charNo_(0), token_(Token::null) {
+    filename_ = filename;
+    file_.open(filename_, std::ios::in);
+    if (!file_.is_open()) {
         std::cout << "Cannot open file." << std::endl;
         exit(1);
     }
@@ -20,37 +20,37 @@ Scanner::Scanner(const std::string& filename) : _ident(), _numValue(-1), _lineNo
 }
 
 Scanner::~Scanner() {
-    if (_file.is_open()) {
-        _file.close();
+    if (file_.is_open()) {
+        file_.close();
     }
 }
 
 const int Scanner::getCharNo() const {
-    return _charNo;
+    return charNo_;
 }
 
 const int Scanner::getLineNo() const {
-    return _lineNo;
+    return lineNo_;
 }
 
 const int Scanner::getNumValue() const {
-    return _numValue;
+    return numValue_;
 }
 
 const std::string Scanner::getStrValue() const {
-    return _strValue;
+    return strValue_;
 }
 
 const std::string Scanner::getIdent() const {
-    return _ident;
+    return ident_;
 }
 
 const std::string Scanner::getFileName() const {
-    return _filename;
+    return filename_;
 }
 
 void Scanner::initTable() {
-    _keywords = { { "DIV", Token::op_div }, { "MOD", Token::op_mod }, { "OR", Token::op_or },
+    keywords_ = { { "DIV", Token::op_div }, { "MOD", Token::op_mod }, { "OR", Token::op_or },
                   { "MODULE", Token::kw_module }, { "PROCEDURE", Token::kw_procedure },
                   { "BEGIN", Token::kw_begin }, { "END", Token::kw_end },
                   { "WHILE", Token::kw_while }, { "DO", Token::kw_do},
@@ -64,27 +64,27 @@ void Scanner::initTable() {
 
 const Token Scanner::nextToken() {
     Token token;
-    if (_token != Token::null) {
-        token = _token;
-        _token = Token::null;
+    if (token_ != Token::null) {
+        token = token_;
+        token_ = Token::null;
         return token;
     }
-    _numValue = -1;
-    _ident = "";
+    numValue_ = -1;
+    ident_ = "";
     // Skip whitespace
-    while ((_ch != -1) && (_ch <= ' ')) {
+    while ((ch_ != -1) && (ch_ <= ' ')) {
         read();
     }
-    if (_ch != -1) {
-        if (((_ch >= 'A') && (_ch <= 'Z')) || ((_ch >= 'a') && (_ch <= 'z'))) {
+    if (ch_ != -1) {
+        if (((ch_ >= 'A') && (ch_ <= 'Z')) || ((ch_ >= 'a') && (ch_ <= 'z'))) {
             // Scan identifier
             token = ident();
-        } else if ((_ch >= '0') && (_ch <= '9')) {
+        } else if ((ch_ >= '0') && (ch_ <= '9')) {
             // Scan number
             token = Token::const_number;
-            _numValue = number();
+            numValue_ = number();
         } else {
-            switch (_ch) {
+            switch (ch_) {
                 case '&':
                     token = Token::op_and;
                     read();
@@ -111,7 +111,7 @@ const Token Scanner::nextToken() {
                     break;
                 case '<':
                     read();
-                    if (_ch == '=') {
+                    if (ch_ == '=') {
                         token = Token::op_leq;
                         read();
                     } else {
@@ -120,7 +120,7 @@ const Token Scanner::nextToken() {
                     break;
                 case '>':
                     read();
-                    if (_ch == '=') {
+                    if (ch_ == '=') {
                         token = Token::op_geq;
                         read();
                     } else {
@@ -137,7 +137,7 @@ const Token Scanner::nextToken() {
                     break;
                 case ':':
                     read();
-                    if (_ch == '=') {
+                    if (ch_ == '=') {
                         token = Token::op_becomes;
                         read();
                     } else {
@@ -150,7 +150,7 @@ const Token Scanner::nextToken() {
                     break;
                 case '(':
                     read();
-                    if (_ch == '*') {
+                    if (ch_ == '*') {
                         comment();
                         token = nextToken();
                     } else {
@@ -175,7 +175,7 @@ const Token Scanner::nextToken() {
                     break;
                 case '"':
                     token = Token::const_string;
-                    _strValue = string();
+                    strValue_ = string();
                     read();
                     break;
                 default:
@@ -191,22 +191,22 @@ const Token Scanner::nextToken() {
 }
 
 const Token Scanner::peekToken() {
-    if (_token == Token::null) {
-        _token = nextToken();
+    if (token_ == Token::null) {
+        token_ = nextToken();
     }
-    return _token;
+    return token_;
 }
 
 void Scanner::read() {
-    if (_ch == '\n') {
-        _lineNo++;
-        _charNo = 0;
+    if (ch_ == '\n') {
+        lineNo_++;
+        charNo_ = 0;
     }
-    if (_file.get(_ch)) {
-        _charNo++;
+    if (file_.get(ch_)) {
+        charNo_++;
     } else {
-        if (_file.eof()) {
-            _ch = -1;
+        if (file_.eof()) {
+            ch_ = -1;
         } else {
             // TODO I/O Exception
             logError("Error reading file.");
@@ -215,33 +215,33 @@ void Scanner::read() {
 }
 
 void Scanner::logError(const std::string &error) {
-    std::cerr << _filename << ":" << _lineNo << ":" << _charNo << ": error: " << error << std::endl;
+    std::cerr << filename_ << ":" << lineNo_ << ":" << charNo_ << ": error: " << error << std::endl;
 }
 
 void Scanner::comment() {
     read();
     while (true) {
         while (true) {
-            while (_ch == '(') {
+            while (ch_ == '(') {
                 read();
-                if (_ch == '*') {
+                if (ch_ == '*') {
                     comment();
                 }
             }
-            if (_ch == '*') {
+            if (ch_ == '*') {
                 read();
                 break;
             }
-            if (_ch == -1) {
+            if (ch_ == -1) {
                 break;
             }
             read();
         }
-        if (_ch == ')') {
+        if (ch_ == ')') {
             read();
             break;
         }
-        if (_ch == -1) {
+        if (ch_ == -1) {
             logError("Comment not terminated.");
             break;
         }
@@ -252,16 +252,16 @@ const Token Scanner::ident() {
     Token token = Token::const_ident;
     std::stringstream ss;
     do {
-        ss << _ch;
+        ss << ch_;
         read();
-    } while (((_ch >= '0') && (_ch <= '9')) ||
-             ((_ch >= 'a') && (_ch <= 'z')) ||
-             ((_ch >= 'A') && (_ch <= 'Z')));
-    _ident = ss.str();
-    std::unordered_map<std::string, Token>::const_iterator it = _keywords.find(_ident);
-    if (it != _keywords.end()) {
+    } while (((ch_ >= '0') && (ch_ <= '9')) ||
+             ((ch_ >= 'a') && (ch_ <= 'z')) ||
+             ((ch_ >= 'A') && (ch_ <= 'Z')));
+    ident_ = ss.str();
+    std::unordered_map<std::string, Token>::const_iterator it = keywords_.find(ident_);
+    if (it != keywords_.end()) {
         token = it->second;
-        _ident = "";
+        ident_ = "";
     }
     return token;
 }
@@ -271,22 +271,22 @@ const int Scanner::number() {
     int decValue = 0;
     int hexValue = 0;
     do {
-        isHex = isHex | ((_ch >= 'A') && (_ch <= 'F'));
-        if (decValue <= ((INT_MAX - _ch + '0') / 10)) {
-            if ((_ch >= '0') && (_ch <= '9')) {
-                decValue = 10 * decValue + (_ch - '0');
-                hexValue = 16 * hexValue + (_ch - '0');
+        isHex = isHex | ((ch_ >= 'A') && (ch_ <= 'F'));
+        if (decValue <= ((INT_MAX - ch_ + '0') / 10)) {
+            if ((ch_ >= '0') && (ch_ <= '9')) {
+                decValue = 10 * decValue + (ch_ - '0');
+                hexValue = 16 * hexValue + (ch_ - '0');
             } else { // A - F
-                hexValue = 16 * hexValue + (_ch - 'A' + 10);
+                hexValue = 16 * hexValue + (ch_ - 'A' + 10);
             }
         } else {
             logError("Number too large.");
             return 0;
         }
         read();
-    } while (((_ch >= '0') && (_ch <= '9')) ||
-             ((_ch >= 'A') && (_ch <= 'F')));
-    if (_ch == 'H') {
+    } while (((ch_ >= '0') && (ch_ <= '9')) ||
+             ((ch_ >= 'A') && (ch_ <= 'F')));
+    if (ch_ == 'H') {
         // hexadecimal number identified by trailing 'H'
         isHex = true;
         read();
@@ -300,14 +300,14 @@ const int Scanner::number() {
 const std::string Scanner::string() {
     std::stringstream ss;
     do {
-        ss << _ch;
-        if (_ch == '\\') {
+        ss << ch_;
+        if (ch_ == '\\') {
             read();
-            ss << _ch;
+            ss << ch_;
         }
         read();
-    } while (_ch != '"');
-    ss << _ch;
+    } while (ch_ != '"');
+    ss << ch_;
     std::string s = ss.str();
     return s;
 }

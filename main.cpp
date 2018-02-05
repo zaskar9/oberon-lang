@@ -8,15 +8,15 @@
 #include "scanner/Scanner.h"
 #include "parser/Parser.h"
 
-int main(const int argc, const char * argv[]) {
+int main(const int argc, const char *argv[]) {
     if (argc != 2) {
         std::cout << "Usage: oberon0c <filename>" << std::endl;
         return 1;
     }
     auto scanner = new Scanner(argv[1]);
     auto parser = new Parser(scanner);
-    const ASTNode* node = parser->parse();
+    const ASTNode *node = parser->parse();
     delete parser;
     delete scanner;
-    return 0;
+    exit(0);
 }

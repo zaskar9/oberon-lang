@@ -1,5 +1,5 @@
 /*
- * Header file of the scanner class used by the Oberon-0 compiler.
+ * Header of the scanner class used by the Oberon-0 compiler.
  *
  * Created by Michael Grossniklaus on 12/15/17.
  */
@@ -24,26 +24,24 @@ enum class Token : char {
 class Scanner {
 
 private:
-    std::string _filename;
-    std::ifstream _file;
-    std::unordered_map<std::string, Token> _keywords;
-    Token _token;
-    char _ch;
-    int _lineNo, _charNo;
-    int _numValue;
-    std::string _strValue;
-    std::string _ident;
+    std::string filename_;
+    std::ifstream file_;
+    std::unordered_map<std::string, Token> keywords_;
+    Token token_;
+    char ch_;
+    int lineNo_, charNo_, numValue_;
+    std::string strValue_, ident_;
 
     void initTable();
     void read();
-    void logError(const std::string& msg);
+    void logError(const std::string &msg);
     void comment();
     const Token ident();
     const int number();
     const std::string string();
 
 public:
-    explicit Scanner(const std::string& filename);
+    explicit Scanner(const std::string &filename);
     ~Scanner();
     const Token nextToken();
     const Token peekToken();

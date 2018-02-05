@@ -1,5 +1,5 @@
 /*
- * Header file of the parser class used by the Oberon-0 compiler.
+ * Header of the parser class used by the Oberon-0 compiler.
  *
  * Created by Michael Grossniklaus on 2/2/18.
  */
@@ -9,13 +9,13 @@
 
 
 #include "../scanner/Scanner.h"
-#include "../cmake-build-debug/ast/ASTNode.h"
+#include "../ast/ASTNode.h"
 
 class Parser
 {
 
 private:
-    Scanner* _sc;
+    Scanner *scanner_;
 
     const ASTNode* module();
     const ASTNode* ident();
@@ -45,13 +45,12 @@ private:
     const ASTNode* while_statement();
     const ASTNode* actual_parameters();
     const ASTNode* selector();
-    void logError(const std::string& msg);
+    void logError(const std::string &msg);
 
 public:
-    explicit Parser(Scanner *sc);
+    explicit Parser(Scanner *scanner);
     ~Parser();
     const ASTNode* parse();
 };
-
 
 #endif //OBERON0C_PARSER_H

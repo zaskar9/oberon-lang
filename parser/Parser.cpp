@@ -7,16 +7,16 @@
 #include <iostream>
 #include "Parser.h"
 
-Parser::Parser(Scanner* sc) {
-    _sc = sc;
+Parser::Parser(Scanner* scanner) {
+    scanner_ = scanner;
 }
 
 Parser::~Parser() {
     // TODO
 }
 
-void Parser::logError(const std::string& msg) {
-    std::cerr << _sc->getFileName() << ":" << _sc->getLineNo() << ":" << _sc->getCharNo() << ": error: " << msg << std::endl;
+void Parser::logError(const std::string &msg) {
+    std::cerr << scanner_->getFileName() << ":" << scanner_->getLineNo() << ":" << scanner_->getCharNo() << ": error: " << msg << std::endl;
 }
 
 const ASTNode* Parser::parse() {
@@ -26,9 +26,9 @@ const ASTNode* Parser::parse() {
 // module = "MODULE" ident ";" declarations [ "BEGIN" statement_sequence ] "END" ident "." .
 const ASTNode* Parser::module() {
     std::cout << "module" << std::endl;
-    if (_sc->nextToken() == Token::kw_module) {
+    if (scanner_->nextToken() == Token::kw_module) {
         ident();
-        if (_sc->nextToken() == Token::semicolon) {
+        if (scanner_->nextToken() == Token::semicolon) {
             declarations();
         } else {
             logError("; expected.");
@@ -41,8 +41,8 @@ const ASTNode* Parser::module() {
 
 const ASTNode* Parser::ident() {
     std::cout << "ident";
-    if (_sc->nextToken() == Token::const_ident) {
-        std::string ident = _sc->getIdent();
+    if (scanner_->nextToken() == Token::const_ident) {
+        std::string ident = scanner_->getIdent();
         std::cout << ": " << ident;
     } else {
         logError("identifier expected.");
@@ -54,16 +54,16 @@ const ASTNode* Parser::ident() {
 // declarations = [ const_declarations ] [ type_declarations ] [ var_declarations ] { ProcedureDeclaration } .
 const ASTNode* Parser::declarations() {
     std::cout << "declarations" << std::endl;
-    if (_sc->peekToken() == Token::kw_const) {
+    if (scanner_->peekToken() == Token::kw_const) {
         const_declarations();
     }
-    if (_sc->peekToken() == Token::kw_type) {
+    if (scanner_->peekToken() == Token::kw_type) {
         type_declarations();
     }
-    if (_sc->peekToken() == Token::kw_var) {
+    if (scanner_->peekToken() == Token::kw_var) {
         var_declarations();
     }
-    while (_sc->peekToken() == Token::kw_procedure) {
+    while (scanner_->peekToken() == Token::kw_procedure) {
         procedure_declaration();
     }
     return NULL;
@@ -72,12 +72,12 @@ const ASTNode* Parser::declarations() {
 // const_declarations = "CONST" { ident "=" expression ";" } .
 const ASTNode* Parser::const_declarations() {
     std::cout << "const_declarations" << std::endl;
-    _sc->nextToken();
-    while (_sc->peekToken() == Token::const_ident) {
+    scanner_->nextToken();
+    while (scanner_->peekToken() == Token::const_ident) {
         ident();
-        if (_sc->nextToken() == Token::op_eq) {
+        if (scanner_->nextToken() == Token::op_eq) {
             expression();
-            if (_sc->nextToken() != Token::semicolon) {
+            if (scanner_->nextToken() != Token::semicolon) {
                 logError("; expected.");
             }
         } else {
@@ -90,12 +90,12 @@ const ASTNode* Parser::const_declarations() {
 // type_declarations =  "TYPE" { ident "=" type ";" } .
 const ASTNode* Parser::type_declarations() {
     std::cout << "type_declarations" << std::endl;
-    _sc->nextToken();
-    while (_sc->peekToken() == Token::const_ident) {
+    scanner_->nextToken();
+    while (scanner_->peekToken() == Token::const_ident) {
         ident();
-        if (_sc->nextToken() == Token::op_eq) {
+        if (scanner_->nextToken() == Token::op_eq) {
             type();
-            if (_sc->nextToken() != Token::semicolon) {
+            if (scanner_->nextToken() != Token::semicolon) {
                 logError("; expected.");
             }
         } else {
@@ -108,12 +108,12 @@ const ASTNode* Parser::type_declarations() {
 // var_declarations =  "VAR" { ident_list ":" type ";" } .
 const ASTNode* Parser::var_declarations() {
     std::cout << "var_declarations" << std::endl;
-    _sc->nextToken();
-    while (_sc->peekToken() == Token::const_ident) {
+    scanner_->nextToken();
+    while (scanner_->peekToken() == Token::const_ident) {
         ident_list();
-        if (_sc->nextToken() == Token::colon) {
+        if (scanner_->nextToken() == Token::colon) {
             type();
-            if (_sc->nextToken() != Token::semicolon) {
+            if (scanner_->nextToken() != Token::semicolon) {
                 logError("; expected.");
             }
         } else {
@@ -127,12 +127,12 @@ const ASTNode* Parser::var_declarations() {
 const ASTNode* Parser::procedure_declaration() {
     std::cout << "procedure_declaration" << std::endl;
     procedure_heading();
-    if (_sc->nextToken() != Token::semicolon) {
+    if (scanner_->nextToken() != Token::semicolon) {
         logError("; semicolon.");
     }
     procedure_body();
     ident();
-    if (_sc->nextToken() != Token::semicolon) {
+    if (scanner_->nextToken() != Token::semicolon) {
         logError("; semicolon.");
     }
     return NULL;
@@ -142,14 +142,14 @@ const ASTNode* Parser::procedure_declaration() {
 const ASTNode* Parser::expression() {
     std::cout << "expression" << std::endl;
     simple_expression();
-    switch (_sc->peekToken()) {
+    switch (scanner_->peekToken()) {
         case Token::op_eq:
         case Token::op_neq:
         case Token::op_lt:
         case Token::op_leq:
         case Token::op_gt:
         case Token::op_geq:
-            _sc->nextToken();
+            scanner_->nextToken();
             simple_expression();
             break;
         default:
@@ -162,16 +162,16 @@ const ASTNode* Parser::expression() {
 // simple_expression = [ "+" | "-" ] term { ( "+" | "-" | OR ) term } .
 const ASTNode* Parser::simple_expression() {
     std::cout << "simple_expression" << std::endl;
-    Token token = _sc->peekToken();
+    Token token = scanner_->peekToken();
     if (token == Token::op_plus || token == Token::op_minus) {
-        _sc->nextToken();
+        scanner_->nextToken();
     }
     term();
-    token = _sc->peekToken();
+    token = scanner_->peekToken();
     while (token == Token::op_plus || token == Token::op_minus || token == Token::op_or) {
-        _sc->nextToken();
+        scanner_->nextToken();
         term();
-        token = _sc->peekToken();
+        token = scanner_->peekToken();
     }
     return NULL;
 }
@@ -180,11 +180,11 @@ const ASTNode* Parser::simple_expression() {
 const ASTNode* Parser::term() {
     std::cout << "term" << std::endl;
     factor();
-    Token token = _sc->peekToken();
+    Token token = scanner_->peekToken();
     while (token == Token::op_mult || token == Token::op_div || token == Token::op_mod || token == Token::op_and) {
-        _sc->nextToken();
+        scanner_->nextToken();
         factor();
-        token = _sc->peekToken();
+        token = scanner_->peekToken();
     }
     return NULL;
 }
@@ -192,32 +192,32 @@ const ASTNode* Parser::term() {
 // factor = ident { selector } | number | string | "TRUE" | "FALSE" | "(" expression ")" | "~" factor .
 const ASTNode* Parser::factor() {
     std::cout << "factor" << std::endl;
-    Token token = _sc->peekToken();
+    Token token = scanner_->peekToken();
     if (token == Token::const_ident) {
         ident();
-        token = _sc->peekToken();
+        token = scanner_->peekToken();
         if (token == Token::period || token == Token::lbrack) {
             selector();
         }
     } else if (token == Token::const_number) {
-        _sc->nextToken();
-        const int numValue = _sc->getNumValue();
+        scanner_->nextToken();
+        const int numValue = scanner_->getNumValue();
     } else if (token == Token::const_string) {
-        _sc->nextToken();
-        const std::string strValue = _sc->getStrValue();
+        scanner_->nextToken();
+        const std::string strValue = scanner_->getStrValue();
     } else if (token == Token::const_true) {
-        _sc->nextToken();
+        scanner_->nextToken();
     } else if (token == Token::const_false) {
-        _sc->nextToken();
+        scanner_->nextToken();
     } else if (token == Token::lparen) {
-        _sc->nextToken();
+        scanner_->nextToken();
         expression();
-        if (_sc->nextToken() != Token::rparen)
+        if (scanner_->nextToken() != Token::rparen)
         {
             logError(") expected.");
         }
     } else if (token == Token::op_not) {
-        _sc->nextToken();
+        scanner_->nextToken();
         factor();
     } else {
         logError("unexpected token.");
@@ -228,7 +228,7 @@ const ASTNode* Parser::factor() {
 // type = ident | array_type | record_type .
 const ASTNode* Parser::type() {
     std::cout << "type" << std::endl;
-    Token token = _sc->peekToken();
+    Token token = scanner_->peekToken();
     if (token == Token::const_ident) {
         ident();
     } else if (token == Token::kw_array) {
@@ -244,9 +244,9 @@ const ASTNode* Parser::type() {
 // array_type = "ARRAY" expression "OF" type .
 const ASTNode* Parser::array_type() {
     std::cout << "array_type" << std::endl;
-    _sc->nextToken();
+    scanner_->nextToken();
     expression();
-    if (_sc->nextToken() == Token::kw_of) {
+    if (scanner_->nextToken() == Token::kw_of) {
         type();
     } else {
         logError("OF expected.");
@@ -257,12 +257,12 @@ const ASTNode* Parser::array_type() {
 // record_type = "RECORD" field_list { ";" field_list } "END" .
 const ASTNode* Parser::record_type() {
     std::cout << "record_type" << std::endl;
-    _sc->nextToken();
+    scanner_->nextToken();
     field_list();
-    while (_sc->peekToken() == Token::semicolon) {
+    while (scanner_->peekToken() == Token::semicolon) {
         field_list();
     }
-    if (_sc->nextToken() != Token::kw_end) {
+    if (scanner_->nextToken() != Token::kw_end) {
         logError("END expected.");
     }
     return NULL;
@@ -272,7 +272,7 @@ const ASTNode* Parser::record_type() {
 const ASTNode* Parser::field_list() {
     std::cout << "field_list" << std::endl;
     ident_list();
-    if (_sc->nextToken() == Token::colon) {
+    if (scanner_->nextToken() == Token::colon) {
         type();
     } else {
         logError(": expected.");
@@ -284,8 +284,8 @@ const ASTNode* Parser::field_list() {
 const ASTNode* Parser::ident_list() {
     std::cout << "ident_list" << std::endl;
     ident();
-    while (_sc->peekToken() == Token::comma) {
-        _sc->nextToken();
+    while (scanner_->peekToken() == Token::comma) {
+        scanner_->nextToken();
         ident();
     }
     return NULL;
@@ -294,9 +294,9 @@ const ASTNode* Parser::ident_list() {
 // procedure_heading = "PROCEDURE" ident [ formal_parameters ] .
 const ASTNode* Parser::procedure_heading() {
     std::cout << "procedure_heading" << std::endl;
-    _sc->nextToken();
+    scanner_->nextToken();
     ident();
-    if (_sc->peekToken() == Token::lparen) {
+    if (scanner_->peekToken() == Token::lparen) {
         formal_parameters();
     }
     return NULL;
@@ -306,11 +306,11 @@ const ASTNode* Parser::procedure_heading() {
 const ASTNode* Parser::procedure_body() {
     std::cout << "procedure_body" << std::endl;
     declarations();
-    if (_sc->peekToken() == Token::kw_begin) {
-        _sc->nextToken();
+    if (scanner_->peekToken() == Token::kw_begin) {
+        scanner_->nextToken();
         statement_sequence();
     }
-    if (_sc->nextToken() != Token::kw_end) {
+    if (scanner_->nextToken() != Token::kw_end) {
         logError("END expected.");
     }
     return NULL;
@@ -319,16 +319,16 @@ const ASTNode* Parser::procedure_body() {
 // formal_parameters = "(" [ fp_section { ";" fp_section } ] ")".
 const ASTNode* Parser::formal_parameters() {
     std::cout << "formal_parameters" << std::endl;
-    if (_sc->nextToken() == Token::lparen) {
-        Token token = _sc->peekToken();
+    if (scanner_->nextToken() == Token::lparen) {
+        Token token = scanner_->peekToken();
         if (token == Token::kw_var || token == Token::const_ident) {
             fp_section();
-            while (_sc->peekToken() == Token::semicolon) {
-                _sc->nextToken();
+            while (scanner_->peekToken() == Token::semicolon) {
+                scanner_->nextToken();
                 fp_section();
             }
         }
-        if (_sc->nextToken() != Token::rparen) {
+        if (scanner_->nextToken() != Token::rparen) {
             logError(") expected.");
         }
     }
@@ -338,12 +338,12 @@ const ASTNode* Parser::formal_parameters() {
 // fp_section = [ "VAR" ] ident_list ":" type .
 const ASTNode* Parser::fp_section() {
     std::cout << "fp_section" << std::endl;
-    Token token = _sc->peekToken();
+    Token token = scanner_->peekToken();
     if (token == Token::kw_var) {
-        _sc->nextToken();
+        scanner_->nextToken();
     }
     ident_list();
-    if (_sc->nextToken() != Token::colon) {
+    if (scanner_->nextToken() != Token::colon) {
         logError(": expected.");
     }
     type();
@@ -354,8 +354,8 @@ const ASTNode* Parser::fp_section() {
 const ASTNode* Parser::statement_sequence() {
     std::cout << "statement_sequence" << std::endl;
     statement();
-    while (_sc->peekToken() == Token::semicolon) {
-        _sc->nextToken();
+    while (scanner_->peekToken() == Token::semicolon) {
+        scanner_->nextToken();
         statement();
     }
     return NULL;
@@ -364,14 +364,14 @@ const ASTNode* Parser::statement_sequence() {
 // statement = [ assignment | procedure_call | if_statement | while_statement ] .
 const ASTNode* Parser::statement() {
     std::cout << "statement" << std::endl;
-    Token token = _sc->peekToken();
+    Token token = scanner_->peekToken();
     if (token == Token::const_ident) {
         ident();
-        token = _sc->peekToken();
+        token = scanner_->peekToken();
         if (token == Token::period || token == Token::lbrack) {
             selector();
         }
-        if (_sc->peekToken() == Token::op_becomes) {
+        if (scanner_->peekToken() == Token::op_becomes) {
             assignment();
         } else {
             procedure_call();
@@ -389,7 +389,7 @@ const ASTNode* Parser::statement() {
 // assignment = ident selector ":=" expression .
 const ASTNode* Parser::assignment() {
     std::cout << "assignment" << std::endl;
-    _sc->nextToken();
+    scanner_->nextToken();
     expression();
     return NULL;
 }
@@ -397,7 +397,7 @@ const ASTNode* Parser::assignment() {
 // procedure_call = ident [ actual_parameters ] .
 const ASTNode* Parser::procedure_call() {
     std::cout << "procedure_call" << std::endl;
-    if (_sc->peekToken() == Token::lparen) {
+    if (scanner_->peekToken() == Token::lparen) {
         actual_parameters();
     }
     return NULL;
@@ -406,18 +406,18 @@ const ASTNode* Parser::procedure_call() {
 // if_statement = "IF" expression "THEN" statement_sequence { "ELSIF" expression "THEN" statement_sequence } [ "ELSE" statement_sequence ] "END" .
 const ASTNode* Parser::if_statement() {
     std::cout << "if_statement" << std::endl;
-    _sc->nextToken();
+    scanner_->nextToken();
     expression();
-    if (_sc->nextToken() == Token::kw_then) {
+    if (scanner_->nextToken() == Token::kw_then) {
         statement_sequence();
-        while (_sc->peekToken() == Token::kw_elsif) {
-            _sc->nextToken();
+        while (scanner_->peekToken() == Token::kw_elsif) {
+            scanner_->nextToken();
             statement_sequence();
         }
-        if (_sc->peekToken() == Token::kw_else) {
+        if (scanner_->peekToken() == Token::kw_else) {
             statement_sequence();
         }
-        if (_sc->nextToken() != Token::kw_end) {
+        if (scanner_->nextToken() != Token::kw_end) {
             logError("END expected.");
         }
     } else {
@@ -429,11 +429,11 @@ const ASTNode* Parser::if_statement() {
 // while_statement = "WHILE" expression "DO" statement_sequence "END" .
 const ASTNode* Parser::while_statement() {
     std::cout << "while_statement" << std::endl;
-    _sc->nextToken();
+    scanner_->nextToken();
     expression();
-    if (_sc->nextToken() == Token::kw_do) {
+    if (scanner_->nextToken() == Token::kw_do) {
         statement_sequence();
-        if (_sc->nextToken() != Token::kw_end) {
+        if (scanner_->nextToken() != Token::kw_end) {
             logError("END expected.");
         }
     } else {
@@ -445,16 +445,16 @@ const ASTNode* Parser::while_statement() {
 // actual_parameters = "(" [ expression { "," expression } ] ")" .
 const ASTNode* Parser::actual_parameters() {
     std::cout << "actual_parameters" << std::endl;
-    _sc->nextToken();
-    if (_sc->peekToken() == Token::rparen) {
+    scanner_->nextToken();
+    if (scanner_->peekToken() == Token::rparen) {
         return NULL;
     }
     expression();
-    while (_sc->peekToken() == Token::comma) {
-        _sc->nextToken();
+    while (scanner_->peekToken() == Token::comma) {
+        scanner_->nextToken();
         expression();
     }
-    if (_sc->nextToken() != Token::rparen) {
+    if (scanner_->nextToken() != Token::rparen) {
         logError(") expected.");
     }
     return NULL;
@@ -463,12 +463,12 @@ const ASTNode* Parser::actual_parameters() {
 // selector = {"." ident | "[" expression "]"}.
 const ASTNode* Parser::selector() {
     std::cout << "selector" << std::endl;
-    Token token = _sc->nextToken();
+    Token token = scanner_->nextToken();
     if (token == Token::period) {
         ident();
     } else if (token == Token::lbrack) {
         expression();
-        if (_sc->nextToken() != Token::rbrack) {
+        if (scanner_->nextToken() != Token::rbrack) {
             logError("] expected.");
         }
     }
