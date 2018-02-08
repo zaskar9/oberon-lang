@@ -6,14 +6,14 @@
 
 #include "ASTNode.h"
 
-ASTNode::ASTNode(const NodeType type) : next_(NULL), firstChild_(NULL), lastChild_(NULL) {
-    type_ = type;
+ASTNode::ASTNode(const NodeType type) : type_(type), next_(nullptr), firstChild_(nullptr), lastChild_(nullptr) {
+
 }
 
 ASTNode::~ASTNode() {
-    if (firstChild_ != NULL) {
+    if (firstChild_ != nullptr) {
         const ASTNode *next = firstChild_;
-        while (next != NULL) {
+        while (next != nullptr) {
             const ASTNode *previous = next;
             next = previous->getNext();
             delete previous;
@@ -38,7 +38,7 @@ const ASTNode* ASTNode::getFirstChild() const {
 }
 
 void ASTNode::addChild(ASTNode *child) {
-    if (firstChild_ == NULL) {
+    if (firstChild_ == nullptr) {
         firstChild_ = child;
         lastChild_ = child;
     } else {

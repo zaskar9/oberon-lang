@@ -9,16 +9,21 @@
 
 
 #include "../scanner/Scanner.h"
-#include "../ast/ASTNode.h"
+#include "../util/Logger.h"
+#include "ast/ASTNode.h"
+#include "symbol/Table.h"
+#include "symbol/TypeSymbol.h"
 
 class Parser
 {
 
 private:
     Scanner *scanner_;
+    Table *symbols_;
+    Logger *logger_;
 
     const ASTNode* module();
-    const ASTNode* ident();
+    const std::string ident();
     const ASTNode* declarations();
     const ASTNode* const_declarations();
     const ASTNode* type_declarations();
@@ -28,15 +33,15 @@ private:
     const ASTNode* simple_expression();
     const ASTNode* term();
     const ASTNode* factor();
-    const ASTNode* type();
+    const TypeSymbol* type();
     const ASTNode* array_type();
     const ASTNode* record_type();
     const ASTNode* field_list();
-    const ASTNode* ident_list();
+    void ident_list(std::list<std::string> &idents);
     const ASTNode* procedure_heading();
     const ASTNode* procedure_body();
     const ASTNode* formal_parameters();
-    const ASTNode* fp_section();
+    const int fp_section(const int start);
     const ASTNode* statement_sequence();
     const ASTNode* statement();
     const ASTNode* assignment();
@@ -45,12 +50,12 @@ private:
     const ASTNode* while_statement();
     const ASTNode* actual_parameters();
     const ASTNode* selector();
-    void logError(const std::string &msg);
 
 public:
-    explicit Parser(Scanner *scanner);
+    explicit Parser(Scanner *scanner, Table *symbols, Logger *logger);
     ~Parser();
     const ASTNode* parse();
+
 };
 
 #endif //OBERON0C_PARSER_H

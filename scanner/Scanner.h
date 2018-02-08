@@ -7,11 +7,12 @@
 #ifndef OBERON0C_SCANNER_H
 #define OBERON0C_SCANNER_H
 
+#include <string>
 #include <fstream>
 #include <unordered_map>
-#include <string>
+#include "../util/Logger.h"
 
-enum class Token : char {
+enum class TokenType : char {
     eof, null,
     const_true, const_false, const_number, const_string, const_ident,
     period, comma, colon, semicolon, rparen, lparen, lbrack, rbrack,
@@ -21,12 +22,18 @@ enum class Token : char {
     kw_array, kw_record, kw_const, kw_type, kw_var, kw_of
 };
 
+struct Token {
+    TokenType type;
+    FilePos pos;
+};
+
 class Scanner {
 
 private:
     std::string filename_;
     std::ifstream file_;
-    std::unordered_map<std::string, Token> keywords_;
+    std::unordered_map<std::string, TokenType> keywords_;
+    Logger *logger_;
     Token token_;
     char ch_;
     int lineNo_, charNo_, numValue_;
@@ -34,23 +41,20 @@ private:
 
     void initTable();
     void read();
-    void logError(const std::string &msg);
+    const FilePos getPosition() const;
     void comment();
     const Token ident();
     const int number();
     const std::string string();
 
 public:
-    explicit Scanner(const std::string &filename);
+    explicit Scanner(const std::string &filename, Logger *logger);
     ~Scanner();
     const Token nextToken();
     const Token peekToken();
-    const int getCharNo() const;
-    const int getLineNo() const;
     const int getNumValue() const;
     const std::string getStrValue() const;
     const std::string getIdent() const;
-    const std::string getFileName() const;
 
 };
 

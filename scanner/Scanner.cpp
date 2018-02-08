@@ -8,29 +8,24 @@
 #include <iostream>
 #include <sstream>
 
-Scanner::Scanner(const std::string& filename) : ident_(), numValue_(-1), lineNo_(1), charNo_(0), token_(Token::null) {
-    filename_ = filename;
+Scanner::Scanner(const std::string &filename, Logger *logger) :
+        filename_(filename), logger_(logger), ident_(), numValue_(-1), lineNo_(1), charNo_(0) {
+    token_.type = TokenType::null;
+    token_.pos = getPosition();
+    initTable();
     file_.open(filename_, std::ios::in);
     if (!file_.is_open()) {
-        std::cout << "Cannot open file." << std::endl;
+        // TODO I/O Exception
+        logger_->error(filename_, "Cannot open file.");
         exit(1);
     }
     read();
-    initTable();
 }
 
 Scanner::~Scanner() {
     if (file_.is_open()) {
         file_.close();
     }
-}
-
-const int Scanner::getCharNo() const {
-    return charNo_;
-}
-
-const int Scanner::getLineNo() const {
-    return lineNo_;
 }
 
 const int Scanner::getNumValue() const {
@@ -45,28 +40,24 @@ const std::string Scanner::getIdent() const {
     return ident_;
 }
 
-const std::string Scanner::getFileName() const {
-    return filename_;
-}
-
 void Scanner::initTable() {
-    keywords_ = { { "DIV", Token::op_div }, { "MOD", Token::op_mod }, { "OR", Token::op_or },
-                  { "MODULE", Token::kw_module }, { "PROCEDURE", Token::kw_procedure },
-                  { "BEGIN", Token::kw_begin }, { "END", Token::kw_end },
-                  { "WHILE", Token::kw_while }, { "DO", Token::kw_do},
-                  { "IF", Token::kw_if }, { "THEN", Token::kw_then },
-                  { "ELSE", Token::kw_else }, { "ELSIF", Token::kw_elsif },
-                  { "VAR", Token::kw_var }, { "CONST", Token::kw_const },
-                  { "TYPE", Token::kw_type }, { "ARRAY", Token::kw_array },
-                  { "RECORD", Token::kw_record }, { "OF", Token::kw_of },
-                  { "TRUE", Token::const_true }, { "FALSE", Token::const_false } };
+    keywords_ = { { "DIV", TokenType::op_div }, { "MOD", TokenType::op_mod }, { "OR", TokenType::op_or },
+                  { "MODULE", TokenType::kw_module }, { "PROCEDURE", TokenType::kw_procedure },
+                  { "BEGIN", TokenType::kw_begin }, { "END", TokenType::kw_end },
+                  { "WHILE", TokenType::kw_while }, { "DO", TokenType::kw_do},
+                  { "IF", TokenType::kw_if }, { "THEN", TokenType::kw_then },
+                  { "ELSE", TokenType::kw_else }, { "ELSIF", TokenType::kw_elsif },
+                  { "VAR", TokenType::kw_var }, { "CONST", TokenType::kw_const },
+                  { "TYPE", TokenType::kw_type }, { "ARRAY", TokenType::kw_array },
+                  { "RECORD", TokenType::kw_record }, { "OF", TokenType::kw_of },
+                  { "TRUE", TokenType::const_true }, { "FALSE", TokenType::const_false } };
 }
 
 const Token Scanner::nextToken() {
     Token token;
-    if (token_ != Token::null) {
+    if (token_.type != TokenType::null) {
         token = token_;
-        token_ = Token::null;
+        token_.type = TokenType::null;
         return token;
     }
     numValue_ = -1;
@@ -76,76 +67,77 @@ const Token Scanner::nextToken() {
         read();
     }
     if (ch_ != -1) {
+        token.pos = getPosition();
         if (((ch_ >= 'A') && (ch_ <= 'Z')) || ((ch_ >= 'a') && (ch_ <= 'z'))) {
             // Scan identifier
             token = ident();
         } else if ((ch_ >= '0') && (ch_ <= '9')) {
             // Scan number
-            token = Token::const_number;
+            token.type = TokenType::const_number;
             numValue_ = number();
         } else {
             switch (ch_) {
                 case '&':
-                    token = Token::op_and;
+                    token.type = TokenType::op_and;
                     read();
                     break;
                 case '*':
-                    token = Token::op_mult;
+                    token.type = TokenType::op_mult;
                     read();
                     break;
                 case '+':
-                    token = Token::op_plus;
+                    token.type = TokenType::op_plus;
                     read();
                     break;
                 case '-':
-                    token = Token::op_minus;
+                    token.type = TokenType::op_minus;
                     read();
                     break;
                 case '=':
-                    token = Token::op_eq;
+                    token.type = TokenType::op_eq;
                     read();
                     break;
                 case '#':
-                    token = Token::op_neq;
+                    token.type = TokenType::op_neq;
                     read();
                     break;
                 case '<':
                     read();
                     if (ch_ == '=') {
-                        token = Token::op_leq;
+                        token.type = TokenType::op_leq;
                         read();
                     } else {
-                        token = Token::op_lt;
+                        token.type = TokenType::op_lt;
                     }
                     break;
                 case '>':
                     read();
                     if (ch_ == '=') {
-                        token = Token::op_geq;
+                        token.type = TokenType::op_geq;
                         read();
                     } else {
-                        token = Token::op_gt;
+                        token.type = TokenType::op_gt;
                     }
                     break;
                 case ';':
-                    token = Token::semicolon;
+                    token.type = TokenType::semicolon;
                     read();
                     break;
                 case ',':
-                    token = Token::comma;
+                    token.type = TokenType::comma;
                     read();
                     break;
                 case ':':
                     read();
                     if (ch_ == '=') {
-                        token = Token::op_becomes;
+                        token.type = TokenType::op_becomes;
                         read();
                     } else {
-                        token = Token::colon;
+                        token.type = TokenType::colon;
                     }
                     break;
                 case '.':
-                    token = Token::period;
+                    token.type = TokenType::period;
                     read();
                     break;
                 case '(':
@@ -154,44 +146,44 @@ const Token Scanner::nextToken() {
                         comment();
                         token = nextToken();
                     } else {
-                        token = Token::lparen;
+                        token.type = TokenType::lparen;
                     }
                     break;
                 case ')':
-                    token = Token::rparen;
+                    token.type = TokenType::rparen;
                     read();
                     break;
                 case '[':
-                    token = Token::lbrack;
+                    token.type = TokenType::lbrack;
                     read();
                     break;
                 case ']':
-                    token = Token::rbrack;
+                    token.type = TokenType::rbrack;
                     read();
                     break;
                 case '~':
-                    token = Token::op_not;
+                    token.type = TokenType::op_not;
                     read();
                     break;
                 case '"':
-                    token = Token::const_string;
+                    token.type = TokenType::const_string;
                     strValue_ = string();
                     read();
                     break;
                 default:
-                    token = Token::null;
+                    token.type = TokenType::null;
                     read();
                     break;
             }
         }
     } else {
-        token = Token::eof;
+        token.type = TokenType::eof;
     }
     return token;
 }
 
 const Token Scanner::peekToken() {
-    if (token_ == Token::null) {
+    if (token_.type == TokenType::null) {
         token_ = nextToken();
     }
     return token_;
@@ -209,16 +201,21 @@ void Scanner::read() {
             ch_ = -1;
         } else {
             // TODO I/O Exception
-            logError("Error reading file.");
+            logger_->error(filename_, "Error reading file.");
         }
     }
 }
 
-void Scanner::logError(const std::string &error) {
-    std::cerr << filename_ << ":" << lineNo_ << ":" << charNo_ << ": error: " << error << std::endl;
+const FilePos Scanner::getPosition() const {
+    FilePos pos;
+    pos.fileName = filename_;
+    pos.lineNo = lineNo_;
+    pos.charNo = charNo_;
+    return pos;
 }
 
 void Scanner::comment() {
+    FilePos pos = getPosition();
     read();
     while (true) {
         while (true) {
@@ -242,14 +239,16 @@ void Scanner::comment() {
             break;
         }
         if (ch_ == -1) {
-            logError("Comment not terminated.");
+            logger_->error(pos, "Comment not terminated.");
             break;
         }
     }
 }
 
 const Token Scanner::ident() {
-    Token token = Token::const_ident;
+    Token token;
+    token.type = TokenType::const_ident;
+    token.pos = getPosition();
     std::stringstream ss;
     do {
         ss << ch_;
@@ -258,9 +257,9 @@ const Token Scanner::ident() {
              ((ch_ >= 'a') && (ch_ <= 'z')) ||
              ((ch_ >= 'A') && (ch_ <= 'Z')));
     ident_ = ss.str();
-    std::unordered_map<std::string, Token>::const_iterator it = keywords_.find(ident_);
+    std::unordered_map<std::string, TokenType>::const_iterator it = keywords_.find(ident_);
     if (it != keywords_.end()) {
-        token = it->second;
+        token.type = it->second;
         ident_ = "";
     }
     return token;
@@ -270,6 +269,7 @@ const int Scanner::number() {
     bool isHex = false;
     int decValue = 0;
     int hexValue = 0;
+    FilePos pos = getPosition();
     do {
         isHex = isHex | ((ch_ >= 'A') && (ch_ <= 'F'));
         if (decValue <= ((INT_MAX - ch_ + '0') / 10)) {
@@ -280,7 +280,7 @@ const int Scanner::number() {
                 hexValue = 16 * hexValue + (ch_ - 'A' + 10);
             }
         } else {
-            logError("Number too large.");
+            logger_->error(pos, "Number too large.");
             return 0;
         }
         read();

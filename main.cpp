@@ -13,8 +13,11 @@ int main(const int argc, const char *argv[]) {
         std::cout << "Usage: oberon0c <filename>" << std::endl;
         return 1;
     }
-    auto scanner = new Scanner(argv[1]);
-    auto parser = new Parser(scanner);
+    std::string filename = argv[1];
+    auto logger = new Logger();
+    auto scanner = new Scanner(filename, logger);
+    auto symbols = new Table(logger);
+    auto parser = new Parser(scanner, symbols, logger);
     const ASTNode *node = parser->parse();
     delete parser;
     delete scanner;
