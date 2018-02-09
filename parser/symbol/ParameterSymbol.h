@@ -13,15 +13,14 @@
 class ParameterSymbol : public Symbol {
 
 private:
-    const TypeSymbol *type_;
+    std::shared_ptr<const TypeSymbol> type_;
     bool var_;
-    int pos_;
 
 public:
-    explicit ParameterSymbol(const std::string &name, const TypeSymbol *type, const bool var, const int pos);
+    explicit ParameterSymbol(const std::string &name, std::shared_ptr<const TypeSymbol> type, bool var);
     ~ParameterSymbol() override;
 
-    const int getPos() const;
+    std::shared_ptr<const TypeSymbol> getType() const;
     const bool isVar() const;
 
 };

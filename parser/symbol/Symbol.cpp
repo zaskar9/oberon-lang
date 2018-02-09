@@ -12,7 +12,7 @@ Symbol::Symbol(const SymbolType type, const std::string &name) : type_(type), na
 
 Symbol::~Symbol() = default;
 
-const SymbolType Symbol::getType() const {
+const SymbolType Symbol::getSymbolType() const {
     return type_;
 }
 

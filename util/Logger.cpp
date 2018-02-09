@@ -12,13 +12,13 @@ Logger::Logger() = default;
 Logger::~Logger() = default;
 
 void Logger::error(const FilePos pos, const std::string &msg) const {
-    std::cerr << pos.fileName << ":" << pos.lineNo << ":" << pos.charNo << ": [error]: " << msg << std::endl;
+    std::cerr << pos.fileName << ":" << pos.lineNo << ":" << pos.charNo << ": [error] " << msg << std::endl;
 }
 
 void Logger::error(const std::string &fileName, const std::string &msg) const {
-    std::cerr << fileName << ": [error]: " << msg << std::endl;
+    std::cerr << fileName << ": [error] " << msg << std::endl;
 }
 
 void Logger::info(const std::string &fileName, const std::string &msg) const {
-    std::cout << fileName << ": [info]: " << msg << std::endl;
+    std::cout << fileName << ": [info] " << msg << std::endl;
 }

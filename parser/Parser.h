@@ -13,6 +13,9 @@
 #include "ast/ASTNode.h"
 #include "symbol/Table.h"
 #include "symbol/TypeSymbol.h"
+#include "symbol/ProcedureSymbol.h"
+#include "symbol/ArrayTypeSymbol.h"
+#include "symbol/RecordTypeSymbol.h"
 
 class Parser
 {
@@ -26,22 +29,22 @@ private:
     const std::string ident();
     const ASTNode* declarations();
     const ASTNode* const_declarations();
-    const ASTNode* type_declarations();
+    void type_declarations();
     const ASTNode* var_declarations();
     const ASTNode* procedure_declaration();
     const ASTNode* expression();
     const ASTNode* simple_expression();
     const ASTNode* term();
     const ASTNode* factor();
-    const TypeSymbol* type();
-    const ASTNode* array_type();
-    const ASTNode* record_type();
-    const ASTNode* field_list();
+    const std::shared_ptr<const TypeSymbol> type();
+    const std::shared_ptr<const ArrayTypeSymbol> array_type();
+    const std::shared_ptr<const RecordTypeSymbol> record_type();
+    void field_list(const std::shared_ptr<RecordTypeSymbol> &rts);
     void ident_list(std::list<std::string> &idents);
-    const ASTNode* procedure_heading();
+    const std::shared_ptr<ProcedureSymbol> procedure_heading();
     const ASTNode* procedure_body();
-    const ASTNode* formal_parameters();
-    const int fp_section(const int start);
+    void formal_parameters(const std::shared_ptr<ProcedureSymbol> &ps);
+    void fp_section(const std::shared_ptr<ProcedureSymbol> &ps);
     const ASTNode* statement_sequence();
     const ASTNode* statement();
     const ASTNode* assignment();

@@ -6,15 +6,14 @@
 
 #include "ParameterSymbol.h"
 
-ParameterSymbol::ParameterSymbol(const std::string &name, const TypeSymbol *type, const bool var, const int pos) :
-        Symbol(SymbolType::parameter, name), type_(type), var_(var), pos_(pos) {
-
+ParameterSymbol::ParameterSymbol(const std::string &name, const std::shared_ptr<const TypeSymbol> type, const bool var) :
+        Symbol(SymbolType::parameter, name), type_(type), var_(var) {
 }
 
 ParameterSymbol::~ParameterSymbol() = default;
 
-const int ParameterSymbol::getPos() const {
-    return pos_;
+std::shared_ptr<const TypeSymbol> ParameterSymbol::getType() const {
+    return type_;
 }
 
 const bool ParameterSymbol::isVar() const {

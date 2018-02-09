@@ -21,10 +21,10 @@ private:
     std::string name_;
 
 public:
-    explicit Symbol(const SymbolType type, const std::string &name);
+    explicit Symbol(SymbolType type, const std::string &name);
     virtual ~Symbol();
 
-    const SymbolType getType() const;
+    const SymbolType getSymbolType() const;
     const std::string getName() const;
 
 };

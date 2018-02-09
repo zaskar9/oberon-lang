@@ -4,8 +4,12 @@ MODULE BubbleSort;
 (* Length of the array to be sorted. *)
 CONST Dim = 20;
 
+(* Record definition for a two-dimensional point. *)
+TYPE Point2D = RECORD x, y: INTEGER END;
+
 (* Array to be sorted. *)
 VAR a: ARRAY Dim OF INTEGER;
+    p: Point2D;
 
 (* Initializes the array. *)
 PROCEDURE Init();

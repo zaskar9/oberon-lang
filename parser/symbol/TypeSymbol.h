@@ -16,10 +16,10 @@ private:
     int size_;
 
 public:
-    explicit TypeSymbol(const SymbolType type, const std::string &name, const int size);
-    virtual ~TypeSymbol();
+    explicit TypeSymbol(SymbolType type, const std::string &name, int size);
+    ~TypeSymbol() override;
 
-    const int getSize() const;
+    virtual const int getSize() const;
 
 };
 
