@@ -23,6 +23,8 @@ public:
     void addField(std::shared_ptr<const VariableSymbol> field);
     const int getSize() const override;
 
+    void print(std::ostream &stream) const override;
+
 };
 
 #endif //OBERON0C_RECORDTYPESYMBOL_H

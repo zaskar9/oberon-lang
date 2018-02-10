@@ -22,3 +22,7 @@ const int RecordTypeSymbol::getSize() const {
     }
     return size;
 }
+
+void RecordTypeSymbol::print(std::ostream &out) const {
+    out << "RECORD";
+}

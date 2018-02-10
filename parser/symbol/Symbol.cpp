@@ -19,3 +19,8 @@ const SymbolType Symbol::getSymbolType() const {
 const std::string Symbol::getName() const {
     return name_;
 }
+
+std::ostream& operator<<(std::ostream &stream, const Symbol &symbol) {
+    symbol.print(stream);
+    return stream;
+}

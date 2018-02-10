@@ -7,6 +7,7 @@
 #ifndef OBERON0C_SYMBOL_H
 #define OBERON0C_SYMBOL_H
 
+#include <ostream>
 #include <string>
 
 enum class SymbolType {
@@ -27,6 +28,8 @@ public:
     const SymbolType getSymbolType() const;
     const std::string getName() const;
 
+    virtual void print(std::ostream &stream) const = 0;
+    friend std::ostream& operator<<(std::ostream &stream, const Symbol &symbol);
 };
 
 

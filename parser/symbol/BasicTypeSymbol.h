@@ -17,6 +17,8 @@ public:
     BasicTypeSymbol(const std::string &name, int size);
     ~BasicTypeSymbol() override;
 
+    void print(std::ostream &stream) const override;
+
 };
 
 

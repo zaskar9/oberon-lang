@@ -7,7 +7,7 @@
 #include "ArrayTypeSymbol.h"
 
 ArrayTypeSymbol::ArrayTypeSymbol(int dim, std::shared_ptr<const TypeSymbol> mType) :
-        TypeSymbol(SymbolType::array_type, nullptr, dim * mType->getSize()), dim_(dim), mType_(mType) {
+        TypeSymbol(SymbolType::array_type, "", dim * mType->getSize()), dim_(dim), mType_(mType) {
 }
 
 ArrayTypeSymbol::~ArrayTypeSymbol() = default;
@@ -18,4 +18,8 @@ const int ArrayTypeSymbol::getDimension() const {
 
 const std::shared_ptr<const TypeSymbol> ArrayTypeSymbol::getMemberType() const {
     return mType_;
+}
+
+void ArrayTypeSymbol::print(std::ostream &out) const {
+    out << "ARRAY " << dim_ << " OF " << mType_->getName();
 }

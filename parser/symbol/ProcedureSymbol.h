@@ -23,6 +23,7 @@ public:
 
     void addParameter(std::shared_ptr<ParameterSymbol> parameter);
 
+    void print(std::ostream &stream) const override;
 
 };
 

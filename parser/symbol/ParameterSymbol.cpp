@@ -19,3 +19,7 @@ std::shared_ptr<const TypeSymbol> ParameterSymbol::getType() const {
 const bool ParameterSymbol::isVar() const {
     return var_;
 }
+
+void ParameterSymbol::print(std::ostream &out) const {
+    out << (var_ ? "VAR " : "") << getName() << ": " << type_->getName();
+}

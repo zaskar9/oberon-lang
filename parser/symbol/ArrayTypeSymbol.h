@@ -24,6 +24,8 @@ public:
     const int getDimension() const;
     const std::shared_ptr<const TypeSymbol> getMemberType() const;
 
+    void print(std::ostream &stream) const override;
+
 };
 
 

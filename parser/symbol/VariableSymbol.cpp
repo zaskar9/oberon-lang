@@ -15,3 +15,7 @@ VariableSymbol::~VariableSymbol() = default;
 const std::shared_ptr<const TypeSymbol> VariableSymbol::getType() const {
     return type_;
 }
+
+void VariableSymbol::print(std::ostream &out) const {
+    out << getName() << ": " << type_->getName();
+}

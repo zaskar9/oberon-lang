@@ -285,6 +285,7 @@ const std::shared_ptr<const ArrayTypeSymbol> Parser::array_type() {
     Token token = scanner_->nextToken();
     if (token.type == TokenType::kw_of) {
         std::shared_ptr<const TypeSymbol> ts = type();
+        return std::make_shared<ArrayTypeSymbol>(0, ts);
     } else {
         logger_->error(token.pos, "OF expected.");
     }

@@ -23,6 +23,8 @@ public:
     std::shared_ptr<const TypeSymbol> getType() const;
     const bool isVar() const;
 
+    void print(std::ostream &stream) const override;
+
 };
 
 #endif //OBERON0C_PARAMETER_H

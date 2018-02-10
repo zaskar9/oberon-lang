@@ -7,7 +7,6 @@
 #ifndef OBERON0C_TYPESYMBOL_H
 #define OBERON0C_TYPESYMBOL_H
 
-
 #include "Symbol.h"
 
 class TypeSymbol : public Symbol {

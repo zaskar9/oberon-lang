@@ -6,8 +6,8 @@
 
 #include "TypeSymbol.h"
 
-TypeSymbol::TypeSymbol(const SymbolType type, const std::string &name, const int size) : Symbol(type, name), size_(size) {
-
+TypeSymbol::TypeSymbol(const SymbolType type, const std::string &name, const int size) :
+        Symbol(type, name), size_(size) {
 }
 
 TypeSymbol::~TypeSymbol() = default;

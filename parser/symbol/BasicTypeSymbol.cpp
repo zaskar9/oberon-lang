@@ -11,3 +11,7 @@ BasicTypeSymbol::BasicTypeSymbol(const std::string &name, const int size) :
 }
 
 BasicTypeSymbol::~BasicTypeSymbol() = default;
+
+void BasicTypeSymbol::print(std::ostream &out) const {
+    out << getName();
+}

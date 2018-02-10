@@ -22,6 +22,8 @@ public:
 
     const std::shared_ptr<const TypeSymbol> getType() const;
 
+    void print(std::ostream &stream) const override;
+
 };
 
 

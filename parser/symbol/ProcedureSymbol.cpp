@@ -14,3 +14,7 @@ ProcedureSymbol::~ProcedureSymbol() = default;
 void ProcedureSymbol::addParameter(std::shared_ptr<ParameterSymbol> parameter) {
     parameters_.push_back(parameter);
 }
+
+void ProcedureSymbol::print(std::ostream &out) const {
+    out << "PROCEDURE " << getName();
+}

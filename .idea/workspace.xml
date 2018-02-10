@@ -12,29 +12,24 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="aad7b22b-7652-48b8-af65-584be4814904" name="Default" comment="">
-      <change beforePath="" afterPath="$PROJECT_DIR$/parser/symbol/ArrayTypeSymbol.cpp" />
-      <change beforePath="" afterPath="$PROJECT_DIR$/parser/symbol/ArrayTypeSymbol.h" />
-      <change beforePath="" afterPath="$PROJECT_DIR$/parser/symbol/BasicTypeSymbol.cpp" />
-      <change beforePath="" afterPath="$PROJECT_DIR$/parser/symbol/BasicTypeSymbol.h" />
-      <change beforePath="" afterPath="$PROJECT_DIR$/parser/symbol/ProcedureSymbol.cpp" />
-      <change beforePath="" afterPath="$PROJECT_DIR$/parser/symbol/ProcedureSymbol.h" />
-      <change beforePath="" afterPath="$PROJECT_DIR$/parser/symbol/RecordTypeSymbol.cpp" />
-      <change beforePath="" afterPath="$PROJECT_DIR$/parser/symbol/RecordTypeSymbol.h" />
-      <change beforePath="" afterPath="$PROJECT_DIR$/parser/symbol/VariableSymbol.cpp" />
-      <change beforePath="" afterPath="$PROJECT_DIR$/parser/symbol/VariableSymbol.h" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change beforePath="$PROJECT_DIR$/CMakeLists.txt" afterPath="$PROJECT_DIR$/CMakeLists.txt" />
       <change beforePath="$PROJECT_DIR$/parser/Parser.cpp" afterPath="$PROJECT_DIR$/parser/Parser.cpp" />
-      <change beforePath="$PROJECT_DIR$/parser/Parser.h" afterPath="$PROJECT_DIR$/parser/Parser.h" />
+      <change beforePath="$PROJECT_DIR$/parser/symbol/ArrayTypeSymbol.cpp" afterPath="$PROJECT_DIR$/parser/symbol/ArrayTypeSymbol.cpp" />
+      <change beforePath="$PROJECT_DIR$/parser/symbol/ArrayTypeSymbol.h" afterPath="$PROJECT_DIR$/parser/symbol/ArrayTypeSymbol.h" />
+      <change beforePath="$PROJECT_DIR$/parser/symbol/BasicTypeSymbol.cpp" afterPath="$PROJECT_DIR$/parser/symbol/BasicTypeSymbol.cpp" />
+      <change beforePath="$PROJECT_DIR$/parser/symbol/BasicTypeSymbol.h" afterPath="$PROJECT_DIR$/parser/symbol/BasicTypeSymbol.h" />
       <change beforePath="$PROJECT_DIR$/parser/symbol/ParameterSymbol.cpp" afterPath="$PROJECT_DIR$/parser/symbol/ParameterSymbol.cpp" />
       <change beforePath="$PROJECT_DIR$/parser/symbol/ParameterSymbol.h" afterPath="$PROJECT_DIR$/parser/symbol/ParameterSymbol.h" />
+      <change beforePath="$PROJECT_DIR$/parser/symbol/ProcedureSymbol.cpp" afterPath="$PROJECT_DIR$/parser/symbol/ProcedureSymbol.cpp" />
+      <change beforePath="$PROJECT_DIR$/parser/symbol/ProcedureSymbol.h" afterPath="$PROJECT_DIR$/parser/symbol/ProcedureSymbol.h" />
+      <change beforePath="$PROJECT_DIR$/parser/symbol/RecordTypeSymbol.cpp" afterPath="$PROJECT_DIR$/parser/symbol/RecordTypeSymbol.cpp" />
+      <change beforePath="$PROJECT_DIR$/parser/symbol/RecordTypeSymbol.h" afterPath="$PROJECT_DIR$/parser/symbol/RecordTypeSymbol.h" />
       <change beforePath="$PROJECT_DIR$/parser/symbol/Symbol.cpp" afterPath="$PROJECT_DIR$/parser/symbol/Symbol.cpp" />
       <change beforePath="$PROJECT_DIR$/parser/symbol/Symbol.h" afterPath="$PROJECT_DIR$/parser/symbol/Symbol.h" />
-      <change beforePath="$PROJECT_DIR$/parser/symbol/Table.cpp" afterPath="$PROJECT_DIR$/parser/symbol/Table.cpp" />
-      <change beforePath="$PROJECT_DIR$/parser/symbol/Table.h" afterPath="$PROJECT_DIR$/parser/symbol/Table.h" />
+      <change beforePath="$PROJECT_DIR$/parser/symbol/TypeSymbol.cpp" afterPath="$PROJECT_DIR$/parser/symbol/TypeSymbol.cpp" />
       <change beforePath="$PROJECT_DIR$/parser/symbol/TypeSymbol.h" afterPath="$PROJECT_DIR$/parser/symbol/TypeSymbol.h" />
-      <change beforePath="$PROJECT_DIR$/test/BubbleSort.Mod" afterPath="$PROJECT_DIR$/test/BubbleSort.Mod" />
-      <change beforePath="$PROJECT_DIR$/util/Logger.cpp" afterPath="$PROJECT_DIR$/util/Logger.cpp" />
+      <change beforePath="$PROJECT_DIR$/parser/symbol/VariableSymbol.cpp" afterPath="$PROJECT_DIR$/parser/symbol/VariableSymbol.cpp" />
+      <change beforePath="$PROJECT_DIR$/parser/symbol/VariableSymbol.h" afterPath="$PROJECT_DIR$/parser/symbol/VariableSymbol.h" />
     </list>
     <ignored path="$PROJECT_DIR$/cmake-build-debug/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -53,64 +48,30 @@
       <file leaf-file-name="Parser.cpp" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/parser/Parser.cpp">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="441">
-              <caret line="308" column="14" lean-forward="false" selection-start-line="308" selection-start-column="14" selection-end-line="308" selection-end-column="14" />
-              <folding>
-                <element signature="e#123#142#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="RecordTypeSymbol.cpp" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/parser/symbol/RecordTypeSymbol.cpp">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="345">
-              <caret line="23" column="1" lean-forward="true" selection-start-line="23" selection-start-column="1" selection-end-line="23" selection-end-column="1" />
+            <state relative-caret-position="318">
+              <caret line="288" column="0" lean-forward="false" selection-start-line="288" selection-start-column="0" selection-end-line="288" selection-end-column="0" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="RecordTypeSymbol.h" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/parser/symbol/RecordTypeSymbol.h">
+      <file leaf-file-name="Symbol.h" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/parser/symbol/Symbol.h">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="375">
-              <caret line="25" column="2" lean-forward="false" selection-start-line="25" selection-start-column="2" selection-end-line="25" selection-end-column="2" />
+            <state relative-caret-position="449">
+              <caret line="31" column="4" lean-forward="false" selection-start-line="31" selection-start-column="4" selection-end-line="31" selection-end-column="4" />
               <folding>
-                <element signature="e#220#235#0" expanded="true" />
+                <element signature="e#189#207#0" expanded="true" />
               </folding>
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="BubbleSort.Mod" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/test/BubbleSort.Mod">
+      <file leaf-file-name="Symbol.cpp" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/parser/symbol/Symbol.cpp">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="165">
-              <caret line="11" column="7" lean-forward="false" selection-start-line="11" selection-start-column="7" selection-end-line="11" selection-end-column="7" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="Table.cpp" pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/parser/symbol/Table.cpp">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="465">
-              <caret line="31" column="0" lean-forward="false" selection-start-line="31" selection-start-column="0" selection-end-line="31" selection-end-column="0" />
-              <folding>
-                <element signature="e#132#151#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="Table.h" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/parser/symbol/Table.h">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="405">
-              <caret line="30" column="35" lean-forward="false" selection-start-line="30" selection-start-column="35" selection-end-line="30" selection-end-column="35" />
+            <state relative-caret-position="90">
+              <caret line="6" column="0" lean-forward="false" selection-start-line="6" selection-start-column="0" selection-end-line="6" selection-end-column="0" />
               <folding />
             </state>
           </provider>
@@ -162,37 +123,37 @@
         <option value="$PROJECT_DIR$/util/Logger.h" />
         <option value="$PROJECT_DIR$/main.cpp" />
         <option value="$PROJECT_DIR$/scanner/Scanner.cpp" />
-        <option value="$PROJECT_DIR$/parser/symbol/Symbol.cpp" />
-        <option value="$PROJECT_DIR$/parser/symbol/TypeSymbol.cpp" />
         <option value="$PROJECT_DIR$/util/Logger.cpp" />
-        <option value="$PROJECT_DIR$/parser/symbol/Symbol.h" />
-        <option value="$PROJECT_DIR$/parser/symbol/BasicTypeSymbol.h" />
-        <option value="$PROJECT_DIR$/parser/symbol/BasicTypeSymbol.cpp" />
-        <option value="$PROJECT_DIR$/parser/symbol/ProcedureSymbol.h" />
-        <option value="$PROJECT_DIR$/parser/symbol/ProcedureSymbol.cpp" />
-        <option value="$PROJECT_DIR$/parser/symbol/ParameterSymbol.h" />
-        <option value="$PROJECT_DIR$/parser/symbol/ParameterSymbol.cpp" />
-        <option value="$PROJECT_DIR$/parser/symbol/ArrayTypeSymbol.cpp" />
-        <option value="$PROJECT_DIR$/parser/symbol/ArrayTypeSymbol.h" />
-        <option value="$PROJECT_DIR$/parser/symbol/TypeSymbol.h" />
         <option value="$PROJECT_DIR$/scanner/Scanner.h" />
         <option value="$PROJECT_DIR$/CMakeLists.txt" />
-        <option value="$PROJECT_DIR$/parser/symbol/VariableSymbol.h" />
-        <option value="$PROJECT_DIR$/parser/symbol/VariableSymbol.cpp" />
         <option value="$PROJECT_DIR$/parser/Parser.h" />
-        <option value="$PROJECT_DIR$/parser/symbol/RecordTypeSymbol.cpp" />
-        <option value="$PROJECT_DIR$/parser/symbol/RecordTypeSymbol.h" />
         <option value="$PROJECT_DIR$/test/BubbleSort.Mod" />
         <option value="$PROJECT_DIR$/parser/symbol/Table.h" />
-        <option value="$PROJECT_DIR$/parser/Parser.cpp" />
         <option value="$PROJECT_DIR$/parser/symbol/Table.cpp" />
+        <option value="$PROJECT_DIR$/parser/symbol/TypeSymbol.h" />
+        <option value="$PROJECT_DIR$/parser/symbol/TypeSymbol.cpp" />
+        <option value="$PROJECT_DIR$/parser/symbol/BasicTypeSymbol.cpp" />
+        <option value="$PROJECT_DIR$/parser/symbol/BasicTypeSymbol.h" />
+        <option value="$PROJECT_DIR$/parser/symbol/ArrayTypeSymbol.h" />
+        <option value="$PROJECT_DIR$/parser/symbol/ParameterSymbol.h" />
+        <option value="$PROJECT_DIR$/parser/symbol/ProcedureSymbol.h" />
+        <option value="$PROJECT_DIR$/parser/symbol/RecordTypeSymbol.h" />
+        <option value="$PROJECT_DIR$/parser/symbol/VariableSymbol.h" />
+        <option value="$PROJECT_DIR$/parser/symbol/ArrayTypeSymbol.cpp" />
+        <option value="$PROJECT_DIR$/parser/symbol/ParameterSymbol.cpp" />
+        <option value="$PROJECT_DIR$/parser/symbol/ProcedureSymbol.cpp" />
+        <option value="$PROJECT_DIR$/parser/symbol/RecordTypeSymbol.cpp" />
+        <option value="$PROJECT_DIR$/parser/symbol/VariableSymbol.cpp" />
+        <option value="$PROJECT_DIR$/parser/symbol/Symbol.h" />
+        <option value="$PROJECT_DIR$/parser/Parser.cpp" />
+        <option value="$PROJECT_DIR$/parser/symbol/Symbol.cpp" />
       </list>
     </option>
   </component>
   <component name="OCFindUsagesOptions" text="true" ivars="false" properties="true" derivedClasses="false" />
   <component name="ProjectFrameBounds" fullScreen="true">
-    <option name="width" value="2560" />
-    <option name="height" value="1440" />
+    <option name="width" value="1920" />
+    <option name="height" value="1200" />
   </component>
   <component name="ProjectView">
     <navigator currentView="ProjectPane" proportions="" version="1">
@@ -315,6 +276,7 @@
       <workItem from="1517498529469" duration="7943000" />
       <workItem from="1518031252279" duration="21986000" />
       <workItem from="1518170249278" duration="17800000" />
+      <workItem from="1518198254541" duration="4327000" />
     </task>
     <task id="LOCAL-00001" summary="Began work on Scanner class for oberon0c.">
       <created>1513322503962</created>
@@ -334,21 +296,19 @@
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="104188000" />
+    <option name="totallyTimeSpent" value="108515000" />
   </component>
   <component name="ToolWindowManager">
-    <frame x="0" y="0" width="2560" height="1440" extended-state="0" />
-    <editor active="true" />
+    <frame x="0" y="0" width="1920" height="1200" extended-state="0" />
     <layout>
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.22382812" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.2234375" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
-      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.22805755" sideWeight="0.7609375" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="Messages" active="true" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.22782609" sideWeight="0.68541664" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="CMake" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32956523" sideWeight="0.4953125" order="7" side_tool="false" content_ui="tabs" />
-      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.46258992" sideWeight="0.23984376" order="7" side_tool="true" content_ui="tabs" />
-      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32956523" sideWeight="0.49791667" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.46258992" sideWeight="0.7601563" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.22782609" sideWeight="0.31458333" order="7" side_tool="true" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.46173912" sideWeight="0.6901042" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
-      <window_info id="Structure" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.19296876" sideWeight="0.5" order="3" side_tool="true" content_ui="tabs" />
+      <window_info id="Structure" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.19270833" sideWeight="0.5" order="3" side_tool="true" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="1" side_tool="true" content_ui="tabs" />
@@ -358,6 +318,7 @@
       <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
       <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="combo" />
       <window_info id="Inspection Results" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.32956523" sideWeight="0.49791667" order="8" side_tool="false" content_ui="tabs" />
+      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32956523" sideWeight="0.49791667" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
     </layout>
   </component>
@@ -561,7 +522,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="375">
           <caret line="25" column="0" lean-forward="true" selection-start-line="25" selection-start-column="0" selection-end-line="25" selection-end-column="0" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -573,69 +533,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/parser/symbol/Symbol.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="120">
-          <caret line="8" column="44" lean-forward="false" selection-start-line="8" selection-start-column="44" selection-end-line="8" selection-end-column="44" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/util/Logger.cpp">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="315">
           <caret line="22" column="38" lean-forward="false" selection-start-line="22" selection-start-column="38" selection-end-line="22" selection-end-column="38" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/parser/symbol/BasicTypeSymbol.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="4" selection-end-column="3" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/parser/symbol/ProcedureSymbol.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="240">
-          <caret line="16" column="0" lean-forward="true" selection-start-line="16" selection-start-column="0" selection-end-line="16" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/parser/symbol/ParameterSymbol.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="285">
-          <caret line="19" column="102" lean-forward="true" selection-start-line="19" selection-start-column="102" selection-end-line="19" selection-end-column="102" />
-          <folding>
-            <element signature="e#186#205#0" expanded="false" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/parser/symbol/ParameterSymbol.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="240">
-          <caret line="16" column="1" lean-forward="false" selection-start-line="16" selection-start-column="1" selection-end-line="16" selection-end-column="1" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/parser/symbol/TypeSymbol.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="4" selection-end-column="3" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/parser/symbol/BasicTypeSymbol.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="15">
-          <caret line="1" column="49" lean-forward="false" selection-start-line="1" selection-start-column="49" selection-end-line="1" selection-end-column="49" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -655,57 +556,13 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/parser/symbol/VariableSymbol.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="225">
-          <caret line="15" column="17" lean-forward="false" selection-start-line="15" selection-start-column="17" selection-end-line="15" selection-end-column="17" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/parser/symbol/VariableSymbol.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="240">
-          <caret line="16" column="0" lean-forward="false" selection-start-line="16" selection-start-column="0" selection-end-line="16" selection-end-column="0" />
-          <folding>
-            <element signature="e#214#231#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/parser/symbol/ProcedureSymbol.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="4" selection-end-column="3" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/parser/Parser.h">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="628">
           <caret line="42" column="52" lean-forward="true" selection-start-line="42" selection-start-column="52" selection-end-line="42" selection-end-column="52" />
           <folding>
-            <element signature="e#172#203#0" expanded="true" />
+            <element signature="e#172#203#0" expanded="false" />
           </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/parser/symbol/ArrayTypeSymbol.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="300">
-          <caret line="20" column="13" lean-forward="false" selection-start-line="20" selection-start-column="13" selection-end-line="20" selection-end-column="13" />
-          <folding>
-            <element signature="e#218#235#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/parser/symbol/TypeSymbol.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="315">
-          <caret line="21" column="38" lean-forward="true" selection-start-line="21" selection-start-column="4" selection-end-line="21" selection-end-column="38" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -725,73 +582,167 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/parser/symbol/Symbol.h">
+    <entry file="file://$PROJECT_DIR$/parser/symbol/Table.cpp">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="345">
-          <caret line="23" column="20" lean-forward="false" selection-start-line="23" selection-start-column="20" selection-end-line="23" selection-end-column="20" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/parser/symbol/ArrayTypeSymbol.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="285">
-          <caret line="19" column="18" lean-forward="false" selection-start-line="19" selection-start-column="18" selection-end-line="19" selection-end-column="18" />
-          <folding />
+        <state relative-caret-position="180">
+          <caret line="12" column="1" lean-forward="true" selection-start-line="12" selection-start-column="1" selection-end-line="12" selection-end-column="1" />
+          <folding>
+            <element signature="e#132#151#0" expanded="false" />
+          </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/test/BubbleSort.Mod">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="165">
-          <caret line="11" column="7" lean-forward="false" selection-start-line="11" selection-start-column="7" selection-end-line="11" selection-end-column="7" />
+        <state relative-caret-position="178">
+          <caret line="15" column="7" lean-forward="false" selection-start-line="15" selection-start-column="7" selection-end-line="15" selection-end-column="7" />
           <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/parser/symbol/RecordTypeSymbol.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="375">
-          <caret line="25" column="2" lean-forward="false" selection-start-line="25" selection-start-column="2" selection-end-line="25" selection-end-column="2" />
-          <folding>
-            <element signature="e#220#235#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/parser/symbol/Table.h">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="405">
-          <caret line="30" column="35" lean-forward="false" selection-start-line="30" selection-start-column="35" selection-end-line="30" selection-end-column="35" />
+          <caret line="30" column="22" lean-forward="false" selection-start-line="30" selection-start-column="22" selection-end-line="30" selection-end-column="22" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/parser/symbol/ArrayTypeSymbol.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="375">
+          <caret line="26" column="52" lean-forward="false" selection-start-line="26" selection-start-column="52" selection-end-line="26" selection-end-column="52" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/parser/symbol/ParameterSymbol.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="360">
+          <caret line="25" column="52" lean-forward="false" selection-start-line="25" selection-start-column="52" selection-end-line="25" selection-end-column="52" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/parser/symbol/ProcedureSymbol.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="345">
+          <caret line="25" column="52" lean-forward="false" selection-start-line="25" selection-start-column="52" selection-end-line="25" selection-end-column="52" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/parser/symbol/RecordTypeSymbol.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="345">
+          <caret line="25" column="52" lean-forward="false" selection-start-line="25" selection-start-column="52" selection-end-line="25" selection-end-column="52" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/parser/symbol/VariableSymbol.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="345">
+          <caret line="24" column="52" lean-forward="false" selection-start-line="24" selection-start-column="52" selection-end-line="24" selection-end-column="52" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/parser/symbol/ArrayTypeSymbol.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="330">
+          <caret line="22" column="53" lean-forward="false" selection-start-line="22" selection-start-column="53" selection-end-line="22" selection-end-column="53" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/parser/symbol/ParameterSymbol.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="330">
+          <caret line="22" column="53" lean-forward="false" selection-start-line="22" selection-start-column="53" selection-end-line="22" selection-end-column="53" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/parser/symbol/VariableSymbol.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="270">
+          <caret line="18" column="52" lean-forward="false" selection-start-line="18" selection-start-column="52" selection-end-line="18" selection-end-column="52" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/parser/symbol/TypeSymbol.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="90">
+          <caret line="6" column="29" lean-forward="true" selection-start-line="6" selection-start-column="29" selection-end-line="6" selection-end-column="29" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/parser/symbol/TypeSymbol.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="135">
+          <caret line="9" column="41" lean-forward="false" selection-start-line="9" selection-start-column="41" selection-end-line="9" selection-end-column="41" />
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/parser/symbol/RecordTypeSymbol.cpp">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="345">
-          <caret line="23" column="1" lean-forward="true" selection-start-line="23" selection-start-column="1" selection-end-line="23" selection-end-column="1" />
+        <state relative-caret-position="375">
+          <caret line="25" column="53" lean-forward="false" selection-start-line="25" selection-start-column="53" selection-end-line="25" selection-end-column="53" />
           <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/parser/symbol/BasicTypeSymbol.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="210">
+          <caret line="14" column="53" lean-forward="false" selection-start-line="14" selection-start-column="53" selection-end-line="14" selection-end-column="53" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/parser/symbol/ProcedureSymbol.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="255">
+          <caret line="17" column="53" lean-forward="false" selection-start-line="17" selection-start-column="53" selection-end-line="17" selection-end-column="53" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/parser/symbol/BasicTypeSymbol.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="270">
+          <caret line="19" column="52" lean-forward="true" selection-start-line="19" selection-start-column="4" selection-end-line="19" selection-end-column="52" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/parser/symbol/Symbol.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="449">
+          <caret line="31" column="4" lean-forward="false" selection-start-line="31" selection-start-column="4" selection-end-line="31" selection-end-column="4" />
+          <folding>
+            <element signature="e#189#207#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/parser/Parser.cpp">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="441">
-          <caret line="308" column="14" lean-forward="false" selection-start-line="308" selection-start-column="14" selection-end-line="308" selection-end-column="14" />
-          <folding>
-            <element signature="e#123#142#0" expanded="true" />
-          </folding>
+        <state relative-caret-position="318">
+          <caret line="288" column="0" lean-forward="false" selection-start-line="288" selection-start-column="0" selection-end-line="288" selection-end-column="0" />
+          <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/parser/symbol/Table.cpp">
+    <entry file="file://$PROJECT_DIR$/parser/symbol/Symbol.cpp">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="465">
-          <caret line="31" column="0" lean-forward="false" selection-start-line="31" selection-start-column="0" selection-end-line="31" selection-end-column="0" />
-          <folding>
-            <element signature="e#132#151#0" expanded="true" />
-          </folding>
+        <state relative-caret-position="90">
+          <caret line="6" column="0" lean-forward="false" selection-start-line="6" selection-start-column="0" selection-end-line="6" selection-end-column="0" />
+          <folding />
         </state>
       </provider>
     </entry>
