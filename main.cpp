@@ -15,11 +15,13 @@ int main(const int argc, const char *argv[]) {
     }
     std::string filename = argv[1];
     auto logger = new Logger();
+    logger->setLevel(LogLevel::DEBUG);
     auto scanner = new Scanner(filename, logger);
     auto symbols = new Table(logger);
     auto parser = new Parser(scanner, symbols, logger);
     const ASTNode *node = parser->parse();
     delete parser;
     delete scanner;
+    logger->info("", "Compilation complete.");
     exit(0);
 }

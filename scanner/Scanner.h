@@ -22,6 +22,8 @@ enum class TokenType : char {
     kw_array, kw_record, kw_const, kw_type, kw_var, kw_of
 };
 
+std::ostream& operator<<(std::ostream &stream, const TokenType &type);
+
 struct Token {
     TokenType type;
     FilePos pos;
