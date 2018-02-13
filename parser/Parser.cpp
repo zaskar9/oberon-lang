@@ -28,6 +28,21 @@ const ASTNode* Parser::module() {
         token = scanner_->nextToken();
         if (token.type == TokenType::semicolon) {
             declarations();
+            token = scanner_->peekToken();
+            if (token.type == TokenType::kw_begin) {
+                scanner_->nextToken(); // skip BEGIN keyword
+                statement_sequence();
+            }
+            token = scanner_->nextToken();
+            if (token.type == TokenType::kw_end) {
+                ident();
+                token = scanner_->nextToken();
+                if (token.type != TokenType::period) {
+                    logger_->error(token.pos, ". expected.");
+                }
+            } else {
+                logger_->error(token.pos, "END expected.");
+            }
         } else {
             logger_->error(token.pos, "; expected.");
         }
@@ -519,6 +534,7 @@ const ASTNode* Parser::actual_parameters() {
     scanner_->nextToken(); // skip left parenthesis
     Token token = scanner_->peekToken();
     if (token.type == TokenType::rparen) {
+        scanner_->nextToken();
         return nullptr;
     }
     expression();
