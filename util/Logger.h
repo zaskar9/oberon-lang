@@ -6,6 +6,8 @@
 #ifndef OBERON0C_ERRORLOG_H
 #define OBERON0C_ERRORLOG_H
 
+#include <string>
+
 struct FilePos {
     std::string fileName;
     int lineNo, charNo;

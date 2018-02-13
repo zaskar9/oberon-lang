@@ -7,6 +7,7 @@
 #ifndef OBERON0C_SYMBOL_H
 #define OBERON0C_SYMBOL_H
 
+#include <memory>
 #include <ostream>
 #include <string>
 
