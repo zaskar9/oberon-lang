@@ -8,6 +8,12 @@ add_executable(oberon0c main.cpp
         scanner/Scanner.cpp scanner/Scanner.h
         parser/Parser.cpp parser/Parser.h
         parser/ast/ASTNode.cpp parser/ast/ASTNode.h
+        parser/ast/ExpressionNode.cpp parser/ast/ExpressionNode.h
+        parser/ast/BinaryExpressionNode.cpp parser/ast/BinaryExpressionNode.h
+        parser/ast/UnaryExpressionNode.cpp parser/ast/UnaryExpressionNode.h
+        parser/ast/BooleanConstantNode.cpp parser/ast/BooleanConstantNode.h
+        parser/ast/NumberConstantNode.cpp parser/ast/NumberConstantNode.h
+        parser/ast/StringConstantNode.cpp parser/ast/StringConstantNode.h
         parser/symbol/Table.cpp parser/symbol/Table.h
         parser/symbol/Symbol.cpp parser/symbol/Symbol.h
         parser/symbol/ParameterSymbol.cpp parser/symbol/ParameterSymbol.h

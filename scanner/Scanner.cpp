@@ -82,7 +82,7 @@ const Token Scanner::nextToken() {
                     read();
                     break;
                 case '*':
-                    token.type = TokenType::op_mult;
+                    token.type = TokenType::op_times;
                     read();
                     break;
                 case '+':
@@ -331,7 +331,7 @@ std::ostream& operator<<(std::ostream &stream, const TokenType &type) {
         case TokenType::rparen: result = ")"; break;
         case TokenType::lbrack: result = "["; break;
         case TokenType::rbrack: result = "]"; break;
-        case TokenType::op_mult: result = "*"; break;
+        case TokenType::op_times: result = "*"; break;
         case TokenType::op_div: result = "DIV"; break;
         case TokenType::op_mod: result = "MOD"; break;
         case TokenType::op_plus: result = "+"; break;

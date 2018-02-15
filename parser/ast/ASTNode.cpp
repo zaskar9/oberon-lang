@@ -6,20 +6,10 @@
 
 #include "ASTNode.h"
 
-ASTNode::ASTNode(const NodeType type) : type_(type), next_(nullptr), firstChild_(nullptr), lastChild_(nullptr) {
-
+ASTNode::ASTNode(const NodeType type) : type_(type), next_(nullptr) {
 }
 
-ASTNode::~ASTNode() {
-    if (firstChild_ != nullptr) {
-        const ASTNode *next = firstChild_;
-        while (next != nullptr) {
-            const ASTNode *previous = next;
-            next = previous->getNext();
-            delete previous;
-        }
-    }
-}
+ASTNode::~ASTNode() = default;
 
 const NodeType ASTNode::getNodeType() const {
     return type_;
@@ -33,16 +23,7 @@ const ASTNode* ASTNode::getNext() const {
     return next_;
 }
 
-const ASTNode* ASTNode::getFirstChild() const {
-    return firstChild_;
-}
-
-void ASTNode::addChild(ASTNode *child) {
-    if (firstChild_ == nullptr) {
-        firstChild_ = child;
-        lastChild_ = child;
-    } else {
-        lastChild_->setNext(child);
-        lastChild_ = child;
-    }
+std::ostream& operator<<(std::ostream &stream, const ASTNode &symbol) {
+    symbol.print(stream);
+    return stream;
 }

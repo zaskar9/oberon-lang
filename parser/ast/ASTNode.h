@@ -7,11 +7,13 @@
 #ifndef OBERON0C_AST_H
 #define OBERON0C_AST_H
 
+
 #include <list>
 #include <string>
+#include <ostream>
 
 enum class NodeType : char {
-    module, const_declaration, type_declaration, var_declaration, procedure_declaration
+    unary_expression, binary_expression, boolean_constant, number_constant, string_constant
 };
 
 class ASTNode {
@@ -19,17 +21,18 @@ class ASTNode {
 private:
     NodeType type_;
     ASTNode *next_;
-    ASTNode *firstChild_, *lastChild_;
 
     void setNext(ASTNode *next);
 
 public:
     explicit ASTNode(NodeType type);
-    virtual ~ASTNode();
+    virtual ~ASTNode() = 0;
+    
     const NodeType getNodeType() const;
     const ASTNode* getNext() const;
-    const ASTNode* getFirstChild() const;
-    void addChild(ASTNode *child);
+
+    virtual void print(std::ostream &stream) const = 0;
+    friend std::ostream& operator<<(std::ostream &stream, const ASTNode &node);
 
 };
 

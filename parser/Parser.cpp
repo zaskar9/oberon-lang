@@ -6,6 +6,11 @@
 
 #include <iostream>
 #include "Parser.h"
+#include "ast/BinaryExpressionNode.h"
+#include "ast/BooleanConstantNode.h"
+#include "ast/NumberConstantNode.h"
+#include "ast/StringConstantNode.h"
+#include "ast/UnaryExpressionNode.h"
 
 Parser::Parser(Scanner *scanner, Table *symbols, Logger *logger) :
         scanner_(scanner), symbols_(symbols), logger_(logger) {
@@ -170,64 +175,70 @@ const ASTNode* Parser::procedure_declaration() {
 }
 
 // expression = simple_expression [ ( "=" | "#" | "<" | "<=" | ">" | ">=" ) simple_expression ] .
-const ASTNode* Parser::expression() {
+const std::shared_ptr<const ExpressionNode> Parser::expression() {
     logger_->debug("", "expression");
-    simple_expression();
+    std::shared_ptr<const ExpressionNode> lhs = simple_expression();
     Token token = scanner_->peekToken();
-    switch (token.type) {
-        case TokenType::op_eq:
-        case TokenType::op_neq:
-        case TokenType::op_lt:
-        case TokenType::op_leq:
-        case TokenType::op_gt:
-        case TokenType::op_geq:
+    if (token.type == TokenType::op_eq
+        || token.type == TokenType::op_neq
+        || token.type == TokenType::op_lt
+        || token.type == TokenType::op_leq
+        || token.type == TokenType::op_gt
+        || token.type == TokenType::op_geq) {
             token = scanner_->nextToken();
-            simple_expression();
-            break;
-        default:
-            // skip others
-            break;
+            OperatorType op = token_to_operator(token.type);
+            std::shared_ptr<const ExpressionNode> rhs = simple_expression();
+            return std::make_shared<BinaryExpressionNode>(op, lhs, rhs);
     }
-    return nullptr;
+    std::clog << *lhs << std::endl;
+    return lhs;
 }
 
 // simple_expression = [ "+" | "-" ] term { ( "+" | "-" | OR ) term } .
-const ASTNode* Parser::simple_expression() {
+const std::shared_ptr<const ExpressionNode> Parser::simple_expression() {
     logger_->debug("", "simple_expression");
+    std::shared_ptr<const ExpressionNode> expr;
     Token token = scanner_->peekToken();
-    if (token.type == TokenType::op_plus || token.type == TokenType::op_minus) {
-        token = scanner_->nextToken();
+    if (token.type == TokenType::op_plus) {
+        scanner_->nextToken();
+        expr = term();
+    } else if (token.type == TokenType::op_minus) {
+        scanner_->nextToken();
+        expr = std::make_shared<UnaryExpressionNode>(OperatorType::NEG, term());
+    } else {
+        expr = term();
     }
-    term();
     token = scanner_->peekToken();
     while (token.type == TokenType::op_plus
            || token.type == TokenType::op_minus
            || token.type == TokenType::op_or) {
         token = scanner_->nextToken();
-        term();
+        OperatorType op = token_to_operator(token.type);
+        expr = std::make_shared<BinaryExpressionNode>(op, expr, term());
         token = scanner_->peekToken();
     }
-    return nullptr;
+    return expr;
 }
 
 // term = factor { ( "*" | "DIV" | "MOD" | "&" ) factor } .
-const ASTNode* Parser::term() {
+const std::shared_ptr<const ExpressionNode> Parser::term() {
     logger_->debug("", "term");
-    factor();
+    std::shared_ptr<const ExpressionNode> expr = factor();
     Token token = scanner_->peekToken();
-    while (token.type == TokenType::op_mult
+    while (token.type == TokenType::op_times
            || token.type == TokenType::op_div
            || token.type == TokenType::op_mod
            || token.type == TokenType::op_and) {
         token = scanner_->nextToken();
-        factor();
+        OperatorType op = token_to_operator(token.type);
+        expr = std::make_shared<BinaryExpressionNode>(op, expr, factor());
         token = scanner_->peekToken();
     }
-    return nullptr;
+    return expr;
 }
 
 // factor = ident { selector } | number | string | "TRUE" | "FALSE" | "(" expression ")" | "~" factor .
-const ASTNode* Parser::factor() {
+const std::shared_ptr<const ExpressionNode> Parser::factor() {
     logger_->debug("", "factor");
     Token token = scanner_->peekToken();
     if (token.type == TokenType::const_ident) {
@@ -239,24 +250,27 @@ const ASTNode* Parser::factor() {
         }
     } else if (token.type == TokenType::const_number) {
         scanner_->nextToken();
-        const int numValue = scanner_->getNumValue();
+        return std::make_shared<NumberConstantNode>(scanner_->getNumValue());
     } else if (token.type == TokenType::const_string) {
         scanner_->nextToken();
-        const std::string strValue = scanner_->getStrValue();
+        return std::make_shared<StringConstantNode>(scanner_->getStrValue());
     } else if (token.type == TokenType::const_true) {
         scanner_->nextToken();
+        return std::make_shared<BooleanConstantNode>(true);
     } else if (token.type == TokenType::const_false) {
         scanner_->nextToken();
+        return std::make_shared<BooleanConstantNode>(false);
     } else if (token.type == TokenType::lparen) {
         scanner_->nextToken();
-        expression();
+        std::shared_ptr<const ExpressionNode> expr = expression();
         token = scanner_->nextToken();
         if (token.type != TokenType::rparen) {
             logger_->error(token.pos, ") expected.");
         }
+        return expr;
     } else if (token.type == TokenType::op_not) {
         scanner_->nextToken();
-        factor();
+        return std::make_shared<UnaryExpressionNode>(OperatorType::NOT, factor());
     } else {
         logger_->error(token.pos, "unexpected token.");
     }
@@ -297,7 +311,7 @@ const std::shared_ptr<const ArrayTypeSymbol> Parser::array_type() {
     Token token = scanner_->nextToken();
     if (token.type == TokenType::kw_of) {
         std::shared_ptr<const TypeSymbol> ts = type();
-        std::make_shared<ArrayTypeSymbol>(0, ts);
+        return std::make_shared<ArrayTypeSymbol>(0, ts);
     } else {
         logger_->error(token.pos, "OF expected.");
     }
@@ -351,7 +365,7 @@ void Parser::ident_list(std::list<std::string> &idents) {
 }
 
 // procedure_heading = "PROCEDURE" ident [ formal_parameters ] .
-const std::shared_ptr<ProcedureSymbol> Parser::procedure_heading() {
+const std::shared_ptr<const ProcedureSymbol> Parser::procedure_heading() {
     logger_->debug("", "procedure_heading");
     scanner_->nextToken(); // skip PROCEDURE keyword
     std::shared_ptr<ProcedureSymbol> ps = std::make_shared<ProcedureSymbol>(ident());
@@ -564,3 +578,23 @@ const ASTNode* Parser::selector() {
     return nullptr;
 }
 
+OperatorType token_to_operator(TokenType token) {
+    switch(token) {
+        case TokenType::op_eq:    return OperatorType::EQ;
+        case TokenType::op_neq:   return OperatorType::NEQ;
+        case TokenType::op_leq:   return OperatorType::LEQ;
+        case TokenType::op_geq:   return OperatorType::GEQ;
+        case TokenType::op_lt:    return OperatorType::LT;
+        case TokenType::op_gt:    return OperatorType::GT;
+        case TokenType::op_times: return OperatorType::TIMES;
+        case TokenType::op_div:   return OperatorType::DIV;
+        case TokenType::op_mod:   return OperatorType::MOD;
+        case TokenType::op_plus:  return OperatorType::PLUS;
+        case TokenType::op_minus: return OperatorType::MINUS;
+        case TokenType::op_and:   return OperatorType::AND;
+        case TokenType::op_or:    return OperatorType::OR;
+        case TokenType::op_not:   return OperatorType::NOT;
+        default:
+            exit(1);
+    }
+}

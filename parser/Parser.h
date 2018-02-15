@@ -11,6 +11,7 @@
 #include "../scanner/Scanner.h"
 #include "../util/Logger.h"
 #include "ast/ASTNode.h"
+#include "ast/ExpressionNode.h"
 #include "symbol/Table.h"
 #include "symbol/TypeSymbol.h"
 #include "symbol/ProcedureSymbol.h"
@@ -32,16 +33,16 @@ private:
     void type_declarations();
     const ASTNode* var_declarations();
     const ASTNode* procedure_declaration();
-    const ASTNode* expression();
-    const ASTNode* simple_expression();
-    const ASTNode* term();
-    const ASTNode* factor();
+    const std::shared_ptr<const ExpressionNode> expression();
+    const std::shared_ptr<const ExpressionNode> simple_expression();
+    const std::shared_ptr<const ExpressionNode> term();
+    const std::shared_ptr<const ExpressionNode> factor();
     const std::shared_ptr<const TypeSymbol> type();
     const std::shared_ptr<const ArrayTypeSymbol> array_type();
     const std::shared_ptr<const RecordTypeSymbol> record_type();
     void field_list(const std::shared_ptr<RecordTypeSymbol> &rts);
     void ident_list(std::list<std::string> &idents);
-    const std::shared_ptr<ProcedureSymbol> procedure_heading();
+    const std::shared_ptr<const ProcedureSymbol> procedure_heading();
     const ASTNode* procedure_body();
     void formal_parameters(const std::shared_ptr<ProcedureSymbol> &ps);
     void fp_section(const std::shared_ptr<ProcedureSymbol> &ps);
@@ -60,5 +61,7 @@ public:
     const ASTNode* parse();
 
 };
+
+static OperatorType token_to_operator(TokenType token);
 
 #endif //OBERON0C_PARSER_H
