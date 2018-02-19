@@ -19,7 +19,7 @@ void Logger::log(const LogLevel level, const std::string &fileName, int lineNo, 
                  const std::string &msg) const {
     if (level >= level_) {
         std::ostream *out = (level == LogLevel::ERROR) ? err_ : out_;
-        if (fileName != "") {
+        if (!fileName.empty()) {
             *out << fileName;
             if (lineNo >= 0) {
                 *out << ":" << lineNo;

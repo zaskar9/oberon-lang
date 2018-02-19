@@ -17,7 +17,7 @@ private:
     std::shared_ptr<const TypeSymbol> type_;
 
 public:
-    VariableSymbol(const std::string &name, const std::shared_ptr<const TypeSymbol> type);
+    VariableSymbol(const std::string &name, std::shared_ptr<const TypeSymbol> type);
     ~VariableSymbol() override;
 
     const std::shared_ptr<const TypeSymbol> getType() const;

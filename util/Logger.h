@@ -23,17 +23,15 @@ private:
     LogLevel level_;
     std::ostream *out_, *err_;
 
-    void log(const LogLevel level, const std::string &fileName, int lineNo, int charNo, const std::string &msg) const;
-    void log(const LogLevel level, const std::string &fileName, const std::string &msg) const;
+    void log(LogLevel level, const std::string &fileName, int lineNo, int charNo, const std::string &msg) const;
+    void log(LogLevel level, const std::string &fileName, const std::string &msg) const;
 
 public:
     explicit Logger();
     explicit Logger(LogLevel level, std::ostream *out, std::ostream *err);
     ~Logger();
 
-    void log(const LogLevel level, const FilePos pos, const std::string &msg) const;
-
-    void error(const FilePos pos, const std::string &msg) const;
+    void error(FilePos pos, const std::string &msg) const;
     void error(const std::string &fileName, const std::string &msg) const;
     void info(const std::string &fileName, const std::string &msg) const;
     void debug(const std::string &fileName, const std::string &msg) const;

@@ -24,7 +24,7 @@ private:
     void setNext(ASTNode *next);
 
 public:
-    explicit ASTNode(const NodeType type);
+    explicit ASTNode(NodeType type);
     virtual ~ASTNode();
     const NodeType getNodeType() const;
     const ASTNode* getNext() const;

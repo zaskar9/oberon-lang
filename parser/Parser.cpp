@@ -6,8 +6,6 @@
 
 #include <iostream>
 #include "Parser.h"
-#include "symbol/ParameterSymbol.h"
-#include "symbol/ProcedureSymbol.h"
 
 Parser::Parser(Scanner *scanner, Table *symbols, Logger *logger) :
         scanner_(scanner), symbols_(symbols), logger_(logger) {
