@@ -8,15 +8,15 @@
 #define OBERON0C_STRINGCONSTANTNODE_H
 
 
-#include "ExpressionNode.h"
+#include "ConstantNode.h"
 
-class StringConstantNode : public ExpressionNode {
+class StringConstantNode final : public ConstantNode {
 
 private:
     std::string value_;
 
 public:
-    StringConstantNode(const std::string &value);
+    explicit StringConstantNode(const std::string &value);
     ~StringConstantNode() override;
 
     const std::string getValue() const;

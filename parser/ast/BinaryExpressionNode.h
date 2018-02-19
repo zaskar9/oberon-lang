@@ -11,7 +11,7 @@
 #include <memory>
 #include "ExpressionNode.h"
 
-class BinaryExpressionNode : public ExpressionNode {
+class BinaryExpressionNode final : public ExpressionNode {
 
 private:
     OperatorType op_;
@@ -21,6 +21,9 @@ public:
     BinaryExpressionNode(OperatorType op, std::shared_ptr<const ExpressionNode> lhs,
                          std::shared_ptr<const ExpressionNode> rhs);
     ~BinaryExpressionNode() override;
+
+    bool isConstant() const override;
+    ExpressionType checkType() const override;
 
     const OperatorType getOperator() const;
     const std::shared_ptr<const ExpressionNode> getLeftExpression() const;

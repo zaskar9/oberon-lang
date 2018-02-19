@@ -13,6 +13,19 @@ BinaryExpressionNode::BinaryExpressionNode(const OperatorType op, const std::sha
 
 BinaryExpressionNode::~BinaryExpressionNode() = default;
 
+bool BinaryExpressionNode::isConstant() const {
+    return lhs_->isConstant() && rhs_->isConstant();
+}
+
+ExpressionType BinaryExpressionNode::checkType() const {
+    ExpressionType lhsType = lhs_->checkType();
+    ExpressionType rhsType = rhs_->checkType();
+    if (lhsType == rhsType) {
+        return lhsType;
+    }
+    return ExpressionType::UNDEF;
+}
+
 const OperatorType BinaryExpressionNode::getOperator() const {
     return op_;
 }

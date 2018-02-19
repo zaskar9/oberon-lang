@@ -8,9 +8,9 @@
 #define OBERON0C_BOOLEANCONSTANTNODE_H
 
 
-#include "ExpressionNode.h"
+#include "ConstantNode.h"
 
-class BooleanConstantNode : public ExpressionNode {
+class BooleanConstantNode final : public ConstantNode {
 
 private:
     bool value_;

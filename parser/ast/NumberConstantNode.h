@@ -8,9 +8,9 @@
 #define OBERON0C_NUMBERCONSTANTNODE_H
 
 
-#include "ExpressionNode.h"
+#include "ConstantNode.h"
 
-class NumberConstantNode : public ExpressionNode {
+class NumberConstantNode final : public ConstantNode {
 
 private:
     int value_;

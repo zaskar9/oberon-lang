@@ -18,11 +18,18 @@ enum class OperatorType : char {
 
 std::ostream& operator<<(std::ostream &stream, const OperatorType &op);
 
+enum class ExpressionType : char {
+    BOOLEAN, INTEGER, STRING, UNDEF
+};
+
 class ExpressionNode : public ASTNode {
 
 public:
     explicit ExpressionNode(NodeType type);
     ~ExpressionNode() override = 0;
+
+    virtual bool isConstant() const = 0;
+    virtual ExpressionType checkType() const = 0;
 
 };
 

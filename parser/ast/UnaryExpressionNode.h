@@ -11,7 +11,7 @@
 #include <memory>
 #include "ExpressionNode.h"
 
-class UnaryExpressionNode : public ExpressionNode {
+class UnaryExpressionNode final : public ExpressionNode {
 
 private:
     OperatorType op_;
@@ -20,6 +20,9 @@ private:
 public:
     UnaryExpressionNode(OperatorType op, std::shared_ptr<const ExpressionNode> expr);
     ~UnaryExpressionNode() override;
+
+    bool isConstant() const override;
+    ExpressionType checkType() const override;
 
     const OperatorType getOperator() const;
     const std::shared_ptr<const ExpressionNode> getExpression() const;

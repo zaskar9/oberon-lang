@@ -22,4 +22,4 @@ add_executable(oberon0c main.cpp
         parser/symbol/ProcedureSymbol.cpp parser/symbol/ProcedureSymbol.h
         parser/symbol/ArrayTypeSymbol.cpp parser/symbol/ArrayTypeSymbol.h
         parser/symbol/RecordTypeSymbol.cpp parser/symbol/RecordTypeSymbol.h
-        parser/symbol/VariableSymbol.cpp parser/symbol/VariableSymbol.h)
+        parser/symbol/VariableSymbol.cpp parser/symbol/VariableSymbol.h parser/ast/ConstantNode.cpp parser/ast/ConstantNode.h)

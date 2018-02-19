@@ -7,7 +7,7 @@
 #include "StringConstantNode.h"
 
 StringConstantNode::StringConstantNode(const std::string &value) :
-        ExpressionNode(NodeType::string_constant), value_(value) {
+        ConstantNode(NodeType::string_constant, ExpressionType::STRING), value_(value) {
 }
 
 StringConstantNode::~StringConstantNode() = default;

@@ -190,7 +190,7 @@ const std::shared_ptr<const ExpressionNode> Parser::expression() {
             std::shared_ptr<const ExpressionNode> rhs = simple_expression();
             return std::make_shared<BinaryExpressionNode>(op, lhs, rhs);
     }
-    std::clog << *lhs << std::endl;
+    // std::clog << *lhs << std::endl;
     return lhs;
 }
 
@@ -242,7 +242,11 @@ const std::shared_ptr<const ExpressionNode> Parser::factor() {
     logger_->debug("", "factor");
     Token token = scanner_->peekToken();
     if (token.type == TokenType::const_ident) {
-        ident();
+        std::string name = ident();
+        auto symbol = symbols_->lookup(name);
+        if (symbol == nullptr) {
+            logger_->error(token.pos, "undefined identifier: " + name + ".");
+        }
         token = scanner_->peekToken();
         if (token.type == TokenType::period
             || token.type == TokenType::lbrack) {

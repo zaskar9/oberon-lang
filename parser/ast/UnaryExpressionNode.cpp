@@ -6,11 +6,19 @@
 
 #include "UnaryExpressionNode.h"
 
-UnaryExpressionNode::UnaryExpressionNode(OperatorType op, std::shared_ptr<const ExpressionNode> expr) :
+UnaryExpressionNode::UnaryExpressionNode(const OperatorType op, const std::shared_ptr<const ExpressionNode> expr) :
         ExpressionNode(NodeType::unary_expression), op_(op), expr_(expr) {
 }
 
 UnaryExpressionNode::~UnaryExpressionNode() = default;
+
+bool UnaryExpressionNode::isConstant() const {
+    return expr_->isConstant();
+}
+
+ExpressionType UnaryExpressionNode::checkType() const {
+    return expr_->checkType();
+}
 
 const OperatorType UnaryExpressionNode::getOperator() const {
     return op_;

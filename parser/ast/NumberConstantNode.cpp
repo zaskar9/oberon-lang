@@ -6,7 +6,8 @@
 
 #include "NumberConstantNode.h"
 
-NumberConstantNode::NumberConstantNode(int value) : ExpressionNode(NodeType::number_constant), value_(value) {
+NumberConstantNode::NumberConstantNode(int value) :
+        ConstantNode(NodeType::number_constant, ExpressionType::INTEGER), value_(value) {
 }
 
 NumberConstantNode::~NumberConstantNode() = default;
