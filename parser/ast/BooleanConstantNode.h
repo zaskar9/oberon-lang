@@ -16,7 +16,7 @@ private:
     bool value_;
 
 public:
-    BooleanConstantNode(bool value);
+    BooleanConstantNode(FilePos pos, bool value);
     ~BooleanConstantNode() override;
 
     const bool getValue() const;

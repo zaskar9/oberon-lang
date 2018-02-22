@@ -6,9 +6,10 @@
 
 #include "BinaryExpressionNode.h"
 
-BinaryExpressionNode::BinaryExpressionNode(const OperatorType op, const std::shared_ptr<const ExpressionNode> lhs,
+BinaryExpressionNode::BinaryExpressionNode(const FilePos pos, const OperatorType op,
+                                           const std::shared_ptr<const ExpressionNode> lhs,
                                            const std::shared_ptr<const ExpressionNode> rhs) :
-        ExpressionNode(NodeType::binary_expression), op_(op), lhs_(lhs), rhs_(rhs) {
+        ExpressionNode(NodeType::binary_expression, pos), op_(op), lhs_(lhs), rhs_(rhs) {
 }
 
 BinaryExpressionNode::~BinaryExpressionNode() = default;

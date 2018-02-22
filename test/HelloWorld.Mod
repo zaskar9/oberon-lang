@@ -1,5 +1,7 @@
 MODULE HelloWorld;
 
+CONST Message = "Hello World!\n";
+
 BEGIN
-	Write("Hello World!\n");
+	Write(Message);
 END HelloWorld.

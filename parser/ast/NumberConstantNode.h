@@ -16,7 +16,7 @@ private:
     int value_;
 
 public:
-    explicit NumberConstantNode(int value);
+    explicit NumberConstantNode(FilePos pos, int value);
     ~NumberConstantNode() override;
 
     const int getValue() const;

@@ -14,7 +14,7 @@ private:
     ExpressionType exprType_;
 
 public:
-    explicit ConstantNode(NodeType nodeType, ExpressionType exprType);
+    explicit ConstantNode(NodeType nodeType, FilePos pos, ExpressionType exprType);
     virtual ~ConstantNode();
 
     virtual bool isConstant() const final;

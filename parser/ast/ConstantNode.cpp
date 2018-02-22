@@ -4,8 +4,8 @@
 
 #include "ConstantNode.h"
 
-ConstantNode::ConstantNode(const NodeType nodeType, const ExpressionType exprType) :
-        ExpressionNode(nodeType), exprType_(exprType) {
+ConstantNode::ConstantNode(const NodeType nodeType, const FilePos pos, const ExpressionType exprType) :
+        ExpressionNode(nodeType, pos), exprType_(exprType) {
 }
 
 ConstantNode::~ConstantNode() = default;

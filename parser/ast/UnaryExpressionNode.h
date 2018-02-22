@@ -18,7 +18,7 @@ private:
     std::shared_ptr<const ExpressionNode> expr_;
 
 public:
-    UnaryExpressionNode(OperatorType op, std::shared_ptr<const ExpressionNode> expr);
+    UnaryExpressionNode(FilePos pos, OperatorType op, std::shared_ptr<const ExpressionNode> expr);
     ~UnaryExpressionNode() override;
 
     bool isConstant() const override;

@@ -25,7 +25,7 @@ enum class ExpressionType : char {
 class ExpressionNode : public ASTNode {
 
 public:
-    explicit ExpressionNode(NodeType type);
+    explicit ExpressionNode(NodeType type, FilePos pos);
     ~ExpressionNode() override = 0;
 
     virtual bool isConstant() const = 0;

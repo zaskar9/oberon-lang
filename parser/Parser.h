@@ -17,6 +17,7 @@
 #include "symbol/ProcedureSymbol.h"
 #include "symbol/ArrayTypeSymbol.h"
 #include "symbol/RecordTypeSymbol.h"
+#include "symbol/ConstantSymbol.h"
 
 class Parser
 {
@@ -54,6 +55,11 @@ private:
     const ASTNode* while_statement();
     const ASTNode* actual_parameters();
     const ASTNode* selector();
+    const std::shared_ptr<const ConstantSymbol> fold(const std::string &name,
+                                                     const std::shared_ptr<const ExpressionNode> &expr);
+    const int foldNumber(const std::shared_ptr<const ExpressionNode> &expr);
+    const bool foldBoolean(const std::shared_ptr<const ExpressionNode> &expr);
+    const std::string foldString(const std::shared_ptr<const ExpressionNode> &expr);
 
 public:
     explicit Parser(Scanner *scanner, Table *symbols, Logger *logger);

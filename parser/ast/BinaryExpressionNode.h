@@ -18,7 +18,7 @@ private:
     std::shared_ptr<const ExpressionNode> lhs_, rhs_;
 
 public:
-    BinaryExpressionNode(OperatorType op, std::shared_ptr<const ExpressionNode> lhs,
+    BinaryExpressionNode(FilePos pos, OperatorType op, std::shared_ptr<const ExpressionNode> lhs,
                          std::shared_ptr<const ExpressionNode> rhs);
     ~BinaryExpressionNode() override;
 

@@ -11,6 +11,7 @@ add_executable(oberon0c main.cpp
         parser/ast/ExpressionNode.cpp parser/ast/ExpressionNode.h
         parser/ast/BinaryExpressionNode.cpp parser/ast/BinaryExpressionNode.h
         parser/ast/UnaryExpressionNode.cpp parser/ast/UnaryExpressionNode.h
+        parser/ast/ConstantNode.cpp parser/ast/ConstantNode.h
         parser/ast/BooleanConstantNode.cpp parser/ast/BooleanConstantNode.h
         parser/ast/NumberConstantNode.cpp parser/ast/NumberConstantNode.h
         parser/ast/StringConstantNode.cpp parser/ast/StringConstantNode.h
@@ -22,4 +23,8 @@ add_executable(oberon0c main.cpp
         parser/symbol/ProcedureSymbol.cpp parser/symbol/ProcedureSymbol.h
         parser/symbol/ArrayTypeSymbol.cpp parser/symbol/ArrayTypeSymbol.h
         parser/symbol/RecordTypeSymbol.cpp parser/symbol/RecordTypeSymbol.h
-        parser/symbol/VariableSymbol.cpp parser/symbol/VariableSymbol.h parser/ast/ConstantNode.cpp parser/ast/ConstantNode.h)
+        parser/symbol/VariableSymbol.cpp parser/symbol/VariableSymbol.h
+        parser/symbol/ConstantSymbol.cpp parser/symbol/ConstantSymbol.h
+        parser/symbol/NumberConstantSymbol.cpp parser/symbol/NumberConstantSymbol.h
+        parser/symbol/BooleanConstantSymbol.cpp parser/symbol/BooleanConstantSymbol.h
+        parser/symbol/StringConstantSymbol.cpp parser/symbol/StringConstantSymbol.h)

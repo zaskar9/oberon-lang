@@ -12,7 +12,7 @@
 #include <string>
 
 enum class SymbolType {
-    array_type, record_type, basic_type, boolean_const, number_const, variable, parameter, procedure
+    array_type, record_type, basic_type, number_const, boolean_const, string_const, variable, parameter, procedure
 };
 
 class Symbol

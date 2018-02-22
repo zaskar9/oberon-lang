@@ -7,8 +7,8 @@
 
 #include "BooleanConstantNode.h"
 
-BooleanConstantNode::BooleanConstantNode(bool value) :
-        ConstantNode(NodeType::boolean_constant, ExpressionType::BOOLEAN), value_(value) {
+BooleanConstantNode::BooleanConstantNode(const FilePos pos, const bool value) :
+        ConstantNode(NodeType::boolean_constant, pos, ExpressionType::BOOLEAN), value_(value) {
 }
 
 BooleanConstantNode::~BooleanConstantNode() = default;

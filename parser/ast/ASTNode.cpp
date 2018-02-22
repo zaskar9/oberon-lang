@@ -6,7 +6,7 @@
 
 #include "ASTNode.h"
 
-ASTNode::ASTNode(const NodeType type) : type_(type), next_(nullptr) {
+ASTNode::ASTNode(const NodeType type, const FilePos pos) : type_(type), pos_(pos) {
 }
 
 ASTNode::~ASTNode() = default;
@@ -15,12 +15,8 @@ const NodeType ASTNode::getNodeType() const {
     return type_;
 }
 
-void ASTNode::setNext(ASTNode *next) {
-    next_ = next;
-}
-
-const ASTNode* ASTNode::getNext() const {
-    return next_;
+const FilePos ASTNode::getFilePos() const {
+    return pos_;
 }
 
 std::ostream& operator<<(std::ostream &stream, const ASTNode &symbol) {

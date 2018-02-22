@@ -16,7 +16,7 @@ private:
     std::string value_;
 
 public:
-    explicit StringConstantNode(const std::string &value);
+    explicit StringConstantNode(FilePos pos, const std::string &value);
     ~StringConstantNode() override;
 
     const std::string getValue() const;

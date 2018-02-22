@@ -1,5 +1,5 @@
 /*
- * Header file of the base class of the variable symbol used by the Oberon-0 compiler.
+ * Header file of the class for the variable symbol used by the Oberon-0 compiler.
  *
  * Created by Michael Grossniklaus on 2/9/18.
  */

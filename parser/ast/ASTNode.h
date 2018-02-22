@@ -11,6 +11,7 @@
 #include <list>
 #include <string>
 #include <ostream>
+#include "../../util/Logger.h"
 
 enum class NodeType : char {
     unary_expression, binary_expression, boolean_constant, number_constant, string_constant
@@ -20,16 +21,14 @@ class ASTNode {
 
 private:
     NodeType type_;
-    ASTNode *next_;
-
-    void setNext(ASTNode *next);
+    FilePos pos_;
 
 public:
-    explicit ASTNode(NodeType type);
+    explicit ASTNode(NodeType type, FilePos pos);
     virtual ~ASTNode() = 0;
     
     const NodeType getNodeType() const;
-    const ASTNode* getNext() const;
+    const FilePos getFilePos() const;
 
     virtual void print(std::ostream &stream) const = 0;
     friend std::ostream& operator<<(std::ostream &stream, const ASTNode &node);

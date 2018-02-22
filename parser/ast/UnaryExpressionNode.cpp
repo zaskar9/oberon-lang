@@ -6,8 +6,9 @@
 
 #include "UnaryExpressionNode.h"
 
-UnaryExpressionNode::UnaryExpressionNode(const OperatorType op, const std::shared_ptr<const ExpressionNode> expr) :
-        ExpressionNode(NodeType::unary_expression), op_(op), expr_(expr) {
+UnaryExpressionNode::UnaryExpressionNode(const FilePos pos, const OperatorType op,
+                                         const std::shared_ptr<const ExpressionNode> expr) :
+        ExpressionNode(NodeType::unary_expression, pos), op_(op), expr_(expr) {
 }
 
 UnaryExpressionNode::~UnaryExpressionNode() = default;

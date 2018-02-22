@@ -6,8 +6,8 @@
 
 #include "StringConstantNode.h"
 
-StringConstantNode::StringConstantNode(const std::string &value) :
-        ConstantNode(NodeType::string_constant, ExpressionType::STRING), value_(value) {
+StringConstantNode::StringConstantNode(const FilePos pos, const std::string &value) :
+        ConstantNode(NodeType::string_constant, pos, ExpressionType::STRING), value_(value) {
 }
 
 StringConstantNode::~StringConstantNode() = default;
