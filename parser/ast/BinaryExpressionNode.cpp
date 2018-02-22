@@ -22,6 +22,14 @@ ExpressionType BinaryExpressionNode::checkType() const {
     ExpressionType lhsType = lhs_->checkType();
     ExpressionType rhsType = rhs_->checkType();
     if (lhsType == rhsType) {
+        if (op_ == OperatorType::EQ
+            || op_ == OperatorType::NEQ
+            || op_ == OperatorType::LT
+            || op_ == OperatorType::LEQ
+            || op_ == OperatorType::GT
+            || op_ == OperatorType::GEQ) {
+            return ExpressionType::BOOLEAN;
+        }
         return lhsType;
     }
     return ExpressionType::UNDEF;

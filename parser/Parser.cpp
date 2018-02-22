@@ -105,9 +105,6 @@ const ASTNode* Parser::const_declarations() {
             auto expr = expression();
             if (expr->isConstant()) {
                 auto symbol = fold(name, expr);
-                if (symbol->getSymbolType() == SymbolType::number_const) {
-                    std::cerr << std::dynamic_pointer_cast<const NumberConstantSymbol>(symbol)->getValue() << std::endl;
-                }
                 symbols_->insert(symbol);
             } else {
                 logger_->error(token.pos, "expression must be constant.");
@@ -202,7 +199,6 @@ const std::shared_ptr<const ExpressionNode> Parser::expression() {
             std::shared_ptr<const ExpressionNode> rhs = simple_expression();
             return std::make_shared<BinaryExpressionNode>(token.pos, op, lhs, rhs);
     }
-    // std::clog << *lhs << std::endl;
     return lhs;
 }
 
@@ -656,13 +652,43 @@ const bool Parser::foldBoolean(const std::shared_ptr<const ExpressionNode> &expr
         }
     } else if (expr->getNodeType() == NodeType::binary_expression) {
         auto binExpr = std::dynamic_pointer_cast<const BinaryExpressionNode>(expr);
-        bool lValue = foldBoolean(binExpr->getLeftExpression());
-        bool rValue = foldBoolean(binExpr->getRightExpression());
-        switch (binExpr->getOperator()) {
-            case OperatorType::AND: return lValue && rValue;
-            case OperatorType::OR:  return lValue || rValue;
-            default:
-                logger_->error(binExpr->getFilePos(), "incompatible operator.");
+        OperatorType op = binExpr->getOperator();
+        auto lhs = binExpr->getLeftExpression();
+        auto rhs = binExpr->getRightExpression();
+        ExpressionType type = lhs->checkType();
+        if (type == ExpressionType::BOOLEAN) {
+            bool lValue = foldBoolean(binExpr->getLeftExpression());
+            bool rValue = foldBoolean(binExpr->getRightExpression());
+            switch (op) {
+                case OperatorType::AND: return lValue && rValue;
+                case OperatorType::OR:  return lValue || rValue;
+                default:
+                    logger_->error(binExpr->getFilePos(), "incompatible operator.");
+            }
+        } else if (type == ExpressionType::INTEGER) {
+            int lValue = foldNumber(lhs);
+            int rValue = foldNumber(rhs);
+            switch (op) {
+                case OperatorType::EQ:  return lValue == rValue;
+                case OperatorType::NEQ: return lValue != rValue;
+                case OperatorType::LT:  return lValue < rValue;
+                case OperatorType::LEQ: return lValue <= rValue;
+                case OperatorType::GT:  return lValue > rValue;
+                case OperatorType::GEQ: return lValue >= rValue;
+                default:
+                    logger_->error(binExpr->getFilePos(), "incompatible operator.");
+            }
+        } else if (type == ExpressionType::STRING) {
+            std::string lValue = foldString(lhs);
+            std::string rValue = foldString(rhs);
+            switch (op) {
+                case OperatorType::EQ:  return lValue == rValue;
+                case OperatorType::NEQ: return lValue != rValue;
+                default:
+                    logger_->error(binExpr->getFilePos(), "incompatible operator.");
+            }
+        } else {
+            logger_->error(expr->getFilePos(), "incompatible expression.");
         }
     } else if (expr->getNodeType() == NodeType::boolean_constant) {
         auto boolConst = std::dynamic_pointer_cast<const BooleanConstantNode>(expr);
@@ -679,10 +705,14 @@ const std::string Parser::foldString(const std::shared_ptr<const ExpressionNode>
         std::string lValue = foldString(binExpr->getLeftExpression());
         std::string rValue = foldString(binExpr->getRightExpression());
         switch (binExpr->getOperator()) {
-            case OperatorType::PLUS: return lValue + rValue;
+            case OperatorType::PLUS:
+                return std::string(lValue + rValue);
             default:
                 logger_->error(binExpr->getFilePos(), "incompatible operator.");
         }
+    } else if (expr->getNodeType() == NodeType::string_constant) {
+        auto stringConst = std::dynamic_pointer_cast<const StringConstantNode>(expr);
+        return stringConst->getValue();
     } else {
         logger_->error(expr->getFilePos(), "incompatible expression.");
     }

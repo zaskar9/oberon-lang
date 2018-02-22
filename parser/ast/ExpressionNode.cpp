@@ -25,7 +25,7 @@ std::ostream& operator<<(std::ostream &stream, const OperatorType &op) {
         case OperatorType::MOD: result = "MOD"; break;
         case OperatorType::PLUS: result = "+"; break;
         case OperatorType::MINUS: result = "-"; break;
-        case OperatorType::AND: result = "AND"; break;
+        case OperatorType::AND: result = "&"; break;
         case OperatorType::OR: result = "OR"; break;
         case OperatorType::NOT: result = "~"; break;
         case OperatorType::NEG: result = "-"; break;
