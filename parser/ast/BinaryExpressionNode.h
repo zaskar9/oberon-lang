@@ -15,19 +15,19 @@ class BinaryExpressionNode final : public ExpressionNode {
 
 private:
     OperatorType op_;
-    std::shared_ptr<const ExpressionNode> lhs_, rhs_;
+    std::unique_ptr<const ExpressionNode> lhs_, rhs_;
 
 public:
-    BinaryExpressionNode(FilePos pos, OperatorType op, std::shared_ptr<const ExpressionNode> lhs,
-                         std::shared_ptr<const ExpressionNode> rhs);
+    BinaryExpressionNode(FilePos pos, OperatorType op, std::unique_ptr<const ExpressionNode> lhs,
+                         std::unique_ptr<const ExpressionNode> rhs);
     ~BinaryExpressionNode() override;
 
     bool isConstant() const override;
     ExpressionType checkType() const override;
 
     const OperatorType getOperator() const;
-    const std::shared_ptr<const ExpressionNode> getLeftExpression() const;
-    const std::shared_ptr<const ExpressionNode> getRightExpression() const;
+    const ExpressionNode* getLeftExpression() const;
+    const ExpressionNode* getRightExpression() const;
 
     void print(std::ostream &stream) const override;
 

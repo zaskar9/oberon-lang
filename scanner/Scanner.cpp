@@ -5,14 +5,11 @@
  */
 
 #include "Scanner.h"
-#include <iostream>
-#include <sstream>
+#include "NumberToken.h"
 
-Scanner::Scanner(const std::string &filename, Logger *logger) :
-        filename_(filename), logger_(logger), ident_(), numValue_(-1), lineNo_(1), charNo_(0) {
-    token_.type = TokenType::null;
-    token_.pos = getPosition();
-    initTable();
+Scanner::Scanner(const std::string &filename, const Logger *logger) :
+        filename_(filename), logger_(logger), token_(nullptr), lineNo_(1), charNo_(0) {
+    this->initTable();
     file_.open(filename_, std::ios::in);
     if (!file_.is_open()) {
         // TODO I/O Exception
@@ -23,21 +20,12 @@ Scanner::Scanner(const std::string &filename, Logger *logger) :
 }
 
 Scanner::~Scanner() {
+    if (token_) {
+        delete token_;
+    }
     if (file_.is_open()) {
         file_.close();
     }
-}
-
-const int Scanner::getNumValue() const {
-    return numValue_;
-}
-
-const std::string Scanner::getStrValue() const {
-    return strValue_;
-}
-
-const std::string Scanner::getIdent() const {
-    return ident_;
 }
 
 void Scanner::initTable() {
@@ -53,91 +41,101 @@ void Scanner::initTable() {
                   { "TRUE", TokenType::const_true }, { "FALSE", TokenType::const_false } };
 }
 
-const Token Scanner::nextToken() {
-    Token token;
-    if (token_.type != TokenType::null) {
-        token = token_;
-        token_.type = TokenType::null;
-        return token;
+const Token* Scanner::peekToken() {
+    if (token_ == nullptr) {
+        token_ = this->next();
     }
-    numValue_ = -1;
-    ident_ = "";
+    return token_;
+}
+
+std::unique_ptr<const Token> Scanner::nextToken() {
+    const Token *token;
+    if (token_ != nullptr) {
+        token = token_;
+        token_ = nullptr;
+    } else {
+        token = this->next();
+    }
+    return std::make_unique<const Token>(token);
+}
+
+const Token* Scanner::next() {
+    const Token *token;
     // Skip whitespace
     while ((ch_ != -1) && (ch_ <= ' ')) {
         read();
     }
     if (ch_ != -1) {
-        token.pos = getPosition();
+        FilePos pos = getPosition();
         if (((ch_ >= 'A') && (ch_ <= 'Z')) || ((ch_ >= 'a') && (ch_ <= 'z'))) {
             // Scan identifier
-            token = ident();
+            token = identifier();
         } else if ((ch_ >= '0') && (ch_ <= '9')) {
             // Scan number
-            token.type = TokenType::const_number;
-            numValue_ = number();
+            token = new NumberToken(pos, number());
         } else {
             switch (ch_) {
                 case '&':
-                    token.type = TokenType::op_and;
+                    token = new Token(TokenType::op_and, pos);
                     read();
                     break;
                 case '*':
-                    token.type = TokenType::op_times;
+                    token = new Token(TokenType::op_times, pos);
                     read();
                     break;
                 case '+':
-                    token.type = TokenType::op_plus;
+                    token = new Token(TokenType::op_plus, pos);
                     read();
                     break;
                 case '-':
-                    token.type = TokenType::op_minus;
+                    token = new Token(TokenType::op_minus, pos);
                     read();
                     break;
                 case '=':
-                    token.type = TokenType::op_eq;
+                    token = new Token(TokenType::op_eq, pos);
                     read();
                     break;
                 case '#':
-                    token.type = TokenType::op_neq;
+                    token = new Token(TokenType::op_neq, pos);
                     read();
                     break;
                 case '<':
                     read();
                     if (ch_ == '=') {
-                        token.type = TokenType::op_leq;
+                        token = new Token(TokenType::op_leq, pos);
                         read();
                     } else {
-                        token.type = TokenType::op_lt;
+                        token = new Token(TokenType::op_lt, pos);
                     }
                     break;
                 case '>':
                     read();
                     if (ch_ == '=') {
-                        token.type = TokenType::op_geq;
+                        token = new Token(TokenType::op_geq, pos);
                         read();
                     } else {
-                        token.type = TokenType::op_gt;
+                        token = new Token(TokenType::op_gt, pos);
                     }
                     break;
                 case ';':
-                    token.type = TokenType::semicolon;
+                    token = new Token(TokenType::semicolon, pos);
                     read();
                     break;
                 case ',':
-                    token.type = TokenType::comma;
+                    token = new Token(TokenType::comma, pos);
                     read();
                     break;
                 case ':':
                     read();
                     if (ch_ == '=') {
-                        token.type = TokenType::op_becomes;
+                        token = new Token(TokenType::op_becomes, pos);
                         read();
                     } else {
-                        token.type = TokenType::colon;
+                        token = new Token(TokenType::colon, pos);
                     }
                     break;
                 case '.':
-                    token.type = TokenType::period;
+                    token = new Token(TokenType::period, pos);
                     read();
                     break;
                 case '(':
@@ -146,48 +144,39 @@ const Token Scanner::nextToken() {
                         comment();
                         token = nextToken();
                     } else {
-                        token.type = TokenType::lparen;
+                        token = new Token(TokenType::lparen, pos);
                     }
                     break;
                 case ')':
-                    token.type = TokenType::rparen;
+                    token = new Token(TokenType::rparen, pos);
                     read();
                     break;
                 case '[':
-                    token.type = TokenType::lbrack;
+                    token = new Token(TokenType::lbrack, pos);
                     read();
                     break;
                 case ']':
-                    token.type = TokenType::rbrack;
+                    token = new Token(TokenType::rbrack, pos);
                     read();
                     break;
                 case '~':
-                    token.type = TokenType::op_not;
+                    token = new Token(TokenType::op_not, pos);
                     read();
                     break;
                 case '"':
-                    token.type = TokenType::const_string;
-                    strValue_ = string();
+                    token = new StringToken(pos, string());
                     read();
                     break;
                 default:
-                    token.type = TokenType::null;
+                    token = nullptr;
                     read();
                     break;
             }
         }
     } else {
-        token.pos = getPosition();
-        token.type = TokenType::eof;
+        token = new Token(TokenType::eof, getPosition());
     }
     return token;
-}
-
-const Token Scanner::peekToken() {
-    if (token_.type == TokenType::null) {
-        token_ = nextToken();
-    }
-    return token_;
 }
 
 void Scanner::read() {
@@ -246,10 +235,8 @@ void Scanner::comment() {
     }
 }
 
-const Token Scanner::ident() {
-    Token token;
-    token.type = TokenType::const_ident;
-    token.pos = getPosition();
+const Token* Scanner::ident() {
+    FilePos pos = getPosition();
     std::stringstream ss;
     do {
         ss << ch_;
@@ -257,13 +244,12 @@ const Token Scanner::ident() {
     } while (((ch_ >= '0') && (ch_ <= '9')) ||
              ((ch_ >= 'a') && (ch_ <= 'z')) ||
              ((ch_ >= 'A') && (ch_ <= 'Z')));
-    ident_ = ss.str();
-    std::unordered_map<std::string, TokenType>::const_iterator it = keywords_.find(ident_);
+    std::string ident = ss.str();
+    std::unordered_map<std::string, TokenType>::const_iterator it = keywords_.find(ident);
     if (it != keywords_.end()) {
-        token.type = it->second;
-        ident_ = "";
+        return new Token(it->second, pos);
     }
-    return token;
+    return new IdentToken(pos, ident);
 }
 
 const int Scanner::number() {
@@ -311,58 +297,4 @@ const std::string Scanner::string() {
     ss << ch_;
     std::string s = ss.str();
     return s;
-}
-
-std::ostream& operator<<(std::ostream &stream, const TokenType &type) {
-    std::string result;
-    switch(type) {
-        case TokenType::eof: result = "EOF"; break;
-        case TokenType::null: result = "NULL"; break;
-        case TokenType::const_true: result = "TRUE"; break;
-        case TokenType::const_false: result = "FALSE"; break;
-        case TokenType::const_number: result = "<number>"; break;
-        case TokenType::const_string: result = "<string>"; break;
-        case TokenType::const_ident: result = "<ident>"; break;
-        case TokenType::period: result = "."; break;
-        case TokenType::comma: result = ","; break;
-        case TokenType::colon: result = ":"; break;
-        case TokenType::semicolon: result = ";"; break;
-        case TokenType::lparen: result = "("; break;
-        case TokenType::rparen: result = ")"; break;
-        case TokenType::lbrack: result = "["; break;
-        case TokenType::rbrack: result = "]"; break;
-        case TokenType::op_times: result = "*"; break;
-        case TokenType::op_div: result = "DIV"; break;
-        case TokenType::op_mod: result = "MOD"; break;
-        case TokenType::op_plus: result = "+"; break;
-        case TokenType::op_minus: result = "-"; break;
-        case TokenType::op_and: result = "AND"; break;
-        case TokenType::op_or: result = "OR"; break;
-        case TokenType::op_not: result = "~"; break;
-        case TokenType::op_eq: result = "="; break;
-        case TokenType::op_neq: result = "#"; break;
-        case TokenType::op_lt: result = "<"; break;
-        case TokenType::op_gt: result = ">"; break;
-        case TokenType::op_leq: result = "<="; break;
-        case TokenType::op_geq: result = ">="; break;
-        case TokenType::op_becomes: result = ":="; break;
-        case TokenType::kw_module: result = "MODULE"; break;
-        case TokenType::kw_procedure: result = "PROCEDURE"; break;
-        case TokenType::kw_begin: result = "BEGIN"; break;
-        case TokenType::kw_end: result = "END"; break;
-        case TokenType::kw_if: result = "IF"; break;
-        case TokenType::kw_then: result = "THEN"; break;
-        case TokenType::kw_else: result = "ELSE"; break;
-        case TokenType::kw_elsif: result = "ELSIF"; break;
-        case TokenType::kw_while: result = "WHILE"; break;
-        case TokenType::kw_do: result = "DO"; break;
-        case TokenType::kw_array: result = "ARRAY"; break;
-        case TokenType::kw_record: result = "RECORD"; break;
-        case TokenType::kw_const: result = "CONST"; break;
-        case TokenType::kw_type: result = "TYPE"; break;
-        case TokenType::kw_var: result = "VAR"; break;
-        case TokenType::kw_of: result = "OF"; break;
-    }
-    stream << result;
-    return stream;
 }

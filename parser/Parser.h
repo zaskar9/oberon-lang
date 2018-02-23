@@ -55,16 +55,15 @@ private:
     const ASTNode* while_statement();
     const ASTNode* actual_parameters();
     const ASTNode* selector();
-    const std::shared_ptr<const ConstantSymbol> fold(const std::string &name,
-                                                     const std::shared_ptr<const ExpressionNode> &expr);
-    const int foldNumber(const std::shared_ptr<const ExpressionNode> &expr);
-    const bool foldBoolean(const std::shared_ptr<const ExpressionNode> &expr);
-    const std::string foldString(const std::shared_ptr<const ExpressionNode> &expr);
+    const std::unique_ptr<ConstantSymbol> fold(const std::string &name, const ExpressionNode *expr) const;
+    const int foldNumber(const ExpressionNode *expr) const;
+    const bool foldBoolean(const ExpressionNode *expr) const;
+    const std::string foldString(const ExpressionNode *expr) const;
 
 public:
     explicit Parser(Scanner *scanner, Table *symbols, Logger *logger);
     ~Parser();
-    const ASTNode* parse();
+    const std::unique_ptr<const ASTNode> parse();
 
 };
 

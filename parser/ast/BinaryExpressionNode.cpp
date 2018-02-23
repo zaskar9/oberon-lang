@@ -7,9 +7,9 @@
 #include "BinaryExpressionNode.h"
 
 BinaryExpressionNode::BinaryExpressionNode(const FilePos pos, const OperatorType op,
-                                           const std::shared_ptr<const ExpressionNode> lhs,
-                                           const std::shared_ptr<const ExpressionNode> rhs) :
-        ExpressionNode(NodeType::binary_expression, pos), op_(op), lhs_(lhs), rhs_(rhs) {
+                                           std::unique_ptr<const ExpressionNode> lhs,
+                                           std::unique_ptr<const ExpressionNode> rhs) :
+        ExpressionNode(NodeType::binary_expression, pos), op_(op), lhs_(std::move(lhs)), rhs_(std::move(rhs)) {
 }
 
 BinaryExpressionNode::~BinaryExpressionNode() = default;
@@ -39,12 +39,12 @@ const OperatorType BinaryExpressionNode::getOperator() const {
     return op_;
 }
 
-const std::shared_ptr<const ExpressionNode> BinaryExpressionNode::getLeftExpression() const {
-    return lhs_;
+const ExpressionNode* BinaryExpressionNode::getLeftExpression() const {
+    return lhs_.get();
 }
 
-const std::shared_ptr<const ExpressionNode> BinaryExpressionNode::getRightExpression() const {
-    return rhs_;
+const ExpressionNode* BinaryExpressionNode::getRightExpression() const {
+    return rhs_.get();
 }
 
 void BinaryExpressionNode::print(std::ostream &stream) const {

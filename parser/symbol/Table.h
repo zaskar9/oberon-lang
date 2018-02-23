@@ -16,19 +16,19 @@ class Table
 {
 
 private:
-    std::unordered_map<std::string, std::shared_ptr<const Symbol>> map_;
-    Table *super_;
-    Logger *log_;
+    Logger *logger_;
+    std::unordered_map<std::string, std::unique_ptr<const Symbol>> map_;
+    std::unique_ptr<Table> super_;
 
-    Table(Table *super, Logger *log);
+    Table(std::unique_ptr<Table> super, Logger *logger);
 
 public:
-    explicit Table(Logger *log);
+    explicit Table(Logger *logger);
     ~Table();
 
-    void insert(std::shared_ptr<const Symbol> symbol);
-    void insert(const std::string &name, std::shared_ptr<const Symbol> symbol);
-    std::shared_ptr<const Symbol> lookup(const std::string &name) const;
+    void insert(std::unique_ptr<const Symbol> symbol);
+    void insert(const std::string &name, std::unique_ptr<const Symbol> symbol);
+    const Symbol* lookup(const std::string &name) const;
     Table* openScope();
     Table* closeScope() const;
     const bool isGlobal() const;

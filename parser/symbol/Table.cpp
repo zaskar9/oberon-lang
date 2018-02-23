@@ -8,29 +8,29 @@
 #include "Table.h"
 #include "BasicTypeSymbol.h"
 
-Table::Table(Table *super, Logger *log) : map_(), super_(super), log_(log) {
+Table::Table(std::unique_ptr<Table> super, Logger *logger) : map_(), super_(std::move(super)), logger_(logger) {
 
 }
 
-Table::Table(Logger *log) : Table(nullptr, log) {
+Table::Table(Logger *logger) : Table(nullptr, logger) {
     // initialize global scope
-    insert(std::make_shared<BasicTypeSymbol>("INTEGER", 4));
-    insert(std::make_shared<BasicTypeSymbol>("BOOLEAN", 1));
+    insert(std::make_unique<BasicTypeSymbol>("INTEGER", 4));
+    insert(std::make_unique<BasicTypeSymbol>("BOOLEAN", 1));
 }
 
 Table::~Table() = default;
 
-void Table::insert(std::shared_ptr<const Symbol> symbol) {
-    insert(symbol->getName(), symbol);
+void Table::insert(std::unique_ptr<const Symbol> symbol) {
+    insert(symbol->getName(), std::move(symbol));
 }
 
-void Table::insert(const std::string &name, std::shared_ptr<const Symbol> symbol) {
-    map_[name] = symbol;
+void Table::insert(const std::string &name, std::unique_ptr<const Symbol> symbol) {
+    map_[name] = std::move(symbol);
 }
 
-std::shared_ptr<const Symbol> Table::lookup(const std::string &name) const {
+const Symbol* Table::lookup(const std::string &name) const {
     auto itr = map_.find(name);
-    return itr != map_.end() ? itr->second : nullptr;
+    return itr != map_.end() ? (itr->second).get() : nullptr;
 }
 
 const bool Table::isGlobal() const {

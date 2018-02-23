@@ -39,7 +39,7 @@ BEGIN
     WHILE i > 1 DO
         j := i-1; 
         WHILE j > 0 DO
-            IF (a[i] > a[j]) & (2 > 1) THEN Swap(a[i], a[j]) END;
+            IF (a[i] > a[j]) AND (2 > 1) THEN Swap(a[i], a[j]) END;
             j := j + 1
         END;
         i := i + 1;

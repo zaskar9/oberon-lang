@@ -14,14 +14,12 @@ int main(const int argc, const char *argv[]) {
         return 1;
     }
     std::string filename = argv[1];
-    auto logger = new Logger();
+    auto logger = std::make_unique<Logger>();
     logger->setLevel(LogLevel::ERROR);
-    auto scanner = new Scanner(filename, logger);
-    auto symbols = new Table(logger);
-    auto parser = new Parser(scanner, symbols, logger);
-    const ASTNode *node = parser->parse();
-    delete parser;
-    delete scanner;
+    auto scanner = std::make_unique<Scanner>(filename, logger.get());
+    auto symbols = std::make_unique<Table>(logger.get());
+    auto parser = std::make_unique<Parser>(scanner.get(), symbols.get(), logger.get());
+    parser->parse();
     logger->info("", "Compilation complete.");
     exit(0);
 }
