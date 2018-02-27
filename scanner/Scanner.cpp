@@ -59,7 +59,7 @@ std::unique_ptr<const Token> Scanner::nextToken() {
     } else {
         token = this->next();
     }
-    return std::make_unique<const Token>(*token);
+    return std::unique_ptr<const Token>(token);
 }
 
 const Token* Scanner::next() {

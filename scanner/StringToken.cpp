@@ -17,6 +17,6 @@ const std::string StringToken::getValue() const {
 }
 
 void StringToken::print(std::ostream &stream) const {
-    stream << value_;
+    stream << this->getType() << ": " << value_;
 }
 

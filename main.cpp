@@ -15,7 +15,7 @@ int main(const int argc, const char *argv[]) {
     }
     std::string filename = argv[1];
     auto logger = std::make_unique<Logger>();
-    logger->setLevel(LogLevel::ERROR);
+    logger->setLevel(LogLevel::DEBUG);
     auto scanner = std::make_unique<Scanner>(filename, logger.get());
     auto symbols = std::make_unique<SymbolTable>(logger.get());
     auto parser = std::make_unique<Parser>(scanner.get(), symbols.get(), logger.get());

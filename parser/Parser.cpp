@@ -61,8 +61,8 @@ const Node* Parser::module() {
 const std::string Parser::ident() {
     auto token = scanner_->nextToken();
     if (token->getType() == TokenType::const_ident) {
-        auto ident = dynamic_cast<const IdentToken*>(token.get());
-        logger_->debug("", "identifier : " + ident->getValue());
+        const IdentToken* ident = dynamic_cast<const IdentToken*>(token.get());
+        logger_->debug("", to_string(*ident));
         return ident->getValue();
     } else {
         logger_->error(token->getPosition(), "identifier expected.");

@@ -17,5 +17,5 @@ const std::string IdentToken::getValue() const {
 }
 
 void IdentToken::print(std::ostream &stream) const {
-    stream << value_;
+    stream << this->getType() << ": " << value_;
 }
