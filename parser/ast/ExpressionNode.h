@@ -7,7 +7,7 @@
 #ifndef OBERON0C_EXPRESSIONNODE_H
 #define OBERON0C_EXPRESSIONNODE_H
 
-#include "ASTNode.h"
+#include "Node.h"
 
 enum class OperatorType : char {
     EQ, NEQ, LT, GT, GEQ, LEQ,
@@ -22,7 +22,7 @@ enum class ExpressionType : char {
     BOOLEAN, INTEGER, STRING, UNDEF
 };
 
-class ExpressionNode : public ASTNode {
+class ExpressionNode : public Node {
 
 public:
     explicit ExpressionNode(NodeType type, FilePos pos);

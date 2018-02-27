@@ -8,6 +8,7 @@
 
 #include <string>
 #include <iostream>
+#include <sstream>
 
 struct FilePos {
     std::string fileName;
@@ -39,6 +40,13 @@ public:
     void setLevel(LogLevel level);
 
 };
+
+template <typename T>
+static std::string to_string(T obj) {
+    std::stringstream stream;
+    stream << obj;
+    return stream.str();
+}
 
 
 #endif //OBERON0C_ERRORLOG_H

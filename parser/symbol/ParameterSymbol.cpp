@@ -6,13 +6,13 @@
 
 #include "ParameterSymbol.h"
 
-ParameterSymbol::ParameterSymbol(const std::string &name, const std::shared_ptr<const TypeSymbol> type, const bool var) :
+ParameterSymbol::ParameterSymbol(const std::string &name, const TypeNode* type, const bool var) :
         Symbol(SymbolType::parameter, name), type_(type), var_(var) {
 }
 
 ParameterSymbol::~ParameterSymbol() = default;
 
-std::shared_ptr<const TypeSymbol> ParameterSymbol::getType() const {
+const TypeNode* ParameterSymbol::getType() const {
     return type_;
 }
 
@@ -21,5 +21,5 @@ const bool ParameterSymbol::isVar() const {
 }
 
 void ParameterSymbol::print(std::ostream &out) const {
-    out << (var_ ? "VAR " : "") << getName() << ": " << type_->getName();
+    out << (var_ ? "VAR " : "") << this->getName() << ": " << type_;
 }

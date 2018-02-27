@@ -8,19 +8,19 @@
 #define OBERON0C_PARAMETER_H
 
 #include "Symbol.h"
-#include "TypeSymbol.h"
+#include "../ast/TypeNode.h"
 
 class ParameterSymbol : public Symbol {
 
 private:
-    std::shared_ptr<const TypeSymbol> type_;
-    bool var_;
+    const TypeNode* type_;
+    const bool var_;
 
 public:
-    explicit ParameterSymbol(const std::string &name, std::shared_ptr<const TypeSymbol> type, bool var);
+    explicit ParameterSymbol(const std::string &name, const TypeNode* type, bool var);
     ~ParameterSymbol() override;
 
-    std::shared_ptr<const TypeSymbol> getType() const;
+    const TypeNode* getType() const;
     const bool isVar() const;
 
     void print(std::ostream &stream) const override;

@@ -14,24 +14,26 @@
 #include "../../util/Logger.h"
 
 enum class NodeType : char {
-    unary_expression, binary_expression, boolean_constant, number_constant, string_constant
+    unary_expression, binary_expression, boolean_constant, number_constant, string_constant,
+    type_reference, record_type, array_type, basic_type,
+    field, variable
 };
 
-class ASTNode {
+class Node {
 
 private:
     NodeType type_;
     FilePos pos_;
 
 public:
-    explicit ASTNode(NodeType type, FilePos pos);
-    virtual ~ASTNode() = 0;
+    explicit Node(NodeType type, FilePos pos);
+    virtual ~Node() = 0;
     
     const NodeType getNodeType() const;
     const FilePos getFilePos() const;
 
     virtual void print(std::ostream &stream) const = 0;
-    friend std::ostream& operator<<(std::ostream &stream, const ASTNode &node);
+    friend std::ostream& operator<<(std::ostream &stream, const Node &node);
 
 };
 

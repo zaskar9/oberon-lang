@@ -11,8 +11,8 @@ ProcedureSymbol::ProcedureSymbol(const std::string &name) : Symbol(SymbolType::p
 
 ProcedureSymbol::~ProcedureSymbol() = default;
 
-void ProcedureSymbol::addParameter(std::shared_ptr<ParameterSymbol> parameter) {
-    parameters_.push_back(parameter);
+void ProcedureSymbol::addParameter(std::unique_ptr<const ParameterSymbol> parameter) {
+    parameters_.push_back(std::move(parameter));
 }
 
 void ProcedureSymbol::print(std::ostream &out) const {

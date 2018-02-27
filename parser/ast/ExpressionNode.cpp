@@ -6,7 +6,7 @@
 
 #include "ExpressionNode.h"
 
-ExpressionNode::ExpressionNode(const NodeType type, const FilePos pos) : ASTNode(type, pos) {
+ExpressionNode::ExpressionNode(const NodeType type, const FilePos pos) : Node(type, pos) {
 }
 
 ExpressionNode::~ExpressionNode() = default;

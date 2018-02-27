@@ -8,20 +8,20 @@
 #define OBERON0C_PROCEDURESYMBOL_H
 
 
-#include <list>
+#include <vector>
 #include "Symbol.h"
 #include "ParameterSymbol.h"
 
 class ProcedureSymbol : public Symbol {
 
 private:
-    std::list<std::shared_ptr<const ParameterSymbol>> parameters_;
+    std::vector<std::unique_ptr<const ParameterSymbol>> parameters_;
 
 public:
     explicit ProcedureSymbol(const std::string &name);
     ~ProcedureSymbol() override;
 
-    void addParameter(std::shared_ptr<ParameterSymbol> parameter);
+    void addParameter(std::unique_ptr<const ParameterSymbol> parameter);
 
     void print(std::ostream &stream) const override;
 

@@ -4,8 +4,11 @@
  * Created by Michael Grossniklaus on 12/15/17.
  */
 
+
 #include "Scanner.h"
+#include "IdentToken.h"
 #include "NumberToken.h"
+#include "StringToken.h"
 
 Scanner::Scanner(const std::string &filename, const Logger *logger) :
         filename_(filename), logger_(logger), token_(nullptr), lineNo_(1), charNo_(0) {
@@ -56,7 +59,7 @@ std::unique_ptr<const Token> Scanner::nextToken() {
     } else {
         token = this->next();
     }
-    return std::make_unique<const Token>(token);
+    return std::make_unique<const Token>(*token);
 }
 
 const Token* Scanner::next() {
@@ -69,7 +72,7 @@ const Token* Scanner::next() {
         FilePos pos = getPosition();
         if (((ch_ >= 'A') && (ch_ <= 'Z')) || ((ch_ >= 'a') && (ch_ <= 'z'))) {
             // Scan identifier
-            token = identifier();
+            token = ident();
         } else if ((ch_ >= '0') && (ch_ <= '9')) {
             // Scan number
             token = new NumberToken(pos, number());
@@ -142,7 +145,7 @@ const Token* Scanner::next() {
                     read();
                     if (ch_ == '*') {
                         comment();
-                        token = nextToken();
+                        token = next();
                     } else {
                         token = new Token(TokenType::lparen, pos);
                     }

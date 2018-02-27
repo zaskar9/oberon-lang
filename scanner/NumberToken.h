@@ -1,5 +1,5 @@
 /*
- * Header file of the class for the number token used by parser of the Oberon-0 compiler.
+ * Header file of the number tokens used by parser of the Oberon-0 compiler.
  *
  * Created by Michael Grossniklaus on 2/23/18.
  */
@@ -10,7 +10,7 @@
 
 #include "Token.h"
 
-class NumberToken : public Token {
+class NumberToken final : public Token {
 
 private:
     int value_;

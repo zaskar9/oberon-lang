@@ -6,27 +6,28 @@
 
 #include <iostream>
 #include "Parser.h"
+#include "ast/UnaryExpressionNode.h"
 #include "ast/BinaryExpressionNode.h"
 #include "ast/BooleanConstantNode.h"
 #include "ast/NumberConstantNode.h"
 #include "ast/StringConstantNode.h"
-#include "ast/UnaryExpressionNode.h"
-#include "symbol/NumberConstantSymbol.h"
-#include "symbol/BooleanConstantSymbol.h"
-#include "symbol/StringConstantSymbol.h"
+#include "ast/TypeReferenceNode.h"
+#include "../scanner/IdentToken.h"
+#include "../scanner/NumberToken.h"
+#include "../scanner/StringToken.h"
 
-Parser::Parser(Scanner *scanner, Table *symbols, Logger *logger) :
+Parser::Parser(Scanner *scanner, SymbolTable *symbols, Logger *logger) :
         scanner_(scanner), symbols_(symbols), logger_(logger) {
 }
 
 Parser::~Parser() = default;
 
-const std::unique_ptr<const ASTNode> Parser::parse() {
-    return std::make_unique<const ASTNode>(module());
+const Node* Parser::parse() {
+    return module();
 }
 
 // module = "MODULE" identifier ";" declarations [ "BEGIN" statement_sequence ] "END" ident "." .
-const ASTNode* Parser::module() {
+const Node* Parser::module() {
     logger_->debug("", "module");
     auto token = scanner_->nextToken();
     if (token->getType() == TokenType::kw_module) {
@@ -60,9 +61,9 @@ const ASTNode* Parser::module() {
 const std::string Parser::ident() {
     auto token = scanner_->nextToken();
     if (token->getType() == TokenType::const_ident) {
-        auto ident = dynamic_pointer_cast<const IdentToken>(token);
-        logger_->debug("", "identifier : " + ident.getValue());
-        return ident;
+        auto ident = dynamic_cast<const IdentToken*>(token.get());
+        logger_->debug("", "identifier : " + ident->getValue());
+        return ident->getValue();
     } else {
         logger_->error(token->getPosition(), "identifier expected.");
     }
@@ -70,30 +71,25 @@ const std::string Parser::ident() {
 }
 
 // declarations = [ const_declarations ] [ type_declarations ] [ var_declarations ] { ProcedureDeclaration } .
-const ASTNode* Parser::declarations() {
+const Node* Parser::declarations() {
     logger_->debug("", "declarations");
-    auto token = scanner_->peekToken();
-    if (token->getType() == TokenType::kw_const) {
+    if (scanner_->peekToken()->getType() == TokenType::kw_const) {
         const_declarations();
     }
-    token = scanner_->peekToken();
-    if (token->getType() == TokenType::kw_type) {
+    if (scanner_->peekToken()->getType() == TokenType::kw_type) {
         type_declarations();
     }
-    token = scanner_->peekToken();
-    if (token->getType() == TokenType::kw_var) {
+    if (scanner_->peekToken()->getType() == TokenType::kw_var) {
         var_declarations();
     }
-    token = scanner_->peekToken();
-    while (token->getType() == TokenType::kw_procedure) {
+    while (scanner_->peekToken()->getType() == TokenType::kw_procedure) {
         procedure_declaration();
-        token = scanner_->peekToken();
     }
     return nullptr;
 }
 
 // const_declarations = "CONST" { identifier "=" expression ";" } .
-const ASTNode* Parser::const_declarations() {
+void Parser::const_declarations() {
     logger_->debug("", "const_declarations");
     scanner_->nextToken(); // skip CONST keyword
     while (scanner_->peekToken()->getType() == TokenType::const_ident) {
@@ -102,395 +98,385 @@ const ASTNode* Parser::const_declarations() {
         if (token->getType() == TokenType::op_eq) {
             auto expr = expression();
             if (expr->isConstant()) {
-                auto symbol = fold(name, expr);
-                symbols_->insert(symbol);
+                symbols_->insert(name, fold(expr.get()));
             } else {
-                logger_->error(token.pos, "expression must be constant.");
+                logger_->error(token->getPosition(), "expression must be constant.");
             }
             token = scanner_->nextToken();
             if (token->getType() != TokenType::semicolon) {
-                logger_->error(token.pos, "; expected.");
+                logger_->error(token->getPosition(), "; expected.");
             }
         } else {
-            logger_->error(token.pos, "= expected.");
+            logger_->error(token->getPosition(), "= expected.");
         }
     }
-    return nullptr;
 }
 
 // type_declarations =  "TYPE" { identifier "=" type ";" } .
 void Parser::type_declarations() {
     logger_->debug("", "type_declarations");
     scanner_->nextToken(); // skip TYPE keyword
-    Token token = scanner_->peekToken();
-    while (token.type == TokenType::const_ident) {
+    while (scanner_->peekToken()->getType() == TokenType::const_ident) {
         std::string name = ident();
-        token = scanner_->nextToken();
-        if (token.type == TokenType::op_eq) {
-            std::shared_ptr<const TypeSymbol> ts = type();
-            symbols_->insert(name, ts);
+        auto token = scanner_->nextToken();
+        if (token->getType() == TokenType::op_eq) {
+            symbols_->insert(name, type());
             token = scanner_->nextToken();
-            if (token.type != TokenType::semicolon) {
-                logger_->error(token.pos, "; expected.");
+            if (token->getType() != TokenType::semicolon) {
+                logger_->error(token->getPosition(), "; expected.");
             }
         } else {
-            logger_->error(token.pos, "= expected.");
+            logger_->error(token->getPosition(), "= expected.");
         }
-        token = scanner_->peekToken();
     }
 }
 
 // var_declarations =  "VAR" { ident_list ":" type ";" } .
-const ASTNode* Parser::var_declarations() {
+const Node* Parser::var_declarations() {
     logger_->debug("", "var_declarations");
     scanner_->nextToken(); // skip VAR keyword
-    Token token = scanner_->peekToken();
-    while (token.type == TokenType::const_ident) {
-        std::list<std::string> idents;
+    while (scanner_->peekToken()->getType() == TokenType::const_ident) {
+        std::vector<std::string> idents;
         ident_list(idents);
-        token = scanner_->nextToken();
-        if (token.type == TokenType::colon) {
-            type();
+        auto token = scanner_->nextToken();
+        if (token->getType() == TokenType::colon) {
+            auto ts = type();
             token = scanner_->nextToken();
-            if (token.type != TokenType::semicolon) {
-                logger_->error(token.pos, "; expected.");
+            if (token->getType() != TokenType::semicolon) {
+                logger_->error(token->getPosition(), "; expected.");
             }
         } else {
-            logger_->error(token.pos, ": expected.");
+            logger_->error(token->getPosition(), ": expected.");
         }
-        token = scanner_->peekToken();
     }
     return nullptr;
 }
 
 // procedure_declaration = procedure_heading ";" procedure_body identifier ";" .
-const ASTNode* Parser::procedure_declaration() {
+const Node* Parser::procedure_declaration() {
     logger_->debug("", "procedure_declaration");
     procedure_heading();
-    Token token = scanner_->nextToken();
-    if (token.type != TokenType::semicolon) {
-        logger_->error(token.pos, "; semicolon.");
+    auto token = scanner_->nextToken();
+    if (token->getType() != TokenType::semicolon) {
+        logger_->error(token->getPosition(), "; expected.");
     }
     procedure_body();
     ident();
     token = scanner_->nextToken();
-    if (token.type != TokenType::semicolon) {
-        logger_->error(token.pos,"; semicolon.");
+    if (token->getType() != TokenType::semicolon) {
+        logger_->error(token->getPosition(),"; expected.");
     }
     return nullptr;
 }
 
 // expression = simple_expression [ ( "=" | "#" | "<" | "<=" | ">" | ">=" ) simple_expression ] .
-const std::shared_ptr<const ExpressionNode> Parser::expression() {
+std::unique_ptr<const ExpressionNode> Parser::expression() {
     logger_->debug("", "expression");
-    std::shared_ptr<const ExpressionNode> lhs = simple_expression();
-    Token token = scanner_->peekToken();
-    if (token.type == TokenType::op_eq
-        || token.type == TokenType::op_neq
-        || token.type == TokenType::op_lt
-        || token.type == TokenType::op_leq
-        || token.type == TokenType::op_gt
-        || token.type == TokenType::op_geq) {
-            token = scanner_->nextToken();
-            OperatorType op = token_to_operator(token.type);
-            std::shared_ptr<const ExpressionNode> rhs = simple_expression();
-            return std::make_shared<BinaryExpressionNode>(token.pos, op, lhs, rhs);
+    auto lhs = simple_expression();
+    TokenType type = scanner_->peekToken()->getType();
+    if (type == TokenType::op_eq
+        || type == TokenType::op_neq
+        || type == TokenType::op_lt
+        || type == TokenType::op_leq
+        || type == TokenType::op_gt
+        || type == TokenType::op_geq) {
+            auto token = scanner_->nextToken();
+            OperatorType op = token_to_operator(token->getType());
+            auto rhs = simple_expression();
+            return std::make_unique<BinaryExpressionNode>(token->getPosition(), op, std::move(lhs), std::move(rhs));
     }
     return lhs;
 }
 
 // simple_expression = [ "+" | "-" ] term { ( "+" | "-" | OR ) term } .
-const std::shared_ptr<const ExpressionNode> Parser::simple_expression() {
+std::unique_ptr<const ExpressionNode> Parser::simple_expression() {
     logger_->debug("", "simple_expression");
-    std::shared_ptr<const ExpressionNode> expr;
-    Token token = scanner_->peekToken();
-    if (token.type == TokenType::op_plus) {
+    std::unique_ptr<const ExpressionNode> expr;
+    TokenType type = scanner_->peekToken()->getType();
+    if (type == TokenType::op_plus) {
         scanner_->nextToken();
         expr = term();
-    } else if (token.type == TokenType::op_minus) {
-        scanner_->nextToken();
-        expr = std::make_shared<UnaryExpressionNode>(token.pos, OperatorType::NEG, term());
+    } else if (type == TokenType::op_minus) {
+        auto token = scanner_->nextToken();
+        expr = std::make_unique<UnaryExpressionNode>(token->getPosition(), OperatorType::NEG, term());
     } else {
         expr = term();
     }
-    token = scanner_->peekToken();
-    while (token.type == TokenType::op_plus
-           || token.type == TokenType::op_minus
-           || token.type == TokenType::op_or) {
-        token = scanner_->nextToken();
-        OperatorType op = token_to_operator(token.type);
-        expr = std::make_shared<BinaryExpressionNode>(token.pos, op, expr, term());
-        token = scanner_->peekToken();
+    type = scanner_->peekToken()->getType();
+    while (type == TokenType::op_plus
+           || type == TokenType::op_minus
+           || type == TokenType::op_or) {
+        auto token = scanner_->nextToken();
+        OperatorType op = token_to_operator(token->getType());
+        expr = std::make_unique<BinaryExpressionNode>(token->getPosition(), op, std::move(expr), term());
+        type = scanner_->peekToken()->getType();
     }
     return expr;
 }
 
 // term = factor { ( "*" | "DIV" | "MOD" | "&" ) factor } .
-const std::shared_ptr<const ExpressionNode> Parser::term() {
+std::unique_ptr<const ExpressionNode> Parser::term() {
     logger_->debug("", "term");
-    std::shared_ptr<const ExpressionNode> expr = factor();
-    Token token = scanner_->peekToken();
-    while (token.type == TokenType::op_times
-           || token.type == TokenType::op_div
-           || token.type == TokenType::op_mod
-           || token.type == TokenType::op_and) {
-        token = scanner_->nextToken();
-        OperatorType op = token_to_operator(token.type);
-        expr = std::make_shared<BinaryExpressionNode>(token.pos, op, expr, factor());
-        token = scanner_->peekToken();
+    auto expr = factor();
+    TokenType type = scanner_->peekToken()->getType();
+    while (type == TokenType::op_times
+           || type == TokenType::op_div
+           || type == TokenType::op_mod
+           || type == TokenType::op_and) {
+        auto token = scanner_->nextToken();
+        OperatorType op = token_to_operator(token->getType());
+        expr = std::make_unique<BinaryExpressionNode>(token->getPosition(), op, std::move(expr), factor());
+        type = scanner_->peekToken()->getType();
     }
     return expr;
 }
 
 // factor = identifier { selector } | number | string | "TRUE" | "FALSE" | "(" expression ")" | "~" factor .
-const std::shared_ptr<const ExpressionNode> Parser::factor() {
+std::unique_ptr<const ExpressionNode> Parser::factor() {
     logger_->debug("", "factor");
-    Token token = scanner_->peekToken();
-    if (token.type == TokenType::const_ident) {
+    auto token = scanner_->peekToken();
+    if (token->getType() == TokenType::const_ident) {
         std::string name = ident();
         auto symbol = symbols_->lookup(name);
         if (symbol == nullptr) {
-            logger_->error(token.pos, "undefined identifier: " + name + ".");
+            logger_->error(token->getPosition(), "undefined identifier: " + name + ".");
         }
         token = scanner_->peekToken();
-        if (token.type == TokenType::period
-            || token.type == TokenType::lbrack) {
+        if (token->getType() == TokenType::period
+            || token->getType() == TokenType::lbrack) {
             selector();
         }
-    } else if (token.type == TokenType::const_number) {
+    } else if (token->getType() == TokenType::const_number) {
+        auto number = dynamic_cast<const NumberToken*>(scanner_->nextToken().get());
+        return std::make_unique<NumberConstantNode>(number->getPosition(), number->getValue());
+    } else if (token->getType() == TokenType::const_string) {
+        auto string = dynamic_cast<const StringToken*>(scanner_->nextToken().get());
+        return std::make_unique<StringConstantNode>(string->getPosition(), string->getValue());
+    } else if (token->getType() == TokenType::const_true) {
         scanner_->nextToken();
-        return std::make_shared<NumberConstantNode>(token.pos, scanner_->getNumValue());
-    } else if (token.type == TokenType::const_string) {
+        return std::make_unique<BooleanConstantNode>(token->getPosition(), true);
+    } else if (token->getType() == TokenType::const_false) {
         scanner_->nextToken();
-        return std::make_shared<StringConstantNode>(token.pos, scanner_->getStrValue());
-    } else if (token.type == TokenType::const_true) {
+        return std::make_unique<BooleanConstantNode>(token->getPosition(), false);
+    } else if (token->getType() == TokenType::lparen) {
         scanner_->nextToken();
-        return std::make_shared<BooleanConstantNode>(token.pos, true);
-    } else if (token.type == TokenType::const_false) {
-        scanner_->nextToken();
-        return std::make_shared<BooleanConstantNode>(token.pos, false);
-    } else if (token.type == TokenType::lparen) {
-        scanner_->nextToken();
-        std::shared_ptr<const ExpressionNode> expr = expression();
-        token = scanner_->nextToken();
-        if (token.type != TokenType::rparen) {
-            logger_->error(token.pos, ") expected.");
+        auto expr = expression();
+        token = scanner_->peekToken();
+        if (token->getType() == TokenType::rparen) {
+            scanner_->nextToken();
+        } else {
+            logger_->error(token->getPosition(), ") expected.");
         }
         return expr;
-    } else if (token.type == TokenType::op_not) {
+    } else if (token->getType() == TokenType::op_not) {
         scanner_->nextToken();
-        return std::make_shared<UnaryExpressionNode>(token.pos, OperatorType::NOT, factor());
+        return std::make_unique<UnaryExpressionNode>(token->getPosition(), OperatorType::NOT, factor());
     } else {
-        logger_->error(token.pos, "unexpected token.");
+        logger_->error(token->getPosition(), "unexpected token.");
     }
     return nullptr;
 }
 
 // type = identifier | array_type | record_type .
-const std::shared_ptr<const TypeSymbol> Parser::type() {
+std::unique_ptr<const TypeNode> Parser::type() {
     logger_->debug("", "type");
-    Token token = scanner_->peekToken();
-    if (token.type == TokenType::const_ident) {
+    auto token = scanner_->peekToken();
+    if (token->getType() == TokenType::const_ident) {
         std::string name = ident();
-        auto symbol = symbols_->lookup(name);
-        if (symbol == nullptr) {
-            logger_->error(token.pos, "undefined type: " + name + ".");
-        } else if (symbol->getSymbolType() == SymbolType::basic_type
-                   || symbol->getSymbolType() == SymbolType::array_type
-                   || symbol->getSymbolType() == SymbolType::record_type) {
-            return std::dynamic_pointer_cast<const TypeSymbol>(symbol);
+        auto node = symbols_->lookup(name);
+        if (node == nullptr) {
+            logger_->error(token->getPosition(), "undefined type: " + name + ".");
+        } else if (node->getNodeType() == NodeType::basic_type
+                   || node->getNodeType() == NodeType::array_type
+                   || node->getNodeType() == NodeType::record_type) {
+            return std::make_unique<const TypeReferenceNode>(token->getPosition(), dynamic_cast<const TypeNode*>(node));
         } else {
-            logger_->error(token.pos, name + " is not a type.");
+            logger_->error(token->getPosition(), name + " is not a type.");
         }
-    } else if (token.type == TokenType::kw_array) {
+    } else if (token->getType() == TokenType::kw_array) {
         return array_type();
-    } else if (token.type == TokenType::kw_record) {
+    } else if (token->getType() == TokenType::kw_record) {
         return record_type();
     } else {
-        logger_->error(token.pos, "unexpected token.");
+        logger_->error(token->getPosition(), "unexpected token.");
     }
     return nullptr;
 }
 
 // array_type = "ARRAY" expression "OF" type .
-const std::shared_ptr<const ArrayTypeSymbol> Parser::array_type() {
+std::unique_ptr<const ArrayTypeNode> Parser::array_type() {
     logger_->debug("", "array_type");
-    scanner_->nextToken(); // skip ARRAY keyword
-    expression();
-    Token token = scanner_->nextToken();
-    if (token.type == TokenType::kw_of) {
-        std::shared_ptr<const TypeSymbol> ts = type();
-        return std::make_shared<ArrayTypeSymbol>(0, ts);
-    } else {
-        logger_->error(token.pos, "OF expected.");
+    FilePos pos = scanner_->nextToken()->getPosition(); // skip ARRAY keyword and get its position
+    auto expr = expression();
+    if (expr->isConstant() && expression()->checkType() == ExpressionType::INTEGER) {
+        int dim = foldNumber(expr.get());
+        auto token = scanner_->nextToken();
+        if (token->getType() == TokenType::kw_of) {
+            return std::make_unique<ArrayTypeNode>(pos, dim, type());
+        } else {
+            logger_->error(token->getPosition(), "OF expected.");
+        }
     }
     return nullptr;
 }
 
 // record_type = "RECORD" field_list { ";" field_list } "END" .
-const std::shared_ptr<const RecordTypeSymbol> Parser::record_type() {
+std::unique_ptr<const RecordTypeNode> Parser::record_type() {
     logger_->debug("", "record_type");
-    scanner_->nextToken(); // skip RECORD keyword
-    auto rts = std::make_shared<RecordTypeSymbol>();
-    field_list(rts);
-    Token token = scanner_->peekToken();
-    while (token.type == TokenType::semicolon) {
-        field_list(rts);
-        token = scanner_->peekToken();
+    FilePos pos = scanner_->nextToken()->getPosition(); // skip RECORD keyword and get its position
+    auto rtype = std::make_unique<RecordTypeNode>(pos);
+    field_list(rtype.get());
+    while (scanner_->peekToken()->getType() == TokenType::semicolon) {
+        field_list(rtype.get());
     }
-    token = scanner_->nextToken();
-    if (token.type != TokenType::kw_end) {
-        logger_->error(token.pos, "END expected.");
+    auto token = scanner_->peekToken();
+    if (token->getType() == TokenType::kw_end) {
+        scanner_->nextToken();
+    } else {
+        logger_->error(token->getPosition(), "END expected.");
     }
-    return rts;
+    return rtype;
 }
 
 // field_list = ident_list ":" type .
-void Parser::field_list(const std::shared_ptr<RecordTypeSymbol> &rts) {
+void Parser::field_list(RecordTypeNode *rtype) {
     logger_->debug("", "field_list");
-    std::list<std::string> idents;
+    std::vector<std::string> idents;
     ident_list(idents);
-    Token token = scanner_->nextToken();
-    if (token.type == TokenType::colon) {
-        std::shared_ptr<const TypeSymbol> ts = type();
-        for (auto const &itr : idents) {
-            rts->addField(std::make_shared<VariableSymbol>(itr, ts));
+    auto token = scanner_->nextToken();
+    if (token->getType() == TokenType::colon) {
+        auto ts = type();
+        for (auto &itr : idents) {
+            rtype->addField(std::make_unique<const FieldNode>(token->getPosition(), itr, std::move(ts)));
         }
     } else {
-        logger_->error(token.pos, ": expected.");
+        logger_->error(token->getPosition(), ": expected.");
     }
 }
 
 // ident_list = ident { "," identifier } .
-void Parser::ident_list(std::list<std::string> &idents) {
+void Parser::ident_list(std::vector<std::string> &idents) {
     logger_->debug("", "ident_list");
     idents.push_back(ident());
-    Token token = scanner_->peekToken();
-    while (token.type == TokenType::comma) {
+    while (scanner_->peekToken()->getType() == TokenType::comma) {
         scanner_->nextToken(); // skip comma
         idents.push_back(ident());
-        token = scanner_->peekToken();
     }
 }
 
 // procedure_heading = "PROCEDURE" identifier [ formal_parameters ] .
-const std::shared_ptr<const ProcedureSymbol> Parser::procedure_heading() {
+std::unique_ptr<ProcedureSymbol> Parser::procedure_heading() {
     logger_->debug("", "procedure_heading");
     scanner_->nextToken(); // skip PROCEDURE keyword
-    std::shared_ptr<ProcedureSymbol> ps = std::make_shared<ProcedureSymbol>(ident());
-    Token token = scanner_->peekToken();
-    if (token.type == TokenType::lparen) {
-        formal_parameters(ps);
+    auto ps = std::make_unique<ProcedureSymbol>(ident());
+    if (scanner_->peekToken()->getType() == TokenType::lparen) {
+        formal_parameters(ps.get());
     }
-    return nullptr;
+    return ps;
 }
 
 // procedure_body = declarations [ "BEGIN" statement_sequence ] "END" .
-const ASTNode* Parser::procedure_body() {
+const Node* Parser::procedure_body() {
     logger_->debug("", "procedure_body");
     declarations();
-    Token token = scanner_->peekToken();
-    if (token.type == TokenType::kw_begin) {
+    if (scanner_->peekToken()->getType() == TokenType::kw_begin) {
         scanner_->nextToken(); // skip BEGIN keyword
         statement_sequence();
     }
-    token = scanner_->nextToken();
-    if (token.type != TokenType::kw_end) {
-        logger_->error(token.pos, "END expected.");
+    auto token = scanner_->peekToken();
+    if (token->getType() == TokenType::kw_end) {
+        scanner_->nextToken();
+    } else {
+        logger_->error(token->getPosition(), "END expected.");
     }
     return nullptr;
 }
 
 // formal_parameters = "(" [ fp_section { ";" fp_section } ] ")".
-void Parser::formal_parameters(const std::shared_ptr<ProcedureSymbol> &ps) {
+void Parser::formal_parameters(ProcedureSymbol *ps) {
     logger_->debug("", "formal_parameters");
-    Token token = scanner_->nextToken(); // skip left parenthesis
-    if (token.type == TokenType::lparen) {
-        token = scanner_->peekToken();
-        if (token.type == TokenType::kw_var
-            || token.type == TokenType::const_ident) {
+    auto token = scanner_->nextToken(); // skip left parenthesis
+    if (token->getType() == TokenType::lparen) {
+        TokenType type = scanner_->peekToken()->getType();
+        if (type == TokenType::kw_var
+            || type == TokenType::const_ident) {
             fp_section(ps);
-            token = scanner_->peekToken();
-            while (token.type == TokenType::semicolon) {
+            while (scanner_->peekToken()->getType() == TokenType::semicolon) {
                 scanner_->nextToken(); // skip semicolon
                 fp_section(ps);
-                token = scanner_->peekToken();
             }
         }
         token = scanner_->nextToken();
-        if (token.type != TokenType::rparen) {
-            logger_->error(token.pos, ") expected.");
+        if (token->getType() != TokenType::rparen) {
+            logger_->error(token->getPosition(), ") expected.");
         }
     }
 }
 
 // fp_section = [ "VAR" ] ident_list ":" type .
-void Parser::fp_section(const std::shared_ptr<ProcedureSymbol> &ps) {
+void Parser::fp_section(ProcedureSymbol *ps) {
     logger_->debug("", "fp_section");
     bool var = false;
-    Token token = scanner_->peekToken();
-    if (token.type == TokenType::kw_var) {
+    if (scanner_->peekToken()->getType() == TokenType::kw_var) {
         scanner_->nextToken(); // skip VAR keyword
         var = true;
     }
-    std::list<std::string> idents;
+    std::vector<std::string> idents;
     ident_list(idents);
-    token = scanner_->nextToken();
-    if (token.type != TokenType::colon) {
-        logger_->error(token.pos, ": expected.");
+    auto token = scanner_->nextToken();
+    if (token->getType() != TokenType::colon) {
+        logger_->error(token->getPosition(), ": expected.");
     }
-    std::shared_ptr<const TypeSymbol> ts = type();
+    auto ts = type();
     for (auto const &itr : idents) {
-        ps->addParameter(std::make_shared<ParameterSymbol>(itr, ts, var));
+        ps->addParameter(std::make_unique<ParameterSymbol>(itr, ts.get(), var));
     }
 }
 
 // statement_sequence = statement { ";" statement } .
-const ASTNode* Parser::statement_sequence() {
+const Node* Parser::statement_sequence() {
     logger_->debug("", "statement_sequence");
     statement();
-    Token token = scanner_->peekToken();
-    while (token.type == TokenType::semicolon) {
+    while (scanner_->peekToken()->getType() == TokenType::semicolon) {
         scanner_->nextToken(); // skip semicolon
         statement();
-        token = scanner_->peekToken();
     }
     return nullptr;
 }
 
 // statement = [ assignment | procedure_call | if_statement | while_statement ] .
-const ASTNode* Parser::statement() {
+const Node* Parser::statement() {
     logger_->debug("", "statement");
-    Token token = scanner_->peekToken();
-    if (token.type == TokenType::const_ident) {
+    auto token = scanner_->peekToken();
+    if (token->getType() == TokenType::const_ident) {
         const std::string name = ident();
         auto symbol = symbols_->lookup(name);
         if (symbol == nullptr) {
-            logger_->error(token.pos, "undefined identifier: " + name + ".");
+            logger_->error(token->getPosition(), "undefined identifier: " + name + ".");
         }
         token = scanner_->peekToken();
-        if (token.type == TokenType::period
-            || token.type == TokenType::lbrack) {
+        if (token->getType() == TokenType::period
+            || token->getType() == TokenType::lbrack) {
             selector();
         }
         token = scanner_->peekToken();
-        if (token.type == TokenType::op_becomes) {
+        if (token->getType() == TokenType::op_becomes) {
             assignment();
         } else {
             procedure_call();
         }
-    } else if (token.type == TokenType::kw_if) {
+    } else if (token->getType() == TokenType::kw_if) {
         if_statement();
-    } else if (token.type == TokenType::kw_while) {
+    } else if (token->getType() == TokenType::kw_while) {
         while_statement();
     } else {
-        logger_->error(token.pos, "unknown statement.");
+        logger_->error(token->getPosition(), "unknown statement.");
     }
     return nullptr;
 }
 
 // assignment = identifier selector ":=" expression .
-const ASTNode* Parser::assignment() {
+const Node* Parser::assignment() {
     logger_->debug("", "assignment");
     scanner_->nextToken(); // skip becomes
     expression();
@@ -498,110 +484,106 @@ const ASTNode* Parser::assignment() {
 }
 
 // procedure_call = identifier [ actual_parameters ] .
-const ASTNode* Parser::procedure_call() {
+const Node* Parser::procedure_call() {
     logger_->debug("", "procedure_call");
-    Token token = scanner_->peekToken();
-    if (token.type == TokenType::lparen) {
+    if (scanner_->peekToken()->getType() == TokenType::lparen) {
         actual_parameters();
     }
     return nullptr;
 }
 
 // if_statement = "IF" expression "THEN" statement_sequence { "ELSIF" expression "THEN" statement_sequence } [ "ELSE" statement_sequence ] "END" .
-const ASTNode* Parser::if_statement() {
+const Node* Parser::if_statement() {
     logger_->debug("", "if_statement");
     scanner_->nextToken(); // skip IF keyword
     expression();
-    Token token = scanner_->nextToken();
-    if (token.type == TokenType::kw_then) {
+    auto token = scanner_->nextToken();
+    if (token->getType() == TokenType::kw_then) {
         statement_sequence();
-        token = scanner_->peekToken();
-        while (token.type == TokenType::kw_elsif) {
+        TokenType type = scanner_->peekToken()->getType();
+        while (type == TokenType::kw_elsif) {
             scanner_->nextToken(); // skip ELSIF keyword
             statement_sequence();
-            token = scanner_->peekToken();
+            type = scanner_->peekToken()->getType();
         }
-        if (token.type == TokenType::kw_else) {
+        if (type == TokenType::kw_else) {
             statement_sequence();
         }
         token = scanner_->nextToken();
-        if (token.type != TokenType::kw_end) {
-            logger_->error(token.pos, "END expected.");
+        if (token->getType() != TokenType::kw_end) {
+            logger_->error(token->getPosition(), "END expected.");
         }
     } else {
-        logger_->error(token.pos, "THEN expected, instead of " + toString(token.type) + ".");
+        logger_->error(token->getPosition(), "THEN expected, instead of " + to_string(token->getType()) + ".");
     }
     return nullptr;
 }
 
 // while_statement = "WHILE" expression "DO" statement_sequence "END" .
-const ASTNode* Parser::while_statement() {
+const Node* Parser::while_statement() {
     logger_->debug("", "while_statement");
     scanner_->nextToken(); // skip WHILE keyword
     expression();
-    Token token = scanner_->nextToken();
-    if (token.type == TokenType::kw_do) {
+    auto token = scanner_->nextToken();
+    if (token->getType() == TokenType::kw_do) {
         statement_sequence();
         token = scanner_->nextToken();
-        if (token.type != TokenType::kw_end) {
-            logger_->error(token.pos, "END expected.");
+        if (token->getType() != TokenType::kw_end) {
+            logger_->error(token->getPosition(), "END expected.");
         }
     } else {
-        logger_->error(token.pos, "DO expected.");
+        logger_->error(token->getPosition(), "DO expected.");
     }
     return nullptr;
 }
 
 // actual_parameters = "(" [ expression { "," expression } ] ")" .
-const ASTNode* Parser::actual_parameters() {
+const Node* Parser::actual_parameters() {
     logger_->debug("", "actual_parameters");
     scanner_->nextToken(); // skip left parenthesis
-    Token token = scanner_->peekToken();
-    if (token.type == TokenType::rparen) {
+    if (scanner_->peekToken()->getType() == TokenType::rparen) {
         scanner_->nextToken();
         return nullptr;
     }
     expression();
-    token = scanner_->peekToken();
-    while (token.type == TokenType::comma) {
+    while (scanner_->peekToken()->getType() == TokenType::comma) {
         scanner_->nextToken(); // skip comma
         expression();
-        token = scanner_->peekToken();
     }
-    token = scanner_->nextToken();
-    if (token.type != TokenType::rparen) {
-        logger_->error(token.pos, ") expected.");
+    auto token = scanner_->nextToken();
+    if (token->getType() != TokenType::rparen) {
+        logger_->error(token->getPosition(), ") expected.");
     }
     return nullptr;
 }
 
 // selector = {"." identifier | "[" expression "]"}.
-const ASTNode* Parser::selector() {
+const Node* Parser::selector() {
     logger_->debug("", "selector");
-    Token token = scanner_->nextToken();
-    if (token.type == TokenType::period) {
+    auto token = scanner_->nextToken();
+    if (token->getType() == TokenType::period) {
         ident();
-    } else if (token.type == TokenType::lbrack) {
+    } else if (token->getType() == TokenType::lbrack) {
         expression();
         token = scanner_->nextToken();
-        if (token.type != TokenType::rbrack) {
-            logger_->error(token.pos, "] expected.");
+        if (token->getType() != TokenType::rbrack) {
+            logger_->error(token->getPosition(), "] expected.");
         }
     }
     return nullptr;
 }
 
-const std::unique_ptr<const ConstantSymbol> Parser::fold(const std::string &name, const ExpressionNode *expr) const {
+std::unique_ptr<const ConstantNode> Parser::fold(const ExpressionNode *expr) const {
     switch (expr->checkType()) {
         case ExpressionType::INTEGER:
-            return std::make_unique<const NumberConstantSymbol>(name, foldNumber(expr));
+            return std::make_unique<const NumberConstantNode>(expr->getFilePos(), foldNumber(expr));
         case ExpressionType::BOOLEAN:
-            return std::make_unique<const BooleanConstantSymbol>(name, foldBoolean(expr));
+            return std::make_unique<const BooleanConstantNode>(expr->getFilePos(), foldBoolean(expr));
         case ExpressionType::STRING:
-            return std::make_unique<const StringConstantSymbol>(name, foldString(expr));
+            return std::make_unique<const StringConstantNode>(expr->getFilePos(), foldString(expr));
         case ExpressionType::UNDEF:
             logger_->error(expr->getFilePos(), "incompatible types.");
-            return 0;
+            return nullptr;
     }
 }
 

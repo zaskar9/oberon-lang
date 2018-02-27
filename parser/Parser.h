@@ -8,62 +8,63 @@
 #define OBERON0C_PARSER_H
 
 
+#include <vector>
 #include "../scanner/Scanner.h"
 #include "../util/Logger.h"
-#include "ast/ASTNode.h"
+#include "SymbolTable.h"
+#include "ast/Node.h"
+#include "ast/ConstantNode.h"
 #include "ast/ExpressionNode.h"
-#include "symbol/Table.h"
-#include "symbol/TypeSymbol.h"
+#include "ast/TypeNode.h"
+#include "ast/ArrayTypeNode.h"
+#include "ast/RecordTypeNode.h"
 #include "symbol/ProcedureSymbol.h"
-#include "symbol/ArrayTypeSymbol.h"
-#include "symbol/RecordTypeSymbol.h"
-#include "symbol/ConstantSymbol.h"
 
 class Parser
 {
 
 private:
     Scanner *scanner_;
-    Table *symbols_;
+    SymbolTable *symbols_;
     Logger *logger_;
 
-    const ASTNode* module();
+    const Node* module();
     const std::string ident();
-    const ASTNode* declarations();
-    const ASTNode* const_declarations();
+    const Node* declarations();
+    void const_declarations();
     void type_declarations();
-    const ASTNode* var_declarations();
-    const ASTNode* procedure_declaration();
-    const std::shared_ptr<const ExpressionNode> expression();
-    const std::shared_ptr<const ExpressionNode> simple_expression();
-    const std::shared_ptr<const ExpressionNode> term();
-    const std::shared_ptr<const ExpressionNode> factor();
-    const std::shared_ptr<const TypeSymbol> type();
-    const std::shared_ptr<const ArrayTypeSymbol> array_type();
-    const std::shared_ptr<const RecordTypeSymbol> record_type();
-    void field_list(const std::shared_ptr<RecordTypeSymbol> &rts);
-    void ident_list(std::list<std::string> &idents);
-    const std::shared_ptr<const ProcedureSymbol> procedure_heading();
-    const ASTNode* procedure_body();
-    void formal_parameters(const std::shared_ptr<ProcedureSymbol> &ps);
-    void fp_section(const std::shared_ptr<ProcedureSymbol> &ps);
-    const ASTNode* statement_sequence();
-    const ASTNode* statement();
-    const ASTNode* assignment();
-    const ASTNode* procedure_call();
-    const ASTNode* if_statement();
-    const ASTNode* while_statement();
-    const ASTNode* actual_parameters();
-    const ASTNode* selector();
-    const std::unique_ptr<ConstantSymbol> fold(const std::string &name, const ExpressionNode *expr) const;
+    const Node* var_declarations();
+    const Node* procedure_declaration();
+    std::unique_ptr<const ExpressionNode> expression();
+    std::unique_ptr<const ExpressionNode> simple_expression();
+    std::unique_ptr<const ExpressionNode> term();
+    std::unique_ptr<const ExpressionNode> factor();
+    std::unique_ptr<const TypeNode> type();
+    std::unique_ptr<const ArrayTypeNode> array_type();
+    std::unique_ptr<const RecordTypeNode> record_type();
+    void field_list(RecordTypeNode *rtype);
+    void ident_list(std::vector<std::string> &idents);
+    std::unique_ptr<ProcedureSymbol> procedure_heading();
+    const Node* procedure_body();
+    void formal_parameters(ProcedureSymbol *ps);
+    void fp_section(ProcedureSymbol *ps);
+    const Node* statement_sequence();
+    const Node* statement();
+    const Node* assignment();
+    const Node* procedure_call();
+    const Node* if_statement();
+    const Node* while_statement();
+    const Node* actual_parameters();
+    const Node* selector();
+    std::unique_ptr<const ConstantNode> fold(const ExpressionNode *expr) const;
     const int foldNumber(const ExpressionNode *expr) const;
     const bool foldBoolean(const ExpressionNode *expr) const;
     const std::string foldString(const ExpressionNode *expr) const;
 
 public:
-    explicit Parser(Scanner *scanner, Table *symbols, Logger *logger);
+    explicit Parser(Scanner *scanner, SymbolTable *symbols, Logger *logger);
     ~Parser();
-    const std::unique_ptr<const ASTNode> parse();
+    const Node* parse();
 
 };
 
