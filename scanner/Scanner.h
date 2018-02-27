@@ -7,6 +7,7 @@
 #ifndef OBERON0C_SCANNER_H
 #define OBERON0C_SCANNER_H
 
+#include <memory>
 #include <string>
 #include <fstream>
 #include <sstream>

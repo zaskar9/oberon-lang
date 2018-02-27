@@ -4,8 +4,8 @@
  * Created by Michael Grossniklaus on 2/27/18.
  */
 
-#ifndef OBERON0C_IDENTTOKEN_H
-#define OBERON0C_IDENTTOKEN_H
+#ifndef OBERON0C_STRINGTOKEN_H
+#define OBERON0C_STRINGTOKEN_H
 
 
 #include "Token.h"
@@ -26,4 +26,4 @@ public:
 };
 
 
-#endif //OBERON0C_IDENTTOKEN_H
+#endif //OBERON0C_STRINGTOKEN_H

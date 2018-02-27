@@ -582,6 +582,7 @@ std::unique_ptr<const ConstantNode> Parser::fold(const ExpressionNode *expr) con
         case ExpressionType::STRING:
             return std::make_unique<const StringConstantNode>(expr->getFilePos(), foldString(expr));
         case ExpressionType::UNDEF:
+		default:
             logger_->error(expr->getFilePos(), "incompatible types.");
             return nullptr;
     }

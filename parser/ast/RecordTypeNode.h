@@ -7,6 +7,7 @@
 #ifndef OBERON0C_RECORDTYPESYMBOL_H
 #define OBERON0C_RECORDTYPESYMBOL_H
 
+#include <memory>
 #include <vector>
 #include "TypeNode.h"
 #include "FieldNode.h"

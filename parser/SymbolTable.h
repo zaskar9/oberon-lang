@@ -7,6 +7,7 @@
 #ifndef OBERON0C_TABLE_H
 #define OBERON0C_TABLE_H
 
+#include <memory>
 #include <string>
 #include <unordered_map>
 #include "ast/Node.h"

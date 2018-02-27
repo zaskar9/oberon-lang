@@ -8,6 +8,7 @@
 #define OBERON0C_VARIABLESYMBOL_H
 
 
+#include <memory>
 #include <string>
 #include "Node.h"
 #include "TypeNode.h"
