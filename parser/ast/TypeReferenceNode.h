@@ -10,18 +10,18 @@
 
 #include "TypeNode.h"
 
-class TypeReferenceNode : public TypeNode {
+class TypeReferenceNode final : public TypeNode {
 
 private:
     const TypeNode* type_;
 
 public:
     TypeReferenceNode(FilePos pos, const TypeNode* type);
-    ~TypeReferenceNode() override;
+    ~TypeReferenceNode() final;
 
     const TypeNode* getType() const;
 
-    void print(std::ostream &stream) const override;
+    void print(std::ostream &stream) const final;
 
 };
 

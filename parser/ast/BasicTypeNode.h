@@ -18,9 +18,9 @@ private:
 
 public:
     BasicTypeNode(const std::string &name, int size);
-    ~BasicTypeNode() override;
+    ~BasicTypeNode() final;
 
-    void print(std::ostream &stream) const override;
+    void print(std::ostream &stream) const final;
 
 };
 

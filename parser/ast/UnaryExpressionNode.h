@@ -19,15 +19,15 @@ private:
 
 public:
     UnaryExpressionNode(FilePos pos, OperatorType op, std::unique_ptr<const ExpressionNode> expr);
-    ~UnaryExpressionNode() override;
+    ~UnaryExpressionNode() final;
 
-    bool isConstant() const override;
-    ExpressionType checkType() const override;
+    bool isConstant() const final;
+    ExpressionType checkType() const final;
 
     const OperatorType getOperator() const;
     const ExpressionNode* getExpression() const;
 
-    void print(std::ostream &stream) const override;
+    void print(std::ostream &stream) const final;
 
 };
 

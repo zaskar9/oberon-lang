@@ -12,19 +12,20 @@
 #include "TypeNode.h"
 #include "FieldNode.h"
 
-class RecordTypeNode : public TypeNode {
+class RecordTypeNode final : public TypeNode {
 
 private:
     std::vector<std::unique_ptr<const FieldNode>> fields_;
 
 public:
     explicit RecordTypeNode(FilePos pos);
-    ~RecordTypeNode() override;
+    ~RecordTypeNode() final;
+
+    const int getSize() const final;
 
     void addField(std::unique_ptr<const FieldNode> field);
-    const int getSize() const override;
 
-    void print(std::ostream &stream) const override;
+    void print(std::ostream &stream) const final;
 
 };
 

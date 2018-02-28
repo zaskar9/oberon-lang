@@ -19,12 +19,12 @@ private:
 
 public:
     explicit ArrayTypeNode(FilePos pos, int dim, std::unique_ptr<const TypeNode> memberType);
-    ~ArrayTypeNode() override;
+    ~ArrayTypeNode() final;
 
     const int getDimension() const;
     const TypeNode* getMemberType() const;
 
-    void print(std::ostream &stream) const override;
+    void print(std::ostream &stream) const final;
 
 };
 

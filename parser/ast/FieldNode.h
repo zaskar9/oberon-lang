@@ -21,12 +21,12 @@ private:
 
 public:
     FieldNode(FilePos pos, const std::string &name, std::unique_ptr<const TypeNode> type);
-    ~FieldNode() override;
+    ~FieldNode() final;
 
     const std::string getName() const;
     const TypeNode* getType() const;
 
-    void print(std::ostream &stream) const override;
+    void print(std::ostream &stream) const final;
 
 };
 

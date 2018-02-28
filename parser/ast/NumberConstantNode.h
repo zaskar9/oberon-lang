@@ -17,11 +17,11 @@ private:
 
 public:
     explicit NumberConstantNode(FilePos pos, int value);
-    ~NumberConstantNode() override;
+    ~NumberConstantNode() final;
 
     const int getValue() const;
 
-    void print(std::ostream &stream) const override;
+    void print(std::ostream &stream) const final;
 
 };
 

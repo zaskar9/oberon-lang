@@ -17,11 +17,11 @@ private:
 
 public:
     explicit StringConstantNode(FilePos pos, const std::string &value);
-    ~StringConstantNode() override;
+    ~StringConstantNode() final;
 
     const std::string getValue() const;
 
-    void print(std::ostream &stream) const override;
+    void print(std::ostream &stream) const final;
 
 };
 

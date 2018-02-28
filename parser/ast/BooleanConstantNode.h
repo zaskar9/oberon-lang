@@ -17,11 +17,11 @@ private:
 
 public:
     BooleanConstantNode(FilePos pos, bool value);
-    ~BooleanConstantNode() override;
+    ~BooleanConstantNode() final;
 
     const bool getValue() const;
 
-    void print(std::ostream &stream) const override;
+    void print(std::ostream &stream) const final;
 
 };
 

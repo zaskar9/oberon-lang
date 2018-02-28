@@ -17,10 +17,10 @@ private:
 
 public:
     explicit ConstantNode(NodeType nodeType, FilePos pos, ExpressionType exprType);
-    virtual ~ConstantNode();
+    ~ConstantNode() final;
 
-    virtual bool isConstant() const final;
-    virtual ExpressionType checkType() const final;
+    bool isConstant() const final;
+    ExpressionType checkType() const final;
 
 };
 

@@ -20,16 +20,16 @@ private:
 public:
     BinaryExpressionNode(FilePos pos, OperatorType op, std::unique_ptr<const ExpressionNode> lhs,
                          std::unique_ptr<const ExpressionNode> rhs);
-    ~BinaryExpressionNode() override;
+    ~BinaryExpressionNode() final;
 
-    bool isConstant() const override;
-    ExpressionType checkType() const override;
+    bool isConstant() const final;
+    ExpressionType checkType() const final;
 
     const OperatorType getOperator() const;
     const ExpressionNode* getLeftExpression() const;
     const ExpressionNode* getRightExpression() const;
 
-    void print(std::ostream &stream) const override;
+    void print(std::ostream &stream) const final;
 
 };
 
