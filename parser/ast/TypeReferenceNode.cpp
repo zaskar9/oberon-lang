@@ -12,7 +12,7 @@ TypeReferenceNode::TypeReferenceNode(const FilePos pos, const TypeNode* type) :
 
 TypeReferenceNode::~TypeReferenceNode() = default;
 
-const TypeNode* TypeReferenceNode::getType() const {
+const TypeNode* TypeReferenceNode::dereference() const {
     return type_;
 }
 

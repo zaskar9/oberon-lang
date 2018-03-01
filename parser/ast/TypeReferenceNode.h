@@ -16,10 +16,10 @@ private:
     const TypeNode* type_;
 
 public:
-    TypeReferenceNode(FilePos pos, const TypeNode* type);
+    explicit TypeReferenceNode(FilePos pos, const TypeNode* type);
     ~TypeReferenceNode() final;
 
-    const TypeNode* getType() const;
+    const TypeNode* dereference() const;
 
     void print(std::ostream &stream) const final;
 

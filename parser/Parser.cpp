@@ -15,6 +15,7 @@
 #include "../scanner/IdentToken.h"
 #include "../scanner/NumberToken.h"
 #include "../scanner/StringToken.h"
+#include "ast/ConstantReferenceNode.h"
 
 Parser::Parser(Scanner *scanner, SymbolTable *symbols, Logger *logger) :
         scanner_(scanner), symbols_(symbols), logger_(logger) {
@@ -236,6 +237,7 @@ std::unique_ptr<const ExpressionNode> Parser::factor() {
     logger_->debug("", "factor");
     auto token = scanner_->peekToken();
     if (token->getType() == TokenType::const_ident) {
+        FilePos pos = token->getPosition();
         std::string name = ident();
         auto symbol = symbols_->lookup(name);
         if (symbol == nullptr) {
@@ -246,6 +248,16 @@ std::unique_ptr<const ExpressionNode> Parser::factor() {
             || token->getType() == TokenType::lbrack) {
             selector();
         }
+        if (const ExpressionNode* expr = dynamic_cast<const ExpressionNode*>(symbol)) {
+            if (expr->isConstant()) {
+                return std::make_unique<ConstantReferenceNode>(pos,
+                                                               dynamic_cast<const ConstantNode*>(symbol));
+            }
+            std::cout << "TODO: variables..." << std::endl;
+            return nullptr;
+        }
+        std::cout << "TODO: error handling..." << std::endl;
+        return nullptr;
     } else if (token->getType() == TokenType::const_number) {
         auto number = dynamic_cast<const NumberToken*>(scanner_->nextToken().get());
         return std::make_unique<NumberConstantNode>(number->getPosition(), number->getValue());
@@ -272,9 +284,9 @@ std::unique_ptr<const ExpressionNode> Parser::factor() {
         scanner_->nextToken();
         return std::make_unique<UnaryExpressionNode>(token->getPosition(), OperatorType::NOT, factor());
     } else {
-        logger_->error(token->getPosition(), "unexpected token.");
+        logger_->error(token->getPosition(), "unexpected token: " + to_string(*token));
+        return nullptr;
     }
-    return nullptr;
 }
 
 // type = identifier | array_type | record_type .
@@ -308,7 +320,7 @@ std::unique_ptr<const ArrayTypeNode> Parser::array_type() {
     logger_->debug("", "array_type");
     FilePos pos = scanner_->nextToken()->getPosition(); // skip ARRAY keyword and get its position
     auto expr = expression();
-    if (expr->isConstant() && expression()->checkType() == ExpressionType::INTEGER) {
+    if (expr->isConstant() && expr->checkType() == ExpressionType::INTEGER) {
         int dim = foldNumber(expr.get());
         auto token = scanner_->nextToken();
         if (token->getType() == TokenType::kw_of) {
@@ -347,6 +359,7 @@ void Parser::field_list(RecordTypeNode *rtype) {
     if (token->getType() == TokenType::colon) {
         auto ts = type();
         for (auto &itr : idents) {
+            // TODO: the problem is that ts == nullptr after first iteration -> work with reference?
             rtype->addField(std::make_unique<const FieldNode>(token->getPosition(), itr, std::move(ts)));
         }
     } else {
@@ -612,8 +625,11 @@ const int Parser::foldNumber(const ExpressionNode *expr) const {
                 logger_->error(binExpr->getFilePos(), "incompatible operator.");
         }
     } else if (expr->getNodeType() == NodeType::number_constant) {
-        auto numConst = dynamic_cast<const NumberConstantNode*>(expr);
+        auto numConst = dynamic_cast<const NumberConstantNode *>(expr);
         return numConst->getValue();
+    } else if (expr->getNodeType() == NodeType::constant_reference) {
+        auto constRef = dynamic_cast<const ConstantReferenceNode*>(expr);
+        return foldNumber(constRef->dereference());
     } else {
         logger_->error(expr->getFilePos(), "incompatible expression.");
     }
@@ -670,8 +686,11 @@ const bool Parser::foldBoolean(const ExpressionNode *expr) const {
             logger_->error(expr->getFilePos(), "incompatible expression.");
         }
     } else if (expr->getNodeType() == NodeType::boolean_constant) {
-        auto boolConst = dynamic_cast<const BooleanConstantNode*>(expr);
+        auto boolConst = dynamic_cast<const BooleanConstantNode *>(expr);
         return boolConst->getValue();
+    } else if (expr->getNodeType() == NodeType::constant_reference) {
+        auto constRef = dynamic_cast<const ConstantReferenceNode*>(expr);
+        return foldBoolean(constRef->dereference());
     } else {
         logger_->error(expr->getFilePos(), "incompatible expression.");
     }
@@ -690,8 +709,11 @@ const std::string Parser::foldString(const ExpressionNode *expr) const {
                 logger_->error(binExpr->getFilePos(), "incompatible operator.");
         }
     } else if (expr->getNodeType() == NodeType::string_constant) {
-        auto stringConst = dynamic_cast<const StringConstantNode*>(expr);
+        auto stringConst = dynamic_cast<const StringConstantNode *>(expr);
         return stringConst->getValue();
+    } else if (expr->getNodeType() == NodeType::constant_reference) {
+        auto constRef = dynamic_cast<const ConstantReferenceNode*>(expr);
+        return foldString(constRef->dereference());
     } else {
         logger_->error(expr->getFilePos(), "incompatible expression.");
     }

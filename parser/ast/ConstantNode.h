@@ -17,7 +17,7 @@ private:
 
 public:
     explicit ConstantNode(NodeType nodeType, FilePos pos, ExpressionType exprType);
-    ~ConstantNode() final;
+    ~ConstantNode() override;
 
     bool isConstant() const final;
     ExpressionType checkType() const final;

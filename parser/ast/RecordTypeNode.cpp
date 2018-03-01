@@ -5,7 +5,7 @@
  */
 #include "RecordTypeNode.h"
 
-RecordTypeNode::RecordTypeNode(const FilePos pos) : TypeNode(NodeType::record_type, pos, 0) {
+RecordTypeNode::RecordTypeNode(const FilePos pos) : TypeNode(NodeType::record_type, pos, 0), fields_() {
 }
 
 RecordTypeNode::~RecordTypeNode() = default;
