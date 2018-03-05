@@ -21,10 +21,10 @@ class Symbol
 
 private:
     SymbolType type_;
-    const std::unique_ptr<Node> node_;
+    const std::unique_ptr<const Node> node_;
 
 public:
-    explicit Symbol(SymbolType type, std::unique_ptr<Node> node);
+    explicit Symbol(SymbolType type, std::unique_ptr<const Node> node);
     ~Symbol();
 
     const SymbolType getType() const;

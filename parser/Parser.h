@@ -11,13 +11,14 @@
 #include <vector>
 #include "../scanner/Scanner.h"
 #include "../util/Logger.h"
-#include "symbol/SymbolTable.h"
 #include "ast/Node.h"
 #include "ast/ConstantNode.h"
 #include "ast/ExpressionNode.h"
 #include "ast/TypeNode.h"
 #include "ast/ArrayTypeNode.h"
 #include "ast/RecordTypeNode.h"
+#include "ast/ProcedureNode.h"
+#include "symbol/SymbolTable.h"
 
 class Parser
 {
@@ -43,10 +44,10 @@ private:
     std::unique_ptr<const RecordTypeNode> record_type();
     void field_list(RecordTypeNode *rtype);
     void ident_list(std::vector<std::string> &idents);
-    std::unique_ptr<ProcedureSymbol> procedure_heading();
+    std::unique_ptr<ProcedureNode> procedure_heading();
     const Node* procedure_body();
-    void formal_parameters(ProcedureSymbol *ps);
-    void fp_section(ProcedureSymbol *ps);
+    void formal_parameters(ProcedureNode *ps);
+    void fp_section(ProcedureNode *ps);
     const Node* statement_sequence();
     const Node* statement();
     const Node* assignment();

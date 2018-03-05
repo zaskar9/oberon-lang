@@ -6,17 +6,18 @@
 
 #include <iostream>
 #include "Parser.h"
+#include "../scanner/IdentToken.h"
+#include "../scanner/NumberToken.h"
+#include "../scanner/StringToken.h"
 #include "ast/UnaryExpressionNode.h"
 #include "ast/BinaryExpressionNode.h"
 #include "ast/BooleanConstantNode.h"
 #include "ast/NumberConstantNode.h"
 #include "ast/StringConstantNode.h"
 #include "ast/TypeReferenceNode.h"
-#include "../scanner/IdentToken.h"
-#include "../scanner/NumberToken.h"
-#include "../scanner/StringToken.h"
 #include "ast/ConstantReferenceNode.h"
 #include "ast/VariableNode.h"
+#include "ast/ParameterNode.h"
 
 Parser::Parser(Scanner *scanner, SymbolTable *symbols, Logger *logger) :
         scanner_(scanner), symbols_(symbols), logger_(logger) {
@@ -383,7 +384,7 @@ void Parser::field_list(RecordTypeNode *rtype) {
     }
 }
 
-static const TypeNode* multiplex_type(int num, const TypeNode* type) {
+const TypeNode *multiplex_type(int num, const TypeNode *type) {
     if (num > 1 && type->getNodeType() == NodeType::type_reference) {
         return dynamic_cast<const TypeReferenceNode *>(type)->dereference();
     }
@@ -401,10 +402,10 @@ void Parser::ident_list(std::vector<std::string> &idents) {
 }
 
 // procedure_heading = "PROCEDURE" identifier [ formal_parameters ] .
-std::unique_ptr<ProcedureSymbol> Parser::procedure_heading() {
+std::unique_ptr<ProcedureNode> Parser::procedure_heading() {
     logger_->debug("", "procedure_heading");
-    scanner_->nextToken(); // skip PROCEDURE keyword
-    auto ps = std::make_unique<ProcedureSymbol>(ident());
+    auto token = scanner_->nextToken(); // skip PROCEDURE keyword
+    auto ps = std::make_unique<ProcedureNode>(token->getPosition(), ident());
     if (scanner_->peekToken()->getType() == TokenType::lparen) {
         formal_parameters(ps.get());
     }
@@ -429,7 +430,7 @@ const Node* Parser::procedure_body() {
 }
 
 // formal_parameters = "(" [ fp_section { ";" fp_section } ] ")".
-void Parser::formal_parameters(ProcedureSymbol *ps) {
+void Parser::formal_parameters(ProcedureNode *ps) {
     logger_->debug("", "formal_parameters");
     auto token = scanner_->nextToken(); // skip left parenthesis
     if (token->getType() == TokenType::lparen) {
@@ -450,7 +451,7 @@ void Parser::formal_parameters(ProcedureSymbol *ps) {
 }
 
 // fp_section = [ "VAR" ] ident_list ":" type .
-void Parser::fp_section(ProcedureSymbol *ps) {
+void Parser::fp_section(ProcedureNode *ps) {
     logger_->debug("", "fp_section");
     bool var = false;
     if (scanner_->peekToken()->getType() == TokenType::kw_var) {
@@ -464,8 +465,15 @@ void Parser::fp_section(ProcedureSymbol *ps) {
         logger_->error(token->getPosition(), ": expected.");
     }
     auto ts = type();
-    for (auto const &itr : idents) {
-        ps->addParameter(std::make_unique<ParameterSymbol>(itr, ts.get(), var));
+    auto pos = ts->getFilePos();
+    auto tptr = multiplex_type(idents.size(), ts.get());
+    for (int i = 0; i < idents.size(); i++) {
+        if (i > 0) {
+            ps->addParameter(std::make_unique<ParameterNode>(token->getPosition(), idents[i],
+                                                             std::make_unique<TypeReferenceNode>(pos, tptr), var));
+        } else {
+            ps->addParameter(std::make_unique<ParameterNode>(token->getPosition(), idents[i], std::move(ts), var));
+        }
     }
 }
 

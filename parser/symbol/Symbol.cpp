@@ -6,7 +6,7 @@
 
 #include "Symbol.h"
 
-Symbol::Symbol(const SymbolType type, std::unique_ptr<Node> node) : type_(type), node_(std::move(node)) {
+Symbol::Symbol(const SymbolType type, std::unique_ptr<const Node> node) : type_(type), node_(std::move(node)) {
 }
 
 Symbol::~Symbol() = default;

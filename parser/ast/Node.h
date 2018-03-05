@@ -17,7 +17,8 @@ enum class NodeType : char {
     unary_expression, binary_expression,
     constant_reference, boolean_constant, number_constant, string_constant,
     type_reference, record_type, array_type, basic_type,
-    field, variable
+    field, variable, parameter,
+    procedure
 };
 
 class Node {
