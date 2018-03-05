@@ -10,8 +10,8 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
-#include "ast/Node.h"
-#include "../util/Logger.h"
+#include "Symbol.h"
+#include "../../util/Logger.h"
 
 class SymbolTable
 {
@@ -20,7 +20,7 @@ private:
     int id_;
     Logger *logger_;
     std::unique_ptr<SymbolTable> super_;
-    std::unordered_map<std::string, std::unique_ptr<const Node>> map_;
+    std::unordered_map<std::string, std::unique_ptr<const Symbol>> map_;
 
     SymbolTable(std::unique_ptr<SymbolTable> super, Logger *logger);
 
@@ -28,8 +28,8 @@ public:
     explicit SymbolTable(Logger *logger);
     ~SymbolTable();
 
-    void insert(const std::string &name, std::unique_ptr<const Node> symbol);
-    const Node* lookup(const std::string &name) const;
+    void insert(const std::string &name, std::unique_ptr<const Symbol> symbol);
+    const Symbol* lookup(const std::string &name) const;
     SymbolTable* openScope();
     SymbolTable* closeScope() const;
     const bool isGlobal() const;

@@ -11,10 +11,8 @@ add_executable(oberon0c main.cpp
         scanner/NumberToken.cpp scanner/NumberToken.h
         scanner/StringToken.cpp scanner/StringToken.h
         parser/Parser.cpp parser/Parser.h
-        parser/SymbolTable.cpp parser/SymbolTable.h
+        parser/symbol/SymbolTable.cpp parser/symbol/SymbolTable.h
         parser/symbol/Symbol.cpp parser/symbol/Symbol.h
-        parser/symbol/ParameterSymbol.cpp parser/symbol/ParameterSymbol.h
-        parser/symbol/ProcedureSymbol.cpp parser/symbol/ProcedureSymbol.h
         parser/ast/Node.cpp parser/ast/Node.h
         parser/ast/ExpressionNode.cpp parser/ast/ExpressionNode.h
         parser/ast/UnaryExpressionNode.cpp parser/ast/UnaryExpressionNode.h
@@ -23,9 +21,11 @@ add_executable(oberon0c main.cpp
         parser/ast/BooleanConstantNode.cpp parser/ast/BooleanConstantNode.h
         parser/ast/NumberConstantNode.cpp parser/ast/NumberConstantNode.h
         parser/ast/StringConstantNode.cpp parser/ast/StringConstantNode.h
+        parser/ast/ConstantReferenceNode.cpp parser/ast/ConstantReferenceNode.h
         parser/ast/TypeNode.cpp parser/ast/TypeNode.h
         parser/ast/BasicTypeNode.cpp parser/ast/BasicTypeNode.h
         parser/ast/ArrayTypeNode.cpp parser/ast/ArrayTypeNode.h
         parser/ast/RecordTypeNode.cpp parser/ast/RecordTypeNode.h
+        parser/ast/FieldNode.cpp parser/ast/FieldNode.h
         parser/ast/TypeReferenceNode.cpp parser/ast/TypeReferenceNode.h
-        parser/ast/FieldNode.cpp parser/ast/FieldNode.h parser/ast/ConstantReferenceNode.cpp parser/ast/ConstantReferenceNode.h)
+        parser/ast/VariableNode.cpp parser/ast/VariableNode.h)

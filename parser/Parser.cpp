@@ -16,6 +16,7 @@
 #include "../scanner/NumberToken.h"
 #include "../scanner/StringToken.h"
 #include "ast/ConstantReferenceNode.h"
+#include "ast/VariableNode.h"
 
 Parser::Parser(Scanner *scanner, SymbolTable *symbols, Logger *logger) :
         scanner_(scanner), symbols_(symbols), logger_(logger) {
@@ -62,7 +63,7 @@ const Node* Parser::module() {
 const std::string Parser::ident() {
     auto token = scanner_->nextToken();
     if (token->getType() == TokenType::const_ident) {
-        const IdentToken* ident = dynamic_cast<const IdentToken*>(token.get());
+        auto ident = dynamic_cast<const IdentToken*>(token.get());
         logger_->debug("", to_string(*ident));
         return ident->getValue();
     } else {
@@ -99,7 +100,7 @@ void Parser::const_declarations() {
         if (token->getType() == TokenType::op_eq) {
             auto expr = expression();
             if (expr->isConstant()) {
-                symbols_->insert(name, fold(expr.get()));
+                symbols_->insert(name, std::make_unique<Symbol>(SymbolType::constant, fold(expr.get())));
             } else {
                 logger_->error(token->getPosition(), "expression must be constant.");
             }
@@ -121,7 +122,7 @@ void Parser::type_declarations() {
         std::string name = ident();
         auto token = scanner_->nextToken();
         if (token->getType() == TokenType::op_eq) {
-            symbols_->insert(name, type());
+            symbols_->insert(name, std::make_unique<Symbol>(SymbolType::type, type()));
             token = scanner_->nextToken();
             if (token->getType() != TokenType::semicolon) {
                 logger_->error(token->getPosition(), "; expected.");
@@ -133,7 +134,7 @@ void Parser::type_declarations() {
 }
 
 // var_declarations =  "VAR" { ident_list ":" type ";" } .
-const Node* Parser::var_declarations() {
+void Parser::var_declarations() {
     logger_->debug("", "var_declarations");
     scanner_->nextToken(); // skip VAR keyword
     while (scanner_->peekToken()->getType() == TokenType::const_ident) {
@@ -142,6 +143,18 @@ const Node* Parser::var_declarations() {
         auto token = scanner_->nextToken();
         if (token->getType() == TokenType::colon) {
             auto ts = type();
+            auto pos = ts->getFilePos();
+            auto tptr = multiplex_type(idents.size(), ts.get());
+            for (int i = 0; i < idents.size(); i++) {
+                std::string name = idents[i];
+                VariableNode* var;
+                if (i > 0) {
+                    var = new VariableNode(token->getPosition(), name, std::make_unique<TypeReferenceNode>(pos, tptr));
+                } else {
+                    var = new VariableNode(token->getPosition(), name, std::move(ts));
+                }
+                symbols_->insert(name, std::make_unique<Symbol>(SymbolType::variable, std::unique_ptr<VariableNode>(var)));
+            }
             token = scanner_->nextToken();
             if (token->getType() != TokenType::semicolon) {
                 logger_->error(token->getPosition(), "; expected.");
@@ -150,7 +163,6 @@ const Node* Parser::var_declarations() {
             logger_->error(token->getPosition(), ": expected.");
         }
     }
-    return nullptr;
 }
 
 // procedure_declaration = procedure_heading ";" procedure_body identifier ";" .
@@ -248,15 +260,15 @@ std::unique_ptr<const ExpressionNode> Parser::factor() {
             || token->getType() == TokenType::lbrack) {
             selector();
         }
-        if (const ExpressionNode* expr = dynamic_cast<const ExpressionNode*>(symbol)) {
-            if (expr->isConstant()) {
-                return std::make_unique<ConstantReferenceNode>(pos,
-                                                               dynamic_cast<const ConstantNode*>(symbol));
-            }
+        if (symbol->getType() == SymbolType::constant) {
+            auto constant = dynamic_cast<const ConstantNode*>(symbol->getNode());
+            return std::make_unique<ConstantReferenceNode>(pos, constant);
+        } else if (symbol->getType() == SymbolType::variable) {
+            auto variable = dynamic_cast<const VariableNode*>(symbol->getNode());
             std::cout << "TODO: variables..." << std::endl;
             return nullptr;
         }
-        std::cout << "TODO: error handling..." << std::endl;
+        std::cout << "TODO: error handling for: " << name << std::endl;
         return nullptr;
     } else if (token->getType() == TokenType::const_number) {
         auto number = dynamic_cast<const NumberToken*>(scanner_->nextToken().get());
@@ -298,10 +310,8 @@ std::unique_ptr<const TypeNode> Parser::type() {
         auto node = symbols_->lookup(name);
         if (node == nullptr) {
             logger_->error(token->getPosition(), "undefined type: " + name + ".");
-        } else if (node->getNodeType() == NodeType::basic_type
-                   || node->getNodeType() == NodeType::array_type
-                   || node->getNodeType() == NodeType::record_type) {
-            return std::make_unique<const TypeReferenceNode>(token->getPosition(), dynamic_cast<const TypeNode*>(node));
+        } else if (node->getType() == SymbolType::type) {
+            return std::make_unique<const TypeReferenceNode>(token->getPosition(), dynamic_cast<const TypeNode*>(node->getNode()));
         } else {
             logger_->error(token->getPosition(), name + " is not a type.");
         }
@@ -358,13 +368,26 @@ void Parser::field_list(RecordTypeNode *rtype) {
     auto token = scanner_->nextToken();
     if (token->getType() == TokenType::colon) {
         auto ts = type();
-        for (auto &itr : idents) {
-            // TODO: the problem is that ts == nullptr after first iteration -> work with reference?
-            rtype->addField(std::make_unique<const FieldNode>(token->getPosition(), itr, std::move(ts)));
+        auto pos = ts->getFilePos();
+        auto tptr = multiplex_type(idents.size(), ts.get());
+        for (int i = 0; i < idents.size(); i++) {
+            if (i > 0) {
+                rtype->addField(std::make_unique<const FieldNode>(token->getPosition(), idents[i],
+                                                                  std::make_unique<TypeReferenceNode>(pos, tptr)));
+            } else {
+                rtype->addField(std::make_unique<const FieldNode>(token->getPosition(), idents[i], std::move(ts)));
+            }
         }
     } else {
         logger_->error(token->getPosition(), ": expected.");
     }
+}
+
+static const TypeNode* multiplex_type(int num, const TypeNode* type) {
+    if (num > 1 && type->getNodeType() == NodeType::type_reference) {
+        return dynamic_cast<const TypeReferenceNode *>(type)->dereference();
+    }
+    return type;
 }
 
 // ident_list = ident { "," identifier } .

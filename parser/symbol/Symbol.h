@@ -10,9 +10,10 @@
 #include <memory>
 #include <ostream>
 #include <string>
+#include "../ast/Node.h"
 
 enum class SymbolType {
-    array_type, record_type, basic_type, number_const, boolean_const, string_const, variable, parameter, procedure
+    type, variable, constant, procedure
 };
 
 class Symbol
@@ -20,16 +21,16 @@ class Symbol
 
 private:
     SymbolType type_;
-    std::string name_;
+    const std::unique_ptr<Node> node_;
 
 public:
-    explicit Symbol(SymbolType type, const std::string &name);
-    virtual ~Symbol();
+    explicit Symbol(SymbolType type, std::unique_ptr<Node> node);
+    ~Symbol();
 
-    const SymbolType getSymbolType() const;
-    const std::string getName() const;
+    const SymbolType getType() const;
+    const Node* getNode() const;
 
-    virtual void print(std::ostream &stream) const = 0;
+    void print(std::ostream &stream) const;
     friend std::ostream& operator<<(std::ostream &stream, const Symbol &symbol);
 };
 

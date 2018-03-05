@@ -1,5 +1,5 @@
 /*
- * Implementation of the AST field nodes used by the Oberon-0 compiler.
+ * Implementation of the AST field declaration nodes used by the Oberon-0 compiler.
  *
  * Created by Michael Grossniklaus on 2/9/18.
  */

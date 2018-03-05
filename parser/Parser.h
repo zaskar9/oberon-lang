@@ -11,14 +11,13 @@
 #include <vector>
 #include "../scanner/Scanner.h"
 #include "../util/Logger.h"
-#include "SymbolTable.h"
+#include "symbol/SymbolTable.h"
 #include "ast/Node.h"
 #include "ast/ConstantNode.h"
 #include "ast/ExpressionNode.h"
 #include "ast/TypeNode.h"
 #include "ast/ArrayTypeNode.h"
 #include "ast/RecordTypeNode.h"
-#include "symbol/ProcedureSymbol.h"
 
 class Parser
 {
@@ -33,7 +32,7 @@ private:
     const Node* declarations();
     void const_declarations();
     void type_declarations();
-    const Node* var_declarations();
+    void var_declarations();
     const Node* procedure_declaration();
     std::unique_ptr<const ExpressionNode> expression();
     std::unique_ptr<const ExpressionNode> simple_expression();
@@ -69,5 +68,7 @@ public:
 };
 
 static OperatorType token_to_operator(TokenType token);
+
+static const TypeNode* multiplex_type(int num, const TypeNode* type);
 
 #endif //OBERON0C_PARSER_H
