@@ -42,8 +42,8 @@ BEGIN
             IF (a[i] > a[j]) & (2 > 1) THEN Swap(a[i], a[j]) END;
             j := j + 1
         END;
-        i := i + 1;
-        s := "Hello \"World\"!\n"
+        i := i + 1
+        (* ; s := "Hello \"World\"!\n" *)
     END
 END Bubble;
 

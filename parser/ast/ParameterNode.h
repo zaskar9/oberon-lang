@@ -10,21 +10,18 @@
 
 #include <memory>
 #include <string>
+#include "NamedValueNode.h"
 #include "TypeNode.h"
 
-class ParameterNode final : public Node {
+class ParameterNode final : public NamedValueNode {
 
 private:
-    std::string name_;
-    std::unique_ptr<const TypeNode> type_;
     bool var_;
 
 public:
-    explicit ParameterNode(FilePos pos, const std::string &name, std::unique_ptr<const TypeNode> type, bool var);
+    explicit ParameterNode(FilePos pos, const std::string &name, const std::shared_ptr<const TypeNode> &type, bool var);
     ~ParameterNode() final;
 
-    const std::string getName() const;
-    const TypeNode* getType() const;
     const bool isVar() const;
 
     void print(std::ostream &stream) const final;

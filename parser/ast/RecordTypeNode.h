@@ -10,12 +10,12 @@
 #include <memory>
 #include <vector>
 #include "TypeNode.h"
-#include "FieldNode.h"
+#include "NamedValueNode.h"
 
 class RecordTypeNode final : public TypeNode {
 
 private:
-    std::vector<std::unique_ptr<const FieldNode>> fields_;
+    std::vector<std::unique_ptr<const NamedValueNode>> fields_;
 
 public:
     explicit RecordTypeNode(FilePos pos);
@@ -23,7 +23,7 @@ public:
 
     const int getSize() const final;
 
-    void addField(std::unique_ptr<const FieldNode> field);
+    void addField(std::unique_ptr<const NamedValueNode> field);
 
     void print(std::ostream &stream) const final;
 

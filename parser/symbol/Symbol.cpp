@@ -6,7 +6,7 @@
 
 #include "Symbol.h"
 
-Symbol::Symbol(const SymbolType type, std::unique_ptr<const Node> node) : type_(type), node_(std::move(node)) {
+Symbol::Symbol(const SymbolType type, const Node *node) : type_(type), node_(node) {
 }
 
 Symbol::~Symbol() = default;
@@ -16,7 +16,7 @@ const SymbolType Symbol::getType() const {
 }
 
 const Node* Symbol::getNode() const {
-    return node_.get();
+    return node_;
 }
 
 void Symbol::print(std::ostream &stream) const {

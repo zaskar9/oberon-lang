@@ -4,9 +4,10 @@
  * Created by Michael Grossniklaus on 2/2/18.
  */
 
+
 #include "Node.h"
 
-Node::Node(const NodeType type, const FilePos pos) : type_(type), pos_(pos) {
+Node::Node(const NodeType nodeType, const FilePos pos) : nodeType_(nodeType), pos_(pos) {
 }
 
 Node::~Node() = default;

@@ -17,18 +17,18 @@ enum class NodeType : char {
     unary_expression, binary_expression,
     constant_reference, boolean_constant, number_constant, string_constant,
     type_reference, record_type, array_type, basic_type,
-    field, variable, parameter,
-    procedure
+    field, parameter, variable, variable_reference,
+    module, procedure
 };
 
 class Node {
 
 private:
-    NodeType type_;
+    NodeType nodeType_;
     FilePos pos_;
 
 public:
-    explicit Node(NodeType type, FilePos pos);
+    explicit Node(NodeType nodeType, FilePos pos);
     virtual ~Node() = 0;
     
     const NodeType getNodeType() const;

@@ -8,16 +8,16 @@
 #define OBERON0C_NUMBERCONSTANTNODE_H
 
 
-#include "ConstantNode.h"
+#include "ValueNode.h"
 
-class NumberConstantNode final : public ConstantNode {
+class NumberNode final : public ValueNode {
 
 private:
     int value_;
 
 public:
-    explicit NumberConstantNode(FilePos pos, int value);
-    ~NumberConstantNode() final;
+    explicit NumberNode(FilePos pos, int value);
+    ~NumberNode() final;
 
     const int getValue() const;
 

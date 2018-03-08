@@ -10,10 +10,10 @@
 
 #include <memory>
 #include <vector>
-#include "Node.h"
+#include "BlockNode.h"
 #include "ParameterNode.h"
 
-class ProcedureNode final : public Node {
+class ProcedureNode final : public BlockNode {
 
 private:
     std::string name_;

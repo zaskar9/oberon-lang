@@ -1,28 +1,30 @@
-/*
- * Header file of the AST constant nodes used by the Oberon-0 compiler.
- *
- * Created by Michael Grossniklaus on 2/19/18.
- */
+//
+// Created by Michael Grossniklaus on 3/7/18.
+//
 
-#ifndef OBERON0C_CONSTANTNODE_H
-#define OBERON0C_CONSTANTNODE_H
+#ifndef OBERON0C_CONSTANTDECLARATIONNODE_H
+#define OBERON0C_CONSTANTDECLARATIONNODE_H
 
 
-#include "ExpressionNode.h"
+#include "NamedValueNode.h"
+#include "ValueNode.h"
+#include "BasicTypeNode.h"
 
-class ConstantNode : public ExpressionNode {
+class ConstantNode final : public NamedValueNode {
 
 private:
-    ExpressionType exprType_;
+    std::unique_ptr<ValueNode> value_;
 
 public:
-    explicit ConstantNode(NodeType nodeType, FilePos pos, ExpressionType exprType);
-    ~ConstantNode() override;
+    explicit ConstantNode(FilePos pos, const std::string &name, const std::shared_ptr<BasicTypeNode> &type,
+                          std::unique_ptr<ValueNode> value);
+    ~ConstantNode() final;
 
-    bool isConstant() const final;
-    ExpressionType checkType() const final;
+    const ValueNode* getValue() const;
+
+    void print(std::ostream &stream) const;
 
 };
 
 
-#endif //OBERON0C_CONSTANTNODE_H
+#endif //OBERON0C_CONSTANTDECLARATIONNODE_H

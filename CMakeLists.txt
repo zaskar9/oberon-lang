@@ -17,17 +17,13 @@ add_executable(oberon0c main.cpp
         parser/ast/ExpressionNode.cpp parser/ast/ExpressionNode.h
         parser/ast/UnaryExpressionNode.cpp parser/ast/UnaryExpressionNode.h
         parser/ast/BinaryExpressionNode.cpp parser/ast/BinaryExpressionNode.h
-        parser/ast/ConstantNode.cpp parser/ast/ConstantNode.h
-        parser/ast/BooleanConstantNode.cpp parser/ast/BooleanConstantNode.h
-        parser/ast/NumberConstantNode.cpp parser/ast/NumberConstantNode.h
-        parser/ast/StringConstantNode.cpp parser/ast/StringConstantNode.h
-        parser/ast/ConstantReferenceNode.cpp parser/ast/ConstantReferenceNode.h
+        parser/ast/ValueNode.cpp parser/ast/ValueNode.h
+        parser/ast/BooleanNode.cpp parser/ast/BooleanNode.h
+        parser/ast/NumberNode.cpp parser/ast/NumberNode.h
+        parser/ast/StringNode.cpp parser/ast/StringNode.h
         parser/ast/TypeNode.cpp parser/ast/TypeNode.h
         parser/ast/BasicTypeNode.cpp parser/ast/BasicTypeNode.h
         parser/ast/ArrayTypeNode.cpp parser/ast/ArrayTypeNode.h
         parser/ast/RecordTypeNode.cpp parser/ast/RecordTypeNode.h
-        parser/ast/FieldNode.cpp parser/ast/FieldNode.h
-        parser/ast/TypeReferenceNode.cpp parser/ast/TypeReferenceNode.h
-        parser/ast/VariableNode.cpp parser/ast/VariableNode.h
         parser/ast/ProcedureNode.cpp parser/ast/ProcedureNode.h
-        parser/ast/ParameterNode.cpp parser/ast/ParameterNode.h)
+        parser/ast/ParameterNode.cpp parser/ast/ParameterNode.h parser/ast/ReferenceNode.cpp parser/ast/ReferenceNode.h parser/ast/ModuleNode.cpp parser/ast/ModuleNode.h parser/ast/BlockNode.cpp parser/ast/BlockNode.h parser/ast/NamedValueNode.cpp parser/ast/NamedValueNode.h parser/ast/ConstantNode.cpp parser/ast/ConstantNode.h)

@@ -6,8 +6,8 @@
 
 #include "ArrayTypeNode.h"
 
-ArrayTypeNode::ArrayTypeNode(const FilePos pos, const int dim, std::unique_ptr<const TypeNode> memberType) :
-        TypeNode(NodeType::array_type, pos, dim * memberType->getSize()), dim_(dim), memberType_(std::move(memberType)) {
+ArrayTypeNode::ArrayTypeNode(const FilePos pos, const int dim, const std::unique_ptr<const TypeNode> &memberType) :
+        TypeNode(NodeType::array_type, pos, dim * memberType->getSize()), dim_(dim), memberType_(memberType) {
 }
 
 ArrayTypeNode::~ArrayTypeNode() = default;
@@ -16,7 +16,7 @@ const int ArrayTypeNode::getDimension() const {
     return dim_;
 }
 
-const TypeNode* ArrayTypeNode::getMemberType() const {
+const std::shared_ptr<const TypeNode> ArrayTypeNode::getMemberType() const {
     return memberType_.get();
 }
 

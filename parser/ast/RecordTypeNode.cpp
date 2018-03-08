@@ -10,7 +10,7 @@ RecordTypeNode::RecordTypeNode(const FilePos pos) : TypeNode(NodeType::record_ty
 
 RecordTypeNode::~RecordTypeNode() = default;
 
-void RecordTypeNode::addField(std::unique_ptr<const FieldNode> field) {
+void RecordTypeNode::addField(std::unique_ptr<const NamedValueNode> field) {
     fields_.push_back(std::move(field));
 }
 

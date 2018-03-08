@@ -8,16 +8,18 @@
 #define OBERON0C_PARSER_H
 
 
+#include <memory>
 #include <vector>
 #include "../scanner/Scanner.h"
 #include "../util/Logger.h"
 #include "ast/Node.h"
-#include "ast/ConstantNode.h"
+#include "ast/ValueNode.h"
 #include "ast/ExpressionNode.h"
 #include "ast/TypeNode.h"
 #include "ast/ArrayTypeNode.h"
 #include "ast/RecordTypeNode.h"
 #include "ast/ProcedureNode.h"
+#include "ast/ModuleNode.h"
 #include "symbol/SymbolTable.h"
 
 class Parser
@@ -25,16 +27,15 @@ class Parser
 
 private:
     Scanner *scanner_;
-    SymbolTable *symbols_;
     Logger *logger_;
 
-    const Node* module();
     const std::string ident();
-    const Node* declarations();
-    void const_declarations();
-    void type_declarations();
-    void var_declarations();
-    const Node* procedure_declaration();
+    const ModuleNode* module(SymbolTable *symbols);
+    void declarations(SymbolTable *symbols, BlockNode *block);
+    void const_declarations(SymbolTable *symbols, BlockNode *block);
+    void type_declarations(SymbolTable *symbols, BlockNode *block);
+    void var_declarations(SymbolTable *symbols, BlockNode *block);
+    void procedure_declaration(SymbolTable *symbols, BlockNode *block);
     std::unique_ptr<const ExpressionNode> expression();
     std::unique_ptr<const ExpressionNode> simple_expression();
     std::unique_ptr<const ExpressionNode> term();
@@ -56,15 +57,15 @@ private:
     const Node* while_statement();
     const Node* actual_parameters();
     const Node* selector();
-    std::unique_ptr<const ConstantNode> fold(const ExpressionNode *expr) const;
+    std::unique_ptr<const ValueNode> fold(const ExpressionNode *expr) const;
     const int foldNumber(const ExpressionNode *expr) const;
     const bool foldBoolean(const ExpressionNode *expr) const;
     const std::string foldString(const ExpressionNode *expr) const;
 
 public:
-    explicit Parser(Scanner *scanner, SymbolTable *symbols, Logger *logger);
+    explicit Parser(Scanner *scanner, Logger *logger);
     ~Parser();
-    const Node* parse();
+    const std::unique_ptr<Node> parse();
 
 };
 

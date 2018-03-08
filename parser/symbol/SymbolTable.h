@@ -17,22 +17,19 @@ class SymbolTable
 {
 
 private:
-    int id_;
-    Logger *logger_;
-    std::unique_ptr<SymbolTable> super_;
+    const SymbolTable *super_;
     std::unordered_map<std::string, std::unique_ptr<const Symbol>> map_;
 
-    SymbolTable(std::unique_ptr<SymbolTable> super, Logger *logger);
+    explicit SymbolTable(const SymbolTable *super);
 
 public:
-    explicit SymbolTable(Logger *logger);
+    explicit SymbolTable();
     ~SymbolTable();
 
     void insert(const std::string &name, std::unique_ptr<const Symbol> symbol);
     const Symbol* lookup(const std::string &name) const;
-    SymbolTable* openScope();
-    SymbolTable* closeScope() const;
-    const bool isGlobal() const;
+    const bool exists(const std::string &name) const;
+    std::unique_ptr<SymbolTable> openScope();
 
 };
 

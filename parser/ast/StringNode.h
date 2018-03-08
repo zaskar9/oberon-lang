@@ -8,16 +8,16 @@
 #define OBERON0C_STRINGCONSTANTNODE_H
 
 
-#include "ConstantNode.h"
+#include "ValueNode.h"
 
-class StringConstantNode final : public ConstantNode {
+class StringNode final : public ValueNode {
 
 private:
     std::string value_;
 
 public:
-    explicit StringConstantNode(FilePos pos, const std::string &value);
-    ~StringConstantNode() final;
+    explicit StringNode(FilePos pos, const std::string &value);
+    ~StringNode() final;
 
     const std::string getValue() const;
 

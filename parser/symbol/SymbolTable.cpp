@@ -8,11 +8,10 @@
 #include "SymbolTable.h"
 #include "../ast/BasicTypeNode.h"
 
-SymbolTable::SymbolTable(std::unique_ptr<SymbolTable> super, Logger *logger) :
-        id_(0), logger_(logger), super_(std::move(super)), map_() {
+SymbolTable::SymbolTable(const SymbolTable *super) : super_(super), map_() {
 }
 
-SymbolTable::SymbolTable(Logger *logger) : SymbolTable(nullptr, logger) {
+SymbolTable::SymbolTable() : SymbolTable(nullptr) {
     // initialize global scope
     insert("INTEGER", std::make_unique<Symbol>(SymbolType::type, std::make_unique<BasicTypeNode>("INTEGER", 4)));
     insert("BOOLEAN", std::make_unique<Symbol>(SymbolType::type, std::make_unique<BasicTypeNode>("BOOLEAN", 1)));
@@ -26,9 +25,19 @@ void SymbolTable::insert(const std::string &name, std::unique_ptr<const Symbol> 
 
 const Symbol* SymbolTable::lookup(const std::string &name) const {
     auto itr = map_.find(name);
-    return itr != map_.end() ? (itr->second).get() : nullptr;
+    if (itr == map_.end()) {
+        if (super_ != nullptr) {
+            return super_->lookup(name);
+        }
+        return nullptr;
+    }
+    return (itr->second).get();
 }
 
-const bool SymbolTable::isGlobal() const {
-    return super_ == nullptr;
+const bool SymbolTable::exists(const std::string &name) const {
+    return map_[name] != nullptr;
+}
+
+std::unique_ptr<SymbolTable> SymbolTable::openScope() {
+    return std::make_unique<SymbolTable>(this);
 }

@@ -8,16 +8,16 @@
 #define OBERON0C_BOOLEANCONSTANTNODE_H
 
 
-#include "ConstantNode.h"
+#include "ValueNode.h"
 
-class BooleanConstantNode final : public ConstantNode {
+class BooleanNode final : public ValueNode {
 
 private:
     bool value_;
 
 public:
-    BooleanConstantNode(FilePos pos, bool value);
-    ~BooleanConstantNode() final;
+    BooleanNode(FilePos pos, bool value);
+    ~BooleanNode() final;
 
     const bool getValue() const;
 

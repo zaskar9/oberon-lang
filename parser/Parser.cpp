@@ -11,54 +11,24 @@
 #include "../scanner/StringToken.h"
 #include "ast/UnaryExpressionNode.h"
 #include "ast/BinaryExpressionNode.h"
-#include "ast/BooleanConstantNode.h"
-#include "ast/NumberConstantNode.h"
-#include "ast/StringConstantNode.h"
+#include "ast/BooleanNode.h"
+#include "ast/NumberNode.h"
+#include "ast/StringNode.h"
 #include "ast/TypeReferenceNode.h"
 #include "ast/ConstantReferenceNode.h"
-#include "ast/VariableNode.h"
+#include "ast/VariableDeclarationNode.h"
 #include "ast/ParameterNode.h"
+#include "ast/ReferenceNode.h"
 
-Parser::Parser(Scanner *scanner, SymbolTable *symbols, Logger *logger) :
-        scanner_(scanner), symbols_(symbols), logger_(logger) {
+Parser::Parser(Scanner *scanner, Logger *logger) :
+        scanner_(scanner), logger_(logger) {
 }
 
 Parser::~Parser() = default;
 
-const Node* Parser::parse() {
-    return module();
-}
-
-// module = "MODULE" identifier ";" declarations [ "BEGIN" statement_sequence ] "END" ident "." .
-const Node* Parser::module() {
-    logger_->debug("", "module");
-    auto token = scanner_->nextToken();
-    if (token->getType() == TokenType::kw_module) {
-        ident();
-        token = scanner_->nextToken();
-        if (token->getType() == TokenType::semicolon) {
-            declarations();
-            token = scanner_->nextToken();
-            if (token->getType() == TokenType::kw_begin) {
-                statement_sequence();
-                token = scanner_->nextToken();
-            }
-            if (token->getType() == TokenType::kw_end) {
-                ident();
-                token = scanner_->nextToken();
-                if (token->getType() != TokenType::period) {
-                    logger_->error(token->getPosition(), ". expected.");
-                }
-            } else {
-                logger_->error(token->getPosition(), "END expected.");
-            }
-        } else {
-            logger_->error(token->getPosition(), "; expected.");
-        }
-    } else {
-        logger_->error(token->getPosition(), "MODULE expected.");
-    }
-    return nullptr;
+const std::unique_ptr<const Node> Parser::parse() {
+    auto symbols = std::make_unique<SymbolTable>();
+    return std::unique_ptr<const Node>(module(symbols.get()));
 }
 
 const std::string Parser::ident() {
@@ -73,35 +43,78 @@ const std::string Parser::ident() {
     return "";
 }
 
-// declarations = [ const_declarations ] [ type_declarations ] [ var_declarations ] { ProcedureDeclaration } .
-const Node* Parser::declarations() {
-    logger_->debug("", "declarations");
-    if (scanner_->peekToken()->getType() == TokenType::kw_const) {
-        const_declarations();
-    }
-    if (scanner_->peekToken()->getType() == TokenType::kw_type) {
-        type_declarations();
-    }
-    if (scanner_->peekToken()->getType() == TokenType::kw_var) {
-        var_declarations();
-    }
-    while (scanner_->peekToken()->getType() == TokenType::kw_procedure) {
-        procedure_declaration();
+// module = "MODULE" identifier ";" declarations [ "BEGIN" statement_sequence ] "END" ident "." .
+const ModuleNode* Parser::module(SymbolTable *symbols) {
+    logger_->debug("", "module");
+    auto token = scanner_->nextToken();
+    if (token->getType() == TokenType::kw_module) {
+        auto module = new ModuleNode(token->getPosition(), ident());
+        token = scanner_->nextToken();
+        if (token->getType() == TokenType::semicolon) {
+            declarations(symbols, module);
+            token = scanner_->nextToken();
+            if (token->getType() == TokenType::kw_begin) {
+                statement_sequence();
+                token = scanner_->nextToken();
+            }
+            if (token->getType() == TokenType::kw_end) {
+                std::string name = ident();
+                if (name == module->getName()) {
+                    token = scanner_->nextToken();
+                    if (token->getType() == TokenType::period) {
+                        return module;
+                    } else {
+                        logger_->error(token->getPosition(), ". expected.");
+                    }
+                } else {
+                    logger_->error(token->getPosition(), module->getName() + " expected.");
+                }
+            } else {
+                logger_->error(token->getPosition(), "END expected.");
+            }
+        } else {
+            logger_->error(token->getPosition(), "; expected.");
+        }
+    } else {
+        logger_->error(token->getPosition(), "MODULE expected.");
     }
     return nullptr;
 }
 
+// declarations = [ const_declarations ] [ type_declarations ] [ var_declarations ] { ProcedureDeclaration } .
+void Parser::declarations(SymbolTable *symbols, BlockNode *block) {
+    logger_->debug("", "declarations");
+    if (scanner_->peekToken()->getType() == TokenType::kw_const) {
+        const_declarations(symbols, block);
+    }
+    if (scanner_->peekToken()->getType() == TokenType::kw_type) {
+        type_declarations(symbols, block);
+    }
+    if (scanner_->peekToken()->getType() == TokenType::kw_var) {
+        var_declarations(symbols, block);
+    }
+    while (scanner_->peekToken()->getType() == TokenType::kw_procedure) {
+        auto scope = symbols->openScope();
+        procedure_declaration(scope.get(), block);
+    }
+}
+
 // const_declarations = "CONST" { identifier "=" expression ";" } .
-void Parser::const_declarations() {
+void Parser::const_declarations(SymbolTable *symbols, BlockNode *block) {
     logger_->debug("", "const_declarations");
     scanner_->nextToken(); // skip CONST keyword
     while (scanner_->peekToken()->getType() == TokenType::const_ident) {
-        const std::string name = this->ident();
+        const std::string name = ident();
+        if (symbols->exists(name) && symbols->lookup(name)->getType() != SymbolType::type) {
+            logger_->error(scanner_->peekToken()->getPosition(), "duplicate definition: " + name);
+        }
         auto token = scanner_->nextToken();
         if (token->getType() == TokenType::op_eq) {
             auto expr = expression();
             if (expr->isConstant()) {
-                symbols_->insert(name, std::make_unique<Symbol>(SymbolType::constant, fold(expr.get())));
+                auto constant = fold(expr.get());
+                symbols->insert(name, std::make_unique<Symbol>(SymbolType::constant, constant.get()));
+                block->addConstant(std::move(constant));
             } else {
                 logger_->error(token->getPosition(), "expression must be constant.");
             }
@@ -116,14 +129,19 @@ void Parser::const_declarations() {
 }
 
 // type_declarations =  "TYPE" { identifier "=" type ";" } .
-void Parser::type_declarations() {
+void Parser::type_declarations(SymbolTable *symbols, BlockNode *block) {
     logger_->debug("", "type_declarations");
     scanner_->nextToken(); // skip TYPE keyword
     while (scanner_->peekToken()->getType() == TokenType::const_ident) {
         std::string name = ident();
+        if (symbols->exists(name) && symbols->lookup(name)->getType() == SymbolType::type) {
+            logger_->error(scanner_->peekToken()->getPosition(), "duplicate definition: " + name);
+        }
         auto token = scanner_->nextToken();
         if (token->getType() == TokenType::op_eq) {
-            symbols_->insert(name, std::make_unique<Symbol>(SymbolType::type, type()));
+            auto type = type();
+            symbols->insert(name, std::make_unique<Symbol>(SymbolType::type, type.get()));
+            block->addType(std::move(type));
             token = scanner_->nextToken();
             if (token->getType() != TokenType::semicolon) {
                 logger_->error(token->getPosition(), "; expected.");
@@ -135,7 +153,7 @@ void Parser::type_declarations() {
 }
 
 // var_declarations =  "VAR" { ident_list ":" type ";" } .
-void Parser::var_declarations() {
+void Parser::var_declarations(SymbolTable *symbols, BlockNode *block) {
     logger_->debug("", "var_declarations");
     scanner_->nextToken(); // skip VAR keyword
     while (scanner_->peekToken()->getType() == TokenType::const_ident) {
@@ -148,13 +166,15 @@ void Parser::var_declarations() {
             auto tptr = multiplex_type(idents.size(), ts.get());
             for (int i = 0; i < idents.size(); i++) {
                 std::string name = idents[i];
-                VariableNode* var;
+                VariableDeclarationNode* var;
                 if (i > 0) {
-                    var = new VariableNode(token->getPosition(), name, std::make_unique<TypeReferenceNode>(pos, tptr));
+                    var = new VariableDeclarationNode(token->getPosition(), name, std::make_unique<TypeReferenceNode>(pos, tptr));
                 } else {
-                    var = new VariableNode(token->getPosition(), name, std::move(ts));
+                    var = new VariableDeclarationNode(token->getPosition(), name, std::move(ts));
                 }
-                symbols_->insert(name, std::make_unique<Symbol>(SymbolType::variable, std::unique_ptr<VariableNode>(var)));
+                if (!symbols_->insert(name, std::make_unique<Symbol>(SymbolType::variable, std::unique_ptr<VariableDeclarationNode>(var)))) {
+                    logger_->error(token->getPosition(), "duplicate definition: " + name);
+                }
             }
             token = scanner_->nextToken();
             if (token->getType() != TokenType::semicolon) {
@@ -167,7 +187,7 @@ void Parser::var_declarations() {
 }
 
 // procedure_declaration = procedure_heading ";" procedure_body identifier ";" .
-const Node* Parser::procedure_declaration() {
+void Parser::procedure_declaration(SymbolTable *symbols, BlockNode *block) {
     logger_->debug("", "procedure_declaration");
     procedure_heading();
     auto token = scanner_->nextToken();
@@ -180,7 +200,6 @@ const Node* Parser::procedure_declaration() {
     if (token->getType() != TokenType::semicolon) {
         logger_->error(token->getPosition(),"; expected.");
     }
-    return nullptr;
 }
 
 // expression = simple_expression [ ( "=" | "#" | "<" | "<=" | ">" | ">=" ) simple_expression ] .
@@ -253,36 +272,38 @@ std::unique_ptr<const ExpressionNode> Parser::factor() {
         FilePos pos = token->getPosition();
         std::string name = ident();
         auto symbol = symbols_->lookup(name);
-        if (symbol == nullptr) {
+        if (symbol != nullptr) {
+            token = scanner_->peekToken();
+            if (token->getType() == TokenType::period
+                || token->getType() == TokenType::lbrack) {
+                selector();
+            }
+            if (symbol->getType() == SymbolType::constant) {
+                auto constant = dynamic_cast<const ValueNode *>(symbol->getNode());
+                return std::make_unique<ConstantReferenceNode>(pos, constant);
+            } else if (symbol->getType() == SymbolType::variable) {
+                auto variable = dynamic_cast<const VariableDeclarationNode *>(symbol->getNode());
+                return std::make_unique<ReferenceNode>(pos, variable);
+            } else {
+                logger_->error(token->getPosition(), "unknown symbol: " + to_string(symbol->getNode()) + ".");
+                return nullptr;
+            }
+        } else {
             logger_->error(token->getPosition(), "undefined identifier: " + name + ".");
-        }
-        token = scanner_->peekToken();
-        if (token->getType() == TokenType::period
-            || token->getType() == TokenType::lbrack) {
-            selector();
-        }
-        if (symbol->getType() == SymbolType::constant) {
-            auto constant = dynamic_cast<const ConstantNode*>(symbol->getNode());
-            return std::make_unique<ConstantReferenceNode>(pos, constant);
-        } else if (symbol->getType() == SymbolType::variable) {
-            auto variable = dynamic_cast<const VariableNode*>(symbol->getNode());
-            std::cout << "TODO: variables..." << std::endl;
             return nullptr;
         }
-        std::cout << "TODO: error handling for: " << name << std::endl;
-        return nullptr;
     } else if (token->getType() == TokenType::const_number) {
         auto number = dynamic_cast<const NumberToken*>(scanner_->nextToken().get());
-        return std::make_unique<NumberConstantNode>(number->getPosition(), number->getValue());
+        return std::make_unique<NumberNode>(number->getPosition(), number->getValue());
     } else if (token->getType() == TokenType::const_string) {
         auto string = dynamic_cast<const StringToken*>(scanner_->nextToken().get());
-        return std::make_unique<StringConstantNode>(string->getPosition(), string->getValue());
+        return std::make_unique<StringNode>(string->getPosition(), string->getValue());
     } else if (token->getType() == TokenType::const_true) {
         scanner_->nextToken();
-        return std::make_unique<BooleanConstantNode>(token->getPosition(), true);
+        return std::make_unique<BooleanNode>(token->getPosition(), true);
     } else if (token->getType() == TokenType::const_false) {
         scanner_->nextToken();
-        return std::make_unique<BooleanConstantNode>(token->getPosition(), false);
+        return std::make_unique<BooleanNode>(token->getPosition(), false);
     } else if (token->getType() == TokenType::lparen) {
         scanner_->nextToken();
         auto expr = expression();
@@ -384,7 +405,7 @@ void Parser::field_list(RecordTypeNode *rtype) {
     }
 }
 
-const TypeNode *multiplex_type(int num, const TypeNode *type) {
+const TypeNode* multiplex_type(int num, const TypeNode *type) {
     if (num > 1 && type->getNodeType() == NodeType::type_reference) {
         return dynamic_cast<const TypeReferenceNode *>(type)->dereference();
     }
@@ -617,14 +638,14 @@ const Node* Parser::selector() {
     return nullptr;
 }
 
-std::unique_ptr<const ConstantNode> Parser::fold(const ExpressionNode *expr) const {
+std::unique_ptr<const ValueNode> Parser::fold(const ExpressionNode *expr) const {
     switch (expr->checkType()) {
         case ExpressionType::INTEGER:
-            return std::make_unique<const NumberConstantNode>(expr->getFilePos(), foldNumber(expr));
+            return std::make_unique<const NumberNode>(expr->getFilePos(), foldNumber(expr));
         case ExpressionType::BOOLEAN:
-            return std::make_unique<const BooleanConstantNode>(expr->getFilePos(), foldBoolean(expr));
+            return std::make_unique<const BooleanNode>(expr->getFilePos(), foldBoolean(expr));
         case ExpressionType::STRING:
-            return std::make_unique<const StringConstantNode>(expr->getFilePos(), foldString(expr));
+            return std::make_unique<const StringNode>(expr->getFilePos(), foldString(expr));
         case ExpressionType::UNDEF:
 		default:
             logger_->error(expr->getFilePos(), "incompatible types.");
@@ -656,7 +677,7 @@ const int Parser::foldNumber(const ExpressionNode *expr) const {
                 logger_->error(binExpr->getFilePos(), "incompatible operator.");
         }
     } else if (expr->getNodeType() == NodeType::number_constant) {
-        auto numConst = dynamic_cast<const NumberConstantNode *>(expr);
+        auto numConst = dynamic_cast<const NumberNode *>(expr);
         return numConst->getValue();
     } else if (expr->getNodeType() == NodeType::constant_reference) {
         auto constRef = dynamic_cast<const ConstantReferenceNode*>(expr);
@@ -717,7 +738,7 @@ const bool Parser::foldBoolean(const ExpressionNode *expr) const {
             logger_->error(expr->getFilePos(), "incompatible expression.");
         }
     } else if (expr->getNodeType() == NodeType::boolean_constant) {
-        auto boolConst = dynamic_cast<const BooleanConstantNode *>(expr);
+        auto boolConst = dynamic_cast<const BooleanNode *>(expr);
         return boolConst->getValue();
     } else if (expr->getNodeType() == NodeType::constant_reference) {
         auto constRef = dynamic_cast<const ConstantReferenceNode*>(expr);
@@ -740,7 +761,7 @@ const std::string Parser::foldString(const ExpressionNode *expr) const {
                 logger_->error(binExpr->getFilePos(), "incompatible operator.");
         }
     } else if (expr->getNodeType() == NodeType::string_constant) {
-        auto stringConst = dynamic_cast<const StringConstantNode *>(expr);
+        auto stringConst = dynamic_cast<const StringNode *>(expr);
         return stringConst->getValue();
     } else if (expr->getNodeType() == NodeType::constant_reference) {
         auto constRef = dynamic_cast<const ConstantReferenceNode*>(expr);
