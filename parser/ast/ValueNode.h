@@ -9,18 +9,19 @@
 
 
 #include "ExpressionNode.h"
+#include "BasicTypeNode.h"
 
 class ValueNode : public ExpressionNode {
 
 private:
-    ExpressionType exprType_;
+    std::shared_ptr<const TypeNode> type_;
 
 public:
-    explicit ValueNode(NodeType nodeType, FilePos pos, ExpressionType exprType);
+    explicit ValueNode(NodeType nodeType, FilePos pos, const std::shared_ptr<const BasicTypeNode> &type);
     ~ValueNode() override;
 
     bool isConstant() const final;
-    ExpressionType checkType() const final;
+    std::shared_ptr<const TypeNode> getType() const final;
 
 };
 

@@ -8,36 +8,48 @@
 #include "SymbolTable.h"
 #include "../ast/BasicTypeNode.h"
 
-SymbolTable::SymbolTable(const SymbolTable *super) : super_(super), map_() {
+SymbolTable::SymbolTable(const SymbolTable *super) : super_(super), map_(), types_() {
 }
 
 SymbolTable::SymbolTable() : SymbolTable(nullptr) {
     // initialize global scope
-    insert("INTEGER", std::make_unique<Symbol>(SymbolType::type, std::make_unique<BasicTypeNode>("INTEGER", 4)));
-    insert("BOOLEAN", std::make_unique<Symbol>(SymbolType::type, std::make_unique<BasicTypeNode>("BOOLEAN", 1)));
+    insertType(BasicTypeNode::INTEGER->getName(), BasicTypeNode::INTEGER);
+    insertType(BasicTypeNode::BOOLEAN->getName(), BasicTypeNode::BOOLEAN);
 }
 
 SymbolTable::~SymbolTable() = default;
 
-void SymbolTable::insert(const std::string &name, std::unique_ptr<const Symbol> symbol) {
-    map_[name] = std::move(symbol);
+void SymbolTable::insert(const std::string &name, const Node* node) {
+    map_[name] = node;
 }
 
-const Symbol* SymbolTable::lookup(const std::string &name) const {
-    auto itr = map_.find(name);
-    if (itr == map_.end()) {
-        if (super_ != nullptr) {
-            return super_->lookup(name);
-        }
-        return nullptr;
+void SymbolTable::insertType(const std::string &name, const std::shared_ptr<const TypeNode> &type) {
+    types_[name] = type;
+}
+
+const Node* SymbolTable::lookup(const std::string &name) const {
+    auto node = lookupLocal(map_, name);
+    if (node == nullptr && super_ != nullptr) {
+        return super_->lookup(name);
     }
-    return (itr->second).get();
+    return node;
 }
 
+const std::shared_ptr<const TypeNode> SymbolTable::lookupType(const std::string &name) const {
+    auto type = lookupLocal(types_, name);
+    if (type == nullptr && super_ != nullptr) {
+        return super_->lookupType(name);
+    }
+    return type;
+}
 const bool SymbolTable::exists(const std::string &name) const {
-    return map_[name] != nullptr;
+    return lookupLocal(map_, name) != nullptr;
+}
+
+const bool SymbolTable::existsType(const std::string &name) const {
+    return lookupLocal(types_, name) != nullptr;
 }
 
 std::unique_ptr<SymbolTable> SymbolTable::openScope() {
-    return std::make_unique<SymbolTable>(this);
+    return std::unique_ptr<SymbolTable>(new SymbolTable(this));
 }

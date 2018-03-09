@@ -7,7 +7,7 @@
 #include "ProcedureNode.h"
 
 ProcedureNode::ProcedureNode(FilePos pos, const std::string &name) :
-        Node(NodeType::procedure, pos), name_(name), parameters_() {
+        BlockNode(NodeType::procedure, pos), name_(name), parameters_() {
 }
 
 ProcedureNode::~ProcedureNode() = default;

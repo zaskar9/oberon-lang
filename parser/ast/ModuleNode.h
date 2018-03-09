@@ -23,7 +23,7 @@ public:
 
     const std::string getName() const;
 
-    virtual void print(std::ostream &stream) final;
+    void print(std::ostream &stream) const final;
 
 };
 

@@ -23,7 +23,7 @@ public:
     const NamedValueNode* dereference() const;
 
     bool isConstant() const final;
-    ExpressionType checkType() const final;
+    std::shared_ptr<const TypeNode> getType() const final;
 
     void print(std::ostream &stream) const final;
 

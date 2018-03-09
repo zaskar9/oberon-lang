@@ -22,7 +22,7 @@ public:
     ~UnaryExpressionNode() final;
 
     bool isConstant() const final;
-    ExpressionType checkType() const final;
+    std::shared_ptr<const TypeNode> getType() const final;
 
     const OperatorType getOperator() const;
     const ExpressionNode* getExpression() const;

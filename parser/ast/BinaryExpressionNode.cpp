@@ -5,6 +5,7 @@
  */
 
 #include "BinaryExpressionNode.h"
+#include "BasicTypeNode.h"
 
 BinaryExpressionNode::BinaryExpressionNode(const FilePos pos, const OperatorType op,
                                            std::unique_ptr<const ExpressionNode> lhs,
@@ -18,9 +19,9 @@ bool BinaryExpressionNode::isConstant() const {
     return lhs_->isConstant() && rhs_->isConstant();
 }
 
-ExpressionType BinaryExpressionNode::checkType() const {
-    ExpressionType lhsType = lhs_->checkType();
-    ExpressionType rhsType = rhs_->checkType();
+std::shared_ptr<const TypeNode> BinaryExpressionNode::getType() const {
+    auto lhsType = lhs_->getType();
+    auto rhsType = rhs_->getType();
     if (lhsType == rhsType) {
         if (op_ == OperatorType::EQ
             || op_ == OperatorType::NEQ
@@ -28,11 +29,11 @@ ExpressionType BinaryExpressionNode::checkType() const {
             || op_ == OperatorType::LEQ
             || op_ == OperatorType::GT
             || op_ == OperatorType::GEQ) {
-            return ExpressionType::BOOLEAN;
+            return BasicTypeNode::BOOLEAN;
         }
         return lhsType;
     }
-    return ExpressionType::UNDEF;
+    return nullptr;
 }
 
 const OperatorType BinaryExpressionNode::getOperator() const {

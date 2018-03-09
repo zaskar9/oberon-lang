@@ -11,6 +11,7 @@
 #include <string>
 #include <unordered_map>
 #include "Symbol.h"
+#include "../ast/TypeNode.h"
 #include "../../util/Logger.h"
 
 class SymbolTable
@@ -18,7 +19,8 @@ class SymbolTable
 
 private:
     const SymbolTable *super_;
-    std::unordered_map<std::string, std::unique_ptr<const Symbol>> map_;
+    std::unordered_map<std::string, const Node*> map_;
+    std::unordered_map<std::string, std::shared_ptr<const TypeNode>> types_;
 
     explicit SymbolTable(const SymbolTable *super);
 
@@ -26,12 +28,24 @@ public:
     explicit SymbolTable();
     ~SymbolTable();
 
-    void insert(const std::string &name, std::unique_ptr<const Symbol> symbol);
-    const Symbol* lookup(const std::string &name) const;
+    void insert(const std::string &name, const Node* node);
+    void insertType(const std::string &name, const std::shared_ptr<const TypeNode> &type);
+    const Node* lookup(const std::string &name) const;
+    const std::shared_ptr<const TypeNode> lookupType(const std::string &name) const;
     const bool exists(const std::string &name) const;
+    const bool existsType(const std::string &name) const;
     std::unique_ptr<SymbolTable> openScope();
 
 };
+
+template<typename T>
+T lookupLocal(const std::unordered_map<std::string, T> &map, const std::string &name) {
+    auto itr = map.find(name);
+    if (itr == map.end()) {
+        return nullptr;
+    }
+    return itr->second;
+}
 
 
 #endif //OBERON0C_TABLE_H

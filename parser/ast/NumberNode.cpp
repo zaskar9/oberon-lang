@@ -7,7 +7,7 @@
 #include "NumberNode.h"
 
 NumberNode::NumberNode(const FilePos pos, const int value) :
-        ValueNode(NodeType::number_constant, pos, ExpressionType::INTEGER), value_(value) {
+        ValueNode(NodeType::number_constant, pos, BasicTypeNode::INTEGER), value_(value) {
 }
 
 NumberNode::~NumberNode() = default;

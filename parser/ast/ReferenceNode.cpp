@@ -20,8 +20,8 @@ bool ReferenceNode::isConstant() const {
     return false;
 }
 
-ExpressionType ReferenceNode::checkType() const {
-    return node_->checkType();
+std::shared_ptr<const TypeNode> ReferenceNode::getType() const {
+    return node_->getType();
 }
 
 void ReferenceNode::print(std::ostream &stream) const {

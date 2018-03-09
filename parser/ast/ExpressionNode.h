@@ -8,6 +8,7 @@
 #define OBERON0C_EXPRESSIONNODE_H
 
 #include "Node.h"
+#include "TypeNode.h"
 
 enum class OperatorType : char {
     EQ, NEQ, LT, GT, GEQ, LEQ,
@@ -18,10 +19,6 @@ enum class OperatorType : char {
 
 std::ostream& operator<<(std::ostream &stream, const OperatorType &op);
 
-enum class ExpressionType : char {
-    BOOLEAN, INTEGER, STRING, UNDEF
-};
-
 class ExpressionNode : public Node {
 
 public:
@@ -29,7 +26,7 @@ public:
     ~ExpressionNode() override = 0;
 
     virtual bool isConstant() const = 0;
-    virtual ExpressionType checkType() const = 0;
+    virtual std::shared_ptr<const TypeNode> getType() const = 0;
 
 };
 

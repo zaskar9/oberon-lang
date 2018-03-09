@@ -65,7 +65,7 @@ private:
 public:
     explicit Parser(Scanner *scanner, Logger *logger);
     ~Parser();
-    const std::unique_ptr<Node> parse();
+    const std::unique_ptr<const Node> parse();
 
 };
 

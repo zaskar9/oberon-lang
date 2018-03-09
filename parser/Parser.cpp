@@ -14,9 +14,6 @@
 #include "ast/BooleanNode.h"
 #include "ast/NumberNode.h"
 #include "ast/StringNode.h"
-#include "ast/TypeReferenceNode.h"
-#include "ast/ConstantReferenceNode.h"
-#include "ast/VariableDeclarationNode.h"
 #include "ast/ParameterNode.h"
 #include "ast/ReferenceNode.h"
 

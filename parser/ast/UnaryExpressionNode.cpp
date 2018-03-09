@@ -17,8 +17,8 @@ bool UnaryExpressionNode::isConstant() const {
     return expr_->isConstant();
 }
 
-ExpressionType UnaryExpressionNode::checkType() const {
-    return expr_->checkType();
+std::shared_ptr<const TypeNode> UnaryExpressionNode::getType() const {
+    return expr_->getType();
 }
 
 const OperatorType UnaryExpressionNode::getOperator() const {

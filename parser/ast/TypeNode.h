@@ -16,7 +16,7 @@ private:
     int size_;
 
 public:
-    explicit TypeNode(NodeType type, FilePos pos, int size);
+    explicit TypeNode(NodeType nodeType, FilePos pos, int size);
     ~TypeNode() override;
 
     virtual const int getSize() const;

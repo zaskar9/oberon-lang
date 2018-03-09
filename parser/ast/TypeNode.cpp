@@ -6,8 +6,8 @@
 
 #include "TypeNode.h"
 
-TypeNode::TypeNode(const NodeType type, const FilePos pos, const int size) :
-        Node(type, pos), size_(size) {
+TypeNode::TypeNode(const NodeType nodeType, const FilePos pos, const int size) :
+        Node(nodeType, pos), size_(size) {
 }
 
 TypeNode::~TypeNode() = default;
