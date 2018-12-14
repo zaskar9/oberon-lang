@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>15.0</VCProjectVersion>
+    <ProjectGuid>{84C79770-886A-4AA6-A035-661ACE8BE1D1}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <Optimization>Disabled</Optimization>
+    </ClCompile>
+    <Link>
+      <TargetMachine>MachineX86</TargetMachine>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Console</SubSystem>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <TargetMachine>MachineX86</TargetMachine>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="parser\ast\ArrayTypeNode.cpp" />
+    <ClCompile Include="parser\ast\BasicTypeNode.cpp" />
+    <ClCompile Include="parser\ast\BinaryExpressionNode.cpp" />
+    <ClCompile Include="parser\ast\BlockNode.cpp" />
+    <ClCompile Include="parser\ast\BooleanNode.cpp" />
+    <ClCompile Include="parser\ast\ConstantNode.cpp" />
+    <ClCompile Include="parser\ast\ExpressionNode.cpp" />
+    <ClCompile Include="parser\ast\ModuleNode.cpp" />
+    <ClCompile Include="parser\ast\NamedValueNode.cpp" />
+    <ClCompile Include="parser\ast\Node.cpp" />
+    <ClCompile Include="parser\ast\NumberNode.cpp" />
+    <ClCompile Include="parser\ast\ParameterNode.cpp" />
+    <ClCompile Include="parser\ast\ProcedureNode.cpp" />
+    <ClCompile Include="parser\ast\RecordTypeNode.cpp" />
+    <ClCompile Include="parser\ast\ReferenceNode.cpp" />
+    <ClCompile Include="parser\ast\StringNode.cpp" />
+    <ClCompile Include="parser\ast\TypeNode.cpp" />
+    <ClCompile Include="parser\ast\UnaryExpressionNode.cpp" />
+    <ClCompile Include="parser\ast\ValueNode.cpp" />
+    <ClCompile Include="parser\Parser.cpp" />
+    <ClCompile Include="parser\symbol\Symbol.cpp" />
+    <ClCompile Include="parser\symbol\SymbolTable.cpp" />
+    <ClCompile Include="scanner\IdentToken.cpp" />
+    <ClCompile Include="scanner\NumberToken.cpp" />
+    <ClCompile Include="scanner\Scanner.cpp" />
+    <ClCompile Include="scanner\StringToken.cpp" />
+    <ClCompile Include="scanner\Token.cpp" />
+    <ClCompile Include="util\Logger.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="parser\ast\ArrayTypeNode.h" />
+    <ClInclude Include="parser\ast\BasicTypeNode.h" />
+    <ClInclude Include="parser\ast\BinaryExpressionNode.h" />
+    <ClInclude Include="parser\ast\BlockNode.h" />
+    <ClInclude Include="parser\ast\BooleanNode.h" />
+    <ClInclude Include="parser\ast\ConstantNode.h" />
+    <ClInclude Include="parser\ast\ExpressionNode.h" />
+    <ClInclude Include="parser\ast\ModuleNode.h" />
+    <ClInclude Include="parser\ast\NamedValueNode.h" />
+    <ClInclude Include="parser\ast\Node.h" />
+    <ClInclude Include="parser\ast\NumberNode.h" />
+    <ClInclude Include="parser\ast\ParameterNode.h" />
+    <ClInclude Include="parser\ast\ProcedureNode.h" />
+    <ClInclude Include="parser\ast\RecordTypeNode.h" />
+    <ClInclude Include="parser\ast\ReferenceNode.h" />
+    <ClInclude Include="parser\ast\StringNode.h" />
+    <ClInclude Include="parser\ast\TypeNode.h" />
+    <ClInclude Include="parser\ast\UnaryExpressionNode.h" />
+    <ClInclude Include="parser\ast\ValueNode.h" />
+    <ClInclude Include="parser\Parser.h" />
+    <ClInclude Include="parser\symbol\Symbol.h" />
+    <ClInclude Include="parser\symbol\SymbolTable.h" />
+    <ClInclude Include="scanner\IdentToken.h" />
+    <ClInclude Include="scanner\NumberToken.h" />
+    <ClInclude Include="scanner\Scanner.h" />
+    <ClInclude Include="scanner\StringToken.h" />
+    <ClInclude Include="scanner\Token.h" />
+    <ClInclude Include="util\Logger.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

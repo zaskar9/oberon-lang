@@ -1,0 +1,192 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="parser\Parser.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="parser\ast\ArrayTypeNode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="parser\ast\BasicTypeNode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="parser\ast\BinaryExpressionNode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="parser\ast\BlockNode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="parser\ast\BooleanNode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="parser\ast\ConstantNode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="parser\ast\ExpressionNode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="parser\ast\ModuleNode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="parser\ast\NamedValueNode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="parser\ast\Node.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="parser\ast\NumberNode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="parser\ast\ParameterNode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="parser\ast\ProcedureNode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="parser\ast\RecordTypeNode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="parser\ast\ReferenceNode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="parser\ast\StringNode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="parser\ast\TypeNode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="parser\ast\UnaryExpressionNode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="parser\ast\ValueNode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="parser\symbol\Symbol.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="parser\symbol\SymbolTable.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="scanner\IdentToken.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="scanner\NumberToken.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="scanner\Scanner.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="scanner\StringToken.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="scanner\Token.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="util\Logger.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="parser\Parser.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="parser\ast\ArrayTypeNode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="parser\ast\BasicTypeNode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="parser\ast\BinaryExpressionNode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="parser\ast\BlockNode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="parser\ast\BooleanNode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="parser\ast\ConstantNode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="parser\ast\ExpressionNode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="parser\ast\ModuleNode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="parser\ast\NamedValueNode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="parser\ast\Node.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="parser\ast\NumberNode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="parser\ast\ParameterNode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="parser\ast\ProcedureNode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="parser\ast\RecordTypeNode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="parser\ast\ReferenceNode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="parser\ast\StringNode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="parser\ast\TypeNode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="parser\ast\UnaryExpressionNode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="parser\ast\ValueNode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="parser\symbol\Symbol.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="parser\symbol\SymbolTable.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="scanner\IdentToken.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="scanner\NumberToken.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="scanner\Scanner.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="scanner\StringToken.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="scanner\Token.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="util\Logger.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

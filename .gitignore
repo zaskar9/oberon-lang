@@ -30,3 +30,4 @@
 # CMake
 /cmake-build-debug/
 /.vs/
+/x64/
