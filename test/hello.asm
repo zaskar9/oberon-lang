@@ -21,7 +21,7 @@ main:    push     rbp
          pop      rbp
          ret
 
-; nasm -fmacho64 -prefix_ hello.asm
+; nasm -fmacho64 hello.asm
 ; ld -macosx_version_min 10.11 -lSystem -e _main -o hello hello.o
 
 ; nasm -fwin64 hello.asm
