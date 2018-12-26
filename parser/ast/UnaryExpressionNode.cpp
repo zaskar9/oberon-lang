@@ -16,7 +16,7 @@ bool UnaryExpressionNode::isConstant() const {
     return expr_->isConstant();
 }
 
-std::shared_ptr<TypeNode> UnaryExpressionNode::getType() const {
+const TypeNode* UnaryExpressionNode::getType() const {
     return expr_->getType();
 }
 

@@ -18,21 +18,21 @@ class ProcedureNode;
 class BlockNode : public Node {
 
 private:
-    std::vector<std::shared_ptr<ConstantNode>> constants_;
-    std::vector<std::shared_ptr<TypeNode>> types_;
-    std::vector<std::shared_ptr<NamedValueNode>> variables_;
-    std::vector<std::shared_ptr<ProcedureNode>> procedures_;
-    std::vector<std::shared_ptr<Node>> statements_;
+    std::vector<std::unique_ptr<ConstantNode>> constants_;
+    std::vector<std::unique_ptr<TypeNode>> types_;
+    std::vector<std::unique_ptr<VariableNode>> variables_;
+    std::vector<std::unique_ptr<ProcedureNode>> procedures_;
+    std::vector<std::unique_ptr<Node>> statements_;
 
 public:
     explicit BlockNode(NodeType nodeType, FilePos pos);
     ~BlockNode() override;
 
-    void addConstant(std::shared_ptr<ConstantNode> constant);
-    void addType(std::shared_ptr<TypeNode> type);
-    void addVariable(std::shared_ptr<NamedValueNode> variable);
-    void addProcedure(std::shared_ptr<ProcedureNode> procedure);
-    void addStatement(std::shared_ptr<Node> statement);
+    void addConstant(std::unique_ptr<ConstantNode> constant);
+    void addType(std::unique_ptr<TypeNode> type);
+    void addVariable(std::unique_ptr<VariableNode> variable);
+    void addProcedure(std::unique_ptr<ProcedureNode> procedure);
+    void addStatement(std::unique_ptr<Node> statement);
 
     void print(std::ostream &stream) const override = 0;
 

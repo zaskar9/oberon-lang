@@ -26,9 +26,9 @@ public:
 
     void print(std::ostream &stream) const final;
 
-    static const std::shared_ptr<BasicTypeNode> BOOLEAN;
-    static const std::shared_ptr<BasicTypeNode> INTEGER;
-    static const std::shared_ptr<BasicTypeNode> STRING;
+    static const BasicTypeNode* BOOLEAN;
+    static const BasicTypeNode* INTEGER;
+    static const BasicTypeNode* STRING;
 };
 
 

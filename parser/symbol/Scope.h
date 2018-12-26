@@ -16,7 +16,7 @@ class Scope {
 
 private:
     int level_;
-    std::unordered_map<std::string, std::shared_ptr<Node>> symbols_;
+    std::unordered_map<std::string, const Node*> symbols_;
     std::unique_ptr<Scope> parent_;
 
 public:
@@ -25,8 +25,8 @@ public:
 
     std::unique_ptr<Scope> getParent();
 
-    void insert(const std::string &name, std::shared_ptr<Node> symbol);
-    std::shared_ptr<Node> lookup(const std::string &name, bool local) const;
+    void insert(const std::string &name, const Node* symbol);
+    const Node* lookup(const std::string &name, bool local) const;
 
 };
 

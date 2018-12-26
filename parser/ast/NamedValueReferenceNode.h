@@ -14,16 +14,16 @@
 class NamedValueReferenceNode final : public ExpressionNode {
 
 private:
-    const std::shared_ptr<NamedValueNode> node_;
+    const NamedValueNode *node_;
 
 public:
-    explicit NamedValueReferenceNode(FilePos pos, std::shared_ptr<NamedValueNode> node);
+    explicit NamedValueReferenceNode(FilePos pos, const NamedValueNode *node);
     ~NamedValueReferenceNode() final;
 
     const NamedValueNode* dereference() const;
 
     bool isConstant() const final;
-    std::shared_ptr<TypeNode> getType() const final;
+    const TypeNode* getType() const final;
 
     void print(std::ostream &stream) const final;
 

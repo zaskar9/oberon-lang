@@ -25,8 +25,8 @@ public:
     explicit SymbolTable();
     ~SymbolTable();
 
-    void insert(const std::string &name, std::shared_ptr<Node> node);
-    std::shared_ptr<Node> lookup(const std::string &name) const;
+    void insert(const std::string &name, const Node *node);
+    const Node* lookup(const std::string &name) const;
     const bool isDefined(const std::string &name) const;
     const bool isDuplicate(const std::string &name) const;
     void enterScope();

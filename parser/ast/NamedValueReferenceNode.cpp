@@ -6,21 +6,21 @@
 
 #include "NamedValueReferenceNode.h"
 
-NamedValueReferenceNode::NamedValueReferenceNode(FilePos pos, std::shared_ptr<NamedValueNode> node) :
+NamedValueReferenceNode::NamedValueReferenceNode(FilePos pos, const NamedValueNode *node) :
         ExpressionNode(NodeType::name_reference, pos), node_(node) {
 }
 
 NamedValueReferenceNode::~NamedValueReferenceNode() = default;
 
 const NamedValueNode* NamedValueReferenceNode::dereference() const {
-    return node_.get();
+    return node_;
 }
 
 bool NamedValueReferenceNode::isConstant() const {
     return node_->getNodeType() == NodeType::constant;
 }
 
-std::shared_ptr<TypeNode> NamedValueReferenceNode::getType() const {
+const TypeNode* NamedValueReferenceNode::getType() const {
     return node_->getType();
 }
 

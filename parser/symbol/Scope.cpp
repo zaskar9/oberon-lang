@@ -14,11 +14,11 @@ std::unique_ptr<Scope> Scope::getParent() {
     return std::move(parent_);
 }
 
-void Scope::insert(const std::string &name, std::shared_ptr<Node> symbol) {
+void Scope::insert(const std::string &name, const Node *symbol) {
     symbols_[name] = symbol;
 }
 
-std::shared_ptr<Node> Scope::lookup(const std::string &name, bool local) const {
+const Node* Scope::lookup(const std::string &name, bool local) const {
     auto symbol = map_lookup(symbols_, name);
     if (!local && symbol == nullptr) {
         if (parent_ != nullptr) {

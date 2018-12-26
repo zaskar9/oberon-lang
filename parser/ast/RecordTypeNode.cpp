@@ -10,6 +10,10 @@ RecordTypeNode::RecordTypeNode(const FilePos pos) : TypeNode(NodeType::record_ty
 
 RecordTypeNode::~RecordTypeNode() = default;
 
+void RecordTypeNode::addType(std::unique_ptr<TypeNode> type) {
+    types_.push_back(std::move(type));
+}
+
 void RecordTypeNode::addField(std::unique_ptr<FieldNode> field) {
     fields_.push_back(std::move(field));
 }

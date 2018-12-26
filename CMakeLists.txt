@@ -29,4 +29,4 @@ add_executable(oberon0c main.cpp
         parser/ast/ModuleNode.cpp parser/ast/ModuleNode.h
         parser/ast/BlockNode.cpp parser/ast/BlockNode.h
         parser/ast/NamedValueNode.cpp parser/ast/NamedValueNode.h parser/ast/ConstantNode.cpp
-        parser/ast/NamedValueReferenceNode.cpp parser/ast/NamedValueReferenceNode.h parser/symbol/Scope.cpp parser/symbol/Scope.h parser/symbol/Symbol.cpp parser/symbol/Symbol.h)
+        parser/ast/NamedValueReferenceNode.cpp parser/ast/NamedValueReferenceNode.h parser/symbol/Scope.cpp parser/symbol/Scope.h parser/symbol/Symbol.cpp parser/symbol/Symbol.h parser/ast/TypeReferenceNode.cpp parser/ast/TypeReferenceNode.h)

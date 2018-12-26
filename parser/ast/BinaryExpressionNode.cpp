@@ -19,7 +19,7 @@ bool BinaryExpressionNode::isConstant() const {
     return lhs_->isConstant() && rhs_->isConstant();
 }
 
-std::shared_ptr<TypeNode> BinaryExpressionNode::getType() const {
+const TypeNode* BinaryExpressionNode::getType() const {
     auto lhsType = lhs_->getType();
     auto rhsType = rhs_->getType();
     if (lhsType == rhsType) {

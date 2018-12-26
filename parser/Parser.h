@@ -41,12 +41,12 @@ private:
     std::unique_ptr<ExpressionNode> simple_expression();
     std::unique_ptr<ExpressionNode> term();
     std::unique_ptr<ExpressionNode> factor();
-    std::shared_ptr<TypeNode> type();
-    std::shared_ptr<ArrayTypeNode> array_type();
-    std::shared_ptr<RecordTypeNode> record_type();
+    std::unique_ptr<TypeNode> type();
+    std::unique_ptr<ArrayTypeNode> array_type();
+    std::unique_ptr<RecordTypeNode> record_type();
     void field_list(RecordTypeNode *rtype);
     void ident_list(std::vector<std::string> &idents);
-    std::shared_ptr<ProcedureNode> procedure_heading();
+    std::unique_ptr<ProcedureNode> procedure_heading();
     void procedure_body(ProcedureNode *proc);
     void formal_parameters(ProcedureNode *proc);
     void fp_section(ProcedureNode *proc);

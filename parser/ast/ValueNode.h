@@ -14,14 +14,14 @@
 class ValueNode : public ExpressionNode {
 
 private:
-    std::shared_ptr<BasicTypeNode> type_;
+    const BasicTypeNode *type_;
 
 public:
-    explicit ValueNode(NodeType nodeType, FilePos pos, std::shared_ptr<BasicTypeNode> type);
+    explicit ValueNode(NodeType nodeType, FilePos pos, const BasicTypeNode *type);
     ~ValueNode() override;
 
     bool isConstant() const final;
-    std::shared_ptr<TypeNode> getType() const final;
+    const BasicTypeNode* getType() const final;
 };
 
 

@@ -16,6 +16,7 @@
 #include "ast/StringNode.h"
 #include "ast/ParameterNode.h"
 #include "ast/NamedValueReferenceNode.h"
+#include "ast/TypeReferenceNode.h"
 
 Parser::Parser(Scanner *scanner, Logger *logger) :
         scanner_(scanner), logger_(logger) {
@@ -109,9 +110,9 @@ void Parser::const_declarations(BlockNode *block) {
             auto expr = expression();
             if (expr->isConstant()) {
                 auto value = fold(expr.get());
-                auto constant = std::make_shared<ConstantNode>(token->getPosition(), name, std::move(value));
-                block->addConstant(constant);
-                symbols_->insert(name, constant);
+                auto constant = std::make_unique<ConstantNode>(token->getPosition(), name, std::move(value));
+                block->addConstant(std::move(constant));
+                symbols_->insert(name, constant.get());
             } else {
                 logger_->error(token->getPosition(), "expression must be constant.");
             }
@@ -126,7 +127,7 @@ void Parser::const_declarations(BlockNode *block) {
 }
 
 // type_declarations =  "TYPE" { identifier "=" type ";" } .
-void Parser::type_declarations(BlockNode* block) {
+void Parser::type_declarations(BlockNode *block) {
     logger_->debug("", "type_declarations");
     scanner_->nextToken(); // skip TYPE keyword
     while (scanner_->peekToken()->getType() == TokenType::const_ident) {
@@ -136,9 +137,9 @@ void Parser::type_declarations(BlockNode* block) {
         }
         auto token = scanner_->nextToken();
         if (token->getType() == TokenType::op_eq) {
-            auto t = type();
-            block->addType(t);
-            symbols_->insert(name, t);
+            auto node = type();
+            block->addType(std::move(node));
+            symbols_->insert(name, node.get());
             token = scanner_->nextToken();
             if (token->getType() != TokenType::semicolon) {
                 logger_->error(token->getPosition(), "; expected.");
@@ -159,15 +160,16 @@ void Parser::var_declarations(BlockNode *block) {
         auto token = scanner_->nextToken();
         auto pos = token->getPosition();
         if (token->getType() == TokenType::colon) {
-            auto t = type();
+            auto node = type();
+            block->addType(std::move(node));
             for (auto&& ident : idents) {
                 if (symbols_->isDuplicate(ident)) {
                     logger_->error(token->getPosition(), "duplicate definition: " + ident);
                     continue;
                 }
-                auto variable = std::make_shared<VariableNode>(pos, ident, t);
-                block->addVariable(variable);
-                symbols_->insert(ident, variable);
+                auto variable = std::make_unique<VariableNode>(pos, ident, node.get());
+                block->addVariable(std::move(variable));
+                symbols_->insert(ident, variable.get());
             }
             token = scanner_->nextToken();
             if (token->getType() != TokenType::semicolon) {
@@ -194,9 +196,9 @@ void Parser::procedure_declaration(BlockNode *block) {
     if (token->getType() != TokenType::semicolon) {
         logger_->error(token->getPosition(),"; expected.");
     }
-    block->addProcedure(proc);
+    block->addProcedure(std::move(proc));
     symbols_->leaveScope();
-    symbols_->insert(proc->getName(), proc);
+    symbols_->insert(proc->getName(), proc.get());
 }
 
 // expression = simple_expression [ ( "=" | "#" | "<" | "<=" | ">" | ">=" ) simple_expression ] .
@@ -275,7 +277,7 @@ std::unique_ptr<ExpressionNode> Parser::factor() {
                 selector();
             }
             if (node->getNodeType() == NodeType::constant || node->getNodeType() == NodeType::variable) {
-                return std::make_unique<NamedValueReferenceNode>(pos, std::dynamic_pointer_cast<NamedValueNode>(node));
+                return std::make_unique<NamedValueReferenceNode>(pos, dynamic_cast<const NamedValueNode*>(node));
             } else {
                 logger_->error(token->getPosition(), "constant or variable expected: " + to_string(node) + ".");
                 return nullptr;
@@ -316,7 +318,7 @@ std::unique_ptr<ExpressionNode> Parser::factor() {
 }
 
 // type = identifier | array_type | record_type .
-std::shared_ptr<TypeNode> Parser::type() {
+std::unique_ptr<TypeNode> Parser::type() {
     logger_->debug("", "type");
     auto token = scanner_->peekToken();
     if (token->getType() == TokenType::const_ident) {
@@ -324,8 +326,10 @@ std::shared_ptr<TypeNode> Parser::type() {
         auto node = symbols_->lookup(name);
         if (node == nullptr) {
             logger_->error(token->getPosition(), "undefined type: " + name + ".");
-        } else if (node->getNodeType() == NodeType::array_type || node->getNodeType() == NodeType::basic_type || node->getNodeType() == NodeType::record_type) {
-            return std::dynamic_pointer_cast<TypeNode>(node);
+        } else if (node->getNodeType() == NodeType::array_type ||
+                   node->getNodeType() == NodeType::basic_type ||
+                   node->getNodeType() == NodeType::record_type) {
+            return std::make_unique<TypeReferenceNode>(token->getPosition(), dynamic_cast<const TypeNode*>(node));
         } else {
             logger_->error(token->getPosition(), name + " is not a type.");
         }
@@ -340,7 +344,7 @@ std::shared_ptr<TypeNode> Parser::type() {
 }
 
 // array_type = "ARRAY" expression "OF" type .
-std::shared_ptr<ArrayTypeNode> Parser::array_type() {
+std::unique_ptr<ArrayTypeNode> Parser::array_type() {
     logger_->debug("", "array_type");
     FilePos pos = scanner_->nextToken()->getPosition(); // skip ARRAY keyword and get its position
     auto expr = expression();
@@ -348,7 +352,7 @@ std::shared_ptr<ArrayTypeNode> Parser::array_type() {
         int dim = foldNumber(expr.get());
         auto token = scanner_->nextToken();
         if (token->getType() == TokenType::kw_of) {
-            return std::make_shared<ArrayTypeNode>(pos, dim, type());
+            return std::make_unique<ArrayTypeNode>(pos, dim, type());
         } else {
             logger_->error(token->getPosition(), "OF expected.");
         }
@@ -357,13 +361,13 @@ std::shared_ptr<ArrayTypeNode> Parser::array_type() {
 }
 
 // record_type = "RECORD" field_list { ";" field_list } "END" .
-std::shared_ptr<RecordTypeNode> Parser::record_type() {
+std::unique_ptr<RecordTypeNode> Parser::record_type() {
     logger_->debug("", "record_type");
     FilePos pos = scanner_->nextToken()->getPosition(); // skip RECORD keyword and get its position
-    auto rtype = std::make_shared<RecordTypeNode>(pos);
-    field_list(rtype.get());
+    auto node = std::make_unique<RecordTypeNode>(pos);
+    field_list(node.get());
     while (scanner_->peekToken()->getType() == TokenType::semicolon) {
-        field_list(rtype.get());
+        field_list(node.get());
     }
     auto token = scanner_->peekToken();
     if (token->getType() == TokenType::kw_end) {
@@ -371,7 +375,7 @@ std::shared_ptr<RecordTypeNode> Parser::record_type() {
     } else {
         logger_->error(token->getPosition(), "END expected.");
     }
-    return rtype;
+    return node;
 }
 
 // field_list = ident_list ":" type .
@@ -381,10 +385,10 @@ void Parser::field_list(RecordTypeNode *rtype) {
     ident_list(idents);
     auto token = scanner_->nextToken();
     if (token->getType() == TokenType::colon) {
-        auto ts = type();
-        auto pos = ts->getFilePos();
+        auto node = type();
+        rtype->addType(std::move(node));
         for (int i = 0; i < idents.size(); i++) {
-            rtype->addField(std::make_unique<FieldNode>(token->getPosition(), idents[i], ts));
+            rtype->addField(std::make_unique<FieldNode>(token->getPosition(), idents[i], node.get()));
         }
     } else {
         logger_->error(token->getPosition(), ": expected.");
@@ -402,10 +406,10 @@ void Parser::ident_list(std::vector<std::string> &idents) {
 }
 
 // procedure_heading = "PROCEDURE" identifier [ formal_parameters ] .
-std::shared_ptr<ProcedureNode> Parser::procedure_heading() {
+std::unique_ptr<ProcedureNode> Parser::procedure_heading() {
     logger_->debug("", "procedure_heading");
     auto token = scanner_->nextToken(); // skip PROCEDURE keyword
-    auto proc = std::make_shared<ProcedureNode>(token->getPosition(), ident());
+    auto proc = std::make_unique<ProcedureNode>(token->getPosition(), ident());
     if (scanner_->peekToken()->getType() == TokenType::lparen) {
         formal_parameters(proc.get());
     }
@@ -462,9 +466,10 @@ void Parser::fp_section(ProcedureNode *proc) {
     if (token->getType() != TokenType::colon) {
         logger_->error(token->getPosition(), ": expected.");
     }
-    auto ts = type();
+    auto node = type();
+    proc->addType(std::move(node));
     for (int i = 0; i < idents.size(); i++) {
-        proc->addParameter(std::make_unique<ParameterNode>(token->getPosition(), idents[i], ts, var));
+        proc->addParameter(std::make_unique<ParameterNode>(token->getPosition(), idents[i], node.get(), var));
     }
 }
 

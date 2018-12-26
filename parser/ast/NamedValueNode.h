@@ -16,15 +16,15 @@
 class NamedValueNode : public Node {
 
 private:
-    std::string name_;
-    std::shared_ptr<TypeNode> type_;
+    const std::string name_;
+    const TypeNode *type_;
 
 public:
-    explicit NamedValueNode(NodeType nodeType, FilePos pos, const std::string &name, std::shared_ptr<TypeNode> type);
+    explicit NamedValueNode(NodeType nodeType, FilePos pos, const std::string &name, const TypeNode *type);
     ~NamedValueNode() override;
 
     const std::string getName() const;
-    const std::shared_ptr<TypeNode> getType() const;
+    const TypeNode* getType() const;
 
     void print(std::ostream &stream) const override;
 
@@ -33,7 +33,7 @@ public:
 class FieldNode final : public NamedValueNode {
 
 public:
-    explicit FieldNode(FilePos pos, const std::string &name, std::shared_ptr<TypeNode> type) :
+    explicit FieldNode(FilePos pos, const std::string &name, TypeNode *type) :
             NamedValueNode(NodeType::field, pos, name, type) { };
     ~FieldNode() final = default;
 };
@@ -41,7 +41,7 @@ public:
 class VariableNode final : public NamedValueNode {
 
 public:
-    explicit VariableNode(FilePos pos, const std::string &name, std::shared_ptr<TypeNode> type) :
+    explicit VariableNode(FilePos pos, const std::string &name, TypeNode *type) :
             NamedValueNode(NodeType::variable, pos, name, type) { };
     ~VariableNode() final = default;
 };
