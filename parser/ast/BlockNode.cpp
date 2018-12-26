@@ -24,8 +24,8 @@ void BlockNode::addVariable(std::unique_ptr<VariableNode> variable) {
     variables_.push_back(std::move(variable));
 }
 
-void BlockNode::addProcedure(std::unique_ptr<ProcedureNode> procedure) {
-    procedures_.push_back(std::move(procedure));
+void BlockNode::addProcedure(std::shared_ptr<ProcedureNode> procedure) {
+    procedures_.push_back(procedure);
 }
 
 void BlockNode::addStatement(std::unique_ptr<Node> statement) {

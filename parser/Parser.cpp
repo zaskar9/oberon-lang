@@ -111,8 +111,8 @@ void Parser::const_declarations(BlockNode *block) {
             if (expr->isConstant()) {
                 auto value = fold(expr.get());
                 auto constant = std::make_unique<ConstantNode>(token->getPosition(), name, std::move(value));
-                block->addConstant(std::move(constant));
                 symbols_->insert(name, constant.get());
+                block->addConstant(std::move(constant));
             } else {
                 logger_->error(token->getPosition(), "expression must be constant.");
             }
@@ -138,8 +138,8 @@ void Parser::type_declarations(BlockNode *block) {
         auto token = scanner_->nextToken();
         if (token->getType() == TokenType::op_eq) {
             auto node = type();
-            block->addType(std::move(node));
             symbols_->insert(name, node.get());
+            block->addType(std::move(node));
             token = scanner_->nextToken();
             if (token->getType() != TokenType::semicolon) {
                 logger_->error(token->getPosition(), "; expected.");
@@ -168,8 +168,8 @@ void Parser::var_declarations(BlockNode *block) {
                     continue;
                 }
                 auto variable = std::make_unique<VariableNode>(pos, ident, node.get());
-                block->addVariable(std::move(variable));
                 symbols_->insert(ident, variable.get());
+                block->addVariable(std::move(variable));
             }
             token = scanner_->nextToken();
             if (token->getType() != TokenType::semicolon) {
@@ -196,9 +196,9 @@ void Parser::procedure_declaration(BlockNode *block) {
     if (token->getType() != TokenType::semicolon) {
         logger_->error(token->getPosition(),"; expected.");
     }
-    block->addProcedure(std::move(proc));
     symbols_->leaveScope();
     symbols_->insert(proc->getName(), proc.get());
+    block->addProcedure(std::move(proc));
 }
 
 // expression = simple_expression [ ( "=" | "#" | "<" | "<=" | ">" | ">=" ) simple_expression ] .
@@ -276,10 +276,12 @@ std::unique_ptr<ExpressionNode> Parser::factor() {
             if (token->getType() == TokenType::period || token->getType() == TokenType::lbrack) {
                 selector();
             }
-            if (node->getNodeType() == NodeType::constant || node->getNodeType() == NodeType::variable) {
+            if (node->getNodeType() == NodeType::constant ||
+                node->getNodeType() == NodeType::parameter ||
+                node->getNodeType() == NodeType::variable) {
                 return std::make_unique<NamedValueReferenceNode>(pos, dynamic_cast<const NamedValueNode*>(node));
             } else {
-                logger_->error(token->getPosition(), "constant or variable expected: " + to_string(node) + ".");
+                logger_->error(token->getPosition(), "constant, parameter or variable expected.");
                 return nullptr;
             }
         } else {
@@ -469,7 +471,9 @@ void Parser::fp_section(ProcedureNode *proc) {
     auto node = type();
     proc->addType(std::move(node));
     for (int i = 0; i < idents.size(); i++) {
-        proc->addParameter(std::make_unique<ParameterNode>(token->getPosition(), idents[i], node.get(), var));
+        auto param = std::make_unique<ParameterNode>(token->getPosition(), idents[i], node.get(), var);
+        symbols_->insert(param->getName(), param.get());
+        proc->addParameter(std::move(param));
     }
 }
 

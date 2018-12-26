@@ -30,13 +30,4 @@ public:
 
 };
 
-template<typename T>
-T map_lookup(const std::unordered_map<std::string, T> &map, const std::string &name) {
-    auto itr = map.find(name);
-    if (itr == map.end()) {
-        return nullptr;
-    }
-    return itr->second;
-}
-
 #endif //OBERON0C_SCOPE_H

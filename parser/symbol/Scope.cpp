@@ -15,16 +15,16 @@ std::unique_ptr<Scope> Scope::getParent() {
 }
 
 void Scope::insert(const std::string &name, const Node *symbol) {
-    symbols_[name] = symbol;
+    symbols_.insert(std::make_pair(name, symbol));
 }
 
 const Node* Scope::lookup(const std::string &name, bool local) const {
-    auto symbol = map_lookup(symbols_, name);
-    if (!local && symbol == nullptr) {
-        if (parent_ != nullptr) {
-            return parent_->lookup(name, local);
-        }
+    auto itr = symbols_.find(name);
+    if (itr != symbols_.end()) {
+        return itr->second;
+    } else if (!local && parent_ != nullptr) {
+        return parent_->lookup(name, local);
+    } else {
         return nullptr;
     }
-    return symbol;
 }

@@ -8,6 +8,7 @@
 #define OBERON0C_CONSTANTDECLARATIONNODE_H
 
 
+#include <memory>
 #include "NamedValueNode.h"
 #include "ValueNode.h"
 #include "BasicTypeNode.h"
