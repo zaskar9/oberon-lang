@@ -20,8 +20,6 @@ void BasicTypeNode::print(std::ostream &out) const {
     out << name_;
 }
 
-const std::shared_ptr<const BasicTypeNode> BasicTypeNode::INTEGER = std::shared_ptr<const BasicTypeNode>(new BasicTypeNode("INTEGER", 4));
-
-//static const auto INTEGER = std::make_shared<const BasicTypeNode>("INTEGER", 4);
-//static const auto BOOLEAN = std::make_shared<const BasicTypeNode>("BOOLEAN", 1);
-//static const auto STRING  = std::make_shared<const BasicTypeNode>("STRING", -1);
+const std::shared_ptr<BasicTypeNode> BasicTypeNode::BOOLEAN = std::make_shared<BasicTypeNode>("BOOLEAN", 1);
+const std::shared_ptr<BasicTypeNode> BasicTypeNode::INTEGER = std::make_shared<BasicTypeNode>("INTEGER", 4);
+const std::shared_ptr<BasicTypeNode> BasicTypeNode::STRING = std::make_shared<BasicTypeNode>("STRING", -1);

@@ -63,7 +63,7 @@
     <ClCompile Include="parser\ast\RecordTypeNode.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="parser\ast\ReferenceNode.cpp">
+    <ClCompile Include="parser\ast\NamedValueReferenceNode.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="parser\ast\StringNode.cpp">
@@ -149,7 +149,7 @@
     <ClInclude Include="parser\ast\RecordTypeNode.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="parser\ast\ReferenceNode.h">
+    <ClInclude Include="parser\ast\NamedValueReferenceNode.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="parser\ast\StringNode.h">

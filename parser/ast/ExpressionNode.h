@@ -26,7 +26,7 @@ public:
     ~ExpressionNode() override = 0;
 
     virtual bool isConstant() const = 0;
-    virtual std::shared_ptr<const TypeNode> getType() const = 0;
+    virtual std::shared_ptr<TypeNode> getType() const = 0;
 
 };
 

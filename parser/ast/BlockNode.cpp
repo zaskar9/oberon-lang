@@ -12,22 +12,22 @@ BlockNode::BlockNode(NodeType nodeType, FilePos pos) :
 
 BlockNode::~BlockNode() = default;
 
-void BlockNode::addConstant(std::unique_ptr<const ConstantNode> constant) {
+void BlockNode::addConstant(std::shared_ptr<ConstantNode> constant) {
     constants_.push_back(std::move(constant));
 }
 
-void BlockNode::addType(const std::shared_ptr<const TypeNode> &type) {
+void BlockNode::addType(std::shared_ptr<TypeNode> type) {
     types_.push_back(type);
 }
 
-void BlockNode::addVariable(std::unique_ptr<const NamedValueNode> variable) {
+void BlockNode::addVariable(std::shared_ptr<NamedValueNode> variable) {
     variables_.push_back(std::move(variable));
 }
 
-void BlockNode::addProcedure(std::unique_ptr<const ProcedureNode> procedure) {
+void BlockNode::addProcedure(std::shared_ptr<ProcedureNode> procedure) {
     procedures_.push_back(std::move(procedure));
 }
 
-void BlockNode::addStatement(std::unique_ptr<const Node> statement) {
+void BlockNode::addStatement(std::shared_ptr<Node> statement) {
     statements_.push_back(std::move(statement));
 }

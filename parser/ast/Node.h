@@ -14,11 +14,12 @@
 #include "../../util/Logger.h"
 
 enum class NodeType : char {
+    module, procedure,
     unary_expression, binary_expression,
-    constant_reference, boolean_constant, number_constant, string_constant,
-    type_reference, record_type, array_type, basic_type,
-    field, parameter, variable, variable_reference,
-    module, procedure
+    record_type, array_type, basic_type,
+    field, parameter, variable, constant,
+    number, boolean, string,
+    type_reference, name_reference
 };
 
 class Node {

@@ -18,11 +18,11 @@ private:
     std::unique_ptr<const ExpressionNode> expr_;
 
 public:
-    UnaryExpressionNode(FilePos pos, OperatorType op, std::unique_ptr<const ExpressionNode> expr);
+    UnaryExpressionNode(FilePos pos, OperatorType op, std::unique_ptr<ExpressionNode> expr);
     ~UnaryExpressionNode() final;
 
     bool isConstant() const final;
-    std::shared_ptr<const TypeNode> getType() const final;
+    std::shared_ptr<TypeNode> getType() const final;
 
     const OperatorType getOperator() const;
     const ExpressionNode* getExpression() const;

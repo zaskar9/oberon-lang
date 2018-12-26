@@ -6,8 +6,7 @@
 
 #include "UnaryExpressionNode.h"
 
-UnaryExpressionNode::UnaryExpressionNode(const FilePos pos, const OperatorType op,
-                                         std::unique_ptr<const ExpressionNode> expr) :
+UnaryExpressionNode::UnaryExpressionNode(const FilePos pos, const OperatorType op, std::unique_ptr<ExpressionNode> expr) :
         ExpressionNode(NodeType::unary_expression, pos), op_(op), expr_(std::move(expr)) {
 }
 
@@ -17,7 +16,7 @@ bool UnaryExpressionNode::isConstant() const {
     return expr_->isConstant();
 }
 
-std::shared_ptr<const TypeNode> UnaryExpressionNode::getType() const {
+std::shared_ptr<TypeNode> UnaryExpressionNode::getType() const {
     return expr_->getType();
 }
 

@@ -8,8 +8,8 @@
 #include "BasicTypeNode.h"
 
 BinaryExpressionNode::BinaryExpressionNode(const FilePos pos, const OperatorType op,
-                                           std::unique_ptr<const ExpressionNode> lhs,
-                                           std::unique_ptr<const ExpressionNode> rhs) :
+                                           std::unique_ptr<ExpressionNode> lhs,
+                                           std::unique_ptr<ExpressionNode> rhs) :
         ExpressionNode(NodeType::binary_expression, pos), op_(op), lhs_(std::move(lhs)), rhs_(std::move(rhs)) {
 }
 
@@ -19,7 +19,7 @@ bool BinaryExpressionNode::isConstant() const {
     return lhs_->isConstant() && rhs_->isConstant();
 }
 
-std::shared_ptr<const TypeNode> BinaryExpressionNode::getType() const {
+std::shared_ptr<TypeNode> BinaryExpressionNode::getType() const {
     auto lhsType = lhs_->getType();
     auto rhsType = rhs_->getType();
     if (lhsType == rhsType) {

@@ -15,7 +15,7 @@
 class RecordTypeNode final : public TypeNode {
 
 private:
-    std::vector<std::unique_ptr<const NamedValueNode>> fields_;
+    std::vector<std::unique_ptr<FieldNode>> fields_;
 
 public:
     explicit RecordTypeNode(FilePos pos);
@@ -23,7 +23,7 @@ public:
 
     const int getSize() const final;
 
-    void addField(std::unique_ptr<const NamedValueNode> field);
+    void addField(std::unique_ptr<FieldNode> field);
 
     void print(std::ostream &stream) const final;
 

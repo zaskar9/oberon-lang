@@ -1,37 +1,28 @@
-/*
- * Header file of the base class of all symbols used by the Oberon-0 compiler.
- *
- * Created by Michael Grossniklaus on 2/8/18.
- */
+//
+// Created by Michael Grossniklaus on 2018-12-26.
+//
 
 #ifndef OBERON0C_SYMBOL_H
 #define OBERON0C_SYMBOL_H
 
-#include <memory>
-#include <ostream>
-#include <string>
+
 #include "../ast/Node.h"
 
-enum class SymbolType {
-    type, variable, constant, procedure
-};
-
-class Symbol
-{
+class Symbol {
 
 private:
-    SymbolType type_;
-    const Node* node_;
+    const Node *node_;
+    const int level_;
+    const int offset_;
 
 public:
-    explicit Symbol(SymbolType type, const Node* node);
-    ~Symbol();
+    Symbol(const Node *node, const int level, const int offset);
+    ~Symbol() = default;
 
-    const SymbolType getType() const;
     const Node* getNode() const;
+    const int getLevel() const;
+    const int getOffset() const;
 
-    void print(std::ostream &stream) const;
-    friend std::ostream& operator<<(std::ostream &stream, const Symbol &symbol);
 };
 
 

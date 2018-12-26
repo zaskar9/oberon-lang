@@ -6,7 +6,7 @@
 
 #include "ParameterNode.h"
 
-ParameterNode::ParameterNode(FilePos pos, const std::string &name, const std::shared_ptr<const TypeNode> &type, bool var) :
+ParameterNode::ParameterNode(FilePos pos, const std::string &name, std::shared_ptr<TypeNode> type, bool var) :
         NamedValueNode(NodeType::parameter, pos, name, type), var_(var) {
 }
 

@@ -6,8 +6,7 @@
 
 #include "NamedValueNode.h"
 
-NamedValueNode::NamedValueNode(NodeType nodeType, FilePos pos, const std::string &name,
-                               const std::shared_ptr<const TypeNode> &type) :
+NamedValueNode::NamedValueNode(NodeType nodeType, FilePos pos, const std::string &name, std::shared_ptr<TypeNode> type) :
         Node(nodeType, pos), name_(name), type_(type) {
 }
 
@@ -17,7 +16,7 @@ const std::string NamedValueNode::getName() const {
     return name_;
 }
 
-std::shared_ptr<const TypeNode> NamedValueNode::getType() const {
+const std::shared_ptr<TypeNode> NamedValueNode::getType() const {
     return type_;
 }
 

@@ -8,48 +8,42 @@
 #include "SymbolTable.h"
 #include "../ast/BasicTypeNode.h"
 
-SymbolTable::SymbolTable(const SymbolTable *super) : super_(super), map_(), types_() {
-}
-
-SymbolTable::SymbolTable() : SymbolTable(nullptr) {
-    // initialize global scope
-    insertType(BasicTypeNode::INTEGER->getName(), BasicTypeNode::INTEGER);
-    insertType(BasicTypeNode::BOOLEAN->getName(), BasicTypeNode::BOOLEAN);
+SymbolTable::SymbolTable() {
+    level_ = 0;
+    std::unique_ptr<Scope> predefined = std::make_unique<Scope>(nullptr, -1);
+    predefined->insert(BasicTypeNode::BOOLEAN->getName(), BasicTypeNode::BOOLEAN);
+    predefined->insert(BasicTypeNode::INTEGER->getName(), BasicTypeNode::INTEGER);
+    predefined->insert(BasicTypeNode::STRING->getName(), BasicTypeNode::STRING);
+    scope_ = std::make_unique<Scope>(std::move(predefined), level_);
 }
 
 SymbolTable::~SymbolTable() = default;
 
-void SymbolTable::insert(const std::string &name, const Node* node) {
-    map_[name] = node;
+void SymbolTable::insert(const std::string &name, std::shared_ptr<Node> node) {
+    scope_->insert(name, node);
 }
 
-void SymbolTable::insertType(const std::string &name, const std::shared_ptr<const TypeNode> &type) {
-    types_[name] = type;
+std::shared_ptr<Node> SymbolTable::lookup(const std::string &name) const {
+    return scope_->lookup(name, false);
 }
 
-const Node* SymbolTable::lookup(const std::string &name) const {
-    auto node = lookupLocal(map_, name);
-    if (node == nullptr && super_ != nullptr) {
-        return super_->lookup(name);
+const bool SymbolTable::isDefined(const std::string &name) const {
+    return scope_->lookup(name, false) != nullptr;
+}
+
+const bool SymbolTable::isDuplicate(const std::string &name) const {
+    return scope_->lookup(name, true) != nullptr;
+}
+
+void SymbolTable::enterScope() {
+    scope_ = std::make_unique<Scope>(std::move(scope_), ++level_);
+}
+
+void SymbolTable::leaveScope() {
+    if (level_ > 0) {
+        scope_ = std::move(scope_->getParent());
+        level_--;
+    } else {
+        std::cout << "Illegal leaveScope() call" << std::endl;
     }
-    return node;
-}
-
-const std::shared_ptr<const TypeNode> SymbolTable::lookupType(const std::string &name) const {
-    auto type = lookupLocal(types_, name);
-    if (type == nullptr && super_ != nullptr) {
-        return super_->lookupType(name);
-    }
-    return type;
-}
-const bool SymbolTable::exists(const std::string &name) const {
-    return lookupLocal(map_, name) != nullptr;
-}
-
-const bool SymbolTable::existsType(const std::string &name) const {
-    return lookupLocal(types_, name) != nullptr;
-}
-
-std::unique_ptr<SymbolTable> SymbolTable::openScope() {
-    return std::unique_ptr<SymbolTable>(new SymbolTable(this));
 }

@@ -7,45 +7,31 @@
 #ifndef OBERON0C_TABLE_H
 #define OBERON0C_TABLE_H
 
+
 #include <memory>
 #include <string>
 #include <unordered_map>
-#include "Symbol.h"
 #include "../ast/TypeNode.h"
 #include "../../util/Logger.h"
+#include "Scope.h"
 
-class SymbolTable
-{
+class SymbolTable {
 
 private:
-    const SymbolTable *super_;
-    std::unordered_map<std::string, const Node*> map_;
-    std::unordered_map<std::string, std::shared_ptr<const TypeNode>> types_;
-
-    explicit SymbolTable(const SymbolTable *super);
+    int level_;
+    std::unique_ptr<Scope> scope_;
 
 public:
     explicit SymbolTable();
     ~SymbolTable();
 
-    void insert(const std::string &name, const Node* node);
-    void insertType(const std::string &name, const std::shared_ptr<const TypeNode> &type);
-    const Node* lookup(const std::string &name) const;
-    const std::shared_ptr<const TypeNode> lookupType(const std::string &name) const;
-    const bool exists(const std::string &name) const;
-    const bool existsType(const std::string &name) const;
-    std::unique_ptr<SymbolTable> openScope();
+    void insert(const std::string &name, std::shared_ptr<Node> node);
+    std::shared_ptr<Node> lookup(const std::string &name) const;
+    const bool isDefined(const std::string &name) const;
+    const bool isDuplicate(const std::string &name) const;
+    void enterScope();
+    void leaveScope();
 
 };
-
-template<typename T>
-T lookupLocal(const std::unordered_map<std::string, T> &map, const std::string &name) {
-    auto itr = map.find(name);
-    if (itr == map.end()) {
-        return nullptr;
-    }
-    return itr->second;
-}
-
 
 #endif //OBERON0C_TABLE_H

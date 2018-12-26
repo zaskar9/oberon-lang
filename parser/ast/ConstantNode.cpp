@@ -6,9 +6,8 @@
 
 #include "ConstantNode.h"
 
-ConstantNode::ConstantNode(const NodeType nodeType, const FilePos pos, const std::string &name,
-                           const std::shared_ptr<const BasicTypeNode> &type, std::unique_ptr<const ValueNode> value) :
-        NamedValueNode(nodeType, pos, name, type), value_(std::move(value)) {
+ConstantNode::ConstantNode(const FilePos pos, const std::string &name, std::unique_ptr<ValueNode> value) :
+        NamedValueNode(NodeType::constant, pos, name, value->getType()), value_(std::move(value)) {
 }
 
 ConstantNode::~ConstantNode() = default;

@@ -8,7 +8,7 @@
 #include "BasicTypeNode.h"
 
 StringNode::StringNode(const FilePos pos, const std::string &value) :
-        ValueNode(NodeType::string_constant, pos, BasicTypeNode::STRING), value_(value) {
+        ValueNode(NodeType::string, pos, BasicTypeNode::STRING), value_(value) {
 }
 
 StringNode::~StringNode() = default;

@@ -16,14 +16,8 @@ class BasicTypeNode final : public TypeNode {
 private:
     const std::string name_;
 
-    explicit BasicTypeNode(const std::string &name, int size);
-
 public:
-    static const std::shared_ptr<const BasicTypeNode> INTEGER;
-    static const std::shared_ptr<const BasicTypeNode> BOOLEAN;
-    static const std::shared_ptr<const BasicTypeNode> STRING;
-
-    BasicTypeNode(BasicTypeNode const&) = delete;
+    explicit BasicTypeNode(const std::string &name, int size);
     ~BasicTypeNode() final;
 
     void operator=(BasicTypeNode const&) = delete;
@@ -32,6 +26,9 @@ public:
 
     void print(std::ostream &stream) const final;
 
+    static const std::shared_ptr<BasicTypeNode> BOOLEAN;
+    static const std::shared_ptr<BasicTypeNode> INTEGER;
+    static const std::shared_ptr<BasicTypeNode> STRING;
 };
 
 

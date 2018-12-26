@@ -15,11 +15,10 @@
 class ConstantNode final : public NamedValueNode {
 
 private:
-    std::unique_ptr<const ValueNode> value_;
+    std::unique_ptr<ValueNode> value_;
 
 public:
-    explicit ConstantNode(NodeType nodeType, FilePos pos, const std::string &name,
-                          const std::shared_ptr<const BasicTypeNode> &type, std::unique_ptr<const ValueNode> value);
+    explicit ConstantNode(FilePos pos, const std::string &name, std::unique_ptr<ValueNode> value);
     ~ConstantNode() final;
 
     const ValueNode* getValue() const;

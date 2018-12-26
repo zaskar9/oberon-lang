@@ -28,27 +28,28 @@ class Parser
 private:
     Scanner *scanner_;
     Logger *logger_;
+    std::unique_ptr<SymbolTable> symbols_;
 
     const std::string ident();
-    const ModuleNode* module(SymbolTable *symbols);
-    void declarations(SymbolTable *symbols, BlockNode *block);
-    void const_declarations(SymbolTable *symbols, BlockNode *block);
-    void type_declarations(SymbolTable *symbols, BlockNode *block);
-    void var_declarations(SymbolTable *symbols, BlockNode *block);
-    void procedure_declaration(SymbolTable *symbols, BlockNode *block);
-    std::unique_ptr<const ExpressionNode> expression();
-    std::unique_ptr<const ExpressionNode> simple_expression();
-    std::unique_ptr<const ExpressionNode> term();
-    std::unique_ptr<const ExpressionNode> factor();
-    std::unique_ptr<const TypeNode> type();
-    std::unique_ptr<const ArrayTypeNode> array_type();
-    std::unique_ptr<const RecordTypeNode> record_type();
+    std::unique_ptr<ModuleNode> module();
+    void declarations(BlockNode *block);
+    void const_declarations(BlockNode *block);
+    void type_declarations(BlockNode *block);
+    void var_declarations(BlockNode *block);
+    void procedure_declaration(BlockNode *block);
+    std::unique_ptr<ExpressionNode> expression();
+    std::unique_ptr<ExpressionNode> simple_expression();
+    std::unique_ptr<ExpressionNode> term();
+    std::unique_ptr<ExpressionNode> factor();
+    std::shared_ptr<TypeNode> type();
+    std::shared_ptr<ArrayTypeNode> array_type();
+    std::shared_ptr<RecordTypeNode> record_type();
     void field_list(RecordTypeNode *rtype);
     void ident_list(std::vector<std::string> &idents);
-    std::unique_ptr<ProcedureNode> procedure_heading();
-    const Node* procedure_body();
-    void formal_parameters(ProcedureNode *ps);
-    void fp_section(ProcedureNode *ps);
+    std::shared_ptr<ProcedureNode> procedure_heading();
+    void procedure_body(ProcedureNode *proc);
+    void formal_parameters(ProcedureNode *proc);
+    void fp_section(ProcedureNode *proc);
     const Node* statement_sequence();
     const Node* statement();
     const Node* assignment();
@@ -57,7 +58,7 @@ private:
     const Node* while_statement();
     const Node* actual_parameters();
     const Node* selector();
-    std::unique_ptr<const ValueNode> fold(const ExpressionNode *expr) const;
+    std::unique_ptr<ValueNode> fold(const ExpressionNode *expr) const;
     const int foldNumber(const ExpressionNode *expr) const;
     const bool foldBoolean(const ExpressionNode *expr) const;
     const std::string foldString(const ExpressionNode *expr) const;
@@ -65,7 +66,7 @@ private:
 public:
     explicit Parser(Scanner *scanner, Logger *logger);
     ~Parser();
-    const std::unique_ptr<const Node> parse();
+    std::unique_ptr<Node> parse();
 
 };
 

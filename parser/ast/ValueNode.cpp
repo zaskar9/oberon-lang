@@ -7,7 +7,7 @@
 
 #include "ValueNode.h"
 
-ValueNode::ValueNode(const NodeType nodeType, const FilePos pos, const std::shared_ptr<const BasicTypeNode> &type) :
+ValueNode::ValueNode(const NodeType nodeType, const FilePos pos, std::shared_ptr<BasicTypeNode> type) :
         ExpressionNode(nodeType, pos), type_(type) {
 }
 
@@ -17,6 +17,6 @@ bool ValueNode::isConstant() const {
     return true;
 }
 
-std::shared_ptr<const TypeNode> ValueNode::getType() const {
+std::shared_ptr<TypeNode> ValueNode::getType() const {
     return type_;
 }
