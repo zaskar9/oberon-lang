@@ -12,6 +12,8 @@
 #include <vector>
 #include "Node.h"
 #include "ConstantNode.h"
+#include "StatementSequenceNode.h"
+#include "ParameterNode.h"
 
 class ProcedureNode;
 
@@ -22,7 +24,7 @@ private:
     std::vector<std::unique_ptr<TypeNode>> types_;
     std::vector<std::unique_ptr<VariableNode>> variables_;
     std::vector<std::shared_ptr<ProcedureNode>> procedures_;
-    std::vector<std::unique_ptr<Node>> statements_;
+    std::unique_ptr<StatementSequenceNode> statements_;
 
 public:
     explicit BlockNode(NodeType nodeType, FilePos pos);
@@ -32,7 +34,7 @@ public:
     void addType(std::unique_ptr<TypeNode> type);
     void addVariable(std::unique_ptr<VariableNode> variable);
     void addProcedure(std::shared_ptr<ProcedureNode> procedure);
-    void addStatement(std::unique_ptr<Node> statement);
+    StatementSequenceNode* getStatements();
 
     void print(std::ostream &stream) const override = 0;
 

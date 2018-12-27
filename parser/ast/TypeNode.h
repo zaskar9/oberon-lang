@@ -4,8 +4,8 @@
  * Created by Michael Grossniklaus on 2/8/18.
  */
 
-#ifndef OBERON0C_TYPESYMBOL_H
-#define OBERON0C_TYPESYMBOL_H
+#ifndef OBERON0C_TYPENODE_H
+#define OBERON0C_TYPENODE_H
 
 
 #include "Node.h"
@@ -24,4 +24,4 @@ public:
 };
 
 
-#endif //OBERON0C_TYPESYMBOL_H
+#endif //OBERON0C_TYPENODE_H

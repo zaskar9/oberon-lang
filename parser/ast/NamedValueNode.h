@@ -33,7 +33,7 @@ public:
 class FieldNode final : public NamedValueNode {
 
 public:
-    explicit FieldNode(FilePos pos, const std::string &name, TypeNode *type) :
+    explicit FieldNode(const FilePos pos, const std::string &name, TypeNode *type) :
             NamedValueNode(NodeType::field, pos, name, type) { };
     ~FieldNode() final = default;
 };
@@ -41,7 +41,7 @@ public:
 class VariableNode final : public NamedValueNode {
 
 public:
-    explicit VariableNode(FilePos pos, const std::string &name, TypeNode *type) :
+    explicit VariableNode(const FilePos pos, const std::string &name, TypeNode *type) :
             NamedValueNode(NodeType::variable, pos, name, type) { };
     ~VariableNode() final = default;
 };

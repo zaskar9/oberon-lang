@@ -10,11 +10,11 @@
 
 SymbolTable::SymbolTable() {
     level_ = 0;
-    std::unique_ptr<Scope> predefined = std::make_unique<Scope>(nullptr, -1);
+    std::unique_ptr<Scope> predefined = std::make_unique<Scope>(nullptr);
     predefined->insert(BasicTypeNode::BOOLEAN->getName(), BasicTypeNode::BOOLEAN);
     predefined->insert(BasicTypeNode::INTEGER->getName(), BasicTypeNode::INTEGER);
     predefined->insert(BasicTypeNode::STRING->getName(), BasicTypeNode::STRING);
-    scope_ = std::make_unique<Scope>(std::move(predefined), level_);
+    scope_ = std::make_unique<Scope>(std::move(predefined));
 }
 
 SymbolTable::~SymbolTable() = default;
@@ -36,7 +36,8 @@ bool SymbolTable::isDuplicate(const std::string &name) const {
 }
 
 void SymbolTable::enterScope() {
-    scope_ = std::make_unique<Scope>(std::move(scope_), ++level_);
+    level_++;
+    scope_ = std::make_unique<Scope>(std::move(scope_));
 }
 
 void SymbolTable::leaveScope() {
@@ -44,6 +45,6 @@ void SymbolTable::leaveScope() {
         scope_ = scope_->getParent();
         level_--;
     } else {
-        std::cout << "Illegal leaveScope() call" << std::endl;
+        std::cerr << "Illegal leaveScope() call" << std::endl;
     }
 }

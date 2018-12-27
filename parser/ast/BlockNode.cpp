@@ -6,8 +6,8 @@
 
 #include "BlockNode.h"
 
-BlockNode::BlockNode(NodeType nodeType, FilePos pos) :
-        Node(nodeType, pos), constants_(), types_(), variables_(), procedures_(), statements_() {
+BlockNode::BlockNode(const NodeType nodeType, const FilePos pos) : Node(nodeType, pos),
+        constants_(), types_(), variables_(), procedures_(), statements_(std::make_unique<StatementSequenceNode>(pos)) {
 }
 
 BlockNode::~BlockNode() = default;
@@ -28,6 +28,22 @@ void BlockNode::addProcedure(std::shared_ptr<ProcedureNode> procedure) {
     procedures_.push_back(procedure);
 }
 
-void BlockNode::addStatement(std::unique_ptr<Node> statement) {
-    statements_.push_back(std::move(statement));
+StatementSequenceNode* BlockNode::getStatements() {
+    return statements_.get();
+}
+
+void BlockNode::print(std::ostream& stream) const {
+    for (auto const& constant: constants_) {
+        stream << *constant << std::endl;
+    }
+    for (auto const& type: types_) {
+        stream << *type << std::endl;
+    }
+    for (auto const& variable: variables_) {
+        stream << *variable << std::endl;
+    }
+    for (auto const& procedure: procedures_) {
+        stream << procedure << std::endl;
+    }
+    stream << *statements_;
 }

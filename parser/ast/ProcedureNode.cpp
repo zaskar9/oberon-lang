@@ -1,12 +1,12 @@
 /*
- * Implementation of the AST parameter procedure nodes used by the Oberon-0 compiler.
+ * Implementation of the AST procedure nodes used by the Oberon-0 compiler.
  *
  * Created by Michael Grossniklaus on 3/5/18.
  */
 
 #include "ProcedureNode.h"
 
-ProcedureNode::ProcedureNode(FilePos pos, const std::string &name) :
+ProcedureNode::ProcedureNode(const FilePos pos, const std::string &name) :
         BlockNode(NodeType::procedure, pos), name_(name), parameters_() {
 }
 

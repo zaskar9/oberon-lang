@@ -7,9 +7,11 @@
 #include "TypeReferenceNode.h"
 
 
-TypeReferenceNode::TypeReferenceNode(FilePos pos, const TypeNode *type) :
+TypeReferenceNode::TypeReferenceNode(const FilePos pos, const TypeNode *type) :
     TypeNode(NodeType::type_reference, pos, type->getSize()), type_(type) {
 }
+
+TypeReferenceNode::~TypeReferenceNode() = default;
 
 const TypeNode* TypeReferenceNode::dereference() const {
     return type_;

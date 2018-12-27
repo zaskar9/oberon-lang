@@ -15,12 +15,11 @@
 class Scope {
 
 private:
-    int level_;
     std::unordered_map<std::string, const Node*> symbols_;
     std::unique_ptr<Scope> parent_;
 
 public:
-    Scope(std::unique_ptr<Scope> parent, const int level);
+    Scope(std::unique_ptr<Scope> parent);
     ~Scope() = default;
 
     std::unique_ptr<Scope> getParent();

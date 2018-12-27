@@ -6,6 +6,7 @@
 
 #include "BinaryExpressionNode.h"
 #include "BasicTypeNode.h"
+#include "TypeReferenceNode.h"
 
 BinaryExpressionNode::BinaryExpressionNode(const FilePos pos, const OperatorType op,
                                            std::unique_ptr<ExpressionNode> lhs,
@@ -21,7 +22,13 @@ bool BinaryExpressionNode::isConstant() const {
 
 const TypeNode* BinaryExpressionNode::getType() const {
     auto lhsType = lhs_->getType();
+    if (lhsType->getNodeType() == NodeType::type_reference) {
+        lhsType = dynamic_cast<const TypeReferenceNode*>(lhsType)->dereference();
+    }
     auto rhsType = rhs_->getType();
+    if (rhsType->getNodeType() == NodeType::type_reference) {
+        rhsType = dynamic_cast<const TypeReferenceNode*>(rhsType)->dereference();
+    }
     if (lhsType == rhsType) {
         if (op_ == OperatorType::EQ
             || op_ == OperatorType::NEQ
@@ -33,6 +40,7 @@ const TypeNode* BinaryExpressionNode::getType() const {
         }
         return lhsType;
     }
+    std::cerr << lhsType << ", " << rhsType << std::endl;
     return nullptr;
 }
 

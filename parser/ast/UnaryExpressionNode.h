@@ -1,5 +1,5 @@
 /*
- * Header file of the AST unary expression nodes used by the Oberon-0 compiler.
+ * Header of the AST unary expression node used by the Oberon-0 compiler.
  *
  * Created by Michael Grossniklaus on 2/15/18.
  */

@@ -1,5 +1,5 @@
 /*
- * Header file of the AST parameter procedure nodes used by the Oberon-0 compiler.
+ * Header file of the AST procedure nodes used by the Oberon-0 compiler.
  *
  * Created by Michael Grossniklaus on 3/5/18.
  */

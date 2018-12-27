@@ -17,6 +17,10 @@
 #include "ast/ParameterNode.h"
 #include "ast/NamedValueReferenceNode.h"
 #include "ast/TypeReferenceNode.h"
+#include "ast/IfThenElseNode.h"
+#include "ast/WhileLoopNode.h"
+#include "ast/AssignmentNode.h"
+#include "ast/ProcedureCallNode.h"
 
 Parser::Parser(Scanner *scanner, Logger *logger) :
         scanner_(scanner), logger_(logger) {
@@ -52,7 +56,7 @@ std::unique_ptr<ModuleNode> Parser::module() {
             declarations(module.get());
             token = scanner_->nextToken();
             if (token->getType() == TokenType::kw_begin) {
-                statement_sequence();
+                statement_sequence(module->getStatements());
                 token = scanner_->nextToken();
             }
             if (token->getType() == TokenType::kw_end) {
@@ -161,7 +165,6 @@ void Parser::var_declarations(BlockNode *block) {
         auto pos = token->getPosition();
         if (token->getType() == TokenType::colon) {
             auto node = type();
-            block->addType(std::move(node));
             for (auto&& ident : idents) {
                 if (symbols_->isDuplicate(ident)) {
                     logger_->error(token->getPosition(), "duplicate definition: " + ident);
@@ -171,6 +174,7 @@ void Parser::var_declarations(BlockNode *block) {
                 symbols_->insert(ident, variable.get());
                 block->addVariable(std::move(variable));
             }
+            block->addType(std::move(node));
             token = scanner_->nextToken();
             if (token->getType() != TokenType::semicolon) {
                 logger_->error(token->getPosition(), "; expected.");
@@ -382,17 +386,17 @@ std::unique_ptr<RecordTypeNode> Parser::record_type() {
 }
 
 // field_list = ident_list ":" type .
-void Parser::field_list(RecordTypeNode *rtype) {
+void Parser::field_list(RecordTypeNode *record) {
     logger_->debug("", "field_list");
     std::vector<std::string> idents;
     ident_list(idents);
     auto token = scanner_->nextToken();
     if (token->getType() == TokenType::colon) {
         auto node = type();
-        rtype->addType(std::move(node));
         for (size_t i = 0; i < idents.size(); i++) {
-            rtype->addField(std::make_unique<FieldNode>(token->getPosition(), idents[i], node.get()));
+            record->addField(std::make_unique<FieldNode>(token->getPosition(), idents[i], node.get()));
         }
+        record->addType(std::move(node));
     } else {
         logger_->error(token->getPosition(), ": expected.");
     }
@@ -425,7 +429,7 @@ void Parser::procedure_body(ProcedureNode *proc) {
     declarations(proc);
     if (scanner_->peekToken()->getType() == TokenType::kw_begin) {
         scanner_->nextToken(); // skip BEGIN keyword
-        statement_sequence();
+        statement_sequence(proc->getStatements());
     }
     auto token = scanner_->peekToken();
     if (token->getType() == TokenType::kw_end) {
@@ -470,50 +474,56 @@ void Parser::fp_section(ProcedureNode *proc) {
         logger_->error(token->getPosition(), ": expected.");
     }
     auto node = type();
-    proc->addType(std::move(node));
     for (size_t i = 0; i < idents.size(); i++) {
         auto param = std::make_unique<ParameterNode>(token->getPosition(), idents[i], node.get(), var);
         symbols_->insert(param->getName(), param.get());
         proc->addParameter(std::move(param));
     }
+    proc->addType(std::move(node));
 }
 
 // statement_sequence = statement { ";" statement } .
-const Node* Parser::statement_sequence() {
+void Parser::statement_sequence(StatementSequenceNode *statements) {
     logger_->debug("", "statement_sequence");
-    statement();
+    statements->addStatement(statement());
     while (scanner_->peekToken()->getType() == TokenType::semicolon) {
         scanner_->nextToken(); // skip semicolon
-        statement();
+        statements->addStatement(statement());
     }
-    return nullptr;
 }
 
 // statement = [ assignment | procedure_call | if_statement | while_statement ] .
-const Node* Parser::statement() {
+std::unique_ptr<StatementNode> Parser::statement() {
     logger_->debug("", "statement");
     auto token = scanner_->peekToken();
     if (token->getType() == TokenType::const_ident) {
+        FilePos pos = token->getPosition();
         const std::string name = ident();
         auto symbol = symbols_->lookup(name);
         if (symbol == nullptr) {
-            logger_->error(token->getPosition(), "undefined identifier: " + name + ".");
-        }
-        token = scanner_->peekToken();
-        if (token->getType() == TokenType::period
-            || token->getType() == TokenType::lbrack) {
-            selector();
-        }
-        token = scanner_->peekToken();
-        if (token->getType() == TokenType::op_becomes) {
-            assignment();
+            logger_->error(pos, "undefined identifier: " + name + ".");
+        } else if (symbol->getNodeType() == NodeType::variable || symbol->getNodeType() == NodeType::parameter) {
+            auto variable = dynamic_cast<const NamedValueNode*>(symbol);
+            token = scanner_->peekToken();
+            if (token->getType() == TokenType::period || token->getType() == TokenType::lbrack) {
+                selector();
+            }
+            token = scanner_->peekToken();
+            if (token->getType() == TokenType::op_becomes) {
+                return assignment(std::make_unique<NamedValueReferenceNode>(pos, variable));
+            }
+        } else if (symbol->getNodeType() == NodeType::procedure) {
+            auto procedure = dynamic_cast<const ProcedureNode*>(symbol);
+            return procedure_call(std::make_unique<ProcedureCallNode>(pos, procedure));
+        } else if (symbol->getNodeType() == NodeType::constant) {
+            logger_->error(pos, "constant cannot be assigned: " + name + ".");
         } else {
-            procedure_call();
+            logger_->error(pos, "variable or procedure name expected, found: " + name + ".");
         }
     } else if (token->getType() == TokenType::kw_if) {
-        if_statement();
+        return if_statement();
     } else if (token->getType() == TokenType::kw_while) {
-        while_statement();
+        return while_statement();
     } else {
         logger_->error(token->getPosition(), "unknown statement.");
     }
@@ -521,38 +531,50 @@ const Node* Parser::statement() {
 }
 
 // assignment = identifier selector ":=" expression .
-const Node* Parser::assignment() {
+std::unique_ptr<StatementNode> Parser::assignment(std::unique_ptr<NamedValueReferenceNode> lvalue) {
     logger_->debug("", "assignment");
     scanner_->nextToken(); // skip becomes
-    expression();
-    return nullptr;
+    return std::make_unique<AssignmentNode>(lvalue->getFilePos(), std::move(lvalue), expression());
 }
 
 // procedure_call = identifier [ actual_parameters ] .
-const Node* Parser::procedure_call() {
+std::unique_ptr<StatementNode> Parser::procedure_call(std::unique_ptr<ProcedureCallNode> call) {
     logger_->debug("", "procedure_call");
     if (scanner_->peekToken()->getType() == TokenType::lparen) {
         actual_parameters();
     }
-    return nullptr;
+    return call;
 }
 
 // if_statement = "IF" expression "THEN" statement_sequence { "ELSIF" expression "THEN" statement_sequence } [ "ELSE" statement_sequence ] "END" .
-const Node* Parser::if_statement() {
+std::unique_ptr<StatementNode> Parser::if_statement() {
     logger_->debug("", "if_statement");
-    scanner_->nextToken(); // skip IF keyword
-    expression();
-    auto token = scanner_->nextToken();
+    auto token = scanner_->nextToken(); // skip IF keyword
+    auto condition = expression();
+    if (condition->getType() != BasicTypeNode::BOOLEAN) {
+        logger_->error(condition->getFilePos(), "Boolean expression expected.");
+    }
+    auto statement = std::make_unique<IfThenElseNode>(token->getPosition(), std::move(condition));
+    token = scanner_->nextToken();
     if (token->getType() == TokenType::kw_then) {
-        statement_sequence();
+        statement_sequence(statement->addThenStatements(token->getPosition()));
         TokenType type = scanner_->peekToken()->getType();
         while (type == TokenType::kw_elsif) {
             scanner_->nextToken(); // skip ELSIF keyword
-            statement_sequence();
+            condition = expression();
+            if (condition->getType() != BasicTypeNode::BOOLEAN) {
+                logger_->error(condition->getFilePos(), "Boolean expression expected.");
+            }
+            token = scanner_->nextToken();
+            if (token->getType() == TokenType::kw_then) {
+                statement_sequence(statement->addElseIfStatements(token->getPosition(), std::move(condition)));
+            } else {
+                logger_->error(token->getPosition(), "THEN expected, instead of " + to_string(token->getType()) + ".");
+            }
             type = scanner_->peekToken()->getType();
         }
         if (type == TokenType::kw_else) {
-            statement_sequence();
+            statement_sequence(statement->addElseStatements(token->getPosition()));
         }
         token = scanner_->nextToken();
         if (token->getType() != TokenType::kw_end) {
@@ -561,17 +583,21 @@ const Node* Parser::if_statement() {
     } else {
         logger_->error(token->getPosition(), "THEN expected, instead of " + to_string(token->getType()) + ".");
     }
-    return nullptr;
+    return statement;
 }
 
 // while_statement = "WHILE" expression "DO" statement_sequence "END" .
-const Node* Parser::while_statement() {
+std::unique_ptr<StatementNode> Parser::while_statement() {
     logger_->debug("", "while_statement");
-    scanner_->nextToken(); // skip WHILE keyword
-    expression();
-    auto token = scanner_->nextToken();
+    auto token = scanner_->nextToken(); // skip WHILE keyword
+    auto condition = expression();
+    if (condition->getType() != BasicTypeNode::BOOLEAN) {
+        logger_->error(condition->getFilePos(), "Boolean expression expected, found: " + to_string(condition->getType()) + ".");
+    }
+    auto statement = std::make_unique<WhileLoopNode>(token->getPosition(), std::move(condition));
+    token = scanner_->nextToken();
     if (token->getType() == TokenType::kw_do) {
-        statement_sequence();
+        statement_sequence(statement->getStatements());
         token = scanner_->nextToken();
         if (token->getType() != TokenType::kw_end) {
             logger_->error(token->getPosition(), "END expected.");
@@ -579,7 +605,7 @@ const Node* Parser::while_statement() {
     } else {
         logger_->error(token->getPosition(), "DO expected.");
     }
-    return nullptr;
+    return statement;
 }
 
 // actual_parameters = "(" [ expression { "," expression } ] ")" .

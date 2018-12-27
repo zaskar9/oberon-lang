@@ -6,7 +6,7 @@
 
 #include "NamedValueNode.h"
 
-NamedValueNode::NamedValueNode(NodeType nodeType, FilePos pos, const std::string &name, const TypeNode* type) :
+NamedValueNode::NamedValueNode(NodeType nodeType, const FilePos pos, const std::string &name, const TypeNode* type) :
         Node(nodeType, pos), name_(name), type_(type) {
 }
 

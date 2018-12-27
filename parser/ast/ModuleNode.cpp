@@ -6,7 +6,7 @@
 
 #include "ModuleNode.h"
 
-ModuleNode::ModuleNode(FilePos pos, const std::string &name) : BlockNode(NodeType::module, pos), name_(name) {
+ModuleNode::ModuleNode(const FilePos pos, const std::string &name) : BlockNode(NodeType::module, pos), name_(name) {
 }
 
 ModuleNode::~ModuleNode() = default;
@@ -16,5 +16,6 @@ const std::string ModuleNode::getName() const {
 }
 
 void ModuleNode::print(std::ostream &stream) const {
-    stream << "MODULE " << name_;
+    stream << "MODULE " << name_ << std::endl;
+    BlockNode::print(stream);
 }

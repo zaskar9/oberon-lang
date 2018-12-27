@@ -20,7 +20,11 @@
 #include "ast/RecordTypeNode.h"
 #include "ast/ProcedureNode.h"
 #include "ast/ModuleNode.h"
+#include "ast/StatementNode.h"
 #include "symbol/SymbolTable.h"
+#include "ast/StatementSequenceNode.h"
+#include "ast/NamedValueReferenceNode.h"
+#include "ast/ProcedureCallNode.h"
 
 class Parser
 {
@@ -44,18 +48,18 @@ private:
     std::unique_ptr<TypeNode> type();
     std::unique_ptr<ArrayTypeNode> array_type();
     std::unique_ptr<RecordTypeNode> record_type();
-    void field_list(RecordTypeNode *rtype);
+    void field_list(RecordTypeNode *record);
     void ident_list(std::vector<std::string> &idents);
     std::unique_ptr<ProcedureNode> procedure_heading();
     void procedure_body(ProcedureNode *proc);
     void formal_parameters(ProcedureNode *proc);
     void fp_section(ProcedureNode *proc);
-    const Node* statement_sequence();
-    const Node* statement();
-    const Node* assignment();
-    const Node* procedure_call();
-    const Node* if_statement();
-    const Node* while_statement();
+    void statement_sequence(StatementSequenceNode* statements);
+    std::unique_ptr<StatementNode> statement();
+    std::unique_ptr<StatementNode> assignment(std::unique_ptr<NamedValueReferenceNode> lvalue);
+    std::unique_ptr<StatementNode> procedure_call(std::unique_ptr<ProcedureCallNode> call);
+    std::unique_ptr<StatementNode> if_statement();
+    std::unique_ptr<StatementNode> while_statement();
     const Node* actual_parameters();
     const Node* selector();
     std::unique_ptr<ValueNode> fold(const ExpressionNode *expr) const;

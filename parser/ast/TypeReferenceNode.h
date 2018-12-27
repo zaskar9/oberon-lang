@@ -17,7 +17,7 @@ private:
 
 public:
     TypeReferenceNode(FilePos pos, const TypeNode *type);
-    ~TypeReferenceNode() = default;
+    ~TypeReferenceNode() override;
 
     const TypeNode* dereference() const;
 
