@@ -19,7 +19,7 @@ public:
     explicit TypeNode(NodeType nodeType, FilePos pos, int size);
     ~TypeNode() override;
 
-    virtual const int getSize() const;
+    virtual int getSize() const;
 
 };
 

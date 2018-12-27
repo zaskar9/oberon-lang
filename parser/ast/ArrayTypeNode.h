@@ -21,7 +21,7 @@ public:
     explicit ArrayTypeNode(FilePos pos, int dim, const std::shared_ptr<const TypeNode> &memberType);
     ~ArrayTypeNode() final;
 
-    const int getDimension() const;
+    int getDimension() const;
     const std::shared_ptr<const TypeNode> getMemberType() const;
 
     void print(std::ostream &stream) const final;

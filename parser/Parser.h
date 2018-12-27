@@ -59,8 +59,8 @@ private:
     const Node* actual_parameters();
     const Node* selector();
     std::unique_ptr<ValueNode> fold(const ExpressionNode *expr) const;
-    const int foldNumber(const ExpressionNode *expr) const;
-    const bool foldBoolean(const ExpressionNode *expr) const;
+    int foldNumber(const ExpressionNode *expr) const;
+    bool foldBoolean(const ExpressionNode *expr) const;
     const std::string foldString(const ExpressionNode *expr) const;
 
 public:
@@ -71,7 +71,5 @@ public:
 };
 
 static OperatorType token_to_operator(TokenType token);
-
-static const TypeNode* multiplex_type(int num, const TypeNode* type);
 
 #endif //OBERON0C_PARSER_H

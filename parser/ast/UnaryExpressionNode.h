@@ -24,7 +24,7 @@ public:
     bool isConstant() const final;
     const TypeNode* getType() const final;
 
-    const OperatorType getOperator() const;
+    OperatorType getOperator() const;
     const ExpressionNode* getExpression() const;
 
     void print(std::ostream &stream) const final;

@@ -1,7 +1,10 @@
 cmake_minimum_required(VERSION 3.9)
 project(oberon0c)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -W -Wall -Wextra -pedantic -Wshadow -Woverloaded-virtual -Winvalid-pch -Wcast-align -Wformat=2 -Wformat-nonliteral -Wmissing-declarations -Wmissing-format-attribute -Wmissing-include-dirs -Wredundant-decls -Wswitch-default")
 
 add_executable(oberon0c main.cpp
         util/Logger.cpp util/Logger.h
@@ -12,6 +15,8 @@ add_executable(oberon0c main.cpp
         scanner/StringToken.cpp scanner/StringToken.h
         parser/Parser.cpp parser/Parser.h
         parser/symbol/SymbolTable.cpp parser/symbol/SymbolTable.h
+        parser/symbol/Symbol.cpp parser/symbol/Symbol.h
+        parser/symbol/Scope.cpp parser/symbol/Scope.h
         parser/ast/Node.cpp parser/ast/Node.h
         parser/ast/ExpressionNode.cpp parser/ast/ExpressionNode.h
         parser/ast/UnaryExpressionNode.cpp parser/ast/UnaryExpressionNode.h
@@ -28,5 +33,7 @@ add_executable(oberon0c main.cpp
         parser/ast/ParameterNode.cpp parser/ast/ParameterNode.h
         parser/ast/ModuleNode.cpp parser/ast/ModuleNode.h
         parser/ast/BlockNode.cpp parser/ast/BlockNode.h
-        parser/ast/NamedValueNode.cpp parser/ast/NamedValueNode.h parser/ast/ConstantNode.cpp
-        parser/ast/NamedValueReferenceNode.cpp parser/ast/NamedValueReferenceNode.h parser/symbol/Scope.cpp parser/symbol/Scope.h parser/symbol/Symbol.cpp parser/symbol/Symbol.h parser/ast/TypeReferenceNode.cpp parser/ast/TypeReferenceNode.h)
+        parser/ast/NamedValueNode.cpp parser/ast/NamedValueNode.h
+        parser/ast/ConstantNode.cpp parser/ast/ConstantNode.h
+        parser/ast/NamedValueReferenceNode.cpp parser/ast/NamedValueReferenceNode.h
+        parser/ast/TypeReferenceNode.cpp parser/ast/TypeReferenceNode.h)

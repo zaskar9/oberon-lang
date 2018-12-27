@@ -13,7 +13,7 @@ BooleanNode::BooleanNode(const FilePos pos, const bool value) :
 
 BooleanNode::~BooleanNode() = default;
 
-const bool BooleanNode::getValue() const {
+bool BooleanNode::getValue() const {
     return value_;
 }
 

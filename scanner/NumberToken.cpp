@@ -11,7 +11,7 @@ NumberToken::NumberToken(FilePos pos, int value) : Token(TokenType::const_number
 
 NumberToken::~NumberToken() = default;
 
-const int NumberToken::getValue() const {
+int NumberToken::getValue() const {
     return value_;
 }
 

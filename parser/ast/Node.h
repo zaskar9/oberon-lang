@@ -32,7 +32,7 @@ public:
     explicit Node(NodeType nodeType, FilePos pos);
     virtual ~Node() = 0;
     
-    const NodeType getNodeType() const;
+    NodeType getNodeType() const;
     const FilePos getFilePos() const;
 
     virtual void print(std::ostream &stream) const = 0;

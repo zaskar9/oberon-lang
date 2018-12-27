@@ -12,7 +12,7 @@ NumberNode::NumberNode(const FilePos pos, const int value) :
 
 NumberNode::~NumberNode() = default;
 
-const int NumberNode::getValue() const {
+int NumberNode::getValue() const {
     return value_;
 }
 

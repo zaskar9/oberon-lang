@@ -25,7 +25,7 @@ public:
     bool isConstant() const final;
     const TypeNode* getType() const final;
 
-    const OperatorType getOperator() const;
+    OperatorType getOperator() const;
     const ExpressionNode* getLeftExpression() const;
     const ExpressionNode* getRightExpression() const;
 

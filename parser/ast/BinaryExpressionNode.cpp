@@ -36,7 +36,7 @@ const TypeNode* BinaryExpressionNode::getType() const {
     return nullptr;
 }
 
-const OperatorType BinaryExpressionNode::getOperator() const {
+OperatorType BinaryExpressionNode::getOperator() const {
     return op_;
 }
 

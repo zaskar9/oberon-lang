@@ -19,7 +19,7 @@ public:
     NumberToken(FilePos pos, int value);
     ~NumberToken() override;
 
-    const int getValue() const;
+    int getValue() const;
 
     void print(std::ostream &stream) const override;
 

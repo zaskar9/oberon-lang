@@ -12,6 +12,6 @@ TypeNode::TypeNode(const NodeType nodeType, const FilePos pos, const int size) :
 
 TypeNode::~TypeNode() = default;
 
-const int TypeNode::getSize() const {
+int TypeNode::getSize() const {
     return size_;
 }

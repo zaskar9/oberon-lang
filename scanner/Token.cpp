@@ -11,7 +11,7 @@ Token::Token(TokenType type, FilePos pos) : type_(type), pos_(pos) {
 
 Token::~Token() = default;
 
-const TokenType Token::getType() const {
+TokenType Token::getType() const {
     return type_;
 }
 

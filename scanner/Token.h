@@ -33,7 +33,7 @@ public:
     Token(TokenType type, FilePos pos);
     virtual ~Token();
 
-    const TokenType getType() const;
+    TokenType getType() const;
     const FilePos getPosition() const;
 
     virtual void print(std::ostream &stream) const;

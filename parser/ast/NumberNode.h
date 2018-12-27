@@ -19,7 +19,7 @@ public:
     explicit NumberNode(FilePos pos, int value);
     ~NumberNode() final;
 
-    const int getValue() const;
+    int getValue() const;
 
     void print(std::ostream &stream) const final;
 

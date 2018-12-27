@@ -22,7 +22,7 @@ public:
     explicit RecordTypeNode(FilePos pos);
     ~RecordTypeNode() final;
 
-    const int getSize() const final;
+    int getSize() const final;
 
     void addType(std::unique_ptr<TypeNode> type);
     void addField(std::unique_ptr<FieldNode> field);

@@ -19,7 +19,7 @@ public:
     BooleanNode(FilePos pos, bool value);
     ~BooleanNode() final;
 
-    const bool getValue() const;
+    bool getValue() const;
 
     void print(std::ostream &stream) const final;
 

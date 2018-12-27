@@ -22,7 +22,7 @@ public:
     explicit ParameterNode(FilePos pos, const std::string &name, const TypeNode *type, bool var);
     ~ParameterNode() final;
 
-    const bool isVar() const;
+    bool isVar() const;
 
     void print(std::ostream &stream) const final;
 

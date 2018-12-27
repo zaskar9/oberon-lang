@@ -20,8 +20,8 @@ public:
     ~Symbol() = default;
 
     const Node* getNode() const;
-    const int getLevel() const;
-    const int getOffset() const;
+    int getLevel() const;
+    int getOffset() const;
 
 };
 

@@ -32,7 +32,7 @@ private:
     const FilePos getPosition() const;
     const Token* next();
     const Token* ident();
-    const int number();
+    int number();
     const std::string string();
     void comment();
 

@@ -27,11 +27,11 @@ const Node* SymbolTable::lookup(const std::string &name) const {
     return scope_->lookup(name, false);
 }
 
-const bool SymbolTable::isDefined(const std::string &name) const {
+bool SymbolTable::isDefined(const std::string &name) const {
     return scope_->lookup(name, false) != nullptr;
 }
 
-const bool SymbolTable::isDuplicate(const std::string &name) const {
+bool SymbolTable::isDuplicate(const std::string &name) const {
     return scope_->lookup(name, true) != nullptr;
 }
 
@@ -41,7 +41,7 @@ void SymbolTable::enterScope() {
 
 void SymbolTable::leaveScope() {
     if (level_ > 0) {
-        scope_ = std::move(scope_->getParent());
+        scope_ = scope_->getParent();
         level_--;
     } else {
         std::cout << "Illegal leaveScope() call" << std::endl;

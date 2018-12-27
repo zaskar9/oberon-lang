@@ -255,7 +255,7 @@ const Token* Scanner::ident() {
     return new IdentToken(pos, ident);
 }
 
-const int Scanner::number() {
+int Scanner::number() {
     bool isHex = false;
     int decValue = 0;
     int hexValue = 0;

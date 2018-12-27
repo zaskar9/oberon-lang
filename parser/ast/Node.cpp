@@ -12,7 +12,7 @@ Node::Node(const NodeType nodeType, const FilePos pos) : nodeType_(nodeType), po
 
 Node::~Node() = default;
 
-const NodeType Node::getNodeType() const {
+NodeType Node::getNodeType() const {
     return nodeType_;
 }
 

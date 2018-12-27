@@ -20,7 +20,7 @@ const TypeNode* UnaryExpressionNode::getType() const {
     return expr_->getType();
 }
 
-const OperatorType UnaryExpressionNode::getOperator() const {
+OperatorType UnaryExpressionNode::getOperator() const {
     return op_;
 }
 

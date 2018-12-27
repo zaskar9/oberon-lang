@@ -12,7 +12,7 @@ ArrayTypeNode::ArrayTypeNode(const FilePos pos, const int dim, const std::shared
 
 ArrayTypeNode::~ArrayTypeNode() = default;
 
-const int ArrayTypeNode::getDimension() const {
+int ArrayTypeNode::getDimension() const {
     return dim_;
 }
 

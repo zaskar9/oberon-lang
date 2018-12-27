@@ -291,6 +291,7 @@ std::unique_ptr<ExpressionNode> Parser::factor() {
     } else if (token->getType() == TokenType::const_number) {
         auto number = dynamic_cast<const NumberToken*>(scanner_->nextToken().get());
         return std::make_unique<NumberNode>(number->getPosition(), number->getValue());
+        return nullptr;
     } else if (token->getType() == TokenType::const_string) {
         auto string = dynamic_cast<const StringToken*>(scanner_->nextToken().get());
         return std::make_unique<StringNode>(string->getPosition(), string->getValue());
@@ -389,7 +390,7 @@ void Parser::field_list(RecordTypeNode *rtype) {
     if (token->getType() == TokenType::colon) {
         auto node = type();
         rtype->addType(std::move(node));
-        for (int i = 0; i < idents.size(); i++) {
+        for (size_t i = 0; i < idents.size(); i++) {
             rtype->addField(std::make_unique<FieldNode>(token->getPosition(), idents[i], node.get()));
         }
     } else {
@@ -470,7 +471,7 @@ void Parser::fp_section(ProcedureNode *proc) {
     }
     auto node = type();
     proc->addType(std::move(node));
-    for (int i = 0; i < idents.size(); i++) {
+    for (size_t i = 0; i < idents.size(); i++) {
         auto param = std::make_unique<ParameterNode>(token->getPosition(), idents[i], node.get(), var);
         symbols_->insert(param->getName(), param.get());
         proc->addParameter(std::move(param));
@@ -631,7 +632,7 @@ std::unique_ptr<ValueNode> Parser::fold(const ExpressionNode *expr) const {
     }
 }
 
-const int Parser::foldNumber(const ExpressionNode *expr) const {
+int Parser::foldNumber(const ExpressionNode *expr) const {
     if (expr->getNodeType() == NodeType::unary_expression) {
         auto unExpr = dynamic_cast<const UnaryExpressionNode*>(expr);
         int value = foldNumber(unExpr->getExpression());
@@ -669,7 +670,7 @@ const int Parser::foldNumber(const ExpressionNode *expr) const {
     return 0;
 }
 
-const bool Parser::foldBoolean(const ExpressionNode *expr) const {
+bool Parser::foldBoolean(const ExpressionNode *expr) const {
     if (expr->getNodeType() == NodeType::unary_expression) {
         auto unExpr = dynamic_cast<const UnaryExpressionNode*>(expr);
         bool value = foldBoolean(unExpr->getExpression());

@@ -12,7 +12,7 @@ ParameterNode::ParameterNode(FilePos pos, const std::string &name, const TypeNod
 
 ParameterNode::~ParameterNode() = default;
 
-const bool ParameterNode::isVar() const {
+bool ParameterNode::isVar() const {
     return var_;
 }
 

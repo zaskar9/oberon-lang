@@ -7,7 +7,7 @@
 #include "Scope.h"
 
 
-Scope::Scope(std::unique_ptr<Scope> parent, const int level) : symbols_(), parent_(std::move(parent)), level_(level) {
+Scope::Scope(std::unique_ptr<Scope> parent, const int level) : level_(level), symbols_(), parent_(std::move(parent)) {
 }
 
 std::unique_ptr<Scope> Scope::getParent() {
