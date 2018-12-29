@@ -5,6 +5,7 @@
  */
 
 #include "NamedValueNode.h"
+#include "TypeReferenceNode.h"
 
 NamedValueNode::NamedValueNode(NodeType nodeType, const FilePos pos, const std::string &name, const TypeNode* type) :
         Node(nodeType, pos), name_(name), type_(type) {
@@ -17,6 +18,10 @@ const std::string NamedValueNode::getName() const {
 }
 
 const TypeNode* NamedValueNode::getType() const {
+    if (type_->getNodeType() == NodeType::type_reference) {
+        auto ref = dynamic_cast<const TypeReferenceNode*>(type_);
+        return ref->dereference();
+    }
     return type_;
 }
 

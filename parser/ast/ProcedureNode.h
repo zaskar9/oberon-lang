@@ -25,6 +25,8 @@ public:
 
     const std::string getName() const;
     void addParameter(std::unique_ptr<const ParameterNode> parameter);
+    const ParameterNode* getParameter(size_t num) const;
+    size_t getParameterCount() const;
 
     void print(std::ostream &stream) const final;
 

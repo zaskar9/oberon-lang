@@ -26,7 +26,7 @@ public:
 
     void addType(std::unique_ptr<TypeNode> type);
     void addField(std::unique_ptr<FieldNode> field);
-
+    const FieldNode* getField(const std::string &name) const;
 
     void print(std::ostream &stream) const final;
 

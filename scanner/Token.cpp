@@ -33,6 +33,7 @@ std::ostream& operator<<(std::ostream &stream, const TokenType &type) {
     switch(type) {
         case TokenType::eof: result = "EOF"; break;
         case TokenType::null: result = "NULL"; break;
+        case TokenType::undef: result = "UNDEFINED"; break;
         case TokenType::const_true: result = "TRUE"; break;
         case TokenType::const_false: result = "FALSE"; break;
         case TokenType::const_number: result = "number"; break;

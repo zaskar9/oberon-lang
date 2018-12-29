@@ -20,6 +20,14 @@ void ProcedureNode::addParameter(std::unique_ptr<const ParameterNode> parameter)
     parameters_.push_back(std::move(parameter));
 }
 
+const ParameterNode* ProcedureNode::getParameter(const size_t num) const {
+    return parameters_.at(num).get();
+}
+
+size_t ProcedureNode::getParameterCount() const {
+    return parameters_.size();
+}
+
 void ProcedureNode::print(std::ostream &stream) const {
     stream << "PROCEDURE " << name_;
 }

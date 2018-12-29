@@ -15,12 +15,15 @@ class NamedValueReferenceNode final : public ExpressionNode {
 
 private:
     const NamedValueNode *node_;
+    std::unique_ptr<ExpressionNode> selector_;
 
 public:
     explicit NamedValueReferenceNode(FilePos pos, const NamedValueNode *node);
+    explicit NamedValueReferenceNode(FilePos pos, const NamedValueNode *node, std::unique_ptr<ExpressionNode> selector);
     ~NamedValueReferenceNode() final;
 
     const NamedValueNode* dereference() const;
+    const ExpressionNode* getSelector() const;
 
     bool isConstant() const final;
     const TypeNode* getType() const final;

@@ -13,6 +13,7 @@ add_executable(oberon0c main.cpp
         scanner/IdentToken.cpp scanner/IdentToken.h
         scanner/NumberToken.cpp scanner/NumberToken.h
         scanner/StringToken.cpp scanner/StringToken.h
+        scanner/UndefinedToken.cpp scanner/UndefinedToken.h
         parser/Parser.cpp parser/Parser.h
         parser/symbol/SymbolTable.cpp parser/symbol/SymbolTable.h
         parser/symbol/Scope.cpp parser/symbol/Scope.h
@@ -35,4 +36,10 @@ add_executable(oberon0c main.cpp
         parser/ast/NamedValueNode.cpp parser/ast/NamedValueNode.h
         parser/ast/ConstantNode.cpp parser/ast/ConstantNode.h
         parser/ast/NamedValueReferenceNode.cpp parser/ast/NamedValueReferenceNode.h
-        parser/ast/TypeReferenceNode.cpp parser/ast/TypeReferenceNode.h parser/ast/StatementNode.cpp parser/ast/StatementNode.h parser/ast/AssignmentNode.cpp parser/ast/AssignmentNode.h parser/ast/WhileLoopNode.cpp parser/ast/WhileLoopNode.h parser/ast/ProcedureCallNode.cpp parser/ast/ProcedureCallNode.h parser/ast/IfThenElseNode.cpp parser/ast/IfThenElseNode.h parser/ast/StatementSequenceNode.cpp parser/ast/StatementSequenceNode.h)
+        parser/ast/TypeReferenceNode.cpp parser/ast/TypeReferenceNode.h
+        parser/ast/StatementNode.cpp parser/ast/StatementNode.h
+        parser/ast/AssignmentNode.cpp parser/ast/AssignmentNode.h
+        parser/ast/WhileLoopNode.cpp parser/ast/WhileLoopNode.h
+        parser/ast/ProcedureCallNode.cpp parser/ast/ProcedureCallNode.h
+        parser/ast/IfThenElseNode.cpp parser/ast/IfThenElseNode.h
+        parser/ast/StatementSequenceNode.cpp parser/ast/StatementSequenceNode.h)

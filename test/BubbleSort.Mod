@@ -4,8 +4,21 @@ MODULE BubbleSort;
 (* Length of the array to be sorted. *)
 CONST Dim = 2 * 10;
 
+TYPE Point2D = RECORD x, y: INTEGER END;
+
 (* Array to be sorted. *)
 VAR a: ARRAY Dim OF INTEGER;
+
+PROCEDURE Test();
+VAR point: Point2D;
+    i: INTEGER;
+BEGIN
+    point.x := 1;
+    point.y := -1;
+    WHILE 1 # 1 DO
+        i := Dim
+    END
+END Test;
 
 (* Initializes the array. *)
 PROCEDURE Init();
@@ -35,7 +48,7 @@ BEGIN
     WHILE i <= Dim DO
         j := Dim; 
         WHILE j > i DO
-            IF a[j-1] > a[j] THEN Swap(a[j-1], a[j]) END;
+            IF a[j-1] > a[j] THEN Swap(a[j - 1], a[j]) END;
             j := j - 1
         END;
         i := i + 1

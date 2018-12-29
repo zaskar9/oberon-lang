@@ -57,15 +57,18 @@ private:
     void statement_sequence(StatementSequenceNode* statements);
     std::unique_ptr<StatementNode> statement();
     std::unique_ptr<StatementNode> assignment(std::unique_ptr<NamedValueReferenceNode> lvalue);
-    std::unique_ptr<StatementNode> procedure_call(std::unique_ptr<ProcedureCallNode> call);
+    void procedure_call(ProcedureCallNode *call);
     std::unique_ptr<StatementNode> if_statement();
     std::unique_ptr<StatementNode> while_statement();
-    const Node* actual_parameters();
-    const Node* selector();
+    void actual_parameters(ProcedureCallNode *call);
+    std::unique_ptr<ExpressionNode> selector(const NamedValueNode *variable);
+
     std::unique_ptr<ValueNode> fold(const ExpressionNode *expr) const;
     int foldNumber(const ExpressionNode *expr) const;
     bool foldBoolean(const ExpressionNode *expr) const;
     const std::string foldString(const ExpressionNode *expr) const;
+
+    bool checkActualParameter(const ProcedureNode *proc, size_t num, const ExpressionNode *expr);
 
 public:
     explicit Parser(Scanner *scanner, Logger *logger);

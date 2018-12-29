@@ -7,10 +7,18 @@
 #include "ProcedureCallNode.h"
 
 ProcedureCallNode::ProcedureCallNode(const FilePos pos, const ProcedureNode* procedure) :
-        StatementNode(NodeType::procedure_call, pos), procedure_(procedure) {
+        StatementNode(NodeType::procedure_call, pos), procedure_(procedure), parameters_() {
 }
 
 ProcedureCallNode::~ProcedureCallNode() = default;
+
+void ProcedureCallNode::addParameter(std::unique_ptr<const ExpressionNode> parameter) {
+    parameters_.push_back(std::move(parameter));
+}
+
+const ProcedureNode* ProcedureCallNode::getProcedure() {
+    return procedure_;
+}
 
 void ProcedureCallNode::print(std::ostream& stream) const {
     stream << procedure_->getName() << "()";

@@ -9,6 +9,7 @@
 #include "IdentToken.h"
 #include "NumberToken.h"
 #include "StringToken.h"
+#include "UndefinedToken.h"
 
 Scanner::Scanner(const std::string &filename, const Logger *logger) :
         filename_(filename), logger_(logger), token_(nullptr), lineNo_(1), charNo_(0) {
@@ -23,9 +24,7 @@ Scanner::Scanner(const std::string &filename, const Logger *logger) :
 }
 
 Scanner::~Scanner() {
-    if (token_) {
-        delete token_;
-    }
+    delete token_;
     if (file_.is_open()) {
         file_.close();
     }
@@ -171,7 +170,7 @@ const Token* Scanner::next() {
                     read();
                     break;
                 default:
-                    token = nullptr;
+                    token = new UndefinedToken(pos, ch_);
                     read();
                     break;
             }
@@ -248,7 +247,7 @@ const Token* Scanner::ident() {
              ((ch_ >= 'a') && (ch_ <= 'z')) ||
              ((ch_ >= 'A') && (ch_ <= 'Z')));
     std::string ident = ss.str();
-    std::unordered_map<std::string, TokenType>::const_iterator it = keywords_.find(ident);
+    auto it = keywords_.find(ident);
     if (it != keywords_.end()) {
         return new Token(it->second, pos);
     }

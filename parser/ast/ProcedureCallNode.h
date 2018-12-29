@@ -15,10 +15,15 @@ class ProcedureCallNode : public StatementNode {
 
 private:
     const ProcedureNode* procedure_;
+    std::vector<std::unique_ptr<const ExpressionNode>> parameters_;
 
 public:
     ProcedureCallNode(FilePos pos, const ProcedureNode *procedure);
     ~ProcedureCallNode() override;
+
+    const ProcedureNode* getProcedure();
+
+    void addParameter(std::unique_ptr<const ExpressionNode> parameter);
 
     void print(std::ostream &stream) const final;
 

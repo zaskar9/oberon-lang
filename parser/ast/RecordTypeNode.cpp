@@ -26,6 +26,15 @@ int RecordTypeNode::getSize() const {
     return size;
 }
 
+const FieldNode* RecordTypeNode::getField(const std::string& name) const {
+    for (auto&& itr : fields_) {
+        if (itr->getName() == name) {
+            return itr.get();
+        }
+    }
+    return nullptr;
+}
+
 void RecordTypeNode::print(std::ostream &out) const {
     out << "RECORD";
 }
