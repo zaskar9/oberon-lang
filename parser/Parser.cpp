@@ -22,8 +22,7 @@
 #include "ast/AssignmentNode.h"
 #include "ast/ProcedureCallNode.h"
 
-Parser::Parser(Scanner *scanner, Logger *logger) :
-        scanner_(scanner), logger_(logger) {
+Parser::Parser(Scanner *scanner, Logger *logger) : scanner_(scanner), logger_(logger) {
     symbols_ = std::make_unique<SymbolTable>();
 }
 
@@ -547,7 +546,7 @@ std::unique_ptr<StatementNode> Parser::assignment(std::unique_ptr<NamedValueRefe
     if (lvalue->getType() == expr->getType()) {
         return std::make_unique<AssignmentNode>(lvalue->getFilePos(), std::move(lvalue), std::move(expr));
     }
-    logger_->error(token->getPosition(), "illegal assignment.");
+    logger_->error(token->getPosition(), "illegal assignment: type mismatch.");
     return nullptr;
 }
 
@@ -830,10 +829,24 @@ bool Parser::checkActualParameter(const ProcedureNode* proc, size_t num, const E
         logger_->error(expr->getFilePos(), "more actual than formal parameters.");
         return false;
     }
-    if (proc->getParameter(num)->getType() == expr->getType()) {
+    auto parameter = proc->getParameter(num);
+    if (parameter->getType() == expr->getType()) {
+        if (parameter->isVar()) {
+            if (expr->getNodeType() == NodeType::name_reference) {
+                auto reference = dynamic_cast<const NamedValueReferenceNode*>(expr);
+                auto value = reference->dereference();
+                if (value->getNodeType() == NodeType::constant) {
+                    logger_->error(expr->getFilePos(), "illegal actual parameter: cannot pass constant by reference.");
+                    return false;
+                }
+                return true;
+            }
+            logger_->error(expr->getFilePos(), "illegal actual parameter: cannot pass expression by reference.");
+            return false;
+        }
         return true;
     }
-    logger_->error(expr->getFilePos(), "illegal actual paramter.");
+    logger_->error(expr->getFilePos(), "illegal actual parameter: type mismatch.");
     return false;
 }
 
