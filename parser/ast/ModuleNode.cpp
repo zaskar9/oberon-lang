@@ -5,8 +5,10 @@
  */
 
 #include "ModuleNode.h"
+#include "ProcedureNode.h"
 
-ModuleNode::ModuleNode(const FilePos pos, const std::string &name) : BlockNode(NodeType::module, pos), name_(name) {
+ModuleNode::ModuleNode(const FilePos pos, const std::string &name) :
+        BlockNode(NodeType::module, pos), name_(name), procedures_() {
 }
 
 ModuleNode::~ModuleNode() = default;
@@ -15,7 +17,10 @@ const std::string ModuleNode::getName() const {
     return name_;
 }
 
+void ModuleNode::addProcedure(std::unique_ptr<ProcedureNode> procedure) {
+    procedures_.push_back(std::move(procedure));
+}
+
 void ModuleNode::print(std::ostream &stream) const {
-    stream << "MODULE " << name_ << std::endl;
-    BlockNode::print(stream);
+    stream << "MODULE " << name_;
 }

@@ -337,6 +337,9 @@ std::unique_ptr<TypeNode> Parser::type() {
                    node->getNodeType() == NodeType::basic_type ||
                    node->getNodeType() == NodeType::record_type) {
             return std::make_unique<TypeReferenceNode>(token->getPosition(), dynamic_cast<const TypeNode*>(node));
+        } else if (node->getNodeType() == NodeType::type_reference) {
+            auto reference = dynamic_cast<const TypeReferenceNode*>(node);
+            return std::make_unique<TypeReferenceNode>(token->getPosition(), reference->dereference());
         } else {
             logger_->error(token->getPosition(), name + " is not a type.");
         }
@@ -393,7 +396,7 @@ void Parser::field_list(RecordTypeNode *record) {
     auto token = scanner_->nextToken();
     if (token->getType() == TokenType::colon) {
         auto node = type();
-        for (const std::string ident : idents) {
+        for (const std::string& ident : idents) {
             if (record->getField(ident) == nullptr) {
                 record->addField(std::make_unique<FieldNode>(token->getPosition(), ident, node.get()));
             } else {

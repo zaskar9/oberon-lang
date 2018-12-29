@@ -5,9 +5,11 @@ MODULE BubbleSort;
 CONST Dim = 2 * 10;
 
 TYPE Point2D = RECORD x, y: INTEGER END;
+     INT = INTEGER;
 
 (* Array to be sorted. *)
-VAR a: ARRAY Dim OF INTEGER;
+VAR a: ARRAY Dim OF INT;
+    b: Point2D;
 
 PROCEDURE Test();
 VAR point: Point2D;

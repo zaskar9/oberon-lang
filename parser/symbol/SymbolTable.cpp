@@ -45,6 +45,8 @@ void SymbolTable::leaveScope() {
         scope_ = scope_->getParent();
         level_--;
     } else {
-        std::cerr << "Illegal leaveScope() call" << std::endl;
+        // TODO throw excpetion
+        std::cerr << "Illegal symbol table state: cannot leave current scope." << std::endl;
+        exit(1);
     }
 }

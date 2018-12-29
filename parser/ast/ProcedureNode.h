@@ -18,6 +18,7 @@ class ProcedureNode final : public BlockNode {
 private:
     std::string name_;
     std::vector<std::unique_ptr<const ParameterNode>> parameters_;
+    std::vector<std::unique_ptr<ProcedureNode>> procedures_;
 
 public:
     explicit ProcedureNode(FilePos pos, const std::string &name);
@@ -27,7 +28,7 @@ public:
     void addParameter(std::unique_ptr<const ParameterNode> parameter);
     const ParameterNode* getParameter(size_t num) const;
     size_t getParameterCount() const;
-
+    void addProcedure(std::unique_ptr<ProcedureNode> procedure) final;
     void print(std::ostream &stream) const final;
 
 };

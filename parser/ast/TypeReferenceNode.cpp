@@ -18,5 +18,5 @@ const TypeNode* TypeReferenceNode::dereference() const {
 }
 
 void TypeReferenceNode::print(std::ostream &out) const {
-    out << "REFERENCE TO: " << *type_;
+    out << *type_;
 }

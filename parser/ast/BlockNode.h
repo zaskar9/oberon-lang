@@ -23,7 +23,6 @@ private:
     std::vector<std::unique_ptr<ConstantNode>> constants_;
     std::vector<std::unique_ptr<TypeNode>> types_;
     std::vector<std::unique_ptr<VariableNode>> variables_;
-    std::vector<std::shared_ptr<ProcedureNode>> procedures_;
     std::unique_ptr<StatementSequenceNode> statements_;
 
 public:
@@ -33,7 +32,7 @@ public:
     void addConstant(std::unique_ptr<ConstantNode> constant);
     void addType(std::unique_ptr<TypeNode> type);
     void addVariable(std::unique_ptr<VariableNode> variable);
-    void addProcedure(std::shared_ptr<ProcedureNode> procedure);
+    virtual void addProcedure(std::unique_ptr<ProcedureNode> procedure) = 0;
     StatementSequenceNode* getStatements();
 
     void print(std::ostream &stream) const override = 0;

@@ -17,5 +17,5 @@ const ValueNode* ConstantNode::getValue() const {
 }
 
 void ConstantNode::print(std::ostream &stream) const {
-    stream << "CONST " << this->getName() << " = " << *value_;
+    stream << "CONST " << this->getName() << " = " << *value_ << ";";
 }

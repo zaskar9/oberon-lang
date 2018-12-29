@@ -16,7 +16,7 @@ Scanner::Scanner(const std::string &filename, const Logger *logger) :
     this->initTable();
     file_.open(filename_, std::ios::in);
     if (!file_.is_open()) {
-        // TODO I/O Exception
+        // TODO throw I/O Exception
         logger_->error(filename_, "Cannot open file.");
         exit(1);
     }
@@ -192,8 +192,9 @@ void Scanner::read() {
         charNo_++;
         ch_ = -1;
     } else {
-        // TODO I/O Exception
+        // TODO throw I/O Exception
         logger_->error(filename_, "Error reading file.");
+        exit(1);
     }
 
 }

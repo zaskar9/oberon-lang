@@ -35,6 +35,7 @@ const FieldNode* RecordTypeNode::getField(const std::string& name) const {
     return nullptr;
 }
 
-void RecordTypeNode::print(std::ostream &out) const {
-    out << "RECORD";
+void RecordTypeNode::print(std::ostream& stream) const {
+    stream << "RECORD ";
+
 }
