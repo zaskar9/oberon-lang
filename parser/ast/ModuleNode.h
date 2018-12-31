@@ -11,6 +11,7 @@
 #include <memory>
 #include <string>
 #include "BlockNode.h"
+#include "ProcedureNode.h"
 
 class ModuleNode final : public BlockNode {
 
@@ -24,6 +25,8 @@ public:
 
     const std::string getName() const;
     void addProcedure(std::unique_ptr<ProcedureNode> procedure) final;
+
+    void accept(NodeVisitor& visitor) final;
 
     void print(std::ostream &stream) const final;
 

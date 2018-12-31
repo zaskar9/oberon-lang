@@ -24,6 +24,8 @@ public:
 
     bool isVar() const;
 
+    void accept(NodeVisitor& visitor) final;
+
     void print(std::ostream &stream) const final;
 
 };

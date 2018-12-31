@@ -6,6 +6,7 @@
 
 
 #include "BooleanNode.h"
+#include "NodeVisitor.h"
 
 BooleanNode::BooleanNode(const FilePos pos, const bool value) :
         ValueNode(NodeType::boolean, pos, BasicTypeNode::BOOLEAN), value_(value) {
@@ -15,6 +16,10 @@ BooleanNode::~BooleanNode() = default;
 
 bool BooleanNode::getValue() const {
     return value_;
+}
+
+void BooleanNode::accept(NodeVisitor& visitor) {
+    visitor.visit(*this);
 }
 
 void BooleanNode::print(std::ostream &stream) const {

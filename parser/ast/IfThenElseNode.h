@@ -12,6 +12,7 @@
 #include "ExpressionNode.h"
 #include "StatementSequenceNode.h"
 
+
 class ElseIf {
 
 private:
@@ -44,6 +45,8 @@ public:
     StatementSequenceNode* addThenStatements(FilePos pos);
     StatementSequenceNode* addElseIfStatements(FilePos pos, std::unique_ptr<ExpressionNode> condition);
     StatementSequenceNode* addElseStatements(FilePos pos);
+
+    void accept(NodeVisitor& visitor) final;
 
     void print(std::ostream &stream) const final;
 

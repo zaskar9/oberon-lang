@@ -7,6 +7,7 @@
 #ifndef OBERON0C_STATEMENTSEQUENCENODE_H
 #define OBERON0C_STATEMENTSEQUENCENODE_H
 
+
 #include <vector>
 #include "Node.h"
 #include "StatementNode.h"
@@ -20,6 +21,8 @@ public:
     explicit StatementSequenceNode(FilePos pos);
 
     void addStatement(std::unique_ptr<StatementNode> statement);
+
+    void accept(NodeVisitor& visitor) final;
 
     void print(std::ostream &stream) const final;
 

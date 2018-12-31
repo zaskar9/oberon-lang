@@ -29,6 +29,9 @@ public:
     const ParameterNode* getParameter(size_t num) const;
     size_t getParameterCount() const;
     void addProcedure(std::unique_ptr<ProcedureNode> procedure) final;
+
+    void accept(NodeVisitor& visitor) final;
+
     void print(std::ostream &stream) const final;
 
 };

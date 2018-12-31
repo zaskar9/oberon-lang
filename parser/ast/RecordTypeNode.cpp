@@ -3,7 +3,9 @@
  *
  * Created by Michael Grossniklaus on 2/9/18.
  */
+
 #include "RecordTypeNode.h"
+#include "NodeVisitor.h"
 
 RecordTypeNode::RecordTypeNode(const FilePos pos) : TypeNode(NodeType::record_type, pos, 0), fields_() {
 }
@@ -33,6 +35,10 @@ const FieldNode* RecordTypeNode::getField(const std::string& name) const {
         }
     }
     return nullptr;
+}
+
+void RecordTypeNode::accept(NodeVisitor& visitor) {
+    visitor.visit(*this);
 }
 
 void RecordTypeNode::print(std::ostream& stream) const {

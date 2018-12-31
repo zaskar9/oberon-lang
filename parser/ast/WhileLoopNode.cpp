@@ -5,6 +5,7 @@
  */
 
 #include "WhileLoopNode.h"
+#include "NodeVisitor.h"
 
 WhileLoopNode::WhileLoopNode(const FilePos pos, std::unique_ptr<ExpressionNode> condition) :
         StatementNode(NodeType::while_loop, pos), condition_(std::move(condition)), statements_(std::make_unique<StatementSequenceNode>(pos)) {
@@ -18,6 +19,10 @@ ExpressionNode* WhileLoopNode::getCondition() {
 
 StatementSequenceNode* WhileLoopNode::getStatements() {
     return statements_.get();
+}
+
+void WhileLoopNode::accept(NodeVisitor& visitor) {
+    visitor.visit(*this);
 }
 
 void WhileLoopNode::print(std::ostream& stream) const {

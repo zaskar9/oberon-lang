@@ -5,6 +5,7 @@
  */
 
 #include "AssignmentNode.h"
+#include "NodeVisitor.h"
 
 AssignmentNode::AssignmentNode(const FilePos pos, std::unique_ptr<NamedValueReferenceNode> lvalue,
         std::unique_ptr<ExpressionNode> rvalue) : StatementNode(NodeType::assignment, pos),
@@ -19,6 +20,10 @@ NamedValueReferenceNode* AssignmentNode::getLvalue() {
 
 ExpressionNode* AssignmentNode::getRvalue() {
     return rvalue_.get();
+}
+
+void AssignmentNode::accept(NodeVisitor& visitor) {
+    visitor.visit(*this);
 }
 
 void AssignmentNode::print(std::ostream& stream) const {

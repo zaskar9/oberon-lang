@@ -10,7 +10,7 @@
 
 #include "TypeNode.h"
 
-class TypeReferenceNode : public TypeNode {
+class TypeReferenceNode final : public TypeNode {
 
 private:
     const TypeNode *type_;
@@ -20,6 +20,8 @@ public:
     ~TypeReferenceNode() override;
 
     const TypeNode* dereference() const;
+
+    void accept(NodeVisitor& visitor) final;
 
     void print(std::ostream &stream) const final;
 

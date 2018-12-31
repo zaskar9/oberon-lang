@@ -5,6 +5,7 @@
  */
 
 #include "NumberNode.h"
+#include "NodeVisitor.h"
 
 NumberNode::NumberNode(const FilePos pos, const int value) :
         ValueNode(NodeType::number, pos, BasicTypeNode::INTEGER), value_(value) {
@@ -14,6 +15,10 @@ NumberNode::~NumberNode() = default;
 
 int NumberNode::getValue() const {
     return value_;
+}
+
+void NumberNode::accept(NodeVisitor& visitor) {
+    visitor.visit(*this);
 }
 
 void NumberNode::print(std::ostream &stream) const {

@@ -5,6 +5,7 @@
  */
 
 #include "IfThenElseNode.h"
+#include "NodeVisitor.h"
 
 ElseIf::ElseIf(const FilePos pos, std::unique_ptr<ExpressionNode> condition) :
         condition_(std::move(condition)), statements_(std::make_unique<StatementSequenceNode>(pos)) {
@@ -44,6 +45,10 @@ StatementSequenceNode* IfThenElseNode::addElseIfStatements(const FilePos pos,
 StatementSequenceNode* IfThenElseNode::addElseStatements(const FilePos pos) {
     elseStatements_ = std::make_unique<StatementSequenceNode>(pos);
     return elseStatements_.get();
+}
+
+void IfThenElseNode::accept(NodeVisitor& visitor) {
+    visitor.visit(*this);
 }
 
 void IfThenElseNode::print(std::ostream& stream) const {

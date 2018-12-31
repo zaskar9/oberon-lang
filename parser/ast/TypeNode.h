@@ -19,6 +19,8 @@ public:
     explicit TypeNode(NodeType nodeType, FilePos pos, int size);
     ~TypeNode() override;
 
+    void accept(NodeVisitor& visitor) override = 0;
+
     virtual int getSize() const;
 
 };

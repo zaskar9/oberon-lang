@@ -5,6 +5,7 @@
  */
 
 #include "ProcedureCallNode.h"
+#include "NodeVisitor.h"
 
 ProcedureCallNode::ProcedureCallNode(const FilePos pos, const ProcedureNode* procedure) :
         StatementNode(NodeType::procedure_call, pos), procedure_(procedure), parameters_() {
@@ -18,6 +19,10 @@ void ProcedureCallNode::addParameter(std::unique_ptr<const ExpressionNode> param
 
 const ProcedureNode* ProcedureCallNode::getProcedure() {
     return procedure_;
+}
+
+void ProcedureCallNode::accept(NodeVisitor& visitor) {
+    visitor.visit(*this);
 }
 
 void ProcedureCallNode::print(std::ostream& stream) const {

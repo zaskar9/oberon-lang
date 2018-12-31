@@ -24,6 +24,8 @@ public:
     int getDimension() const;
     const std::shared_ptr<const TypeNode> getMemberType() const;
 
+    void accept(NodeVisitor& visitor) final;
+
     void print(std::ostream &stream) const final;
 
 };

@@ -5,6 +5,7 @@
  */
 
 #include "ProcedureNode.h"
+#include "NodeVisitor.h"
 
 ProcedureNode::ProcedureNode(const FilePos pos, const std::string &name) :
         BlockNode(NodeType::procedure, pos), name_(name), parameters_(), procedures_() {
@@ -30,6 +31,10 @@ size_t ProcedureNode::getParameterCount() const {
 
 void ProcedureNode::addProcedure(std::unique_ptr<ProcedureNode> procedure) {
     procedures_.push_back(std::move(procedure));
+}
+
+void ProcedureNode::accept(NodeVisitor& visitor) {
+    visitor.visit(*this);
 }
 
 void ProcedureNode::print(std::ostream &stream) const {

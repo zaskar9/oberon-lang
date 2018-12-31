@@ -24,6 +24,8 @@ public:
     ExpressionNode* getCondition();
     StatementSequenceNode* getStatements();
 
+    void accept(NodeVisitor& visitor) final;
+
     void print(std::ostream &stream) const final;
 
 };

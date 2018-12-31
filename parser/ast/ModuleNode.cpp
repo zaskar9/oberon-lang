@@ -5,7 +5,7 @@
  */
 
 #include "ModuleNode.h"
-#include "ProcedureNode.h"
+#include "NodeVisitor.h"
 
 ModuleNode::ModuleNode(const FilePos pos, const std::string &name) :
         BlockNode(NodeType::module, pos), name_(name), procedures_() {
@@ -19,6 +19,10 @@ const std::string ModuleNode::getName() const {
 
 void ModuleNode::addProcedure(std::unique_ptr<ProcedureNode> procedure) {
     procedures_.push_back(std::move(procedure));
+}
+
+void ModuleNode::accept(NodeVisitor& visitor) {
+    visitor.visit(*this);
 }
 
 void ModuleNode::print(std::ostream &stream) const {

@@ -7,6 +7,7 @@
 #ifndef OBERON0C_RECORDTYPESYMBOL_H
 #define OBERON0C_RECORDTYPESYMBOL_H
 
+
 #include <memory>
 #include <vector>
 #include "TypeNode.h"
@@ -27,6 +28,8 @@ public:
     void addType(std::unique_ptr<TypeNode> type);
     void addField(std::unique_ptr<FieldNode> field);
     const FieldNode* getField(const std::string &name) const;
+
+    void accept(NodeVisitor& visitor) final;
 
     void print(std::ostream &stream) const final;
 

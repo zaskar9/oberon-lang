@@ -7,9 +7,9 @@
 #ifndef OBERON0C_PROCEDURECALLNODE_H
 #define OBERON0C_PROCEDURECALLNODE_H
 
+
 #include "StatementNode.h"
 #include "ProcedureNode.h"
-
 
 class ProcedureCallNode : public StatementNode {
 
@@ -22,8 +22,9 @@ public:
     ~ProcedureCallNode() override;
 
     const ProcedureNode* getProcedure();
-
     void addParameter(std::unique_ptr<const ExpressionNode> parameter);
+
+    void accept(NodeVisitor& visitor) final;
 
     void print(std::ostream &stream) const final;
 

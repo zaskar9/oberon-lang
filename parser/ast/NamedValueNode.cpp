@@ -6,6 +6,7 @@
 
 #include "NamedValueNode.h"
 #include "TypeReferenceNode.h"
+#include "NodeVisitor.h"
 
 NamedValueNode::NamedValueNode(NodeType nodeType, const FilePos pos, const std::string &name, const TypeNode* type) :
         Node(nodeType, pos), name_(name), type_(type) {
@@ -27,4 +28,12 @@ const TypeNode* NamedValueNode::getType() const {
 
 void NamedValueNode::print(std::ostream &stream) const {
     stream << name_ << ": " << *type_;
+}
+
+void FieldNode::accept(NodeVisitor& visitor) {
+    visitor.visit(*this);
+}
+
+void VariableNode::accept(NodeVisitor& visitor) {
+    visitor.visit(*this);
 }

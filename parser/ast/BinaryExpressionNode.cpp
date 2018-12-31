@@ -7,6 +7,7 @@
 #include "BinaryExpressionNode.h"
 #include "BasicTypeNode.h"
 #include "TypeReferenceNode.h"
+#include "NodeVisitor.h"
 
 BinaryExpressionNode::BinaryExpressionNode(const FilePos pos, const OperatorType op,
                                            std::unique_ptr<ExpressionNode> lhs,
@@ -48,6 +49,10 @@ const ExpressionNode* BinaryExpressionNode::getLeftExpression() const {
 
 const ExpressionNode* BinaryExpressionNode::getRightExpression() const {
     return rhs_.get();
+}
+
+void BinaryExpressionNode::accept(NodeVisitor& visitor) {
+    visitor.visit(*this);
 }
 
 void BinaryExpressionNode::print(std::ostream &stream) const {

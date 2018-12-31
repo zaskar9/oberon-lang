@@ -5,6 +5,7 @@
  */
 
 #include "NamedValueReferenceNode.h"
+#include "NodeVisitor.h"
 
 NamedValueReferenceNode::NamedValueReferenceNode(const FilePos pos, const NamedValueNode *node,
         std::unique_ptr<ExpressionNode> selector) : ExpressionNode(NodeType::name_reference, pos),
@@ -37,6 +38,10 @@ const TypeNode* NamedValueReferenceNode::getType() const {
         }
     }
     return type;
+}
+
+void NamedValueReferenceNode::accept(NodeVisitor& visitor) {
+    visitor.visit(*this);
 }
 
 void NamedValueReferenceNode::print(std::ostream &stream) const {

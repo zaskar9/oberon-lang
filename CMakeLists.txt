@@ -17,6 +17,7 @@ add_executable(oberon0c main.cpp
         parser/Parser.cpp parser/Parser.h
         parser/symbol/SymbolTable.cpp parser/symbol/SymbolTable.h
         parser/symbol/Scope.cpp parser/symbol/Scope.h
+        parser/ast/NodeVisitor.h
         parser/ast/Node.cpp parser/ast/Node.h
         parser/ast/ExpressionNode.cpp parser/ast/ExpressionNode.h
         parser/ast/UnaryExpressionNode.cpp parser/ast/UnaryExpressionNode.h

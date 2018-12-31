@@ -23,6 +23,8 @@ enum class NodeType : char {
     assignment, while_loop, if_then_else, procedure_call
 };
 
+class NodeVisitor;
+
 class Node {
 
 private:
@@ -35,6 +37,8 @@ public:
     
     NodeType getNodeType() const;
     const FilePos getFilePos() const;
+
+    virtual void accept(NodeVisitor &visitor) = 0;
 
     virtual void print(std::ostream &stream) const = 0;
     friend std::ostream& operator<<(std::ostream &stream, const Node &node);

@@ -20,6 +20,8 @@ public:
     explicit ValueNode(NodeType nodeType, FilePos pos, const BasicTypeNode *type);
     ~ValueNode() override;
 
+    virtual void accept(NodeVisitor& visitor) override = 0;
+
     bool isConstant() const final;
     const BasicTypeNode* getType() const final;
 };

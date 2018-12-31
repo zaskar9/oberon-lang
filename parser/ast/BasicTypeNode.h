@@ -24,6 +24,8 @@ public:
 
     const std::string getName() const;
 
+    void accept(NodeVisitor& visitor) final;
+
     void print(std::ostream &stream) const final;
 
     static const BasicTypeNode* BOOLEAN;

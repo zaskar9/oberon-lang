@@ -4,14 +4,12 @@
  * Created by Michael Grossniklaus on 3/7/18.
  */
 
-
 #ifndef OBERON0C_NAMEDVALUENODE_H
 #define OBERON0C_NAMEDVALUENODE_H
 
 
 #include "Node.h"
 #include "TypeNode.h"
-#include "ValueNode.h"
 
 class NamedValueNode : public Node {
 
@@ -26,6 +24,8 @@ public:
     const std::string getName() const;
     const TypeNode* getType() const;
 
+    void accept(NodeVisitor& visitor) override = 0;
+
     void print(std::ostream &stream) const override;
 
 };
@@ -36,6 +36,9 @@ public:
     explicit FieldNode(const FilePos pos, const std::string &name, TypeNode *type) :
             NamedValueNode(NodeType::field, pos, name, type) { };
     ~FieldNode() final = default;
+
+    void accept(NodeVisitor& visitor) override;
+
 };
 
 class VariableNode final : public NamedValueNode {
@@ -44,6 +47,9 @@ public:
     explicit VariableNode(const FilePos pos, const std::string &name, TypeNode *type) :
             NamedValueNode(NodeType::variable, pos, name, type) { };
     ~VariableNode() final = default;
+
+    void accept(NodeVisitor& visitor) override;
+
 };
 
 

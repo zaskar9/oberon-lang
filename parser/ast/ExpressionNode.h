@@ -7,6 +7,7 @@
 #ifndef OBERON0C_EXPRESSIONNODE_H
 #define OBERON0C_EXPRESSIONNODE_H
 
+
 #include "Node.h"
 #include "TypeNode.h"
 
@@ -27,6 +28,8 @@ public:
 
     virtual bool isConstant() const = 0;
     virtual const TypeNode* getType() const = 0;
+
+    void accept(NodeVisitor& visitor) override = 0;
 
 };
 

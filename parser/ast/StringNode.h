@@ -4,8 +4,8 @@
  * Created by Michael Grossniklaus on 2/19/18.
  */
 
-#ifndef OBERON0C_STRINGCONSTANTNODE_H
-#define OBERON0C_STRINGCONSTANTNODE_H
+#ifndef OBERON0C_STRINGNODE_H
+#define OBERON0C_STRINGNODE_H
 
 
 #include "ValueNode.h"
@@ -21,9 +21,11 @@ public:
 
     const std::string getValue() const;
 
+    void accept(NodeVisitor& visitor) final;
+
     void print(std::ostream &stream) const final;
 
 };
 
 
-#endif //OBERON0C_STRINGCONSTANTNODE_H
+#endif //OBERON0C_STRINGNODE_H

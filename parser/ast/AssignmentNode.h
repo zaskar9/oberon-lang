@@ -7,11 +7,11 @@
 #ifndef OBERON0C_ASSIGNMENTNODE_H
 #define OBERON0C_ASSIGNMENTNODE_H
 
-#include "NamedValueReferenceNode.h"
+
 #include "StatementNode.h"
+#include "NamedValueReferenceNode.h"
 
-
-class AssignmentNode : public StatementNode {
+class AssignmentNode final : public StatementNode {
 
 private:
     std::unique_ptr<NamedValueReferenceNode> lvalue_;
@@ -23,6 +23,8 @@ public:
 
     NamedValueReferenceNode* getLvalue();
     ExpressionNode* getRvalue();
+
+    void accept(NodeVisitor& visitor) final;
 
     void print(std::ostream &stream) const final;
 

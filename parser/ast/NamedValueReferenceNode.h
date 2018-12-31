@@ -28,6 +28,8 @@ public:
     bool isConstant() const final;
     const TypeNode* getType() const final;
 
+    void accept(NodeVisitor& visitor) final;
+
     void print(std::ostream &stream) const final;
 
 };

@@ -7,14 +7,16 @@
 #ifndef OBERON0C_STATEMENTNODE_H
 #define OBERON0C_STATEMENTNODE_H
 
-#include "Node.h"
 
+#include "Node.h"
 
 class StatementNode : public Node {
 
 public:
     explicit StatementNode(NodeType type, FilePos pos);
     ~StatementNode() override;
+
+    void accept(NodeVisitor& visitor) override = 0;
 
 };
 

@@ -5,12 +5,17 @@
  */
 
 #include "StatementSequenceNode.h"
+#include "NodeVisitor.h"
 
 StatementSequenceNode::StatementSequenceNode(const FilePos pos) : Node(NodeType::statement_sequence, pos), statements_() {
 }
 
 void StatementSequenceNode::addStatement(std::unique_ptr<StatementNode> statement) {
     statements_.push_back(std::move(statement));
+}
+
+void StatementSequenceNode::accept(NodeVisitor& visitor) {
+    visitor.visit(*this);
 }
 
 void StatementSequenceNode::print(std::ostream& stream) const {

@@ -5,6 +5,7 @@
  */
 
 #include "UnaryExpressionNode.h"
+#include "NodeVisitor.h"
 
 UnaryExpressionNode::UnaryExpressionNode(const FilePos pos, const OperatorType op, std::unique_ptr<ExpressionNode> expr) :
         ExpressionNode(NodeType::unary_expression, pos), op_(op), expr_(std::move(expr)) {
@@ -26,6 +27,10 @@ OperatorType UnaryExpressionNode::getOperator() const {
 
 const ExpressionNode* UnaryExpressionNode::getExpression() const {
     return expr_.get();
+}
+
+void UnaryExpressionNode::accept(NodeVisitor& visitor) {
+    visitor.visit(*this);
 }
 
 void UnaryExpressionNode::print(std::ostream &stream) const {
