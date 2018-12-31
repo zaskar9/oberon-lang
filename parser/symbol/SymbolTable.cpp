@@ -19,11 +19,11 @@ SymbolTable::SymbolTable() {
 
 SymbolTable::~SymbolTable() = default;
 
-void SymbolTable::insert(const std::string &name, const Node *node) {
+void SymbolTable::insert(const std::string &name, Node *node) {
     scope_->insert(name, node);
 }
 
-const Node* SymbolTable::lookup(const std::string &name) const {
+Node* SymbolTable::lookup(const std::string &name) const {
     return scope_->lookup(name, false);
 }
 

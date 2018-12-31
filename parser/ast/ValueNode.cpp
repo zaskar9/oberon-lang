@@ -7,7 +7,7 @@
 
 #include "ValueNode.h"
 
-ValueNode::ValueNode(const NodeType nodeType, const FilePos pos, const BasicTypeNode *type) :
+ValueNode::ValueNode(const NodeType nodeType, const FilePos pos, BasicTypeNode *type) :
         ExpressionNode(nodeType, pos), type_(type) {
 }
 
@@ -17,6 +17,6 @@ bool ValueNode::isConstant() const {
     return true;
 }
 
-const BasicTypeNode* ValueNode::getType() const {
+BasicTypeNode* ValueNode::getType() const {
     return type_;
 }

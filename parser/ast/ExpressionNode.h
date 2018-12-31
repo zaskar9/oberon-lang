@@ -27,7 +27,7 @@ public:
     ~ExpressionNode() override = 0;
 
     virtual bool isConstant() const = 0;
-    virtual const TypeNode* getType() const = 0;
+    virtual TypeNode* getType() const = 0;
 
     void accept(NodeVisitor& visitor) override = 0;
 

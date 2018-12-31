@@ -105,7 +105,7 @@
     <ClCompile Include="parser\symbol\Scope.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="parser\ast\TypeReferenceNode.cpp">
+    <ClCompile Include="parser\ast\TypeDeclarationNode.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -197,7 +197,7 @@
     <ClInclude Include="parser\symbol\Scope.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="parser\ast\TypeReferenceNode.h">
+    <ClInclude Include="parser\ast\TypeDeclarationNode.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

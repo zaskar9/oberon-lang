@@ -15,14 +15,14 @@ class ArrayTypeNode final : public TypeNode {
 
 private:
     const int dim_;
-    std::shared_ptr<const TypeNode> memberType_;
+    TypeNode* memberType_;
 
 public:
-    explicit ArrayTypeNode(FilePos pos, int dim, const std::shared_ptr<const TypeNode> &memberType);
+    explicit ArrayTypeNode(FilePos pos, int dim, TypeNode* memberType);
     ~ArrayTypeNode() final;
 
     int getDimension() const;
-    const std::shared_ptr<const TypeNode> getMemberType() const;
+    TypeNode* getMemberType() const;
 
     void accept(NodeVisitor& visitor) final;
 

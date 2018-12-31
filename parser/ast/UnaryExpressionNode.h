@@ -15,17 +15,17 @@ class UnaryExpressionNode final : public ExpressionNode {
 
 private:
     OperatorType op_;
-    std::unique_ptr<const ExpressionNode> expr_;
+    std::unique_ptr<ExpressionNode> expr_;
 
 public:
     UnaryExpressionNode(FilePos pos, OperatorType op, std::unique_ptr<ExpressionNode> expr);
     ~UnaryExpressionNode() final;
 
     bool isConstant() const final;
-    const TypeNode* getType() const final;
+    TypeNode* getType() const final;
 
     OperatorType getOperator() const;
-    const ExpressionNode* getExpression() const;
+    ExpressionNode* getExpression() const;
 
     void accept(NodeVisitor& visitor) final;
 

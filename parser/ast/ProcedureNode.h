@@ -17,18 +17,25 @@ class ProcedureNode final : public BlockNode {
 
 private:
     std::string name_;
-    std::vector<std::unique_ptr<const ParameterNode>> parameters_;
+    bool external_;
+    std::vector<std::unique_ptr<ParameterNode>> parameters_;
     std::vector<std::unique_ptr<ProcedureNode>> procedures_;
 
 public:
     explicit ProcedureNode(FilePos pos, const std::string &name);
+    explicit ProcedureNode(FilePos pos, const std::string &name, bool external);
     ~ProcedureNode() final;
 
     const std::string getName() const;
-    void addParameter(std::unique_ptr<const ParameterNode> parameter);
-    const ParameterNode* getParameter(size_t num) const;
+    bool isExternal() const;
+
+    void addParameter(std::unique_ptr<ParameterNode> parameter);
+    ParameterNode* getParameter(size_t num) const;
     size_t getParameterCount() const;
+
     void addProcedure(std::unique_ptr<ProcedureNode> procedure) final;
+    ProcedureNode* getProcedure(size_t num) const final;
+    size_t getProcedureCount() const final;
 
     void accept(NodeVisitor& visitor) final;
 

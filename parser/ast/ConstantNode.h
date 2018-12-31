@@ -21,7 +21,7 @@ public:
     explicit ConstantNode(FilePos pos, const std::string &name, std::unique_ptr<ValueNode> value);
     ~ConstantNode() final;
 
-    const ValueNode* getValue() const;
+    ValueNode* getValue() const;
 
     void accept(NodeVisitor& visitor) final;
 

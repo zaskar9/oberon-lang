@@ -13,7 +13,7 @@ ConstantNode::ConstantNode(const FilePos pos, const std::string &name, std::uniq
 
 ConstantNode::~ConstantNode() = default;
 
-const ValueNode* ConstantNode::getValue() const {
+ValueNode* ConstantNode::getValue() const {
     return value_.get();
 }
 

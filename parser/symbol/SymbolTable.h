@@ -11,9 +11,9 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include "Scope.h"
 #include "../ast/TypeNode.h"
 #include "../../util/Logger.h"
-#include "Scope.h"
 
 class SymbolTable {
 
@@ -25,8 +25,8 @@ public:
     explicit SymbolTable();
     ~SymbolTable();
 
-    void insert(const std::string &name, const Node *node);
-    const Node* lookup(const std::string &name) const;
+    void insert(const std::string &name, Node *node);
+    Node* lookup(const std::string &name) const;
     bool isDefined(const std::string &name) const;
     bool isDuplicate(const std::string &name) const;
     void enterScope();

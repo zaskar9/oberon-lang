@@ -14,16 +14,16 @@
 class ValueNode : public ExpressionNode {
 
 private:
-    const BasicTypeNode *type_;
+    BasicTypeNode *type_;
 
 public:
-    explicit ValueNode(NodeType nodeType, FilePos pos, const BasicTypeNode *type);
+    explicit ValueNode(NodeType nodeType, FilePos pos, BasicTypeNode *type);
     ~ValueNode() override;
 
-    virtual void accept(NodeVisitor& visitor) override = 0;
+    void accept(NodeVisitor& visitor) override = 0;
 
     bool isConstant() const final;
-    const BasicTypeNode* getType() const final;
+    BasicTypeNode* getType() const final;
 };
 
 

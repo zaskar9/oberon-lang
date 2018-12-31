@@ -15,14 +15,14 @@ class NamedValueNode : public Node {
 
 private:
     const std::string name_;
-    const TypeNode *type_;
+    TypeNode *type_;
 
 public:
-    explicit NamedValueNode(NodeType nodeType, FilePos pos, const std::string &name, const TypeNode *type);
+    explicit NamedValueNode(NodeType nodeType, FilePos pos, const std::string &name, TypeNode *type);
     ~NamedValueNode() override;
 
     const std::string getName() const;
-    const TypeNode* getType() const;
+    TypeNode* getType() const;
 
     void accept(NodeVisitor& visitor) override = 0;
 
@@ -47,6 +47,17 @@ public:
     explicit VariableNode(const FilePos pos, const std::string &name, TypeNode *type) :
             NamedValueNode(NodeType::variable, pos, name, type) { };
     ~VariableNode() final = default;
+
+    void accept(NodeVisitor& visitor) override;
+
+};
+
+class TypeDeclarationNode final : public NamedValueNode {
+
+public:
+    explicit TypeDeclarationNode(const FilePos pos, const std::string &name, TypeNode *type) :
+            NamedValueNode(NodeType::type_declaration, pos, name, type) { };
+    ~TypeDeclarationNode() final = default;
 
     void accept(NodeVisitor& visitor) override;
 

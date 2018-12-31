@@ -5,10 +5,9 @@
  */
 
 #include "NamedValueNode.h"
-#include "TypeReferenceNode.h"
 #include "NodeVisitor.h"
 
-NamedValueNode::NamedValueNode(NodeType nodeType, const FilePos pos, const std::string &name, const TypeNode* type) :
+NamedValueNode::NamedValueNode(NodeType nodeType, const FilePos pos, const std::string &name, TypeNode* type) :
         Node(nodeType, pos), name_(name), type_(type) {
 }
 
@@ -18,11 +17,7 @@ const std::string NamedValueNode::getName() const {
     return name_;
 }
 
-const TypeNode* NamedValueNode::getType() const {
-    if (type_->getNodeType() == NodeType::type_reference) {
-        auto ref = dynamic_cast<const TypeReferenceNode*>(type_);
-        return ref->dereference();
-    }
+TypeNode* NamedValueNode::getType() const {
     return type_;
 }
 
@@ -31,6 +26,10 @@ void NamedValueNode::print(std::ostream &stream) const {
 }
 
 void FieldNode::accept(NodeVisitor& visitor) {
+    visitor.visit(*this);
+}
+
+void TypeDeclarationNode::accept(NodeVisitor& visitor) {
     visitor.visit(*this);
 }
 

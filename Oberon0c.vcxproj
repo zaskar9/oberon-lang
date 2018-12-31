@@ -117,7 +117,7 @@
     <ClCompile Include="parser\ast\NamedValueReferenceNode.cpp" />
     <ClCompile Include="parser\ast\StringNode.cpp" />
     <ClCompile Include="parser\ast\TypeNode.cpp" />
-    <ClCompile Include="parser\ast\TypeReferenceNode.cpp" />
+    <ClCompile Include="parser\ast\TypeDeclarationNode.cpp" />
     <ClCompile Include="parser\ast\UnaryExpressionNode.cpp" />
     <ClCompile Include="parser\ast\ValueNode.cpp" />
     <ClCompile Include="parser\Parser.cpp" />
@@ -149,7 +149,7 @@
     <ClInclude Include="parser\ast\NamedValueReferenceNode.h" />
     <ClInclude Include="parser\ast\StringNode.h" />
     <ClInclude Include="parser\ast\TypeNode.h" />
-    <ClInclude Include="parser\ast\TypeReferenceNode.h" />
+    <ClInclude Include="parser\ast\TypeDeclarationNode.h" />
     <ClInclude Include="parser\ast\UnaryExpressionNode.h" />
     <ClInclude Include="parser\ast\ValueNode.h" />
     <ClInclude Include="parser\Parser.h" />

@@ -45,10 +45,10 @@ private:
     std::unique_ptr<ExpressionNode> simple_expression();
     std::unique_ptr<ExpressionNode> term();
     std::unique_ptr<ExpressionNode> factor();
-    std::unique_ptr<TypeNode> type();
-    std::unique_ptr<ArrayTypeNode> array_type();
-    std::unique_ptr<RecordTypeNode> record_type();
-    void field_list(RecordTypeNode *record);
+    TypeNode* type(BlockNode *block);
+    ArrayTypeNode* array_type(BlockNode *block);
+    RecordTypeNode* record_type(BlockNode *block);
+    void field_list(BlockNode *block, RecordTypeNode *record);
     void ident_list(std::vector<std::string> &idents);
     std::unique_ptr<ProcedureNode> procedure_heading();
     void procedure_body(ProcedureNode *proc);
@@ -70,10 +70,12 @@ private:
 
     bool checkActualParameter(const ProcedureNode *proc, size_t num, const ExpressionNode *expr);
 
+    void resync();
+
 public:
     explicit Parser(Scanner *scanner, Logger *logger);
     ~Parser();
-    std::unique_ptr<Node> parse();
+    std::unique_ptr<ModuleNode> parse();
 
 };
 

@@ -17,10 +17,10 @@ enum class NodeType : char {
     module, procedure, statement_sequence,
     unary_expression, binary_expression,
     record_type, array_type, basic_type,
-    field, parameter, variable, constant,
+    field, parameter, variable, constant, type_declaration,
     number, boolean, string,
-    type_reference, name_reference,
-    assignment, while_loop, if_then_else, procedure_call
+    name_reference,
+    assignment, while_loop, if_then_else, else_if, procedure_call
 };
 
 class NodeVisitor;

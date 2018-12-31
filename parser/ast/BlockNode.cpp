@@ -7,21 +7,49 @@
 #include "BlockNode.h"
 
 BlockNode::BlockNode(const NodeType nodeType, const FilePos pos) : Node(nodeType, pos),
-        constants_(), types_(), variables_(), statements_(std::make_unique<StatementSequenceNode>(pos)) {
+        types_(), constants_(), type_declarations_(), variables_(), statements_(std::make_unique<StatementSequenceNode>(pos)) {
 }
 
 BlockNode::~BlockNode() = default;
-
-void BlockNode::addConstant(std::unique_ptr<ConstantNode> constant) {
-    constants_.push_back(std::move(constant));
-}
 
 void BlockNode::addType(std::unique_ptr<TypeNode> type) {
     types_.push_back(std::move(type));
 }
 
+void BlockNode::addConstant(std::unique_ptr<ConstantNode> constant) {
+    constants_.push_back(std::move(constant));
+}
+
+ConstantNode* BlockNode::getConstant(size_t num) const {
+    return constants_.at(num).get();
+}
+
+size_t BlockNode::getConstantCount() const {
+    return constants_.size();
+}
+
+void BlockNode::addTypeDeclaration(std::unique_ptr<TypeDeclarationNode> type_declaration) {
+    type_declarations_.push_back(std::move(type_declaration));
+}
+
+TypeDeclarationNode* BlockNode::getTypeDeclaration(size_t num) const {
+    return type_declarations_.at(num).get();
+}
+
+size_t BlockNode::getTypeDeclarationCount() const {
+    return type_declarations_.size();
+}
+
 void BlockNode::addVariable(std::unique_ptr<VariableNode> variable) {
     variables_.push_back(std::move(variable));
+}
+
+VariableNode* BlockNode::getVariable(size_t num) const {
+    return variables_.at(num).get();
+}
+
+size_t BlockNode::getVariableCount() const {
+    return variables_.size();
 }
 
 StatementSequenceNode* BlockNode::getStatements() {

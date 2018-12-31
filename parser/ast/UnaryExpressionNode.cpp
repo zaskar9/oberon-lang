@@ -17,7 +17,7 @@ bool UnaryExpressionNode::isConstant() const {
     return expr_->isConstant();
 }
 
-const TypeNode* UnaryExpressionNode::getType() const {
+TypeNode* UnaryExpressionNode::getType() const {
     return expr_->getType();
 }
 
@@ -25,7 +25,7 @@ OperatorType UnaryExpressionNode::getOperator() const {
     return op_;
 }
 
-const ExpressionNode* UnaryExpressionNode::getExpression() const {
+ExpressionNode* UnaryExpressionNode::getExpression() const {
     return expr_.get();
 }
 

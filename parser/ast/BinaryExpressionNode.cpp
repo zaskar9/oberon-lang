@@ -6,7 +6,6 @@
 
 #include "BinaryExpressionNode.h"
 #include "BasicTypeNode.h"
-#include "TypeReferenceNode.h"
 #include "NodeVisitor.h"
 
 BinaryExpressionNode::BinaryExpressionNode(const FilePos pos, const OperatorType op,
@@ -21,7 +20,7 @@ bool BinaryExpressionNode::isConstant() const {
     return lhs_->isConstant() && rhs_->isConstant();
 }
 
-const TypeNode* BinaryExpressionNode::getType() const {
+TypeNode* BinaryExpressionNode::getType() const {
     auto lhsType = lhs_->getType();
     auto rhsType = rhs_->getType();
     if (lhsType == rhsType) {
@@ -43,11 +42,11 @@ OperatorType BinaryExpressionNode::getOperator() const {
     return op_;
 }
 
-const ExpressionNode* BinaryExpressionNode::getLeftExpression() const {
+ExpressionNode* BinaryExpressionNode::getLeftExpression() const {
     return lhs_.get();
 }
 
-const ExpressionNode* BinaryExpressionNode::getRightExpression() const {
+ExpressionNode* BinaryExpressionNode::getRightExpression() const {
     return rhs_.get();
 }
 

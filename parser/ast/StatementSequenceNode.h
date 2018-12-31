@@ -21,6 +21,8 @@ public:
     explicit StatementSequenceNode(FilePos pos);
 
     void addStatement(std::unique_ptr<StatementNode> statement);
+    StatementNode* getStatement(size_t num) const;
+    size_t getStatementCount() const;
 
     void accept(NodeVisitor& visitor) final;
 

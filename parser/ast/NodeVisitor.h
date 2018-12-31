@@ -15,7 +15,6 @@
 #include "NumberNode.h"
 #include "StringNode.h"
 #include "BooleanNode.h"
-#include "TypeReferenceNode.h"
 #include "ArrayTypeNode.h"
 #include "RecordTypeNode.h"
 #include "ProcedureCallNode.h"
@@ -33,6 +32,7 @@ public:
     virtual void visit(ConstantNode &node) = 0;
     virtual void visit(FieldNode &node) = 0;
     virtual void visit(ParameterNode &node) = 0;
+    virtual void visit(TypeDeclarationNode &node) = 0;
     virtual void visit(VariableNode &node) = 0;
 
     virtual void visit(BooleanNode &node) = 0;
@@ -41,7 +41,6 @@ public:
     virtual void visit(UnaryExpressionNode &node) = 0;
     virtual void visit(BinaryExpressionNode &node) = 0;
 
-    virtual void visit(TypeReferenceNode &node) = 0;
     virtual void visit(ArrayTypeNode &node) = 0;
     virtual void visit(BasicTypeNode &node) = 0;
     virtual void visit(RecordTypeNode &node) = 0;
@@ -49,9 +48,11 @@ public:
     virtual void visit(StatementSequenceNode &node) = 0;
     virtual void visit(AssignmentNode &node) = 0;
     virtual void visit(IfThenElseNode &node) = 0;
+    virtual void visit(ElseIfNode &node) = 0;
     virtual void visit(ProcedureCallNode &node) = 0;
     virtual void visit(WhileLoopNode &node) = 0;
 
 };
+
 
 #endif //OBERON0C_NODEVISITOR_H

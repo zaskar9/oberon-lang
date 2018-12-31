@@ -7,7 +7,7 @@
 #include "ArrayTypeNode.h"
 #include "NodeVisitor.h"
 
-ArrayTypeNode::ArrayTypeNode(const FilePos pos, const int dim, const std::shared_ptr<const TypeNode> &memberType) :
+ArrayTypeNode::ArrayTypeNode(const FilePos pos, const int dim, TypeNode* memberType) :
         TypeNode(NodeType::array_type, pos, dim * memberType->getSize()), dim_(dim), memberType_(memberType) {
 }
 
@@ -17,7 +17,7 @@ int ArrayTypeNode::getDimension() const {
     return dim_;
 }
 
-const std::shared_ptr<const TypeNode> ArrayTypeNode::getMemberType() const {
+TypeNode* ArrayTypeNode::getMemberType() const {
     return memberType_;
 }
 

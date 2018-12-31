@@ -23,11 +23,11 @@ public:
     ~BinaryExpressionNode() final;
 
     bool isConstant() const final;
-    const TypeNode* getType() const final;
+    TypeNode* getType() const final;
 
     OperatorType getOperator() const;
-    const ExpressionNode* getLeftExpression() const;
-    const ExpressionNode* getRightExpression() const;
+    ExpressionNode* getLeftExpression() const;
+    ExpressionNode* getRightExpression() const;
 
     void accept(NodeVisitor& visitor) final;
 

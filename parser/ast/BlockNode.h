@@ -20,8 +20,10 @@ class ProcedureNode;
 class BlockNode : public Node {
 
 private:
-    std::vector<std::unique_ptr<ConstantNode>> constants_;
     std::vector<std::unique_ptr<TypeNode>> types_;
+
+    std::vector<std::unique_ptr<ConstantNode>> constants_;
+    std::vector<std::unique_ptr<TypeDeclarationNode>> type_declarations_;
     std::vector<std::unique_ptr<VariableNode>> variables_;
     std::unique_ptr<StatementSequenceNode> statements_;
 
@@ -29,10 +31,24 @@ public:
     explicit BlockNode(NodeType nodeType, FilePos pos);
     ~BlockNode() override;
 
-    void addConstant(std::unique_ptr<ConstantNode> constant);
     void addType(std::unique_ptr<TypeNode> type);
+
+    void addConstant(std::unique_ptr<ConstantNode> constant);
+    ConstantNode* getConstant(size_t num) const;
+    size_t getConstantCount() const;
+
+    void addTypeDeclaration(std::unique_ptr<TypeDeclarationNode> type_declaration);
+    TypeDeclarationNode* getTypeDeclaration(size_t num) const;
+    size_t getTypeDeclarationCount() const;
+
     void addVariable(std::unique_ptr<VariableNode> variable);
+    VariableNode* getVariable(size_t num) const;
+    size_t getVariableCount() const;
+
     virtual void addProcedure(std::unique_ptr<ProcedureNode> procedure) = 0;
+    virtual ProcedureNode* getProcedure(size_t num) const = 0;
+    virtual size_t getProcedureCount() const = 0;
+
     StatementSequenceNode* getStatements();
 
     void print(std::ostream &stream) const override = 0;

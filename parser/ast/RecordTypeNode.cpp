@@ -12,10 +12,6 @@ RecordTypeNode::RecordTypeNode(const FilePos pos) : TypeNode(NodeType::record_ty
 
 RecordTypeNode::~RecordTypeNode() = default;
 
-void RecordTypeNode::addType(std::unique_ptr<TypeNode> type) {
-    types_.push_back(std::move(type));
-}
-
 void RecordTypeNode::addField(std::unique_ptr<FieldNode> field) {
     fields_.push_back(std::move(field));
 }
@@ -28,13 +24,21 @@ int RecordTypeNode::getSize() const {
     return size;
 }
 
-const FieldNode* RecordTypeNode::getField(const std::string& name) const {
+FieldNode* RecordTypeNode::getField(const std::string& name) const {
     for (auto&& itr : fields_) {
         if (itr->getName() == name) {
             return itr.get();
         }
     }
     return nullptr;
+}
+
+FieldNode* RecordTypeNode::getField(size_t num) const {
+    return fields_.at(num).get();
+}
+
+size_t RecordTypeNode::getFieldCount() {
+    return fields_.size();
 }
 
 void RecordTypeNode::accept(NodeVisitor& visitor) {

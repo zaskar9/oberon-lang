@@ -7,8 +7,11 @@
 #include "ProcedureNode.h"
 #include "NodeVisitor.h"
 
-ProcedureNode::ProcedureNode(const FilePos pos, const std::string &name) :
-        BlockNode(NodeType::procedure, pos), name_(name), parameters_(), procedures_() {
+ProcedureNode::ProcedureNode(FilePos pos, const std::string& name) : ProcedureNode(pos, name, false) {
+}
+
+ProcedureNode::ProcedureNode(const FilePos pos, const std::string &name, bool external) :
+        BlockNode(NodeType::procedure, pos), name_(name), external_(external), parameters_(), procedures_() {
 }
 
 ProcedureNode::~ProcedureNode() = default;
@@ -17,11 +20,15 @@ const std::string ProcedureNode::getName() const {
     return name_;
 }
 
-void ProcedureNode::addParameter(std::unique_ptr<const ParameterNode> parameter) {
+bool ProcedureNode::isExternal() const {
+    return external_;
+}
+
+void ProcedureNode::addParameter(std::unique_ptr<ParameterNode> parameter) {
     parameters_.push_back(std::move(parameter));
 }
 
-const ParameterNode* ProcedureNode::getParameter(const size_t num) const {
+ParameterNode* ProcedureNode::getParameter(const size_t num) const {
     return parameters_.at(num).get();
 }
 
@@ -31,6 +38,14 @@ size_t ProcedureNode::getParameterCount() const {
 
 void ProcedureNode::addProcedure(std::unique_ptr<ProcedureNode> procedure) {
     procedures_.push_back(std::move(procedure));
+}
+
+ProcedureNode* ProcedureNode::getProcedure(size_t num) const {
+    return procedures_.at(num).get();
+}
+
+size_t ProcedureNode::getProcedureCount() const {
+    return procedures_.size();
 }
 
 void ProcedureNode::accept(NodeVisitor& visitor) {

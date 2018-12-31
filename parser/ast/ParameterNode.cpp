@@ -7,7 +7,7 @@
 #include "ParameterNode.h"
 #include "NodeVisitor.h"
 
-ParameterNode::ParameterNode(FilePos pos, const std::string &name, const TypeNode *type, bool var) :
+ParameterNode::ParameterNode(FilePos pos, const std::string &name, TypeNode *type, bool var) :
         NamedValueNode(NodeType::parameter, pos, name, type), var_(var) {
 }
 

@@ -24,7 +24,10 @@ public:
     ~ModuleNode() final;
 
     const std::string getName() const;
+
     void addProcedure(std::unique_ptr<ProcedureNode> procedure) final;
+    ProcedureNode* getProcedure(size_t num) const final;
+    size_t getProcedureCount() const final;
 
     void accept(NodeVisitor& visitor) final;
 

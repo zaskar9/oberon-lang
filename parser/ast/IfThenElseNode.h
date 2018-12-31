@@ -13,17 +13,21 @@
 #include "StatementSequenceNode.h"
 
 
-class ElseIf {
+class ElseIfNode : public Node {
 
 private:
     std::unique_ptr<ExpressionNode> condition_;
     std::unique_ptr<StatementSequenceNode> statements_;
 
 public:
-    ElseIf(FilePos pos, std::unique_ptr<ExpressionNode> condition);
+    ElseIfNode(FilePos pos, std::unique_ptr<ExpressionNode> condition);
 
-    ExpressionNode* getCondition();
-    StatementSequenceNode* getStatements();
+    ExpressionNode* getCondition() const;
+    StatementSequenceNode* getStatements() const;
+
+    void accept(NodeVisitor& visitor) final;
+
+    void print(std::ostream &stream) const final;
 
 };
 
@@ -34,17 +38,23 @@ private:
 
     std::unique_ptr<ExpressionNode> condition_;
     std::unique_ptr<StatementSequenceNode> thenStatements_;
-    std::vector<std::unique_ptr<ElseIf>> elseIfStatements_;
+    std::vector<std::unique_ptr<ElseIfNode>> elseIfs_;
     std::unique_ptr<StatementSequenceNode> elseStatements_;
 
 public:
     explicit IfThenElseNode(FilePos pos, std::unique_ptr<ExpressionNode> condition);
     ~IfThenElseNode() override;
 
-    ExpressionNode* getCondition();
+    ExpressionNode* getCondition() const;
     StatementSequenceNode* addThenStatements(FilePos pos);
-    StatementSequenceNode* addElseIfStatements(FilePos pos, std::unique_ptr<ExpressionNode> condition);
+    StatementSequenceNode* getThenStatements() const;
+
+    StatementSequenceNode* addElseIf(FilePos pos, std::unique_ptr<ExpressionNode> condition);
+    ElseIfNode* getElseIf(size_t num) const;
+    size_t getElseIfCount() const;
+
     StatementSequenceNode* addElseStatements(FilePos pos);
+    StatementSequenceNode* getElseStatements() const;
 
     void accept(NodeVisitor& visitor) final;
 

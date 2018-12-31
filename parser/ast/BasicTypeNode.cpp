@@ -25,6 +25,6 @@ void BasicTypeNode::print(std::ostream &out) const {
     out << name_;
 }
 
-const BasicTypeNode* BasicTypeNode::BOOLEAN = new BasicTypeNode("BOOLEAN", 1);
-const BasicTypeNode* BasicTypeNode::INTEGER = new BasicTypeNode("INTEGER", 4);
-const BasicTypeNode* BasicTypeNode::STRING = new BasicTypeNode("STRING", -1);
+BasicTypeNode* BasicTypeNode::BOOLEAN = new BasicTypeNode("BOOLEAN", 1);
+BasicTypeNode* BasicTypeNode::INTEGER = new BasicTypeNode("INTEGER", 4);
+BasicTypeNode* BasicTypeNode::STRING = new BasicTypeNode("STRING", -1);

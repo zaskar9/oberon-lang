@@ -28,9 +28,9 @@ public:
 
     void print(std::ostream &stream) const final;
 
-    static const BasicTypeNode* BOOLEAN;
-    static const BasicTypeNode* INTEGER;
-    static const BasicTypeNode* STRING;
+    static BasicTypeNode* BOOLEAN;
+    static BasicTypeNode* INTEGER;
+    static BasicTypeNode* STRING;
 };
 
 

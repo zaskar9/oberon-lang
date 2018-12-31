@@ -16,7 +16,6 @@
 class RecordTypeNode final : public TypeNode {
 
 private:
-    std::vector<std::unique_ptr<TypeNode>> types_;
     std::vector<std::unique_ptr<FieldNode>> fields_;
 
 public:
@@ -25,9 +24,10 @@ public:
 
     int getSize() const final;
 
-    void addType(std::unique_ptr<TypeNode> type);
     void addField(std::unique_ptr<FieldNode> field);
-    const FieldNode* getField(const std::string &name) const;
+    FieldNode* getField(const std::string &name) const;
+    FieldNode* getField(size_t num) const;
+    size_t getFieldCount();
 
     void accept(NodeVisitor& visitor) final;
 
