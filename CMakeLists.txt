@@ -42,4 +42,5 @@ add_executable(oberon0c main.cpp
         parser/ast/WhileLoopNode.cpp parser/ast/WhileLoopNode.h
         parser/ast/ProcedureCallNode.cpp parser/ast/ProcedureCallNode.h
         parser/ast/IfThenElseNode.cpp parser/ast/IfThenElseNode.h
-        parser/ast/StatementSequenceNode.cpp parser/ast/StatementSequenceNode.h parser/ast/NodePrettyPrinter.cpp parser/ast/NodePrettyPrinter.h)
+        parser/ast/StatementSequenceNode.cpp parser/ast/StatementSequenceNode.h
+        parser/ast/NodePrettyPrinter.cpp parser/ast/NodePrettyPrinter.h)

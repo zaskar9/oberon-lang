@@ -297,7 +297,6 @@ std::unique_ptr<ExpressionNode> Parser::factor() {
     } else if (token->getType() == TokenType::const_number) {
         auto number = dynamic_cast<const NumberToken*>(scanner_->nextToken().get());
         return std::make_unique<NumberNode>(number->getPosition(), number->getValue());
-        return nullptr;
     } else if (token->getType() == TokenType::const_string) {
         auto string = dynamic_cast<const StringToken*>(scanner_->nextToken().get());
         return std::make_unique<StringNode>(string->getPosition(), string->getValue());
@@ -354,6 +353,7 @@ TypeNode* Parser::type(BlockNode *block) {
         return res;
     } else {
         logger_->error(token->getPosition(), "unexpected token.");
+        resync({ TokenType::semicolon, TokenType::kw_var, TokenType::kw_procedure, TokenType::kw_begin });
     }
     return nullptr;
 }
@@ -363,14 +363,24 @@ ArrayTypeNode* Parser::array_type(BlockNode *block) {
     logger_->debug("", "array_type");
     FilePos pos = scanner_->nextToken()->getPosition(); // skip ARRAY keyword and get its position
     auto expr = expression();
-    if (expr->isConstant() && expr->getType() == BasicTypeNode::INTEGER) {
-        int dim = foldNumber(expr.get());
-        auto token = scanner_->nextToken();
-        if (token->getType() == TokenType::kw_of) {
-            return new ArrayTypeNode(pos, dim, type(block));
-        } else {
-            logger_->error(token->getPosition(), "OF expected.");
+    if (expr != nullptr) {
+        if (expr->isConstant() && expr->getType()==BasicTypeNode::INTEGER) {
+            int dim = foldNumber(expr.get());
+            auto token = scanner_->peekToken();
+            if (token->getType()==TokenType::kw_of) {
+                scanner_->nextToken(); // skip OF keyword
+                return new ArrayTypeNode(pos, dim, type(block));
+            }
+            else {
+                logger_->error(token->getPosition(), "OF expected.");
+                resync({ TokenType::semicolon, TokenType::kw_var, TokenType::kw_procedure, TokenType::kw_begin });
+            }
         }
+        else {
+            logger_->error(expr->getFilePos(), "integer expression expected.");
+        }
+    } else {
+        logger_->error(scanner_->peekToken()->getPosition(), "integer expression expected.");
     }
     return nullptr;
 }
@@ -512,7 +522,6 @@ std::unique_ptr<StatementNode> Parser::statement() {
         auto symbol = symbols_->lookup(name);
         if (symbol == nullptr) {
             logger_->error(pos, "undefined identifier: " + name + ".");
-            resync();
         } else if (symbol->getNodeType() == NodeType::variable || symbol->getNodeType() == NodeType::parameter) {
             auto var = dynamic_cast<NamedValueNode*>(symbol);
             token = scanner_->peekToken();
@@ -532,10 +541,8 @@ std::unique_ptr<StatementNode> Parser::statement() {
             return call;
         } else if (symbol->getNodeType() == NodeType::constant) {
             logger_->error(pos, "constant cannot be assigned: " + name + ".");
-            resync();
         } else {
             logger_->error(pos, "variable or procedure name expected, found: " + name + ".");
-            resync();
         }
     } else if (token->getType() == TokenType::kw_if) {
         return if_statement();
@@ -544,6 +551,7 @@ std::unique_ptr<StatementNode> Parser::statement() {
     } else {
         logger_->error(token->getPosition(), "unknown statement: too many semi-colons?");
     }
+    resync({ TokenType::semicolon, TokenType::kw_end, TokenType::kw_if, TokenType::kw_elsif, TokenType::kw_else, TokenType::kw_while });
     return nullptr;
 }
 
@@ -859,13 +867,21 @@ bool Parser::checkActualParameter(const ProcedureNode* proc, size_t num, const E
     return false;
 }
 
-void Parser::resync() {
+void Parser::resync(std::set<TokenType> types) {
     auto type = scanner_->peekToken()->getType();
-    while (type != TokenType::semicolon && type < TokenType::kw_module) {
+    while (types.find(type) == types.end()) {
         scanner_->nextToken();
         type = scanner_->peekToken()->getType();
     }
 }
+
+//void Parser::resync() {
+//    auto type = scanner_->peekToken()->getType();
+//    while (type != TokenType::semicolon && type < TokenType::kw_module) {
+//        scanner_->nextToken();
+//        type = scanner_->peekToken()->getType();
+//    }
+//}
 
 OperatorType token_to_operator(TokenType token) {
     switch(token) {

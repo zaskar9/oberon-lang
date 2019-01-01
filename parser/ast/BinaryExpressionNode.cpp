@@ -21,20 +21,22 @@ bool BinaryExpressionNode::isConstant() const {
 }
 
 TypeNode* BinaryExpressionNode::getType() const {
-    auto lhsType = lhs_->getType();
-    auto rhsType = rhs_->getType();
-    if (lhsType == rhsType) {
-        if (op_ == OperatorType::EQ
-            || op_ == OperatorType::NEQ
-            || op_ == OperatorType::LT
-            || op_ == OperatorType::LEQ
-            || op_ == OperatorType::GT
-            || op_ == OperatorType::GEQ) {
-            return BasicTypeNode::BOOLEAN;
+    if (lhs_ != nullptr && rhs_ != nullptr) {
+        auto lhsType = lhs_->getType();
+        auto rhsType = rhs_->getType();
+        if (lhsType == rhsType) {
+            if (op_==OperatorType::EQ
+                    || op_==OperatorType::NEQ
+                    || op_==OperatorType::LT
+                    || op_==OperatorType::LEQ
+                    || op_==OperatorType::GT
+                    || op_==OperatorType::GEQ) {
+                return BasicTypeNode::BOOLEAN;
+            }
+            return lhsType;
         }
-        return lhsType;
+        return nullptr;
     }
-    std::cerr << lhsType << ", " << rhsType << std::endl;
     return nullptr;
 }
 

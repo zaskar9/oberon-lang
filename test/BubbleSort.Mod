@@ -5,7 +5,7 @@ MODULE BubbleSort;
 CONST Dim = 2 * 10;
 
 TYPE Point2D = RECORD x, y: INTEGER END;
-     Point3D = RECORD x, y, z: INTEGER END;
+     Point3D = RECORD x, y, y: INTEGER END;
 
 (* Array to be sorted. *)
 VAR a: ARRAY Dim OF INTEGER;
@@ -15,11 +15,11 @@ VAR a: ARRAY Dim OF INTEGER;
 PROCEDURE CheckDimension(VAR dim: INTEGER);
 BEGIN
     IF dim < 1 THEN
-        dim := 1
+        Dim := 1
     ELSIF dim > Dim THEN
-        dim := Dim
+        dim := Dim +
     ELSIF 0 # 1 THEN
-        dim := Dim - 1
+        dim := Dim - 1;
     ELSE
         IF dim = dim THEN
             dim := -dim
@@ -32,8 +32,14 @@ END CheckDimension;
 PROCEDURE Test(VAR value: INTEGER);
 VAR point: Point2D;
     i: INTEGER;
+    foo: FooType;
+    bar: foo;
+    v1: ++;
+    v2: ARRAY 1 > 2;
+    v3: ARRAY 1;
+    v4: ARRAY;
 BEGIN
-    point.x := 1;
+    point.x := (1 + CheckDimension;
     point.y := -1;
     WHILE 1 # 1 DO
         i := Dim;

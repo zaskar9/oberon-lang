@@ -10,6 +10,7 @@
 
 #include <memory>
 #include <vector>
+#include <set>
 #include "../scanner/Scanner.h"
 #include "../util/Logger.h"
 #include "ast/Node.h"
@@ -70,7 +71,7 @@ private:
 
     bool checkActualParameter(const ProcedureNode *proc, size_t num, const ExpressionNode *expr);
 
-    void resync();
+    void resync(std::set<TokenType> types);
 
 public:
     explicit Parser(Scanner *scanner, Logger *logger);
