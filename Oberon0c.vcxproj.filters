@@ -78,9 +78,6 @@
     <ClCompile Include="parser\ast\ValueNode.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="parser\symbol\Symbol.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="parser\symbol\SymbolTable.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -105,7 +102,28 @@
     <ClCompile Include="parser\symbol\Scope.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="parser\ast\TypeDeclarationNode.cpp">
+    <ClCompile Include="parser\ast\NodePrettyPrinter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="parser\ast\StatementSequenceNode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="parser\ast\AssignmentNode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="parser\ast\IfThenElseNode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="parser\ast\WhileLoopNode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="parser\ast\ProcedureCallNode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="parser\ast\StatementNode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="scanner\UndefinedToken.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -170,9 +188,6 @@
     <ClInclude Include="parser\ast\ValueNode.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="parser\symbol\Symbol.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="parser\symbol\SymbolTable.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -197,7 +212,28 @@
     <ClInclude Include="parser\symbol\Scope.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="parser\ast\TypeDeclarationNode.h">
+    <ClInclude Include="parser\ast\NodePrettyPrinter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="parser\ast\StatementSequenceNode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="parser\ast\AssignmentNode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="parser\ast\IfThenElseNode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="parser\ast\WhileLoopNode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="parser\ast\ProcedureCallNode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="parser\ast\StatementNode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="scanner\UndefinedToken.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
