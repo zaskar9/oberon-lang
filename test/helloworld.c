@@ -12,4 +12,17 @@ int main(int argc, const char* argv[])
    exit(0);
 }
 
+int compare(int a, int b, int c, int d, int e, int f)
+{
+   return a < b && c < d;
+   /*if (a < b)
+   {
+      return c + d;
+   }
+   else
+   {
+      return e + f;
+   }*/
+}
+
 // gcc -fno-asynchronous-unwind-tables -fno-exceptions -fno-rtti -fverbose-asm -O -S helloworld.c

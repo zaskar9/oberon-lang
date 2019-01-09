@@ -4,7 +4,7 @@
          extern   printf
 
          section  .data
-msg:    db       "The answer is %d!", 10, 0
+msg:     db       "The answer is %d!", 10, 0
 
          section  .text
 main:    push     rbp
