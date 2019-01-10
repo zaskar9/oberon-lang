@@ -154,7 +154,7 @@ void NodePrettyPrinter::visit(NumberNode &node) {
 
 void NodePrettyPrinter::visit(StringNode &node) {
     stream_ << node.getValue();
-};
+}
 
 void NodePrettyPrinter::visit(UnaryExpressionNode &node) {
     stream_ << node.getOperator();

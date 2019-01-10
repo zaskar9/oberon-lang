@@ -80,7 +80,7 @@ void IfThenElseNode::print(std::ostream& stream) const {
         stream << *elseIf;
     }
     if (elseStatements_ !=nullptr) {
-        stream << " ELSE " << elseStatements_;
+        stream << " ELSE " << *elseStatements_;
     }
     stream << "END";
 }

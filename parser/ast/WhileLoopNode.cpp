@@ -26,5 +26,5 @@ void WhileLoopNode::accept(NodeVisitor& visitor) {
 }
 
 void WhileLoopNode::print(std::ostream& stream) const {
-    stream << "WHILE " << condition_ << " DO " << statements_;
+    stream << "WHILE " << *condition_ << " DO " << *statements_;
 }
