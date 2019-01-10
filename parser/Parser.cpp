@@ -287,18 +287,20 @@ std::unique_ptr<ExpressionNode> Parser::factor() {
                 }
                 return std::make_unique<NamedValueReferenceNode>(pos, var);
             } else {
-                logger_->error(token->getPosition(), "constant, parameter or variable expected.");
+                logger_->error(pos, "constant, parameter or variable expected.");
                 return nullptr;
             }
         } else {
-            logger_->error(token->getPosition(), "undefined identifier: " + name + ".");
+            logger_->error(pos, "undefined identifier: " + name + ".");
             return nullptr;
         }
     } else if (token->getType() == TokenType::const_number) {
-        auto number = dynamic_cast<const NumberToken*>(scanner_->nextToken().get());
+		auto tmp = scanner_->nextToken();
+        auto number = dynamic_cast<const NumberToken*>(tmp.get());
         return std::make_unique<NumberNode>(number->getPosition(), number->getValue());
     } else if (token->getType() == TokenType::const_string) {
-        auto string = dynamic_cast<const StringToken*>(scanner_->nextToken().get());
+		auto tmp = scanner_->nextToken();
+		auto string = dynamic_cast<const StringToken*>(tmp.get());
         return std::make_unique<StringNode>(string->getPosition(), string->getValue());
     } else if (token->getType() == TokenType::const_true) {
         scanner_->nextToken();
@@ -330,16 +332,17 @@ TypeNode* Parser::type(BlockNode *block) {
     logger_->debug("", "type");
     auto token = scanner_->peekToken();
     if (token->getType() == TokenType::const_ident) {
+		auto pos = token->getPosition();
         std::string name = ident();
         auto node = symbols_->lookup(name);
         if (node == nullptr) {
-            logger_->error(token->getPosition(), "undefined type: " + name + ".");
+            logger_->error(pos, "undefined type: " + name + ".");
         } else if (node->getNodeType() == NodeType::array_type ||
                    node->getNodeType() == NodeType::basic_type ||
                    node->getNodeType() == NodeType::record_type) {
             return dynamic_cast<TypeNode*>(node);
         } else {
-            logger_->error(token->getPosition(), name + " is not a type.");
+            logger_->error(pos, name + " is not a type.");
         }
     } else if (token->getType() == TokenType::kw_array) {
         std::unique_ptr<ArrayTypeNode> node(array_type(block));
