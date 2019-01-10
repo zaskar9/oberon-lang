@@ -21,6 +21,8 @@
 #include "ast/AssignmentNode.h"
 #include "ast/ProcedureCallNode.h"
 
+static OperatorType token_to_operator(TokenType token);
+
 Parser::Parser(Scanner *scanner, Logger *logger) : scanner_(scanner), logger_(logger) {
     symbols_ = std::make_unique<SymbolTable>();
 }

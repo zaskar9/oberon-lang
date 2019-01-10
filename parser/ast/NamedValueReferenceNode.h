@@ -8,6 +8,7 @@
 #define OBERON0C_NAMEDVALUEDECLARATIONNODE_H
 
 
+#include <memory>
 #include "ExpressionNode.h"
 #include "NamedValueNode.h"
 

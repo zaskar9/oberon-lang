@@ -80,6 +80,4 @@ public:
 
 };
 
-static OperatorType token_to_operator(TokenType token);
-
 #endif //OBERON0C_PARSER_H
