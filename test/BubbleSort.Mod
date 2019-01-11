@@ -1,17 +1,17 @@
 (* Implementation of the Bubble Sort algorithm. *)
-MODULE BubbleSort;
+MODULE Sort;
 
 (* Length of the array to be sorted. *)
 CONST Dim = 2 * 10;
 
 TYPE Point2D = RECORD x, y: INTEGER END;
-     Point3D = RECORD x, y, y: INTEGER END;
+     (* Point3D = RECORD x, y, y: INTEGER END; *)
 
 (* Array to be sorted. *)
 VAR a: ARRAY Dim OF INTEGER;
     i: INTEGER;
     point: Point2D;
-
+(*
 PROCEDURE CheckDimension(VAR dim: INTEGER);
 BEGIN
     IF dim < 1 THEN
@@ -46,6 +46,7 @@ BEGIN
         IF 1 > 2 THEN i := 1 ELSE i := 2 END
     END
 END Test;
+*)
 
 (* Initializes the array. *)
 PROCEDURE Init();
@@ -53,7 +54,7 @@ VAR i: INTEGER;
 BEGIN
     i := 0;
     WHILE i < Dim DO
-        a[i] := Dim-i;
+        a[i] := Dim - i;
         i := i + 1
     END
 END Init;
@@ -67,31 +68,58 @@ BEGIN
     b := t
 END Swap;
     
-(* Applies the bubble sort algorithm to the array. *)
-PROCEDURE Bubble;
+(* Applies the bubble-sort algorithm to the array. *)
+PROCEDURE BubbleSort;
 VAR i, j: INTEGER;
 BEGIN
-    i := 1;
-    WHILE i <= Dim DO
-        j := Dim; 
+    i := 0;
+    WHILE i < Dim DO
+        j := Dim - 1;
         WHILE j > i DO
             IF a[j-1] > a[j] THEN Swap(a[j - 1], a[j]) END;
             j := j - 1
         END;
         i := i + 1
     END
-END Bubble;
+END BubbleSort;
+
+(* Applies the quick-sort algorithm to the array. *)
+PROCEDURE QuickSort;
+
+    PROCEDURE QSort(l, r: INTEGER);
+    VAR i, j, x: INTEGER;
+    BEGIN
+        i := l;
+        j := r;
+        x := a[(r + l) DIV 2];
+        WHILE i > j DO
+            WHILE a[i] < x DO i := i + 1 END;
+            WHILE x < a[j] DO j := j - 1 END;
+            IF i <= j THEN
+                Swap(a[i], a[j]);
+                i := i + 1;
+                j := j - 1
+            END
+        END;
+        IF l < j THEN QSort(l, j) END;
+        IF i < r THEN QSort(i, r) END
+    END QSort;
+
+BEGIN
+    QSort(0, Dim - 1)
+END QuickSort;
 
 (* Main program. *)
 BEGIN
     Init;
-    Bubble();
-    i := 1;
+    QuickSort()
+
+    (* i := 1;
     Write("[");
     WHILE i <= Dim DO
         Write(a[i]);
         IF i + 1 < Dim THEN Write(", ") END
     END;
     Write("]");
-    WriteLn()
-END BubbleSort.
+    WriteLn() *)
+END Sort.
