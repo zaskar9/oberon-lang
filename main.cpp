@@ -22,6 +22,9 @@ int main(const int argc, const char *argv[]) {
     auto ast_root = parser->parse();
     auto printer = std::make_unique<NodePrettyPrinter>(std::cout);
     // printer->visit(*ast_root.get());
-    logger->info("", "Compilation complete.");
+    logger->info("", "Compilation complete: " +
+            std::to_string(logger->getErrorCount())   + " error(s), " +
+            std::to_string(logger->getWarningCount()) + " warning(s), " +
+            std::to_string(logger->getInfoCount())    + " message(s).");
     exit(0);
 }

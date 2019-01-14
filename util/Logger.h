@@ -15,7 +15,7 @@ struct FilePos {
     int lineNo, charNo;
 };
 
-enum class LogLevel : unsigned int { DEBUG = 1, INFO = 2, ERROR = 3 };
+enum class LogLevel : unsigned int { DEBUG = 1, INFO = 2, WARNING = 3, ERROR = 4 };
 
 class Logger
 {
@@ -23,19 +23,26 @@ class Logger
 private:
     LogLevel level_;
     std::ostream *out_, *err_;
+    int debugs_, infos_, warnings_, errors_;
 
-    void log(LogLevel level, const std::string &fileName, int lineNo, int charNo, const std::string &msg) const;
-    void log(LogLevel level, const std::string &fileName, const std::string &msg) const;
+    void log(LogLevel level, const std::string &fileName, int lineNo, int charNo, const std::string &msg);
+    void log(LogLevel level, const std::string &fileName, const std::string &msg);
 
 public:
     explicit Logger();
     explicit Logger(LogLevel level, std::ostream *out, std::ostream *err);
     ~Logger();
 
-    void error(FilePos pos, const std::string &msg) const;
-    void error(const std::string &fileName, const std::string &msg) const;
-    void info(const std::string &fileName, const std::string &msg) const;
-    void debug(const std::string &fileName, const std::string &msg) const;
+    void error(FilePos pos, const std::string &msg);
+    void error(const std::string &fileName, const std::string &msg);
+    void warning(FilePos pos, const std::string &msg);
+    void info(const std::string &fileName, const std::string &msg);
+    void debug(const std::string &fileName, const std::string &msg);
+
+    int getDebugCount() const;
+    int getInfoCount() const;
+    int getWarningCount() const;
+    int getErrorCount() const;
 
     void setLevel(LogLevel level);
 

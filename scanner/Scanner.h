@@ -20,7 +20,7 @@ class Scanner {
 
 private:
     std::string filename_;
-    const Logger *logger_;
+    Logger *logger_;
     const Token *token_;
     int lineNo_, charNo_;
     std::unordered_map<std::string, TokenType> keywords_;
@@ -37,7 +37,7 @@ private:
     void comment();
 
 public:
-    explicit Scanner(const std::string &filename, const Logger *logger);
+    explicit Scanner(const std::string &filename, Logger *logger);
     ~Scanner();
     const Token* peekToken();
     std::unique_ptr<const Token> nextToken();

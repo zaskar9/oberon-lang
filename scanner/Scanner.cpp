@@ -11,7 +11,7 @@
 #include "StringToken.h"
 #include "UndefinedToken.h"
 
-Scanner::Scanner(const std::string &filename, const Logger *logger) :
+Scanner::Scanner(const std::string &filename, Logger *logger) :
         filename_(filename), logger_(logger), token_(nullptr), lineNo_(1), charNo_(0) {
     this->initTable();
     file_.open(filename_, std::ios::in);

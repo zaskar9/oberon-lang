@@ -396,7 +396,9 @@ void Parser::statement_sequence(StatementSequenceNode *statements) {
     }
 }
 
-// statement = [ assignment | procedure_call | if_statement | while_statement ] .
+// statement = [ assignment | procedure_call | if_statement | case_statement
+//               while_statement | repeat_statement | for_statement | loop_statement
+//               with_statement | "EXIT" | "RETURN" [ expression ] ] .
 std::unique_ptr<StatementNode> Parser::statement() {
     logger_->debug("", "statement");
     auto token = scanner_->peekToken();
@@ -520,6 +522,12 @@ std::unique_ptr<StatementNode> Parser::while_statement() {
     }
     return statement;
 }
+
+// repeat_statement = "REPEAT" statement_sequence "UNTIL" expression .
+
+// for_statement = "FOR" ident ":=" expression "TO" expression [ "BY" const_expression ] "DO" statement_sequence "END" .
+
+// loop_statement = "LOOP" statement_sequence "END" .
 
 // actual_parameters = "(" [ expression { "," expression } ] ")" .
 void Parser::actual_parameters(ProcedureCallNode *call) {
