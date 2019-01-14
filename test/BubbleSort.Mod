@@ -92,7 +92,7 @@ PROCEDURE QuickSort;
         i := l;
         j := r;
         x := a[(r + l) DIV 2];
-        WHILE i > j DO
+        WHILE i <= j DO
             WHILE a[i] < x DO i := i + 1 END;
             WHILE x < a[j] DO j := j - 1 END;
             IF i <= j THEN
