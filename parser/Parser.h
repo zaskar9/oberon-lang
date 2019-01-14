@@ -26,6 +26,7 @@
 #include "ast/StatementSequenceNode.h"
 #include "ast/NamedValueReferenceNode.h"
 #include "ast/ProcedureCallNode.h"
+#include "ast/NumberNode.h"
 
 class Parser
 {
@@ -60,7 +61,10 @@ private:
     std::unique_ptr<StatementNode> assignment(std::unique_ptr<NamedValueReferenceNode> lvalue);
     void procedure_call(ProcedureCallNode *call);
     std::unique_ptr<StatementNode> if_statement();
+    std::unique_ptr<StatementNode> loop_statement();
     std::unique_ptr<StatementNode> while_statement();
+    std::unique_ptr<StatementNode> repeat_statement();
+    std::unique_ptr<StatementNode> for_statement();
     void actual_parameters(ProcedureCallNode *call);
     std::unique_ptr<ExpressionNode> selector(const NamedValueNode *variable);
 

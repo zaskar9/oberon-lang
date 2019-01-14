@@ -16,13 +16,17 @@ class NamedValueNode : public Node {
 private:
     const std::string name_;
     TypeNode *type_;
+    int level_, offset_;
 
 public:
-    explicit NamedValueNode(NodeType nodeType, FilePos pos, const std::string &name, TypeNode *type);
+    explicit NamedValueNode(NodeType nodeType, FilePos pos, const std::string &name, TypeNode *type, int level, int offset);
     ~NamedValueNode() override;
 
     const std::string getName() const;
     TypeNode* getType() const;
+
+    int getLevel() const;
+    int getOffset() const;
 
     void accept(NodeVisitor& visitor) override = 0;
 
@@ -33,8 +37,8 @@ public:
 class FieldNode final : public NamedValueNode {
 
 public:
-    explicit FieldNode(const FilePos pos, const std::string &name, TypeNode *type) :
-            NamedValueNode(NodeType::field, pos, name, type) { };
+    explicit FieldNode(const FilePos pos, const std::string &name, TypeNode *type, int offset) :
+            NamedValueNode(NodeType::field, pos, name, type, -1, offset) { };
     ~FieldNode() final = default;
 
     void accept(NodeVisitor& visitor) override;
@@ -44,8 +48,8 @@ public:
 class VariableNode final : public NamedValueNode {
 
 public:
-    explicit VariableNode(const FilePos pos, const std::string &name, TypeNode *type) :
-            NamedValueNode(NodeType::variable, pos, name, type) { };
+    explicit VariableNode(const FilePos pos, const std::string &name, TypeNode *type, int level, int offset) :
+            NamedValueNode(NodeType::variable, pos, name, type, level, offset) { };
     ~VariableNode() final = default;
 
     void accept(NodeVisitor& visitor) override;
@@ -55,8 +59,8 @@ public:
 class TypeDeclarationNode final : public NamedValueNode {
 
 public:
-    explicit TypeDeclarationNode(const FilePos pos, const std::string &name, TypeNode *type) :
-            NamedValueNode(NodeType::type_declaration, pos, name, type) { };
+    explicit TypeDeclarationNode(const FilePos pos, const std::string &name, TypeNode *type, int level) :
+            NamedValueNode(NodeType::type_declaration, pos, name, type, level, -1) { };
     ~TypeDeclarationNode() final = default;
 
     void accept(NodeVisitor& visitor) override;

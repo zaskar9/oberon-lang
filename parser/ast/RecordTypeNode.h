@@ -16,6 +16,7 @@
 class RecordTypeNode final : public TypeNode {
 
 private:
+    int offset_;
     std::vector<std::unique_ptr<FieldNode>> fields_;
 
 public:
@@ -23,6 +24,9 @@ public:
     ~RecordTypeNode() final;
 
     int getSize() const final;
+
+    int getOffset() const;
+    void incOffset(int offset);
 
     void addField(std::unique_ptr<FieldNode> field);
     FieldNode* getField(const std::string &name) const;

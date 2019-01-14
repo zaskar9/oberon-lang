@@ -7,8 +7,8 @@
 #include "ParameterNode.h"
 #include "NodeVisitor.h"
 
-ParameterNode::ParameterNode(FilePos pos, const std::string &name, TypeNode *type, bool var) :
-        NamedValueNode(NodeType::parameter, pos, name, type), var_(var) {
+ParameterNode::ParameterNode(FilePos pos, const std::string &name, TypeNode *type, bool var, int level) :
+        NamedValueNode(NodeType::parameter, pos, name, type, level, -1), var_(var) {
 }
 
 ParameterNode::~ParameterNode() = default;

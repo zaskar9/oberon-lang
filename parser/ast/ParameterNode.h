@@ -19,7 +19,7 @@ private:
     bool var_;
 
 public:
-    explicit ParameterNode(FilePos pos, const std::string &name, TypeNode *type, bool var);
+    explicit ParameterNode(FilePos pos, const std::string &name, TypeNode *type, bool var, int level);
     ~ParameterNode() final;
 
     bool isVar() const;

@@ -51,7 +51,10 @@ public:
     void visit(IfThenElseNode &node) override;
     void visit(ElseIfNode &node) override;
     void visit(ProcedureCallNode &node) override;
+    void visit(LoopNode &node) override;
     void visit(WhileLoopNode &node) override;
+    void visit(RepeatLoopNode &node) override;
+    void visit(ForLoopNode &node) override;
 
 };
 

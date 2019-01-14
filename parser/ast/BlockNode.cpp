@@ -6,11 +6,23 @@
 
 #include "BlockNode.h"
 
-BlockNode::BlockNode(const NodeType nodeType, const FilePos pos) : Node(nodeType, pos),
+BlockNode::BlockNode(const NodeType nodeType, const FilePos pos, int level) : Node(nodeType, pos), level_(level), offset_(0),
         types_(), constants_(), type_declarations_(), variables_(), statements_(std::make_unique<StatementSequenceNode>(pos)) {
 }
 
 BlockNode::~BlockNode() = default;
+
+int BlockNode::getLevel() const {
+    return level_;
+}
+
+int BlockNode::getOffset() const {
+    return offset_;
+}
+
+void BlockNode::incOffset(int offset) {
+    offset_ += offset;
+}
 
 void BlockNode::addType(std::unique_ptr<TypeNode> type) {
     types_.push_back(std::move(type));

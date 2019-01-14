@@ -27,10 +27,14 @@ public:
 
     void insert(const std::string &name, Node *node);
     Node* lookup(const std::string &name) const;
+
     bool isDefined(const std::string &name) const;
     bool isDuplicate(const std::string &name) const;
+
     void enterScope();
     void leaveScope();
+
+    int getLevel() const;
 
 };
 

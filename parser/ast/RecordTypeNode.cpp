@@ -7,7 +7,7 @@
 #include "RecordTypeNode.h"
 #include "NodeVisitor.h"
 
-RecordTypeNode::RecordTypeNode(const FilePos pos) : TypeNode(NodeType::record_type, pos, 0), fields_() {
+RecordTypeNode::RecordTypeNode(const FilePos pos) : TypeNode(NodeType::record_type, pos, 0), offset_(0), fields_() {
 }
 
 RecordTypeNode::~RecordTypeNode() = default;
@@ -22,6 +22,14 @@ int RecordTypeNode::getSize() const {
         size += itr->getType()->getSize();
     }
     return size;
+}
+
+int RecordTypeNode::getOffset() const {
+    return offset_;
+}
+
+void RecordTypeNode::incOffset(int offset) {
+    offset_ += offset;
 }
 
 FieldNode* RecordTypeNode::getField(const std::string& name) const {

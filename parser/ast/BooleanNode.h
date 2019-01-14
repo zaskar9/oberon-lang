@@ -16,7 +16,7 @@ private:
     bool value_;
 
 public:
-    BooleanNode(FilePos pos, bool value);
+    explicit BooleanNode(FilePos pos, bool value);
     ~BooleanNode() final;
 
     bool getValue() const;

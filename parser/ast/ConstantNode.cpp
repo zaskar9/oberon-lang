@@ -7,8 +7,8 @@
 #include "ConstantNode.h"
 #include "NodeVisitor.h"
 
-ConstantNode::ConstantNode(const FilePos pos, const std::string &name, std::unique_ptr<ValueNode> value) :
-        NamedValueNode(NodeType::constant, pos, name, value->getType()), value_(std::move(value)) {
+ConstantNode::ConstantNode(const FilePos pos, const std::string &name, std::unique_ptr<ValueNode> value, int level) :
+        NamedValueNode(NodeType::constant, pos, name, value->getType(), level, -1), value_(std::move(value)) {
 }
 
 ConstantNode::~ConstantNode() = default;

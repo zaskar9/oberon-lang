@@ -22,8 +22,7 @@ private:
     std::vector<std::unique_ptr<ProcedureNode>> procedures_;
 
 public:
-    explicit ProcedureNode(FilePos pos, const std::string &name);
-    explicit ProcedureNode(FilePos pos, const std::string &name, bool external);
+    explicit ProcedureNode(FilePos pos, const std::string &name, int level);
     ~ProcedureNode() final;
 
     const std::string getName() const;

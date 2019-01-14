@@ -2,7 +2,7 @@
 MODULE Sort;
 
 (* Length of the array to be sorted. *)
-CONST Dim = 2 * 10;
+CONST Dim = 4 + 2 * 8;
 
 TYPE Point2D = RECORD x, y: INTEGER END;
      (* Point3D = RECORD x, y, y: INTEGER END; *)
@@ -59,6 +59,16 @@ BEGIN
     END
 END Init;
 
+PROCEDURE Initialize();
+VAR i, j: INTEGER;
+BEGIN
+    FOR i := 0 TO Dim DO
+        FOR j := Dim TO i BY -1 DO
+            a[i] := j
+        END
+    END
+END Initialize;
+
 (* Swaps the two values passed as var-parameters. *)
 PROCEDURE Swap(VAR a, b: INTEGER);
 VAR t: INTEGER;
@@ -112,7 +122,12 @@ END QuickSort;
 (* Main program. *)
 BEGIN
     Init;
-    QuickSort()
+    i := 1;
+    REPEAT
+        QuickSort();
+        i := i + 1
+    UNTIL i > Dim DIV 2
+
 
     (* i := 1;
     Write("[");

@@ -20,6 +20,8 @@ class ProcedureNode;
 class BlockNode : public Node {
 
 private:
+    int level_, offset_;
+
     std::vector<std::unique_ptr<TypeNode>> types_;
 
     std::vector<std::unique_ptr<ConstantNode>> constants_;
@@ -28,8 +30,12 @@ private:
     std::unique_ptr<StatementSequenceNode> statements_;
 
 public:
-    explicit BlockNode(NodeType nodeType, FilePos pos);
+    explicit BlockNode(NodeType nodeType, FilePos pos, int level);
     ~BlockNode() override;
+
+    int getLevel() const;
+    int getOffset() const;
+    void incOffset(int offset);
 
     void addType(std::unique_ptr<TypeNode> type);
 

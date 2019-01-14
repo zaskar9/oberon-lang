@@ -7,11 +7,8 @@
 #include "ProcedureNode.h"
 #include "NodeVisitor.h"
 
-ProcedureNode::ProcedureNode(FilePos pos, const std::string& name) : ProcedureNode(pos, name, false) {
-}
-
-ProcedureNode::ProcedureNode(const FilePos pos, const std::string &name, bool external) :
-        BlockNode(NodeType::procedure, pos), name_(name), external_(external), parameters_(), procedures_() {
+ProcedureNode::ProcedureNode(const FilePos pos, const std::string &name, int level) :
+        BlockNode(NodeType::procedure, pos, level), name_(name), parameters_(), procedures_() {
 }
 
 ProcedureNode::~ProcedureNode() = default;

@@ -20,7 +20,7 @@
 #include "ProcedureCallNode.h"
 #include "AssignmentNode.h"
 #include "IfThenElseNode.h"
-#include "WhileLoopNode.h"
+#include "LoopNode.h"
 
 class NodeVisitor {
 
@@ -50,7 +50,10 @@ public:
     virtual void visit(IfThenElseNode &node) = 0;
     virtual void visit(ElseIfNode &node) = 0;
     virtual void visit(ProcedureCallNode &node) = 0;
+    virtual void visit(LoopNode &node) = 0;
     virtual void visit(WhileLoopNode &node) = 0;
+    virtual void visit(RepeatLoopNode &node) = 0;
+    virtual void visit(ForLoopNode &node) = 0;
 
 };
 

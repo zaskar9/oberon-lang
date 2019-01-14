@@ -7,8 +7,8 @@
 #include "NamedValueNode.h"
 #include "NodeVisitor.h"
 
-NamedValueNode::NamedValueNode(NodeType nodeType, const FilePos pos, const std::string &name, TypeNode* type) :
-        Node(nodeType, pos), name_(name), type_(type) {
+NamedValueNode::NamedValueNode(NodeType nodeType, const FilePos pos, const std::string &name, TypeNode* type, int level, int offset) :
+        Node(nodeType, pos), name_(name), type_(type), level_(level), offset_(offset) {
 }
 
 NamedValueNode::~NamedValueNode() = default;
@@ -23,6 +23,14 @@ TypeNode* NamedValueNode::getType() const {
 
 void NamedValueNode::print(std::ostream &stream) const {
     stream << name_ << ": " << *type_;
+}
+
+int NamedValueNode::getLevel() const {
+    return level_;
+}
+
+int NamedValueNode::getOffset() const {
+    return offset_;
 }
 
 void FieldNode::accept(NodeVisitor& visitor) {

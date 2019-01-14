@@ -18,7 +18,7 @@ private:
     std::unique_ptr<ValueNode> value_;
 
 public:
-    explicit ConstantNode(FilePos pos, const std::string &name, std::unique_ptr<ValueNode> value);
+    explicit ConstantNode(FilePos pos, const std::string &name, std::unique_ptr<ValueNode> value, int level);
     ~ConstantNode() final;
 
     ValueNode* getValue() const;

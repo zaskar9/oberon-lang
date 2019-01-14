@@ -20,7 +20,7 @@ private:
     std::vector<std::unique_ptr<ProcedureNode>> procedures_;
 
 public:
-    explicit ModuleNode(FilePos pos, const std::string &name);
+    explicit ModuleNode(FilePos pos, const std::string &name, int level);
     ~ModuleNode() final;
 
     const std::string getName() const;
