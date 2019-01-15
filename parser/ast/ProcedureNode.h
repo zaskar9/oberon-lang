@@ -11,22 +11,21 @@
 #include <memory>
 #include <vector>
 #include "BlockNode.h"
-#include "ParameterNode.h"
+#include "DeclarationNode.h"
 
 class ProcedureNode final : public BlockNode {
 
 private:
     std::string name_;
-    bool external_;
     std::vector<std::unique_ptr<ParameterNode>> parameters_;
     std::vector<std::unique_ptr<ProcedureNode>> procedures_;
 
 public:
-    explicit ProcedureNode(FilePos pos, const std::string &name, int level);
-    ~ProcedureNode() final;
+    explicit ProcedureNode(const FilePos pos, const std::string &name, int level) :
+            BlockNode(NodeType::procedure, pos, level), name_(name), parameters_(), procedures_() { };
+    ~ProcedureNode() final = default;
 
     const std::string getName() const;
-    bool isExternal() const;
 
     void addParameter(std::unique_ptr<ParameterNode> parameter);
     ParameterNode* getParameter(size_t num) const;

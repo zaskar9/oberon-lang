@@ -7,14 +7,14 @@
 #include "AssignmentNode.h"
 #include "NodeVisitor.h"
 
-AssignmentNode::AssignmentNode(const FilePos pos, std::unique_ptr<NamedValueReferenceNode> lvalue,
+AssignmentNode::AssignmentNode(const FilePos pos, std::unique_ptr<ReferenceNode> lvalue,
         std::unique_ptr<ExpressionNode> rvalue) : StatementNode(NodeType::assignment, pos),
         lvalue_(std::move(lvalue)), rvalue_(std::move(rvalue)) {
 }
 
 AssignmentNode::~AssignmentNode() = default;
 
-NamedValueReferenceNode* AssignmentNode::getLvalue() {
+ReferenceNode* AssignmentNode::getLvalue() {
     return lvalue_.get();
 }
 

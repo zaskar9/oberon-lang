@@ -29,11 +29,11 @@ public:
     void visit(ModuleNode &node) override;
     void visit(ProcedureNode &node) override;
 
-    void visit(NamedValueReferenceNode &node) override;
-    void visit(ConstantNode &node) override;
+    void visit(ReferenceNode &node) override;
+    void visit(ConstantDeclarationNode &node) override;
     void visit(FieldNode &node) override;
     void visit(ParameterNode &node) override;
-    void visit(VariableNode &node) override;
+    void visit(VariableDeclarationNode &node) override;
 
     void visit(BooleanNode &node) override;
     void visit(NumberNode &node) override;

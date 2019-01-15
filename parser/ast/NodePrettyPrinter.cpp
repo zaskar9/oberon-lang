@@ -98,7 +98,7 @@ void NodePrettyPrinter::visit(ProcedureNode& node) {
     stream_ << "END " << node.getName() << ';' << std::endl;
 }
 
-void NodePrettyPrinter::visit(NamedValueReferenceNode &node) {
+void NodePrettyPrinter::visit(ReferenceNode &node) {
     auto ref = node.dereference();
     stream_ << ref->getName();
     if (node.getSelector() != nullptr) {
@@ -114,7 +114,7 @@ void NodePrettyPrinter::visit(NamedValueReferenceNode &node) {
     }
 }
 
-void NodePrettyPrinter::visit(ConstantNode &node) {
+void NodePrettyPrinter::visit(ConstantDeclarationNode &node) {
     stream_ << node.getName() << "{" << node.getLevel() << "} = ";
     node.getValue()->accept(*this);
     stream_ << ';' << std::endl;
@@ -138,7 +138,7 @@ void NodePrettyPrinter::visit(TypeDeclarationNode &node) {
     stream_ << ';' << std::endl;
 }
 
-void NodePrettyPrinter::visit(VariableNode &node) {
+void NodePrettyPrinter::visit(VariableDeclarationNode &node) {
     stream_ << node.getName() << "{" << node.getLevel() << "@" << node.getOffset() << "}: ";
     node.getType()->accept(*this);
     stream_ << ';' << std::endl;

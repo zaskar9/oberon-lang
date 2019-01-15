@@ -30,13 +30,11 @@ add_executable(oberon0c main.cpp
         parser/ast/BasicTypeNode.cpp parser/ast/BasicTypeNode.h
         parser/ast/ArrayTypeNode.cpp parser/ast/ArrayTypeNode.h
         parser/ast/RecordTypeNode.cpp parser/ast/RecordTypeNode.h
-        parser/ast/ProcedureNode.cpp parser/ast/ProcedureNode.h
-        parser/ast/ParameterNode.cpp parser/ast/ParameterNode.h
-        parser/ast/ModuleNode.cpp parser/ast/ModuleNode.h
         parser/ast/BlockNode.cpp parser/ast/BlockNode.h
-        parser/ast/NamedValueNode.cpp parser/ast/NamedValueNode.h
-        parser/ast/ConstantNode.cpp parser/ast/ConstantNode.h
-        parser/ast/NamedValueReferenceNode.cpp parser/ast/NamedValueReferenceNode.h
+        parser/ast/ModuleNode.cpp parser/ast/ModuleNode.h
+        parser/ast/ProcedureNode.cpp parser/ast/ProcedureNode.h
+        parser/ast/DeclarationNode.cpp parser/ast/DeclarationNode.h
+        parser/ast/ReferenceNode.cpp parser/ast/ReferenceNode.h
         parser/ast/StatementNode.cpp parser/ast/StatementNode.h
         parser/ast/AssignmentNode.cpp parser/ast/AssignmentNode.h
         parser/ast/ProcedureCallNode.cpp parser/ast/ProcedureCallNode.h

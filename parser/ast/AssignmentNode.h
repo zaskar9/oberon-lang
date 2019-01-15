@@ -9,19 +9,19 @@
 
 
 #include "StatementNode.h"
-#include "NamedValueReferenceNode.h"
+#include "ReferenceNode.h"
 
 class AssignmentNode final : public StatementNode {
 
 private:
-    std::unique_ptr<NamedValueReferenceNode> lvalue_;
+    std::unique_ptr<ReferenceNode> lvalue_;
     std::unique_ptr<ExpressionNode> rvalue_;
 
 public:
-    AssignmentNode(FilePos pos, std::unique_ptr<NamedValueReferenceNode> lvalue, std::unique_ptr<ExpressionNode> rvalue);
+    AssignmentNode(FilePos pos, std::unique_ptr<ReferenceNode> lvalue, std::unique_ptr<ExpressionNode> rvalue);
     ~AssignmentNode() override;
 
-    NamedValueReferenceNode* getLvalue();
+    ReferenceNode* getLvalue();
     ExpressionNode* getRvalue();
 
     void accept(NodeVisitor& visitor) final;

@@ -7,18 +7,8 @@
 #include "ProcedureNode.h"
 #include "NodeVisitor.h"
 
-ProcedureNode::ProcedureNode(const FilePos pos, const std::string &name, int level) :
-        BlockNode(NodeType::procedure, pos, level), name_(name), parameters_(), procedures_() {
-}
-
-ProcedureNode::~ProcedureNode() = default;
-
 const std::string ProcedureNode::getName() const {
     return name_;
-}
-
-bool ProcedureNode::isExternal() const {
-    return external_;
 }
 
 void ProcedureNode::addParameter(std::unique_ptr<ParameterNode> parameter) {

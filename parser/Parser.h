@@ -24,7 +24,7 @@
 #include "ast/StatementNode.h"
 #include "symbol/SymbolTable.h"
 #include "ast/StatementSequenceNode.h"
-#include "ast/NamedValueReferenceNode.h"
+#include "ast/ReferenceNode.h"
 #include "ast/ProcedureCallNode.h"
 #include "ast/NumberNode.h"
 
@@ -58,7 +58,7 @@ private:
     void fp_section(ProcedureNode *proc);
     void statement_sequence(StatementSequenceNode* statements);
     std::unique_ptr<StatementNode> statement();
-    std::unique_ptr<StatementNode> assignment(std::unique_ptr<NamedValueReferenceNode> lvalue);
+    std::unique_ptr<StatementNode> assignment(std::unique_ptr<ReferenceNode> lvalue);
     void procedure_call(ProcedureCallNode *call);
     std::unique_ptr<StatementNode> if_statement();
     std::unique_ptr<StatementNode> loop_statement();
@@ -66,7 +66,7 @@ private:
     std::unique_ptr<StatementNode> repeat_statement();
     std::unique_ptr<StatementNode> for_statement();
     void actual_parameters(ProcedureCallNode *call);
-    std::unique_ptr<ExpressionNode> selector(const NamedValueNode *variable);
+    std::unique_ptr<ExpressionNode> selector(const DeclarationNode *variable);
 
     std::unique_ptr<ValueNode> fold(const ExpressionNode *expr) const;
     int foldNumber(const ExpressionNode *expr) const;

@@ -71,16 +71,16 @@ public:
 class ForLoopNode final : public LoopNode {
 
 private:
-    std::unique_ptr<NamedValueReferenceNode> counter_;
+    std::unique_ptr<ReferenceNode> counter_;
     std::unique_ptr<ExpressionNode> low_, high_;
     int step_;
 
 public:
-    explicit ForLoopNode(FilePos pos, std::unique_ptr<NamedValueReferenceNode> counter,
+    explicit ForLoopNode(FilePos pos, std::unique_ptr<ReferenceNode> counter,
             std::unique_ptr<ExpressionNode> low, std::unique_ptr<ExpressionNode> high, int step);
     ~ForLoopNode() override;
 
-    NamedValueReferenceNode* getCounter() const;
+    ReferenceNode* getCounter() const;
     ExpressionNode* getLow() const;
     ExpressionNode* getHigh() const;
     int getStep() const;

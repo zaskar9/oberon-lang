@@ -7,11 +7,6 @@
 #include "ModuleNode.h"
 #include "NodeVisitor.h"
 
-ModuleNode::ModuleNode(const FilePos pos, const std::string &name, int level) :
-        BlockNode(NodeType::module, pos, level), name_(name), procedures_() {
-}
-
-ModuleNode::~ModuleNode() = default;
 
 const std::string ModuleNode::getName() const {
     return name_;

@@ -14,8 +14,8 @@
 #include "ast/BooleanNode.h"
 #include "ast/NumberNode.h"
 #include "ast/StringNode.h"
-#include "ast/ParameterNode.h"
-#include "ast/NamedValueReferenceNode.h"
+#include "ast/DeclarationNode.h"
+#include "ast/ReferenceNode.h"
 #include "ast/IfThenElseNode.h"
 #include "ast/LoopNode.h"
 #include "ast/AssignmentNode.h"
@@ -127,7 +127,7 @@ void Parser::const_declarations(BlockNode *block) {
             auto expr = expression();
             if (expr->isConstant()) {
                 auto value = fold(expr.get());
-                auto constant = std::make_unique<ConstantNode>(token->getPosition(), name, std::move(value),
+                auto constant = std::make_unique<ConstantDeclarationNode>(token->getPosition(), name, std::move(value),
                         symbols_->getLevel());
                 symbols_->insert(name, constant.get());
                 block->addConstant(std::move(constant));
@@ -288,7 +288,7 @@ void Parser::var_declarations(BlockNode *block) {
                     logger_->error(token->getPosition(), "duplicate definition: " + ident);
                     continue;
                 }
-                auto variable = std::make_unique<VariableNode>(pos, ident, node,
+                auto variable = std::make_unique<VariableDeclarationNode>(pos, ident, node,
                         symbols_->getLevel(), block->getOffset());
                 symbols_->insert(ident, variable.get());
                 block->addVariable(std::move(variable));
@@ -419,13 +419,13 @@ std::unique_ptr<StatementNode> Parser::statement() {
         if (symbol == nullptr) {
             logger_->error(pos, "undefined identifier: " + name + ".");
         } else if (symbol->getNodeType() == NodeType::variable || symbol->getNodeType() == NodeType::parameter) {
-            auto var = dynamic_cast<NamedValueNode*>(symbol);
+            auto var = dynamic_cast<DeclarationNode*>(symbol);
             token = scanner_->peekToken();
-            std::unique_ptr<NamedValueReferenceNode> lvalue;
+            std::unique_ptr<ReferenceNode> lvalue;
             if (token->getType() == TokenType::period || token->getType() == TokenType::lbrack) {
-                lvalue = std::make_unique<NamedValueReferenceNode>(pos, var, selector(var));
+                lvalue = std::make_unique<ReferenceNode>(pos, var, selector(var));
             } else {
-                lvalue = std::make_unique<NamedValueReferenceNode>(pos, var);
+                lvalue = std::make_unique<ReferenceNode>(pos, var);
             }
             token = scanner_->peekToken();
             if (token->getType() == TokenType::op_becomes) {
@@ -458,7 +458,7 @@ std::unique_ptr<StatementNode> Parser::statement() {
 }
 
 // assignment = identifier selector ":=" expression .
-std::unique_ptr<StatementNode> Parser::assignment(std::unique_ptr<NamedValueReferenceNode> lvalue) {
+std::unique_ptr<StatementNode> Parser::assignment(std::unique_ptr<ReferenceNode> lvalue) {
     logger_->debug("", "assignment");
     auto token = scanner_->nextToken(); // skip becomes
     auto expr = expression();
@@ -581,11 +581,11 @@ std::unique_ptr<StatementNode> Parser::for_statement() {
     if (symbol == nullptr) {
         logger_->error(pos, "undefined identifier: " + name + ".");
     } else if (symbol->getNodeType() == NodeType::variable) {
-        auto var = dynamic_cast<VariableNode*>(symbol);
+        auto var = dynamic_cast<VariableDeclarationNode*>(symbol);
         if (var->getType()!=BasicTypeNode::INTEGER) {
             logger_->error(pos, "integer variable expected.");
         }
-        auto counter = std::make_unique<NamedValueReferenceNode>(pos, var);
+        auto counter = std::make_unique<ReferenceNode>(pos, var);
         std::unique_ptr<ExpressionNode> low = nullptr;
         std::unique_ptr<ExpressionNode> high = nullptr;
         int step = 1;
@@ -669,7 +669,7 @@ void Parser::actual_parameters(ProcedureCallNode *call) {
 }
 
 // selector = {"." identifier | "[" expression "]"}.
-std::unique_ptr<ExpressionNode> Parser::selector(const NamedValueNode *variable) {
+std::unique_ptr<ExpressionNode> Parser::selector(const DeclarationNode *variable) {
     logger_->debug("", "selector");
     auto token = scanner_->nextToken();
     if (token->getType() == TokenType::period) {
@@ -678,7 +678,7 @@ std::unique_ptr<ExpressionNode> Parser::selector(const NamedValueNode *variable)
             auto record = dynamic_cast<const RecordTypeNode*>(variable->getType());
             auto field = record->getField(name);
             if (field != nullptr) {
-                return std::make_unique<NamedValueReferenceNode>(token->getPosition(), field);
+                return std::make_unique<ReferenceNode>(token->getPosition(), field);
             } else {
                 logger_->error(token->getPosition(), "unknown record field: " + name + ".");
             }
@@ -785,7 +785,7 @@ std::unique_ptr<ExpressionNode> Parser::factor() {
         auto node = symbols_->lookup(name);
         if (node != nullptr) {
             if (node->getNodeType() == NodeType::constant) {
-                auto constant = dynamic_cast<ConstantNode*>(node);
+                auto constant = dynamic_cast<ConstantDeclarationNode*>(node);
                 auto value = constant->getValue();
                 switch (value->getNodeType()) {
                     case NodeType::boolean:
@@ -805,12 +805,12 @@ std::unique_ptr<ExpressionNode> Parser::factor() {
                         return nullptr;
                 }
             } else if (node->getNodeType() == NodeType::parameter || node->getNodeType() == NodeType::variable) {
-                auto var = dynamic_cast<NamedValueNode*>(node);
+                auto var = dynamic_cast<DeclarationNode*>(node);
                 token = scanner_->peekToken();
                 if (token->getType() == TokenType::period || token->getType() == TokenType::lbrack) {
-                    return std::make_unique<NamedValueReferenceNode>(pos, var, selector(var));
+                    return std::make_unique<ReferenceNode>(pos, var, selector(var));
                 }
-                return std::make_unique<NamedValueReferenceNode>(pos, var);
+                return std::make_unique<ReferenceNode>(pos, var);
             } else {
                 logger_->error(pos, "constant, parameter or variable expected.");
                 return nullptr;
@@ -893,9 +893,9 @@ int Parser::foldNumber(const ExpressionNode *expr) const {
         auto numConst = dynamic_cast<const NumberNode *>(expr);
         return numConst->getValue();
     } else if (expr->getNodeType() == NodeType::name_reference) {
-        auto ref = dynamic_cast<const NamedValueReferenceNode*>(expr);
+        auto ref = dynamic_cast<const ReferenceNode*>(expr);
         if (ref->isConstant()) {
-            auto constant = dynamic_cast<const ConstantNode*>(ref->dereference());
+            auto constant = dynamic_cast<const ConstantDeclarationNode*>(ref->dereference());
             return foldNumber(constant->getValue());
         }
     } else {
@@ -957,9 +957,9 @@ bool Parser::foldBoolean(const ExpressionNode *expr) const {
         auto boolConst = dynamic_cast<const BooleanNode*>(expr);
         return boolConst->getValue();
     } else if (expr->getNodeType() == NodeType::name_reference) {
-        auto ref = dynamic_cast<const NamedValueReferenceNode*>(expr);
+        auto ref = dynamic_cast<const ReferenceNode*>(expr);
         if (ref->isConstant()) {
-            auto constant = dynamic_cast<const ConstantNode*>(ref->dereference());
+            auto constant = dynamic_cast<const ConstantDeclarationNode*>(ref->dereference());
             foldBoolean(constant->getValue());
         }
     } else {
@@ -983,9 +983,9 @@ const std::string Parser::foldString(const ExpressionNode *expr) const {
         auto stringConst = dynamic_cast<const StringNode *>(expr);
         return stringConst->getValue();
     } else if (expr->getNodeType() == NodeType::constant) {
-        auto ref = dynamic_cast<const NamedValueReferenceNode*>(expr);
+        auto ref = dynamic_cast<const ReferenceNode*>(expr);
         if (ref->isConstant()) {
-            auto constant = dynamic_cast<const ConstantNode*>(ref->dereference());
+            auto constant = dynamic_cast<const ConstantDeclarationNode*>(ref->dereference());
             foldString(constant->getValue());
 
         }
@@ -1004,7 +1004,7 @@ bool Parser::checkActualParameter(const ProcedureNode* proc, size_t num, const E
     if (parameter->getType() == expr->getType()) {
         if (parameter->isVar()) {
             if (expr->getNodeType() == NodeType::name_reference) {
-                auto reference = dynamic_cast<const NamedValueReferenceNode*>(expr);
+                auto reference = dynamic_cast<const ReferenceNode*>(expr);
                 auto value = reference->dereference();
                 if (value->getNodeType() == NodeType::constant) {
                     logger_->error(expr->getFilePos(), "illegal actual parameter: cannot pass constant by reference.");

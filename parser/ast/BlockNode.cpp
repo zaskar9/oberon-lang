@@ -28,11 +28,11 @@ void BlockNode::addType(std::unique_ptr<TypeNode> type) {
     types_.push_back(std::move(type));
 }
 
-void BlockNode::addConstant(std::unique_ptr<ConstantNode> constant) {
+void BlockNode::addConstant(std::unique_ptr<ConstantDeclarationNode> constant) {
     constants_.push_back(std::move(constant));
 }
 
-ConstantNode* BlockNode::getConstant(size_t num) const {
+ConstantDeclarationNode* BlockNode::getConstant(size_t num) const {
     return constants_.at(num).get();
 }
 
@@ -52,11 +52,11 @@ size_t BlockNode::getTypeDeclarationCount() const {
     return type_declarations_.size();
 }
 
-void BlockNode::addVariable(std::unique_ptr<VariableNode> variable) {
+void BlockNode::addVariable(std::unique_ptr<VariableDeclarationNode> variable) {
     variables_.push_back(std::move(variable));
 }
 
-VariableNode* BlockNode::getVariable(size_t num) const {
+VariableDeclarationNode* BlockNode::getVariable(size_t num) const {
     return variables_.at(num).get();
 }
 

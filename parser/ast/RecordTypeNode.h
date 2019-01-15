@@ -11,7 +11,7 @@
 #include <memory>
 #include <vector>
 #include "TypeNode.h"
-#include "NamedValueNode.h"
+#include "DeclarationNode.h"
 
 class RecordTypeNode final : public TypeNode {
 

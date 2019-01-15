@@ -72,14 +72,14 @@ void RepeatLoopNode::print(std::ostream& stream) const {
     stream << "REPEAT" << this->getStatements() << "UNTIL" << this->getCondition();
 }
 
-ForLoopNode::ForLoopNode(const FilePos pos, std::unique_ptr<NamedValueReferenceNode> counter,
+ForLoopNode::ForLoopNode(const FilePos pos, std::unique_ptr<ReferenceNode> counter,
         std::unique_ptr<ExpressionNode> low, std::unique_ptr<ExpressionNode> high, int step) :
         LoopNode(NodeType::for_loop, pos), counter_(std::move(counter)), low_(std::move(low)), high_(std::move(high)), step_(step) {
 }
 
 ForLoopNode::~ForLoopNode() = default;
 
-NamedValueReferenceNode* ForLoopNode::getCounter() const {
+ReferenceNode* ForLoopNode::getCounter() const {
     return counter_.get();
 }
 

@@ -11,9 +11,8 @@
 #include <memory>
 #include <vector>
 #include "Node.h"
-#include "ConstantNode.h"
+#include "DeclarationNode.h"
 #include "StatementSequenceNode.h"
-#include "ParameterNode.h"
 
 class ProcedureNode;
 
@@ -24,9 +23,9 @@ private:
 
     std::vector<std::unique_ptr<TypeNode>> types_;
 
-    std::vector<std::unique_ptr<ConstantNode>> constants_;
+    std::vector<std::unique_ptr<ConstantDeclarationNode>> constants_;
     std::vector<std::unique_ptr<TypeDeclarationNode>> type_declarations_;
-    std::vector<std::unique_ptr<VariableNode>> variables_;
+    std::vector<std::unique_ptr<VariableDeclarationNode>> variables_;
     std::unique_ptr<StatementSequenceNode> statements_;
 
 public:
@@ -39,16 +38,16 @@ public:
 
     void addType(std::unique_ptr<TypeNode> type);
 
-    void addConstant(std::unique_ptr<ConstantNode> constant);
-    ConstantNode* getConstant(size_t num) const;
+    void addConstant(std::unique_ptr<ConstantDeclarationNode> constant);
+    ConstantDeclarationNode* getConstant(size_t num) const;
     size_t getConstantCount() const;
 
     void addTypeDeclaration(std::unique_ptr<TypeDeclarationNode> type_declaration);
     TypeDeclarationNode* getTypeDeclaration(size_t num) const;
     size_t getTypeDeclarationCount() const;
 
-    void addVariable(std::unique_ptr<VariableNode> variable);
-    VariableNode* getVariable(size_t num) const;
+    void addVariable(std::unique_ptr<VariableDeclarationNode> variable);
+    VariableDeclarationNode* getVariable(size_t num) const;
     size_t getVariableCount() const;
 
     virtual void addProcedure(std::unique_ptr<ProcedureNode> procedure) = 0;

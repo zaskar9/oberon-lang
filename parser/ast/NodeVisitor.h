@@ -9,9 +9,10 @@
 
 
 #include "ModuleNode.h"
+#include "DeclarationNode.h"
 #include "UnaryExpressionNode.h"
 #include "BinaryExpressionNode.h"
-#include "NamedValueReferenceNode.h"
+#include "ReferenceNode.h"
 #include "NumberNode.h"
 #include "StringNode.h"
 #include "BooleanNode.h"
@@ -28,12 +29,12 @@ public:
     virtual void visit(ModuleNode &node) = 0;
     virtual void visit(ProcedureNode &node) = 0;
 
-    virtual void visit(NamedValueReferenceNode &node) = 0;
-    virtual void visit(ConstantNode &node) = 0;
+    virtual void visit(ReferenceNode &node) = 0;
+    virtual void visit(ConstantDeclarationNode &node) = 0;
     virtual void visit(FieldNode &node) = 0;
     virtual void visit(ParameterNode &node) = 0;
     virtual void visit(TypeDeclarationNode &node) = 0;
-    virtual void visit(VariableNode &node) = 0;
+    virtual void visit(VariableDeclarationNode &node) = 0;
 
     virtual void visit(BooleanNode &node) = 0;
     virtual void visit(NumberNode &node) = 0;
