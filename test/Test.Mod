@@ -17,6 +17,7 @@ BEGIN
     IF dim < 1 THEN
         Dim := 1
     ELSIF dim > Dim THEN
+        dim := Dim *;
         dim := Dim +
     ELSIF 0 # 1 THEN
         dim := Dim - 1;

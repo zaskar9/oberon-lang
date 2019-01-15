@@ -70,8 +70,15 @@ std::ostream& operator<<(std::ostream &stream, const TokenType &type) {
         case TokenType::kw_then: result = "THEN"; break;
         case TokenType::kw_else: result = "ELSE"; break;
         case TokenType::kw_elsif: result = "ELSIF"; break;
+        case TokenType::kw_loop: result = "LOOP"; break;
+        case TokenType::kw_exit: result = "EXIT"; break;
         case TokenType::kw_while: result = "WHILE"; break;
         case TokenType::kw_do: result = "DO"; break;
+        case TokenType::kw_repeat: result = "REPEAT"; break;
+        case TokenType::kw_until: result = "UNTIL"; break;
+        case TokenType::kw_for: result = "FOR"; break;
+        case TokenType::kw_to: result = "TO"; break;
+        case TokenType::kw_by: result = "BY"; break;
         case TokenType::kw_array: result = "ARRAY"; break;
         case TokenType::kw_record: result = "RECORD"; break;
         case TokenType::kw_const: result = "CONST"; break;

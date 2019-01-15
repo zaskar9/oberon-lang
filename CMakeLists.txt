@@ -43,8 +43,13 @@ add_executable(oberon0c main.cpp
         parser/ast/StatementSequenceNode.cpp parser/ast/StatementSequenceNode.h
         parser/ast/NodePrettyPrinter.cpp parser/ast/NodePrettyPrinter.h)
 
-find_package(Boost 1.68.0 COMPONENTS log REQUIRED)
-    if (Boost_FOUND)
-        include_directories(${Boost_INCLUDE_DIRS})
-        target_link_libraries(oberon0c ${Boost_LIBRARIES})
-    endif()
+#find_package(Boost 1.68.0 COMPONENTS log log_setup system REQUIRED)
+#    if (Boost_FOUND)
+#        include_directories(${Boost_INCLUDE_DIRS})
+#        target_link_libraries(oberon0c
+#                ${Boost_LOG_SETUP_LIBRARY}
+#                ${Boost_LOG_LIBRARY}
+#                ${Boost_SYSTEM_LIBRARY})
+#    endif()
+#
+#set_target_properties(oberon0c PROPERTIES COMPILE_DEFINITIONS BOOST_LOG_DYN_LINK)

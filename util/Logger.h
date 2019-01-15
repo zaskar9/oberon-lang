@@ -3,13 +3,12 @@
  *
  * Created by Michael Grossniklaus on 2/8/18.
  */
-#ifndef OBERON0C_ERRORLOG_H
-#define OBERON0C_ERRORLOG_H
+#ifndef OBERON0C_LOGGER_H
+#define OBERON0C_LOGGER_H
 
 #include <string>
 #include <iostream>
 #include <sstream>
-#include <boost/log/core.hpp>
 
 struct FilePos {
     std::string fileName;
@@ -30,9 +29,12 @@ private:
     void log(LogLevel level, const std::string &fileName, const std::string &msg);
 
 public:
-    explicit Logger();
-    explicit Logger(LogLevel level, std::ostream *out, std::ostream *err);
-    ~Logger();
+
+    explicit Logger() : Logger(LogLevel::ERROR, &std::cout, &std::cerr) { };
+    explicit Logger(LogLevel level, std::ostream *out) : Logger(level, out, out) { };
+    explicit Logger(LogLevel level, std::ostream *out, std::ostream *err) :
+            level_(level), out_(out), err_(err), debugs_(0), infos_(0), warnings_(0), errors_(0) { };
+    ~Logger() = default;
 
     void error(FilePos pos, const std::string &msg);
     void error(const std::string &fileName, const std::string &msg);
@@ -57,4 +59,4 @@ static std::string to_string(T obj) {
 }
 
 
-#endif //OBERON0C_ERRORLOG_H
+#endif //OBERON0C_LOGGER_H

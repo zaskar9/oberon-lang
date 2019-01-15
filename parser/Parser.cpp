@@ -747,7 +747,8 @@ std::unique_ptr<ExpressionNode> Parser::simple_expression() {
         auto temp = std::make_unique<BinaryExpressionNode>(token->getPosition(), op, std::move(expr), term());
         auto lhs = temp->getLeftExpression();
         auto rhs = temp->getRightExpression();
-        if (lhs != nullptr && lhs->isConstant() && rhs != nullptr && rhs->isConstant()) {
+        if (lhs != nullptr && lhs->isConstant() &&
+            rhs != nullptr && rhs->isConstant()) {
             expr = fold(temp.get());
         } else {
             expr = std::move(temp);
@@ -769,7 +770,10 @@ std::unique_ptr<ExpressionNode> Parser::term() {
         auto token = scanner_->nextToken();
         OperatorType op = token_to_operator(token->getType());
         auto temp = std::make_unique<BinaryExpressionNode>(token->getPosition(), op, std::move(expr), factor());
-        if (temp->getLeftExpression()->isConstant() && temp->getRightExpression()->isConstant()) {
+        auto lhs = temp->getLeftExpression();
+        auto rhs = temp->getRightExpression();
+        if (lhs != nullptr && lhs->isConstant() &&
+            rhs != nullptr && rhs->isConstant()) {
             expr = fold(temp.get());
         } else {
             expr = std::move(temp);

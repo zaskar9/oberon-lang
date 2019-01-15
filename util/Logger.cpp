@@ -4,17 +4,8 @@
  * Created by Michael Grossniklaus on 2/8/18.
  */
 
-#include <iomanip>
 #include "Logger.h"
-
-Logger::Logger() : Logger(LogLevel::ERROR, &std::cout, &std::cerr) {
-}
-
-Logger::Logger(LogLevel level, std::ostream *out, std::ostream *err) :
-        level_(level), out_(out), err_(err), debugs_(0), infos_(0), warnings_(0), errors_(0) {
-}
-
-Logger::~Logger() = default;
+#include <iomanip>
 
 void Logger::log(const LogLevel level, const std::string &fileName, int lineNo, int charNo,
                  const std::string &msg) {
@@ -32,10 +23,10 @@ void Logger::log(const LogLevel level, const std::string &fileName, int lineNo, 
         }
         *out << "[" ;
         switch (level) {
-            case LogLevel::DEBUG:   *out << "DEBUG";   debugs_++;   break;
-            case LogLevel::INFO:    *out << "INFO";    infos_++;    break;
-            case LogLevel::WARNING: *out << "WARNING"; warnings_++; break;
-            case LogLevel::ERROR:   *out << "ERROR";   errors_++;   break;
+            case LogLevel::DEBUG:   *out << "debug";   debugs_++;   break;
+            case LogLevel::INFO:    *out << "info";    infos_++;    break;
+            case LogLevel::WARNING: *out << "warning"; warnings_++; break;
+            case LogLevel::ERROR:   *out << "error";   errors_++;   break;
         }
         *out << "] " << msg << std::endl;
     }
