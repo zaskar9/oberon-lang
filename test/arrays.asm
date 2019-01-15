@@ -18,13 +18,13 @@ startloop_1:
          mov      [r13,r12*4], r12
          inc      r12
          cmp      r12, 20
-         jle      startloop_1
+         jl       startloop_1
 endloop_1:
          xor      rax, rax
          mov      rsp, rbp
          pop      rbp
          ret
-         
+
 main:    push     rbp
          mov      rbp, rsp
          call     init

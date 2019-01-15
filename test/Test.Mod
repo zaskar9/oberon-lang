@@ -58,7 +58,7 @@ BEGIN
     END
 END Init;
 
-(* PROCEDURE Initialize();
+PROCEDURE Initialize();
 VAR i, j: INTEGER;
 BEGIN
     FOR i := 0 TO Dim DO
@@ -66,7 +66,7 @@ BEGIN
             a[i] := j
         END
     END
-END Initialize; *)
+END Initialize;
 
 (* Swaps the two values passed as var-parameters. *)
 PROCEDURE Swap(VAR a, b: INTEGER);
