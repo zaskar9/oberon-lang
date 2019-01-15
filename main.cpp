@@ -15,17 +15,17 @@ int main(const int argc, const char *argv[]) {
         return 1;
     }
     std::string filename = argv[1];
-    auto logger = std::make_unique<Logger>();
+    auto logger = std::make_unique<Logger>(LogLevel::INFO, &std::cout, &std::cout);
     logger->setLevel(LogLevel::INFO);
     auto scanner = std::make_unique<Scanner>(filename, logger.get());
     auto parser = std::make_unique<Parser>(scanner.get(), logger.get());
     auto ast_root = parser->parse();
-    auto printer = std::make_unique<NodePrettyPrinter>(std::cout);
     logger->info("", "Compilation complete: " +
             std::to_string(logger->getErrorCount())   + " error(s), " +
             std::to_string(logger->getWarningCount()) + " warning(s), " +
             std::to_string(logger->getInfoCount())    + " message(s).");
     if (logger->getErrorCount() == 0) {
+        auto printer = std::make_unique<NodePrettyPrinter>(std::cout);
         printer->visit(*ast_root.get());
     }
     exit(0);

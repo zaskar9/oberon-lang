@@ -39,5 +39,12 @@ add_executable(oberon0c main.cpp
         parser/ast/AssignmentNode.cpp parser/ast/AssignmentNode.h
         parser/ast/ProcedureCallNode.cpp parser/ast/ProcedureCallNode.h
         parser/ast/IfThenElseNode.cpp parser/ast/IfThenElseNode.h
+        parser/ast/LoopNode.cpp parser/ast/LoopNode.h
         parser/ast/StatementSequenceNode.cpp parser/ast/StatementSequenceNode.h
-        parser/ast/NodePrettyPrinter.cpp parser/ast/NodePrettyPrinter.h parser/ast/LoopNode.cpp parser/ast/LoopNode.h)
+        parser/ast/NodePrettyPrinter.cpp parser/ast/NodePrettyPrinter.h)
+
+find_package(Boost 1.68.0 COMPONENTS log REQUIRED)
+    if (Boost_FOUND)
+        include_directories(${Boost_INCLUDE_DIRS})
+        target_link_libraries(oberon0c ${Boost_LIBRARIES})
+    endif()

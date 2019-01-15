@@ -9,6 +9,7 @@
 #include <string>
 #include <iostream>
 #include <sstream>
+#include <boost/log/core.hpp>
 
 struct FilePos {
     std::string fileName;

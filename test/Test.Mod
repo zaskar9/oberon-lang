@@ -134,4 +134,4 @@ BEGIN
     END;
     Write("]");
     WriteLn()
-END Sort.
+END Tester.
