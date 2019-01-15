@@ -283,16 +283,18 @@ void Parser::var_declarations(BlockNode *block) {
         auto pos = token->getPosition();
         if (token->getType() == TokenType::colon) {
             auto node = type(block);
-            for (auto&& ident : idents) {
-                if (symbols_->isDuplicate(ident)) {
-                    logger_->error(token->getPosition(), "duplicate definition: " + ident);
-                    continue;
+            if (node != nullptr) {
+                for (auto &&ident : idents) {
+                    if (symbols_->isDuplicate(ident)) {
+                        logger_->error(token->getPosition(), "duplicate definition: " + ident);
+                        continue;
+                    }
+                    auto variable = std::make_unique<VariableDeclarationNode>(pos, ident, node,
+                                                                              symbols_->getLevel(), block->getOffset());
+                    symbols_->insert(ident, variable.get());
+                    block->addVariable(std::move(variable));
+                    block->incOffset(node->getSize());
                 }
-                auto variable = std::make_unique<VariableDeclarationNode>(pos, ident, node,
-                        symbols_->getLevel(), block->getOffset());
-                symbols_->insert(ident, variable.get());
-                block->addVariable(std::move(variable));
-                block->incOffset(node->getSize());
             }
             token = scanner_->nextToken();
             if (token->getType() != TokenType::semicolon) {
@@ -743,7 +745,9 @@ std::unique_ptr<ExpressionNode> Parser::simple_expression() {
         auto token = scanner_->nextToken();
         OperatorType op = token_to_operator(token->getType());
         auto temp = std::make_unique<BinaryExpressionNode>(token->getPosition(), op, std::move(expr), term());
-        if (temp->getLeftExpression()->isConstant() && temp->getRightExpression()->isConstant()) {
+        auto lhs = temp->getLeftExpression();
+        auto rhs = temp->getRightExpression();
+        if (lhs != nullptr && lhs->isConstant() && rhs != nullptr && rhs->isConstant()) {
             expr = fold(temp.get());
         } else {
             expr = std::move(temp);

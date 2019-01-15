@@ -1,5 +1,5 @@
-(* Implementation of the Bubble Sort algorithm. *)
-MODULE Sort;
+(* Test module for the Oberon-0 compiler. *)
+MODULE Test;
 
 (* Length of the array to be sorted. *)
 CONST Dim = 4 + 2 * 8;
@@ -11,7 +11,7 @@ TYPE Point2D = RECORD x, y: INTEGER END;
 VAR a: ARRAY Dim OF INTEGER;
     i: INTEGER;
     point: Point2D;
-(*
+
 PROCEDURE CheckDimension(VAR dim: INTEGER);
 BEGIN
     IF dim < 1 THEN
@@ -46,7 +46,6 @@ BEGIN
         IF 1 > 2 THEN i := 1 ELSE i := 2 END
     END
 END Test;
-*)
 
 (* Initializes the array. *)
 PROCEDURE Init();
@@ -59,7 +58,7 @@ BEGIN
     END
 END Init;
 
-PROCEDURE Initialize();
+(* PROCEDURE Initialize();
 VAR i, j: INTEGER;
 BEGIN
     FOR i := 0 TO Dim DO
@@ -67,7 +66,7 @@ BEGIN
             a[i] := j
         END
     END
-END Initialize;
+END Initialize; *)
 
 (* Swaps the two values passed as var-parameters. *)
 PROCEDURE Swap(VAR a, b: INTEGER);
@@ -121,20 +120,18 @@ END QuickSort;
 
 (* Main program. *)
 BEGIN
-    Init;
     i := 1;
     REPEAT
+        Init();
         QuickSort();
         i := i + 1
-    UNTIL i > Dim DIV 2
-
-
-    (* i := 1;
+    UNTIL i > Dim DIV 2;
+    i := 1;
     Write("[");
     WHILE i <= Dim DO
         Write(a[i]);
         IF i + 1 < Dim THEN Write(", ") END
     END;
     Write("]");
-    WriteLn() *)
+    WriteLn()
 END Sort.
