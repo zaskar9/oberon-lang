@@ -15,7 +15,7 @@ init:    push     rbp
          jge      endloop_1
 startloop_1:
          lea      r13, [rel num]
-         mov      [r13,r12*4], r12
+         mov      [r13,r12*4], r12d
          inc      r12
          cmp      r12, 20
          jl       startloop_1
@@ -27,11 +27,13 @@ endloop_1:
 
 main:    push     rbp
          mov      rbp, rsp
+         lea      r13, [rel num]
+         mov      dword [r13+80], 9
          call     init
          xor      rax, rax
          mov      rdi, msg
          lea      r13, [rel num]
-         mov      rsi, [r13+76]
+         mov      rsi, [r13+72]
          call     printf
          xor      rax, rax
          mov      rsp, rbp

@@ -12,6 +12,16 @@ int main(int argc, const char* argv[])
    exit(0);
 }
 
+int compute()
+{
+   int a = 0, b = 0;
+   int* x = &a;
+   int* y = &b;
+   printf("%d\n", x);
+   printf("%d\n", y);
+   return *x + *y;
+}
+
 int compare(int a, int b, int c, int d, int e, int f)
 {
    return a < b && c < d;
