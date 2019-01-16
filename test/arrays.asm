@@ -3,7 +3,7 @@
          extern   printf
 
          section  .data
-msg:     db       "The value is %d!", 10, 0
+msg:     db       "The value is %ld!", 10, 0
          section  .bss
 num:     resb     80                        ; reserve 20 * 4 bytes
 
@@ -33,7 +33,7 @@ main:    push     rbp
          xor      rax, rax
          mov      rdi, msg
          lea      r13, [rel num]
-         mov      rsi, [r13+72]
+         mov      esi, [r13+80]
          call     printf
          xor      rax, rax
          mov      rsp, rbp
