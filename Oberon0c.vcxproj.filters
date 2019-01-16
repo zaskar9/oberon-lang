@@ -30,15 +30,6 @@
     <ClCompile Include="parser\ast\BinaryExpressionNode.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="parser\ast\DeclarationsNode.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="parser\ast\BooleanLiteralNode.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="parser\ast\ConstantDeclarationNode.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="parser\ast\ExpressionNode.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -51,12 +42,6 @@
     <ClCompile Include="parser\ast\Node.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="parser\ast\IntegerLiteralNode.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="parser\ast\ParameterNode.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="parser\ast\ProcedureNode.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -64,9 +49,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="parser\ast\ReferenceNode.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="parser\ast\StringLiteralNode.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="parser\ast\TypeNode.cpp">
@@ -114,9 +96,6 @@
     <ClCompile Include="parser\ast\IfThenElseNode.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="parser\ast\WhileLoopNode.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="parser\ast\ProcedureCallNode.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -124,6 +103,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="scanner\UndefinedToken.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="parser\ast\BlockNode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="parser\ast\LoopNode.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -140,15 +125,6 @@
     <ClInclude Include="parser\ast\BinaryExpressionNode.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="parser\ast\DeclarationsNode.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="parser\ast\BooleanLiteralNode.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="parser\ast\ConstantDeclarationNode.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="parser\ast\ExpressionNode.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -161,12 +137,6 @@
     <ClInclude Include="parser\ast\Node.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="parser\ast\IntegerLiteralNode.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="parser\ast\ParameterNode.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="parser\ast\ProcedureNode.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -174,9 +144,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="parser\ast\ReferenceNode.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="parser\ast\StringLiteralNode.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="parser\ast\TypeNode.h">
@@ -224,9 +191,6 @@
     <ClInclude Include="parser\ast\IfThenElseNode.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="parser\ast\WhileLoopNode.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="parser\ast\ProcedureCallNode.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -234,6 +198,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="scanner\UndefinedToken.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="parser\ast\BlockNode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="parser\ast\LoopNode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="parser\ast\NodeVisitor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
