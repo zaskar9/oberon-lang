@@ -22,10 +22,7 @@ add_executable(oberon0c main.cpp
         parser/ast/ExpressionNode.cpp parser/ast/ExpressionNode.h
         parser/ast/UnaryExpressionNode.cpp parser/ast/UnaryExpressionNode.h
         parser/ast/BinaryExpressionNode.cpp parser/ast/BinaryExpressionNode.h
-        parser/ast/ValueNode.cpp parser/ast/ValueNode.h
-        parser/ast/BooleanNode.cpp parser/ast/BooleanNode.h
-        parser/ast/NumberNode.cpp parser/ast/NumberNode.h
-        parser/ast/StringNode.cpp parser/ast/StringNode.h
+        parser/ast/LiteralNode.cpp parser/ast/LiteralNode.h
         parser/ast/TypeNode.cpp parser/ast/TypeNode.h
         parser/ast/BasicTypeNode.cpp parser/ast/BasicTypeNode.h
         parser/ast/ArrayTypeNode.cpp parser/ast/ArrayTypeNode.h

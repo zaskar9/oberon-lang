@@ -7,7 +7,7 @@
 #ifndef OBERON0C_AST_H
 #define OBERON0C_AST_H
 
-
+#include <utility>
 #include <list>
 #include <string>
 #include <ostream>
@@ -18,7 +18,7 @@ enum class NodeType : char {
     unary_expression, binary_expression,
     record_type, array_type, basic_type,
     field, parameter, variable, constant, type_declaration,
-    number, boolean, string,
+    integer, boolean, string,
     name_reference,
     assignment, loop, while_loop, repeat_loop, for_loop, if_then_else, else_if, procedure_call
 };

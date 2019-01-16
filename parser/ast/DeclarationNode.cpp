@@ -27,7 +27,7 @@ int DeclarationNode::getOffset() const {
     return offset_;
 }
 
-ValueNode* ConstantDeclarationNode::getValue() const {
+LiteralNode* ConstantDeclarationNode::getValue() const {
     return value_.get();
 }
 

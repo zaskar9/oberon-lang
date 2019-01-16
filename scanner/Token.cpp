@@ -36,7 +36,7 @@ std::ostream& operator<<(std::ostream &stream, const TokenType &type) {
         case TokenType::undef: result = "UNDEFINED"; break;
         case TokenType::const_true: result = "TRUE"; break;
         case TokenType::const_false: result = "FALSE"; break;
-        case TokenType::const_number: result = "number"; break;
+        case TokenType::const_number: result = "integer"; break;
         case TokenType::const_string: result = "string"; break;
         case TokenType::const_ident: result = "identifier"; break;
         case TokenType::period: result = "."; break;

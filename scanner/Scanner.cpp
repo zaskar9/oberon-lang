@@ -76,7 +76,7 @@ const Token* Scanner::next() {
             // Scan identifier
             token = ident();
         } else if ((ch_ >= '0') && (ch_ <= '9')) {
-            // Scan number
+            // Scan integer
             token = new NumberToken(pos, number());
         } else {
             switch (ch_) {
@@ -280,7 +280,7 @@ int Scanner::number() {
     } while (((ch_ >= '0') && (ch_ <= '9')) ||
              ((ch_ >= 'A') && (ch_ <= 'F')));
     if (ch_ == 'H') {
-        // hexadecimal number identified by trailing 'H'
+        // hexadecimal integer identified by trailing 'H'
         isHex = true;
         read();
     }

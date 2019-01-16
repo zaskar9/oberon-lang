@@ -11,9 +11,6 @@
 #include "../scanner/StringToken.h"
 #include "ast/UnaryExpressionNode.h"
 #include "ast/BinaryExpressionNode.h"
-#include "ast/BooleanNode.h"
-#include "ast/NumberNode.h"
-#include "ast/StringNode.h"
 #include "ast/DeclarationNode.h"
 #include "ast/ReferenceNode.h"
 #include "ast/IfThenElseNode.h"
@@ -783,7 +780,7 @@ std::unique_ptr<ExpressionNode> Parser::term() {
     return expr;
 }
 
-// factor = identifier { selector } | number | string | "TRUE" | "FALSE" | "(" expression ")" | "~" factor .
+// factor = identifier { selector } | integer | string | "TRUE" | "FALSE" | "(" expression ")" | "~" factor .
 std::unique_ptr<ExpressionNode> Parser::factor() {
     logger_->debug("", "factor");
     auto token = scanner_->peekToken();
@@ -797,17 +794,17 @@ std::unique_ptr<ExpressionNode> Parser::factor() {
                 auto value = constant->getValue();
                 switch (value->getNodeType()) {
                     case NodeType::boolean:
-                        BooleanNode* boolean;
-                        boolean = dynamic_cast<BooleanNode*>(value);
-                        return std::make_unique<BooleanNode>(pos, boolean->getValue());
-                    case NodeType::number:
-                        NumberNode* number;
-                        number = dynamic_cast<NumberNode*>(value);
-                        return std::make_unique<NumberNode>(pos, number->getValue());
+                        BooleanLiteralNode* boolean;
+                        boolean = dynamic_cast<BooleanLiteralNode*>(value);
+                        return std::make_unique<BooleanLiteralNode>(pos, boolean->getValue());
+                    case NodeType::integer:
+                        IntegerLiteralNode* number;
+                        number = dynamic_cast<IntegerLiteralNode*>(value);
+                        return std::make_unique<IntegerLiteralNode>(pos, number->getValue());
                     case NodeType::string:
-                        StringNode* string;
-                        string = dynamic_cast<StringNode*>(value);
-                        return std::make_unique<StringNode>(pos, string->getValue());
+                        StringLiteralNode* string;
+                        string = dynamic_cast<StringLiteralNode*>(value);
+                        return std::make_unique<StringLiteralNode>(pos, string->getValue());
                     default:
                         logger_->error(pos, "unknown type of constant value");
                         return nullptr;
@@ -830,17 +827,17 @@ std::unique_ptr<ExpressionNode> Parser::factor() {
     } else if (token->getType() == TokenType::const_number) {
         auto tmp = scanner_->nextToken();
         auto number = dynamic_cast<const NumberToken*>(tmp.get());
-        return std::make_unique<NumberNode>(number->getPosition(), number->getValue());
+        return std::make_unique<IntegerLiteralNode>(number->getPosition(), number->getValue());
     } else if (token->getType() == TokenType::const_string) {
         auto tmp = scanner_->nextToken();
         auto string = dynamic_cast<const StringToken*>(tmp.get());
-        return std::make_unique<StringNode>(string->getPosition(), string->getValue());
+        return std::make_unique<StringLiteralNode>(string->getPosition(), string->getValue());
     } else if (token->getType() == TokenType::const_true) {
         scanner_->nextToken();
-        return std::make_unique<BooleanNode>(token->getPosition(), true);
+        return std::make_unique<BooleanLiteralNode>(token->getPosition(), true);
     } else if (token->getType() == TokenType::const_false) {
         scanner_->nextToken();
-        return std::make_unique<BooleanNode>(token->getPosition(), false);
+        return std::make_unique<BooleanLiteralNode>(token->getPosition(), false);
     } else if (token->getType() == TokenType::lparen) {
         scanner_->nextToken();
         auto expr = expression();
@@ -860,14 +857,14 @@ std::unique_ptr<ExpressionNode> Parser::factor() {
     }
 }
 
-std::unique_ptr<ValueNode> Parser::fold(const ExpressionNode *expr) const {
+std::unique_ptr<LiteralNode> Parser::fold(const ExpressionNode *expr) const {
     auto type = expr->getType();
     if (type == BasicTypeNode::INTEGER) {
-        return std::make_unique<NumberNode>(expr->getFilePos(), foldNumber(expr));
+        return std::make_unique<IntegerLiteralNode>(expr->getFilePos(), foldNumber(expr));
     } else if (type == BasicTypeNode::BOOLEAN) {
-        return std::make_unique<BooleanNode>(expr->getFilePos(), foldBoolean(expr));
+        return std::make_unique<BooleanLiteralNode>(expr->getFilePos(), foldBoolean(expr));
     } else if (type == BasicTypeNode::STRING) {
-        return std::make_unique<StringNode>(expr->getFilePos(), foldString(expr));
+        return std::make_unique<StringLiteralNode>(expr->getFilePos(), foldString(expr));
     } else {
         logger_->error(expr->getFilePos(), "incompatible types.");
         return nullptr;
@@ -897,8 +894,8 @@ int Parser::foldNumber(const ExpressionNode *expr) const {
             default:
                 logger_->error(binExpr->getFilePos(), "incompatible operator.");
         }
-    } else if (expr->getNodeType() == NodeType::number) {
-        auto numConst = dynamic_cast<const NumberNode *>(expr);
+    } else if (expr->getNodeType() == NodeType::integer) {
+        auto numConst = dynamic_cast<const IntegerLiteralNode *>(expr);
         return numConst->getValue();
     } else if (expr->getNodeType() == NodeType::name_reference) {
         auto ref = dynamic_cast<const ReferenceNode*>(expr);
@@ -962,7 +959,7 @@ bool Parser::foldBoolean(const ExpressionNode *expr) const {
             logger_->error(expr->getFilePos(), "incompatible expression.");
         }
     } else if (expr->getNodeType() == NodeType::boolean) {
-        auto boolConst = dynamic_cast<const BooleanNode*>(expr);
+        auto boolConst = dynamic_cast<const BooleanLiteralNode*>(expr);
         return boolConst->getValue();
     } else if (expr->getNodeType() == NodeType::name_reference) {
         auto ref = dynamic_cast<const ReferenceNode*>(expr);
@@ -988,7 +985,7 @@ const std::string Parser::foldString(const ExpressionNode *expr) const {
                 logger_->error(binExpr->getFilePos(), "incompatible operator.");
         }
     } else if (expr->getNodeType() == NodeType::string) {
-        auto stringConst = dynamic_cast<const StringNode *>(expr);
+        auto stringConst = dynamic_cast<const StringLiteralNode *>(expr);
         return stringConst->getValue();
     } else if (expr->getNodeType() == NodeType::constant) {
         auto ref = dynamic_cast<const ReferenceNode*>(expr);

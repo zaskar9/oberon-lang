@@ -144,15 +144,15 @@ void NodePrettyPrinter::visit(VariableDeclarationNode &node) {
     stream_ << ';' << std::endl;
 }
 
-void NodePrettyPrinter::visit(BooleanNode &node) {
+void NodePrettyPrinter::visit(BooleanLiteralNode &node) {
     stream_ << (node.getValue() ? "TRUE" : "FALSE");
 }
 
-void NodePrettyPrinter::visit(NumberNode &node) {
+void NodePrettyPrinter::visit(IntegerLiteralNode &node) {
     stream_ << node.getValue();
 }
 
-void NodePrettyPrinter::visit(StringNode &node) {
+void NodePrettyPrinter::visit(StringLiteralNode &node) {
     stream_ << node.getValue();
 }
 

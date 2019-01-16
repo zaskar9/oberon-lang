@@ -1,5 +1,5 @@
 /*
- * Implementation of the number tokens used by parser of the Oberon-0 compiler.
+ * Implementation of the integer tokens used by parser of the Oberon-0 compiler.
  *
  * Created by Michael Grossniklaus on 2/23/18.
  */

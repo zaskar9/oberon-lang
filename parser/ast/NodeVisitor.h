@@ -13,9 +13,7 @@
 #include "UnaryExpressionNode.h"
 #include "BinaryExpressionNode.h"
 #include "ReferenceNode.h"
-#include "NumberNode.h"
-#include "StringNode.h"
-#include "BooleanNode.h"
+#include "LiteralNode.h"
 #include "ArrayTypeNode.h"
 #include "RecordTypeNode.h"
 #include "ProcedureCallNode.h"
@@ -36,9 +34,9 @@ public:
     virtual void visit(TypeDeclarationNode &node) = 0;
     virtual void visit(VariableDeclarationNode &node) = 0;
 
-    virtual void visit(BooleanNode &node) = 0;
-    virtual void visit(NumberNode &node) = 0;
-    virtual void visit(StringNode &node) = 0;
+    virtual void visit(BooleanLiteralNode &node) = 0;
+    virtual void visit(IntegerLiteralNode &node) = 0;
+    virtual void visit(StringLiteralNode &node) = 0;
     virtual void visit(UnaryExpressionNode &node) = 0;
     virtual void visit(BinaryExpressionNode &node) = 0;
 

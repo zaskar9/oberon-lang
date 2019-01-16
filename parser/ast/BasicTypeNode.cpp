@@ -7,12 +7,6 @@
 #include "BasicTypeNode.h"
 #include "NodeVisitor.h"
 
-BasicTypeNode::BasicTypeNode(const std::string &name, const int size) :
-        TypeNode(NodeType::basic_type, { }, size), name_(name) {
-}
-
-BasicTypeNode::~BasicTypeNode() = default;
-
 const std::string BasicTypeNode::getName() const {
     return name_;
 }

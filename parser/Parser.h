@@ -14,7 +14,7 @@
 #include "../scanner/Scanner.h"
 #include "../util/Logger.h"
 #include "ast/Node.h"
-#include "ast/ValueNode.h"
+#include "ast/LiteralNode.h"
 #include "ast/ExpressionNode.h"
 #include "ast/TypeNode.h"
 #include "ast/ArrayTypeNode.h"
@@ -22,14 +22,12 @@
 #include "ast/ProcedureNode.h"
 #include "ast/ModuleNode.h"
 #include "ast/StatementNode.h"
-#include "symbol/SymbolTable.h"
 #include "ast/StatementSequenceNode.h"
 #include "ast/ReferenceNode.h"
 #include "ast/ProcedureCallNode.h"
-#include "ast/NumberNode.h"
+#include "symbol/SymbolTable.h"
 
-class Parser
-{
+class Parser {
 
 private:
     Scanner *scanner_;
@@ -68,7 +66,7 @@ private:
     void actual_parameters(ProcedureCallNode *call);
     std::unique_ptr<ExpressionNode> selector(const DeclarationNode *variable);
 
-    std::unique_ptr<ValueNode> fold(const ExpressionNode *expr) const;
+    std::unique_ptr<LiteralNode> fold(const ExpressionNode *expr) const;
     int foldNumber(const ExpressionNode *expr) const;
     bool foldBoolean(const ExpressionNode *expr) const;
     const std::string foldString(const ExpressionNode *expr) const;

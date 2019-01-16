@@ -33,7 +33,7 @@
     <ClCompile Include="parser\ast\DeclarationsNode.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="parser\ast\BooleanNode.cpp">
+    <ClCompile Include="parser\ast\BooleanLiteralNode.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="parser\ast\ConstantDeclarationNode.cpp">
@@ -51,7 +51,7 @@
     <ClCompile Include="parser\ast\Node.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="parser\ast\NumberNode.cpp">
+    <ClCompile Include="parser\ast\IntegerLiteralNode.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="parser\ast\ParameterNode.cpp">
@@ -66,7 +66,7 @@
     <ClCompile Include="parser\ast\ReferenceNode.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="parser\ast\StringNode.cpp">
+    <ClCompile Include="parser\ast\StringLiteralNode.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="parser\ast\TypeNode.cpp">
@@ -75,7 +75,7 @@
     <ClCompile Include="parser\ast\UnaryExpressionNode.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="parser\ast\ValueNode.cpp">
+    <ClCompile Include="parser\ast\LiteralNode.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="parser\symbol\SymbolTable.cpp">
@@ -143,7 +143,7 @@
     <ClInclude Include="parser\ast\DeclarationsNode.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="parser\ast\BooleanNode.h">
+    <ClInclude Include="parser\ast\BooleanLiteralNode.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="parser\ast\ConstantDeclarationNode.h">
@@ -161,7 +161,7 @@
     <ClInclude Include="parser\ast\Node.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="parser\ast\NumberNode.h">
+    <ClInclude Include="parser\ast\IntegerLiteralNode.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="parser\ast\ParameterNode.h">
@@ -176,7 +176,7 @@
     <ClInclude Include="parser\ast\ReferenceNode.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="parser\ast\StringNode.h">
+    <ClInclude Include="parser\ast\StringLiteralNode.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="parser\ast\TypeNode.h">
@@ -185,7 +185,7 @@
     <ClInclude Include="parser\ast\UnaryExpressionNode.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="parser\ast\ValueNode.h">
+    <ClInclude Include="parser\ast\LiteralNode.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="parser\symbol\SymbolTable.h">

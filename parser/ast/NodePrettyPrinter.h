@@ -35,9 +35,9 @@ public:
     void visit(ParameterNode &node) override;
     void visit(VariableDeclarationNode &node) override;
 
-    void visit(BooleanNode &node) override;
-    void visit(NumberNode &node) override;
-    void visit(StringNode &node) override;
+    void visit(BooleanLiteralNode &node) override;
+    void visit(IntegerLiteralNode &node) override;
+    void visit(StringLiteralNode &node) override;
     void visit(UnaryExpressionNode &node) override;
     void visit(BinaryExpressionNode &node) override;
 

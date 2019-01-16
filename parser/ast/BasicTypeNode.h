@@ -4,8 +4,8 @@
  * Created by Michael Grossniklaus on 2/9/18.
  */
 
-#ifndef OBERON0C_BASICTYPESYMBOL_H
-#define OBERON0C_BASICTYPESYMBOL_H
+#ifndef OBERON0C_BASICTYPENODE_H
+#define OBERON0C_BASICTYPENODE_H
 
 
 #include <string>
@@ -17,8 +17,9 @@ private:
     const std::string name_;
 
 public:
-    explicit BasicTypeNode(const std::string &name, int size);
-    ~BasicTypeNode() final;
+    explicit BasicTypeNode(std::string name, int size) :
+            TypeNode(NodeType::basic_type, { }, size), name_(std::move(name)) { };
+    ~BasicTypeNode() final = default;
 
     void operator=(BasicTypeNode const&) = delete;
 
@@ -34,4 +35,4 @@ public:
 };
 
 
-#endif //OBERON0C_BASICTYPESYMBOL_H
+#endif //OBERON0C_BASICTYPENODE_H

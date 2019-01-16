@@ -105,7 +105,7 @@
     <ClCompile Include="parser\ast\BasicTypeNode.cpp" />
     <ClCompile Include="parser\ast\BinaryExpressionNode.cpp" />
     <ClCompile Include="parser\ast\DeclarationsNode.cpp" />
-    <ClCompile Include="parser\ast\BooleanNode.cpp" />
+    <ClCompile Include="parser\ast\BooleanLiteralNode.cpp" />
     <ClCompile Include="parser\ast\ConstantDeclarationNode.cpp" />
     <ClCompile Include="parser\ast\ExpressionNode.cpp" />
     <ClCompile Include="parser\ast\IfThenElseNode.cpp" />
@@ -113,7 +113,7 @@
     <ClCompile Include="parser\ast\DeclarationNode.cpp" />
     <ClCompile Include="parser\ast\Node.cpp" />
     <ClCompile Include="parser\ast\NodePrettyPrinter.cpp" />
-    <ClCompile Include="parser\ast\NumberNode.cpp" />
+    <ClCompile Include="parser\ast\IntegerLiteralNode.cpp" />
     <ClCompile Include="parser\ast\ParameterNode.cpp" />
     <ClCompile Include="parser\ast\ProcedureCallNode.cpp" />
     <ClCompile Include="parser\ast\ProcedureNode.cpp" />
@@ -121,10 +121,10 @@
     <ClCompile Include="parser\ast\ReferenceNode.cpp" />
     <ClCompile Include="parser\ast\StatementNode.cpp" />
     <ClCompile Include="parser\ast\StatementSequenceNode.cpp" />
-    <ClCompile Include="parser\ast\StringNode.cpp" />
+    <ClCompile Include="parser\ast\StringLiteralNode.cpp" />
     <ClCompile Include="parser\ast\TypeNode.cpp" />
     <ClCompile Include="parser\ast\UnaryExpressionNode.cpp" />
-    <ClCompile Include="parser\ast\ValueNode.cpp" />
+    <ClCompile Include="parser\ast\LiteralNode.cpp" />
     <ClCompile Include="parser\ast\WhileLoopNode.cpp" />
     <ClCompile Include="parser\Parser.cpp" />
     <ClCompile Include="parser\symbol\Scope.cpp" />
@@ -143,7 +143,7 @@
     <ClInclude Include="parser\ast\BasicTypeNode.h" />
     <ClInclude Include="parser\ast\BinaryExpressionNode.h" />
     <ClInclude Include="parser\ast\DeclarationsNode.h" />
-    <ClInclude Include="parser\ast\BooleanNode.h" />
+    <ClInclude Include="parser\ast\BooleanLiteralNode.h" />
     <ClInclude Include="parser\ast\ConstantDeclarationNode.h" />
     <ClInclude Include="parser\ast\ExpressionNode.h" />
     <ClInclude Include="parser\ast\IfThenElseNode.h" />
@@ -151,7 +151,7 @@
     <ClInclude Include="parser\ast\DeclarationNode.h" />
     <ClInclude Include="parser\ast\Node.h" />
     <ClInclude Include="parser\ast\NodePrettyPrinter.h" />
-    <ClInclude Include="parser\ast\NumberNode.h" />
+    <ClInclude Include="parser\ast\IntegerLiteralNode.h" />
     <ClInclude Include="parser\ast\ParameterNode.h" />
     <ClInclude Include="parser\ast\ProcedureCallNode.h" />
     <ClInclude Include="parser\ast\ProcedureNode.h" />
@@ -159,10 +159,10 @@
     <ClInclude Include="parser\ast\ReferenceNode.h" />
     <ClInclude Include="parser\ast\StatementNode.h" />
     <ClInclude Include="parser\ast\StatementSequenceNode.h" />
-    <ClInclude Include="parser\ast\StringNode.h" />
+    <ClInclude Include="parser\ast\StringLiteralNode.h" />
     <ClInclude Include="parser\ast\TypeNode.h" />
     <ClInclude Include="parser\ast\UnaryExpressionNode.h" />
-    <ClInclude Include="parser\ast\ValueNode.h" />
+    <ClInclude Include="parser\ast\LiteralNode.h" />
     <ClInclude Include="parser\ast\WhileLoopNode.h" />
     <ClInclude Include="parser\Parser.h" />
     <ClInclude Include="parser\symbol\Scope.h" />
