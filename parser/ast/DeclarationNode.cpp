@@ -23,9 +23,6 @@ int DeclarationNode::getLevel() const {
     return level_;
 }
 
-int DeclarationNode::getOffset() const {
-    return offset_;
-}
 
 LiteralNode* ConstantDeclarationNode::getValue() const {
     return value_.get();
@@ -39,17 +36,33 @@ void ConstantDeclarationNode::print(std::ostream &stream) const {
     stream << "CONST " << this->getName() << " = " << *value_ << ";";
 }
 
+
 void TypeDeclarationNode::accept(NodeVisitor& visitor) {
     visitor.visit(*this);
+}
+
+void TypeDeclarationNode::print(std::ostream& stream) const {
+    stream << "TYPE " << this->getName() << " = " << *this->getType() << ";";
+}
+
+
+int VariableDeclarationNode::getOffset() const {
+    return offset_;
 }
 
 void VariableDeclarationNode::accept(NodeVisitor& visitor) {
     visitor.visit(*this);
 }
 
+
+int FieldNode::getOffset() const {
+    return offset_;
+}
+
 void FieldNode::accept(NodeVisitor& visitor) {
     visitor.visit(*this);
 }
+
 
 bool ParameterNode::isVar() const {
     return var_;

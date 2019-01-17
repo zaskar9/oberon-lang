@@ -17,24 +17,24 @@ class DeclarationNode : public Node {
 private:
     const std::string name_;
     TypeNode *type_;
-    int level_, offset_;
+    int level_;
 
 public:
-    explicit DeclarationNode(const NodeType nodeType, const FilePos &pos, std::string name, TypeNode *type, int level, int offset) :
-            Node(nodeType, pos), name_(std::move(name)), type_(type), level_(level), offset_(offset) { };
+    explicit DeclarationNode(const NodeType nodeType, const FilePos &pos, std::string name, TypeNode *type, int level) :
+            Node(nodeType, pos), name_(std::move(name)), type_(type), level_(level) { };
     ~DeclarationNode() override = default;
 
     const std::string getName() const;
     TypeNode* getType() const;
 
     int getLevel() const;
-    int getOffset() const;
 
     void accept(NodeVisitor& visitor) override = 0;
 
     void print(std::ostream &stream) const override;
 
 };
+
 
 class ConstantDeclarationNode final : public DeclarationNode {
 
@@ -43,7 +43,7 @@ private:
 
 public:
     explicit ConstantDeclarationNode(const FilePos &pos, const std::string &name, std::unique_ptr<LiteralNode> value, int level):
-            DeclarationNode(NodeType::constant, pos, name, value->getType(), level, -1), value_(std::move(value)) { };
+            DeclarationNode(NodeType::constant, pos, name, value->getType(), level), value_(std::move(value)) { };
     ~ConstantDeclarationNode() final = default;
 
     LiteralNode* getValue() const;
@@ -54,38 +54,54 @@ public:
 
 };
 
+
 class TypeDeclarationNode final : public DeclarationNode {
 
 public:
     explicit TypeDeclarationNode(const FilePos &pos, const std::string &name, TypeNode *type, int level) :
-            DeclarationNode(NodeType::type_declaration, pos, name, type, level, -1) { };
+            DeclarationNode(NodeType::type_declaration, pos, name, type, level) { };
     ~TypeDeclarationNode() final = default;
 
     void accept(NodeVisitor& visitor) override;
 
+    void print(std::ostream &stream) const final;
+
 };
+
 
 class VariableDeclarationNode final : public DeclarationNode {
 
+private:
+    int offset_;
+
 public:
     explicit VariableDeclarationNode(const FilePos &pos, const std::string &name, TypeNode *type, int level, int offset) :
-            DeclarationNode(NodeType::variable, pos, name, type, level, offset) { };
+            DeclarationNode(NodeType::variable, pos, name, type, level), offset_(offset) { };
     ~VariableDeclarationNode() final = default;
+
+    int getOffset() const;
 
     void accept(NodeVisitor& visitor) override;
 
 };
+
 
 class FieldNode final : public DeclarationNode {
 
+private:
+    int offset_;
+
 public:
     explicit FieldNode(const FilePos &pos, const std::string &name, TypeNode *type, int offset) :
-            DeclarationNode(NodeType::field, pos, name, type, -1, offset) { };
+            DeclarationNode(NodeType::field, pos, name, type, -1), offset_(offset) { };
     ~FieldNode() final = default;
+
+    int getOffset() const;
 
     void accept(NodeVisitor& visitor) override;
 
 };
+
 
 class ParameterNode final : public DeclarationNode {
 
@@ -94,7 +110,7 @@ private:
 
 public:
     explicit ParameterNode(const FilePos &pos, const std::string &name, TypeNode *type, bool var, int level) :
-            DeclarationNode(NodeType::parameter, pos, name, type, level, -1), var_(var) { };
+            DeclarationNode(NodeType::parameter, pos, name, type, level), var_(var) { };
     ~ParameterNode() final = default;
 
     bool isVar() const;
