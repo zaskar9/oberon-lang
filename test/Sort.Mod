@@ -52,7 +52,7 @@ BEGIN
     WHILE i < Dim DO
         j := Dim - 1;
         WHILE j > i DO
-            IF a[j-1] > a[j] THEN Swap(a[j - 1], a[j]) END;
+            IF a[j - 1] > a[j] THEN Swap(a[j - 1], a[j]) END;
             j := j - 1
         END;
         i := i + 1
