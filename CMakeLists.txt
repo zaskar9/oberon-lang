@@ -39,6 +39,8 @@ add_executable(oberon0c main.cpp
         parser/ast/LoopNode.cpp parser/ast/LoopNode.h
         parser/ast/StatementSequenceNode.cpp parser/ast/StatementSequenceNode.h
         parser/ast/NodePrettyPrinter.cpp parser/ast/NodePrettyPrinter.h)
+        #codegen/BasicBlock.cpp codegen/BasicBlock.h
+        #codegen/Instruction.cpp codegen/Instruction.h)
 
 #find_package(Boost 1.68.0 COMPONENTS log log_setup system REQUIRED)
 #    if (Boost_FOUND)
