@@ -109,7 +109,7 @@ swap:
 bubble_sort:
       push     rbp               ; save base pointer
       mov      rbp, rsp          ; set base pointer to stack pointer
-      sub      rsp, 8            ; allocate space for one variable with align
+      sub      rsp, 8            ; allocate space for two variables with align
       push     rbx               ; save callee-saved registers
       push     r12
       push     r13

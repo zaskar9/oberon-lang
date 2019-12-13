@@ -1,0 +1,21 @@
+<filetype binary="false" description="Pascal, Modula and Oberon" name="Pascal, Modula and Oberon">
+  <highlighting>
+    <options>
+      <option name="LINE_COMMENT" value="" />
+      <option name="COMMENT_START" value="(*" />
+      <option name="COMMENT_END" value="*)" />
+      <option name="HEX_PREFIX" value="" />
+      <option name="NUM_POSTFIXES" value="" />
+      <option name="HAS_BRACKETS" value="true" />
+      <option name="HAS_PARENS" value="true" />
+    </options>
+    <keywords keywords="ARRAY;BEGIN;BY;CONST;DIV;DO;ELSE;ELSIF;END;EXIT;FOR;IF;LOOP;MOD;MODULE;OF;OR;PROCEDURE;RECORD;REPEAT;THEN;TO;TYPE;UNTIL;VAR;WHILE" ignore_case="false" />
+    <keywords2 keywords="FALSE;TRUE" />
+    <keywords3 keywords="BOOLEAN;INTEGER;REAL;STRING" />
+    <keywords4 />
+  </highlighting>
+  <extensionMap>
+    <mapping ext="mod" />
+    <mapping ext="pas" />
+  </extensionMap>
+</filetype>

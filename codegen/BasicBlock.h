@@ -8,19 +8,20 @@
 #define OBERON0C_BASICBLOCK_H
 
 
+#include <memory>
 #include <string>
+#include <vector>
+#include "Instruction.h"
 
 class BasicBlock {
 
 private:
-    std::string comment_;
     std::unique_ptr<Label> label_;
+    std::string comment_;
     std::vector<std::unique_ptr<Instruction>> instructions_;
-    std::unique_ptr<BasicBlock> next_;
 
 public:
-    explicit BasicBlock(std::unique_ptr<Label> label, std::string &comment) :
-        label_(std::move(label)), comment_(comment), instructions_(), next_() { };
+    explicit BasicBlock(std::string label, std::string comment);
     ~BasicBlock() = default;
 
     const Label* getLabel() const;
