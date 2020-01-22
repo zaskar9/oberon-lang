@@ -20,7 +20,7 @@ private:
     std::unique_ptr<TextSection> text_;
 
 public:
-    explicit NasmAssembly() : bss_(), data_(), text_() { };
+    explicit NasmAssembly();
     ~NasmAssembly() = default;
 
     BssSection* getBssSection();

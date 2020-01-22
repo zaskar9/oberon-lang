@@ -6,6 +6,12 @@
 
 #include "NasmAssembly.h"
 
+NasmAssembly::NasmAssembly() {
+    bss_ = std::make_unique<BssSection>();
+    data_ = std::make_unique<DataSection>();
+    text_ = std::make_unique<TextSection>();
+}
+
 BssSection* NasmAssembly::getBssSection() {
     return bss_.get();
 }

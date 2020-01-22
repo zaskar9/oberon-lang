@@ -11,22 +11,34 @@ DeclarationNode* ReferenceNode::dereference() const {
     return node_;
 }
 
-ExpressionNode* ReferenceNode::getSelector() const {
-    return selector_.get();
+void ReferenceNode::addSelector(std::unique_ptr<ExpressionNode> selector) {
+    if (selector != nullptr) {
+        selectors_.push_back(std::move(selector));
+    }
 }
+
+ExpressionNode* ReferenceNode::getSelector(size_t num) const {
+    return selectors_[num].get();
+}
+
+size_t ReferenceNode::getSelectorCount() const {
+    return selectors_.size();
+}
+
 
 bool ReferenceNode::isConstant() const {
     return node_->getNodeType() == NodeType::constant;
 }
 
+void ReferenceNode::setType(class TypeNode *type) {
+    type_ = type;
+}
+
 TypeNode* ReferenceNode::getType() const {
-    auto type = node_->getType();
-    if (selector_ != nullptr) {
-        if (type->getNodeType() == NodeType::record_type || type->getNodeType() == NodeType::array_type) {
-            return selector_->getType();
-        }
+    if (type_ == nullptr) {
+        return node_->getType();
     }
-    return type;
+    return type_;
 }
 
 void ReferenceNode::accept(NodeVisitor& visitor) {

@@ -5,12 +5,32 @@ MODULE Test;
 CONST Dim = 4 + 2 * 8;
 
 TYPE Point2D = RECORD x, y: INTEGER END;
-     (* Point3D = RECORD x, y, y: INTEGER END; *)
+     Point3D = RECORD x, y, y: INTEGER END;
+     PointList = ARRAY 30 OF Point2D;
+     ColorRGB = RECORD r, g, b: INTEGER END;
+     Rect2D = RECORD color: ColorRGB; points: PointList END;
 
 (* Array to be sorted. *)
 VAR a: ARRAY Dim OF INTEGER;
     i: INTEGER;
     point: Point2D;
+    bool: BOOLEAN;
+
+PROCEDURE InitRect2D(VAR rect: Rect2D; r, g, b: INTEGER; x, y: Point2D);
+BEGIN
+    x.y := i;
+    rect.color.r := r;
+    rect.color.g := g;
+    rect.color.b := TRUE;
+    rect.points[0].x := x.x;
+    rect.points[0].y := x.y;
+    rect.points[1].x := y.x;
+    rect.points[1].y := x.y;
+    rect.points[2].x := y.x;
+    rect.points[2].y := y.y;
+    rect.points[3].x := x.x;
+    rect.points[3].y := y.y
+END InitRect2D;
 
 PROCEDURE CheckDimension(VAR dim: INTEGER);
 BEGIN
@@ -42,6 +62,8 @@ VAR point: Point2D;
 BEGIN
     point.x := (1 + CheckDimension;
     point.y := -1;
+    CheckDimension(1 + 2);
+    CheckDimension(TRUE);
     WHILE 1 # 1 DO
         i := Dim;
         IF 1 > 2 THEN i := 1 ELSE i := 2 END
@@ -67,7 +89,7 @@ BEGIN
             a[i] := j
         END
     END
-END Initialize;
+END Initialise;
 
 (* Swaps the two values passed as var-parameters. *)
 PROCEDURE Swap(VAR a, b: INTEGER);
@@ -122,12 +144,13 @@ END QuickSort;
 (* Main program. *)
 BEGIN
     i := 1;
+    bool := (i >= 0) OR (i < 100) & (point.x > 0);
     REPEAT
         Init();
         QuickSort();
         i := i + 1
     UNTIL i > Dim DIV 2;
-    i := 1;
+    i = 1;
     Write("[");
     WHILE i <= Dim DO
         Write(a[i]);

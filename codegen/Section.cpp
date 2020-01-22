@@ -17,6 +17,7 @@ const std::string Section::getComment() {
 Label* BssSection::reserveBytes(const std::string& name, int num) {
     auto label = std::make_unique<Label>(name);
     auto ptr = label.get();
+    auto size = labels_.size();
     labels_[std::move(label)] = num;
     return ptr; // null?
 }

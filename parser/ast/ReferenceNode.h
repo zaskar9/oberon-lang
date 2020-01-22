@@ -9,6 +9,7 @@
 
 
 #include <memory>
+#include <vector>
 #include "ExpressionNode.h"
 #include "DeclarationNode.h"
 
@@ -16,18 +17,21 @@ class ReferenceNode final : public ExpressionNode {
 
 private:
     DeclarationNode *node_;
-    std::unique_ptr<ExpressionNode> selector_;
+    TypeNode *type_;
+    std::vector<std::unique_ptr<ExpressionNode>> selectors_;
 
 public:
-    explicit ReferenceNode(FilePos pos, DeclarationNode *node, std::unique_ptr<ExpressionNode> selector) :
-            ExpressionNode(NodeType::name_reference, pos), node_(node), selector_(std::move(selector)) { };
-    explicit ReferenceNode(FilePos pos, DeclarationNode *node) : ReferenceNode(pos, node, nullptr){ };
+    explicit ReferenceNode(FilePos pos, DeclarationNode *node) :
+            ExpressionNode(NodeType::name_reference, pos), node_(node), type_(), selectors_() { };
     ~ReferenceNode() final = default;
 
     DeclarationNode* dereference() const;
-    ExpressionNode* getSelector() const;
+    void addSelector(std::unique_ptr<ExpressionNode> selector);
+    ExpressionNode* getSelector(size_t num) const;
+    size_t getSelectorCount() const;
 
     bool isConstant() const final;
+    void setType(TypeNode *type);
     TypeNode* getType() const final;
 
     void accept(NodeVisitor& visitor) final;

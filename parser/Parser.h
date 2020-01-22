@@ -64,7 +64,7 @@ private:
     std::unique_ptr<StatementNode> repeat_statement();
     std::unique_ptr<StatementNode> for_statement();
     void actual_parameters(ProcedureCallNode *call);
-    std::unique_ptr<ExpressionNode> selector(const DeclarationNode *variable);
+    TypeNode* selector(ReferenceNode *ident, const TypeNode *type);
 
     std::unique_ptr<LiteralNode> fold(const ExpressionNode *expr) const;
     int foldNumber(const ExpressionNode *expr) const;

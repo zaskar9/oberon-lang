@@ -78,7 +78,8 @@ std::unique_ptr<ModuleNode> Parser::module() {
                         logger_->error(token->getPosition(), ". expected.");
                     }
                 } else {
-                    logger_->error(token->getPosition(), module->getName() + " expected.");
+                    logger_->error(scanner_->peekToken()->getPosition(), "module name mismatch: expected \"" +
+                                   module->getName() + "\", found \"" + name + "\".");
                 }
             } else {
                 logger_->error(token->getPosition(), "END expected.");
@@ -237,6 +238,7 @@ RecordTypeNode* Parser::record_type(BlockNode *block) {
     auto node = new RecordTypeNode(pos);
     field_list(block, node);
     while (scanner_->peekToken()->getType() == TokenType::semicolon) {
+        scanner_->nextToken();
         field_list(block, node);
     }
     auto token = scanner_->peekToken();
@@ -318,7 +320,8 @@ void Parser::procedure_declaration(BlockNode *block) {
         logger_->error(token->getPosition(),"; expected.");
     }
     if (name != proc->getName()) {
-        logger_->error(token->getPosition(), proc->getName() + " expected.");
+        logger_->error(token->getPosition(), "procedure name mismatch: expected \"" + proc->getName()
+                + "\", found \"" + name + "\".");
     }
     symbols_->leaveScope();
     block->addProcedure(std::move(proc));
@@ -419,16 +422,19 @@ std::unique_ptr<StatementNode> Parser::statement() {
             logger_->error(pos, "undefined identifier: " + name + ".");
         } else if (symbol->getNodeType() == NodeType::variable || symbol->getNodeType() == NodeType::parameter) {
             auto var = dynamic_cast<DeclarationNode*>(symbol);
+            auto lvalue = std::make_unique<ReferenceNode>(pos, var);
+            auto context = var->getType();
             token = scanner_->peekToken();
-            std::unique_ptr<ReferenceNode> lvalue;
-            if (token->getType() == TokenType::period || token->getType() == TokenType::lbrack) {
-                lvalue = std::make_unique<ReferenceNode>(pos, var, selector(var));
-            } else {
-                lvalue = std::make_unique<ReferenceNode>(pos, var);
+            while (token->getType() == TokenType::period || token->getType() == TokenType::lbrack) {
+                context = selector(lvalue.get(), context);
+                token = scanner_->peekToken();
             }
+            lvalue->setType(context);
             token = scanner_->peekToken();
             if (token->getType() == TokenType::op_becomes) {
                 return assignment(std::move(lvalue));
+            } else {
+                logger_->error(token->getPosition(), "assignment operator := expected.");
             }
         } else if (symbol->getNodeType() == NodeType::procedure) {
             auto call = std::make_unique<ProcedureCallNode>(pos, dynamic_cast<ProcedureNode*>(symbol));
@@ -456,7 +462,7 @@ std::unique_ptr<StatementNode> Parser::statement() {
     return nullptr;
 }
 
-// assignment = identifier selector ":=" expression .
+// assignment = identifier { selector } ":=" expression .
 std::unique_ptr<StatementNode> Parser::assignment(std::unique_ptr<ReferenceNode> lvalue) {
     logger_->debug("", "assignment");
     auto token = scanner_->nextToken(); // skip becomes
@@ -667,17 +673,18 @@ void Parser::actual_parameters(ProcedureCallNode *call) {
     }
 }
 
-// selector = {"." identifier | "[" expression "]"}.
-std::unique_ptr<ExpressionNode> Parser::selector(const DeclarationNode *variable) {
+// selector = "." identifier | "[" expression "]" .
+TypeNode* Parser::selector(ReferenceNode *parent, const TypeNode *type) {
     logger_->debug("", "selector");
     auto token = scanner_->nextToken();
     if (token->getType() == TokenType::period) {
         auto name = ident();
-        if (variable->getType()->getNodeType() == NodeType::record_type) {
-            auto record = dynamic_cast<const RecordTypeNode*>(variable->getType());
+        if (type->getNodeType() == NodeType::record_type) {
+            auto record = dynamic_cast<const RecordTypeNode*>(type);
             auto field = record->getField(name);
             if (field != nullptr) {
-                return std::make_unique<ReferenceNode>(token->getPosition(), field);
+                parent->addSelector(std::make_unique<ReferenceNode>(token->getPosition(), field));
+                return field->getType();
             } else {
                 logger_->error(token->getPosition(), "unknown record field: " + name + ".");
             }
@@ -685,16 +692,23 @@ std::unique_ptr<ExpressionNode> Parser::selector(const DeclarationNode *variable
             logger_->error(token->getPosition(), "variable or parameter of RECORD type expected.");
         }
     } else if (token->getType() == TokenType::lbrack) {
-        auto expr = expression();
-        if (expr->getType() != BasicTypeNode::INTEGER) {
-            logger_->error(expr->getFilePos(), "integer expression expected.");
+        if (type->getNodeType() == NodeType::array_type) {
+            auto array = dynamic_cast<const ArrayTypeNode *>(type);
+            auto expr = expression();
+            if (expr->getType() != BasicTypeNode::INTEGER) {
+                logger_->error(expr->getFilePos(), "integer expression expected.");
+            }
+            token = scanner_->nextToken();
+            if (token->getType() != TokenType::rbrack) {
+                logger_->error(token->getPosition(), "] expected.");
+            }
+            parent->addSelector(std::move(expr));
+            return array->getMemberType();
+        } else {
+            logger_->error(token->getPosition(), "variable or parameter of ARRAY type expected.");
         }
-        token = scanner_->nextToken();
-        if (token->getType() != TokenType::rbrack) {
-            logger_->error(token->getPosition(), "] expected.");
-        }
-        return expr;
     }
+    logger_->error(token->getPosition(), "selector expected.");
     return nullptr;
 }
 
@@ -811,11 +825,15 @@ std::unique_ptr<ExpressionNode> Parser::factor() {
                 }
             } else if (node->getNodeType() == NodeType::parameter || node->getNodeType() == NodeType::variable) {
                 auto var = dynamic_cast<DeclarationNode*>(node);
+                auto ref = std::make_unique<ReferenceNode>(pos, var);
+                auto context = var->getType();
                 token = scanner_->peekToken();
-                if (token->getType() == TokenType::period || token->getType() == TokenType::lbrack) {
-                    return std::make_unique<ReferenceNode>(pos, var, selector(var));
+                while (token->getType() == TokenType::period || token->getType() == TokenType::lbrack) {
+                    context = selector(ref.get(), context);
+                    token = scanner_->peekToken();
                 }
-                return std::make_unique<ReferenceNode>(pos, var);
+                ref->setType(context);
+                return ref;
             } else {
                 logger_->error(pos, "constant, parameter or variable expected.");
                 return nullptr;
