@@ -10,6 +10,7 @@
 #define OBERON0C_SECTION_H
 
 
+#include <ostream>
 #include <string>
 #include <unordered_map>
 #include "BasicBlock.h"
@@ -30,6 +31,8 @@ public:
 
 class DataSection final : Section {
 
+    friend std::ostream& operator<<(std::ostream &stream, const DataSection &section);
+
 };
 
 
@@ -44,6 +47,8 @@ public:
 
     Label* reserveBytes(const std::string &label, int num);
 
+    friend std::ostream& operator<<(std::ostream &stream, const BssSection &section);
+
 };
 
 class TextSection final : Section {
@@ -56,6 +61,9 @@ public:
     ~TextSection() override = default;
 
     BasicBlock* addBasicBlock(const std::string &label, const std::string &comment);
+
+    friend std::ostream& operator<<(std::ostream &stream, const TextSection &section);
+
 };
 
 #endif //OBERON0C_SECTION_H

@@ -6,7 +6,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -W -Wall -Wextra -pedantic -Wshadow -Woverloaded-virtual -Winvalid-pch -Wcast-align -Wformat=2 -Wformat-nonliteral -Wmissing-declarations -Wmissing-format-attribute -Wmissing-include-dirs -Wredundant-decls -Wswitch-default")
 
-add_executable(oberon0c main.cpp
+set(SOURCE_FILES
+        main.cpp
         util/Logger.cpp util/Logger.h
         scanner/Scanner.cpp scanner/Scanner.h
         scanner/Token.cpp scanner/Token.h
@@ -44,16 +45,14 @@ add_executable(oberon0c main.cpp
         codegen/Operand.cpp codegen/Operand.h
         codegen/CodeGenerator.cpp codegen/CodeGenerator.h
         codegen/NasmAssembly.cpp codegen/NasmAssembly.h
-        codegen/Section.cpp codegen/Section.h
-)
+        codegen/Section.cpp codegen/Section.h)
 
-#find_package(Boost 1.68.0 COMPONENTS log log_setup system REQUIRED)
-#    if (Boost_FOUND)
-#        include_directories(${Boost_INCLUDE_DIRS})
-#        target_link_libraries(oberon0c
-#                ${Boost_LOG_SETUP_LIBRARY}
-#                ${Boost_LOG_LIBRARY}
-#                ${Boost_SYSTEM_LIBRARY})
-#    endif()
-#
-#set_target_properties(oberon0c PROPERTIES COMPILE_DEFINITIONS BOOST_LOG_DYN_LINK)
+set(Boost_USE_STATIC_LIBS OFF) # enable dynamic linking
+set(Boost_USE_MULTITHREAD ON)  # enable multi-threading
+
+find_package(Boost COMPONENTS system filesystem REQUIRED)
+if (Boost_FOUND)
+    include_directories(${Boost_INCLUDE_DIRS})
+    add_executable(oberon0c ${SOURCE_FILES})
+    target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES})
+endif()

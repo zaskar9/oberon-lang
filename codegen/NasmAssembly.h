@@ -9,6 +9,7 @@
 
 
 #include <memory>
+#include <ostream>
 #include <vector>
 #include "Section.h"
 
@@ -23,9 +24,11 @@ public:
     explicit NasmAssembly();
     ~NasmAssembly() = default;
 
-    BssSection* getBssSection();
-    DataSection* getDataSection();
-    TextSection* getTextSection();
+    BssSection* getBssSection() const;
+    DataSection* getDataSection() const;
+    TextSection* getTextSection() const;
+
+    friend std::ostream& operator<<(std::ostream &stream, const NasmAssembly &node);
 
 };
 

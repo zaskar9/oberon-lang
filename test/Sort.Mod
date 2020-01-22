@@ -29,7 +29,7 @@ BEGIN
     WHILE i <= Dim DO
         (* Write(a[i]); *)
         (* IF i + 1 < Dim THEN Write(", ") END *)
-        i = i + 1
+        i := i + 1
     END
     (* Write("]"); *)
     (* WriteLn() *)
