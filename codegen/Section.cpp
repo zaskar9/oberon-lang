@@ -6,42 +6,16 @@
 
 #include "Section.h"
 
-void Section::setComment(const std::string& comment) {
-    comment_ = comment;
+const std::string Section::getName() const {
+    return name_;
 }
 
-const std::string Section::getComment() {
-    return comment_;
+void Section::addInstruction(std::unique_ptr<Instruction> instruction) {
+    instructions_.push_back(std::move(instruction));
 }
 
-std::ostream& operator<<(std::ostream &stream, const DataSection &section) {
+std::ostream& operator<<(std::ostream &stream, const Section &section) {
     std::string indent = std::string(9, ' ');
-    stream << indent << "section  .data" << std::endl;
-    return stream;
-}
-
-Label* BssSection::reserveBytes(const std::string& name, int num) {
-    auto label = std::make_unique<Label>(name);
-    auto ptr = label.get();
-    auto size = labels_.size();
-    labels_[std::move(label)] = num;
-    return ptr; // null?
-}
-
-std::ostream& operator<<(std::ostream &stream, const BssSection &section) {
-    std::string indent = std::string(9, ' ');
-    stream << indent << "section  .bss" << std::endl;
-    return stream;
-}
-
-BasicBlock* TextSection::addBasicBlock(const std::string& name, const std::string& comment) {
-    auto block = std::make_unique<BasicBlock>(name, comment);
-    blocks_.push_back(std::move(block));
-    return blocks_.back().get();
-}
-
-std::ostream& operator<<(std::ostream &stream, const TextSection &section) {
-    std::string indent = std::string(9, ' ');
-    stream << indent << "section  .text" << std::endl;
+    stream << indent << "section  " << section.getName() << std::endl;
     return stream;
 }

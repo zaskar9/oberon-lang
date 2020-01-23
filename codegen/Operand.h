@@ -38,6 +38,15 @@ class Register final : Operand {
 
 class Immediate final : Operand {
 
+private:
+    int value_;
+
+public:
+    explicit Immediate(int value) : value_(value) { };
+    ~Immediate() override = default;
+
+    const int getValue() const;
+
 };
 
 #endif //OBERON0C_OPERAND_H

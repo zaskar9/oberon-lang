@@ -16,17 +16,17 @@
 class NasmAssembly {
 
 private:
-    std::unique_ptr<BssSection> bss_;
-    std::unique_ptr<DataSection> data_;
-    std::unique_ptr<TextSection> text_;
+    std::unique_ptr<Section> bss_;
+    std::unique_ptr<Section> data_;
+    std::unique_ptr<Section> text_;
 
 public:
     explicit NasmAssembly();
     ~NasmAssembly() = default;
 
-    BssSection* getBssSection() const;
-    DataSection* getDataSection() const;
-    TextSection* getTextSection() const;
+    Section* getBssSection() const;
+    Section* getDataSection() const;
+    Section* getTextSection() const;
 
     friend std::ostream& operator<<(std::ostream &stream, const NasmAssembly &node);
 

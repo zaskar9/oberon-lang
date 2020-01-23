@@ -9,7 +9,6 @@
 
 
 #include <unordered_map>
-#include "BasicBlock.h"
 #include "NasmAssembly.h"
 #include "../parser/ast/NodeVisitor.h"
 
@@ -17,11 +16,9 @@ class CodeGenerator final : NodeVisitor {
 
 private:
     NasmAssembly* assembly_;
-    std::unordered_map<std::string, Label*> labels_;
-    BasicBlock* block_;
 
 public:
-    explicit CodeGenerator(NasmAssembly *assembly) : assembly_(assembly), labels_(), block_() { };
+    explicit CodeGenerator(NasmAssembly *assembly) : assembly_(assembly) { };
     ~CodeGenerator() = default;
 
     void visit(ModuleNode &node) override;

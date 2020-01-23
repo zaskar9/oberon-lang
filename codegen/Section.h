@@ -1,5 +1,3 @@
-#include <utility>
-
 /*
  * Header of the NASM assembly sections used code generator of the Oberon-0 compiler.
  *
@@ -12,57 +10,23 @@
 
 #include <ostream>
 #include <string>
-#include <unordered_map>
-#include "BasicBlock.h"
+#include <vector>
+#include "Instruction.h"
 
 class Section {
 
 private:
-    std::string comment_;
+    std::string name_;
+    std::vector<std::unique_ptr<Instruction>> instructions_;
 
 public:
-    explicit Section() : comment_() { };
+    explicit Section(const std::string &name) : name_(name), instructions_() { };
     virtual ~Section() = default;
 
-    void setComment(const std::string& comment);
-    const std::string getComment();
-};
+    const std::string getName() const;
+    void addInstruction(std::unique_ptr<Instruction> instruction);
 
-
-class DataSection final : Section {
-
-    friend std::ostream& operator<<(std::ostream &stream, const DataSection &section);
-
-};
-
-
-class BssSection final : Section {
-
-private:
-    std::unordered_map<std::unique_ptr<Label>, int> labels_;
-
-public:
-    explicit BssSection() : labels_() { };
-    ~BssSection() override = default;
-
-    Label* reserveBytes(const std::string &label, int num);
-
-    friend std::ostream& operator<<(std::ostream &stream, const BssSection &section);
-
-};
-
-class TextSection final : Section {
-
-private:
-    std::vector<std::unique_ptr<BasicBlock>> blocks_;
-
-public:
-    explicit TextSection() : blocks_() { };
-    ~TextSection() override = default;
-
-    BasicBlock* addBasicBlock(const std::string &label, const std::string &comment);
-
-    friend std::ostream& operator<<(std::ostream &stream, const TextSection &section);
+    friend std::ostream& operator<<(std::ostream &stream, const Section &section);
 
 };
 

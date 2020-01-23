@@ -5,3 +5,7 @@
  */
 
 #include "Instruction.h"
+
+Label* Instruction::setLabel(std::string &label) {
+    label_ = std::make_unique<Label>(label);
+}

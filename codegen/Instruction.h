@@ -18,7 +18,8 @@ enum class OpCode : char {
    exor,
    cmp,
    jl, jle, jg, jge,
-   call, ret
+   call, ret,
+   res
 };
 
 enum class OpMode : char {

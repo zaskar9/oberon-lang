@@ -13,13 +13,12 @@ void CodeGenerator::visit(ModuleNode& node) {
         // reserve space for global variables
         for (size_t i = 0; i < node.getVariableCount(); i++) {
             auto var = node.getVariable(i);
-            auto label = bss->reserveBytes("_" + var->getName(), var->getType()->getSize());
+            auto instruction = std::make_unique<Instruction>(OpCode::res, OpMode::b8,nullptr); //, new Immediate(var->getType()->getSize()));
+            std::string label = "_" + var->getName();
+            instruction->setLabel(label);
+            bss->addInstruction(std::move(instruction));
         }
     }
-    // create text section
-    auto text = assembly_->getTextSection();
-    // create first block of main program
-    block_ = text->addBasicBlock("main", "main program of " + node.getName());
     // visit statement sequence
     node.getStatements()->accept(*this);
 }

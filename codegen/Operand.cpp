@@ -5,3 +5,11 @@
  */
 
 #include "Operand.h"
+
+const std::string Label::getName() const {
+    return name_;
+}
+
+const int Immediate::getValue() const {
+    return value_;
+}
