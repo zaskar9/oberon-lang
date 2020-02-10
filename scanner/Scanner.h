@@ -12,6 +12,7 @@
 #include <fstream>
 #include <sstream>
 #include <unordered_map>
+#include <queue>
 #include "Token.h"
 #include "../util/Logger.h"
 
@@ -21,7 +22,7 @@ class Scanner {
 private:
     std::string filename_;
     Logger *logger_;
-    const Token *token_;
+    std::queue<const Token*> tokens_;
     int lineNo_, charNo_;
     std::unordered_map<std::string, TokenType> keywords_;
     std::ifstream file_;
@@ -41,6 +42,9 @@ public:
     ~Scanner();
     const Token* peekToken();
     std::unique_ptr<const Token> nextToken();
+
+    static std::string escape(std::string str);
+    static std::string unescape(std::string str);
 
 };
 

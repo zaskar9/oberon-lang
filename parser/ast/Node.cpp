@@ -20,7 +20,7 @@ const FilePos Node::getFilePos() const {
     return pos_;
 }
 
-std::ostream& operator<<(std::ostream &stream, const Node &symbol) {
-    symbol.print(stream);
+std::ostream& operator<<(std::ostream &stream, const Node &node) {
+    node.print(stream);
     return stream;
 }

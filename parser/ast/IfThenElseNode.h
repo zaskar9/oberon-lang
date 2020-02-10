@@ -52,9 +52,11 @@ public:
     StatementSequenceNode* addElseIf(FilePos pos, std::unique_ptr<ExpressionNode> condition);
     ElseIfNode* getElseIf(size_t num) const;
     size_t getElseIfCount() const;
+    bool hasElseIf() const;
 
     StatementSequenceNode* addElseStatements(FilePos pos);
     StatementSequenceNode* getElseStatements() const;
+    bool hasElse() const;
 
     void accept(NodeVisitor& visitor) final;
 

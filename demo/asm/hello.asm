@@ -16,6 +16,14 @@ main:    push     rbp
          mov      rsi, 42               ;mov      rdx, 42
          call     printf
 
+         ; test
+         cmp      rdi, rsi
+         setl     al
+         cmp      rdx, rcx
+         setl     bl
+         and      al, bl
+         movzx    rax, bl
+
          xor      rax, rax
          mov      rsp, rbp
          pop      rbp

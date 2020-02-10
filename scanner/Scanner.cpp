@@ -5,6 +5,7 @@
  */
 
 
+#include <boost/algorithm/string/replace.hpp>
 #include "Scanner.h"
 #include "IdentToken.h"
 #include "NumberToken.h"
@@ -12,7 +13,7 @@
 #include "UndefinedToken.h"
 
 Scanner::Scanner(const std::string &filename, Logger *logger) :
-        filename_(filename), logger_(logger), token_(nullptr), lineNo_(1), charNo_(0) {
+        filename_(filename), logger_(logger), tokens_(), lineNo_(1), charNo_(0) {
     this->initTable();
     file_.open(filename_, std::ios::in);
     if (!file_.is_open()) {
@@ -24,7 +25,6 @@ Scanner::Scanner(const std::string &filename, Logger *logger) :
 }
 
 Scanner::~Scanner() {
-    delete token_;
     if (file_.is_open()) {
         file_.close();
     }
@@ -33,7 +33,9 @@ Scanner::~Scanner() {
 void Scanner::initTable() {
     keywords_ = { { "DIV", TokenType::op_div }, { "MOD", TokenType::op_mod }, { "OR", TokenType::op_or },
                   { "MODULE", TokenType::kw_module }, { "PROCEDURE", TokenType::kw_procedure },
+                  { "DECLARE", TokenType::kw_declare }, { "EXTERN", TokenType::kw_extern },
                   { "BEGIN", TokenType::kw_begin }, { "END", TokenType::kw_end },
+                  { "RETURN", TokenType::kw_return },
                   { "LOOP", TokenType::kw_loop }, { "EXIT", TokenType::kw_exit },
                   { "WHILE", TokenType::kw_while }, { "DO", TokenType::kw_do },
                   { "REPEAT", TokenType::kw_repeat }, { "UNTIL", TokenType::kw_until },
@@ -47,19 +49,19 @@ void Scanner::initTable() {
 }
 
 const Token* Scanner::peekToken() {
-    if (token_ == nullptr) {
-        token_ = this->next();
+    if (tokens_.empty()) {
+        tokens_.push(this->next());
     }
-    return token_;
+    return tokens_.front();
 }
 
 std::unique_ptr<const Token> Scanner::nextToken() {
     const Token *token;
-    if (token_ != nullptr) {
-        token = token_;
-        token_ = nullptr;
-    } else {
+    if (tokens_.empty()) {
         token = this->next();
+    } else {
+        token = tokens_.front();
+        tokens_.pop();
     }
     return std::unique_ptr<const Token>(token);
 }
@@ -142,6 +144,15 @@ const Token* Scanner::next() {
                 case '.':
                     token = new Token(TokenType::period, pos);
                     read();
+                    if (ch_ == '.') {
+                        read();
+                        if (ch_ == '.') {
+                            token = new Token(TokenType::varargs, pos);
+                            read();
+                        } else {
+                            tokens_.push(new Token(TokenType::period, pos));
+                        }
+                    }
                     break;
                 case '(':
                     read();
@@ -292,6 +303,7 @@ int Scanner::number() {
 
 const std::string Scanner::string() {
     std::stringstream ss;
+    read();
     do {
         ss << ch_;
         if (ch_ == '\\') {
@@ -300,7 +312,37 @@ const std::string Scanner::string() {
         }
         read();
     } while (ch_ != '"');
-    ss << ch_;
-    std::string s = ss.str();
-    return s;
+    std::string str = ss.str();
+    return unescape(str);
+}
+
+std::string Scanner::escape(std::string str) {
+    boost::replace_all(str, "\'", "\\'");
+    boost::replace_all(str, "\"", "\\\"");
+    boost::replace_all(str, "\?", "\\?");
+    boost::replace_all(str, "\\", "\\\\");
+    boost::replace_all(str, "\a", "\\a");
+    boost::replace_all(str, "\b", "\\b");
+    boost::replace_all(str, "\f", "\\f");
+    boost::replace_all(str, "\n",  "\\n");
+    boost::replace_all(str, "\r", "\\r");
+    boost::replace_all(str, "\t", "\\t");
+    boost::replace_all(str, "\v", "\\v");
+    return str;
+
+}
+
+std::string Scanner::unescape(std::string str) {
+    boost::replace_all(str, "\\'", "\'");
+    boost::replace_all(str, "\\\"", "\"");
+    boost::replace_all(str, "\\?", "\?");
+    boost::replace_all(str, "\\\\", "\\");
+    boost::replace_all(str, "\\a", "\a");
+    boost::replace_all(str, "\\b", "\b");
+    boost::replace_all(str, "\\f", "\f");
+    boost::replace_all(str, "\\n",  "\n");
+    boost::replace_all(str, "\\r", "\r");
+    boost::replace_all(str, "\\t", "\t");
+    boost::replace_all(str, "\\v", "\v");
+    return str;
 }

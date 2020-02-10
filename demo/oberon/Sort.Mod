@@ -5,6 +5,7 @@ MODULE Sort;
 CONST Dim = 2 * 10;
 
 TYPE Vector = ARRAY Dim OF INTEGER;
+     Point2D = RECORD x, y: INTEGER END;
 
 (* Array to be sorted. *)
 VAR a: Vector;

@@ -35,23 +35,31 @@ set(SOURCE_FILES
         parser/ast/ReferenceNode.cpp parser/ast/ReferenceNode.h
         parser/ast/StatementNode.cpp parser/ast/StatementNode.h
         parser/ast/AssignmentNode.cpp parser/ast/AssignmentNode.h
-        parser/ast/ProcedureCallNode.cpp parser/ast/ProcedureCallNode.h
+        parser/ast/CallNode.cpp parser/ast/CallNode.h
         parser/ast/IfThenElseNode.cpp parser/ast/IfThenElseNode.h
         parser/ast/LoopNode.cpp parser/ast/LoopNode.h
         parser/ast/StatementSequenceNode.cpp parser/ast/StatementSequenceNode.h
         parser/ast/NodePrettyPrinter.cpp parser/ast/NodePrettyPrinter.h
-        codegen/Instruction.cpp codegen/Instruction.h
-        codegen/Operand.cpp codegen/Operand.h
-        codegen/CodeGenerator.cpp codegen/CodeGenerator.h
-        codegen/NasmAssembly.cpp codegen/NasmAssembly.h
-        codegen/Section.cpp codegen/Section.h)
+        codegen/nasm/Assembly.cpp codegen/nasm/Assembly.h
+        codegen/nasm/Instruction.cpp codegen/nasm/Instruction.h
+        codegen/nasm/Formatter.cpp codegen/nasm/Formatter.h
+        codegen/nasm/Operand.cpp codegen/nasm/Operand.h
+        codegen/nasm/NASMCodeGen.cpp codegen/nasm/NASMCodeGen.h
+        codegen/llvm/LLVMCodeGen.cpp codegen/llvm/LLVMCodeGen.h)
 
-set(Boost_USE_STATIC_LIBS OFF) # enable dynamic linking
-set(Boost_USE_MULTITHREAD ON)  # enable multi-threading
+add_executable(oberon0c ${SOURCE_FILES})
 
 find_package(Boost COMPONENTS system filesystem REQUIRED)
 if (Boost_FOUND)
     include_directories(${Boost_INCLUDE_DIRS})
-    add_executable(oberon0c ${SOURCE_FILES})
     target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES})
 endif()
+
+find_package(LLVM REQUIRED CONFIG)
+if (LLVM_FOUND)
+    include_directories(${LLVM_INCLUDE_DIRS})
+    add_definitions(${LLVM_DEFINITIONS})
+    llvm_map_components_to_libnames(llvm_libs all)
+    target_link_libraries(oberon0c ${llvm_libs})
+endif()
+

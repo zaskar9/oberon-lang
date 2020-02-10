@@ -5,9 +5,7 @@
  */
 
 #include "NodePrettyPrinter.h"
-
-NodePrettyPrinter::NodePrettyPrinter(std::ostream &stream) : indent_(0), stream_(stream) {
-}
+#include "../../scanner/Scanner.h"
 
 void NodePrettyPrinter::indent() {
     stream_ << std::string(indent_, ' ');
@@ -64,6 +62,17 @@ void NodePrettyPrinter::block(BlockNode& node, bool isGlobal) {
     indent_ -= TAB_WIDTH;
 }
 
+void NodePrettyPrinter::call(CallNode &node) {
+    stream_ << node.getProcedure()->getName() << "(";
+    for (size_t i = 0; i < node.getParameterCount(); i++) {
+        node.getParameter(i)->accept(*this);
+        if (i + 1 < node.getParameterCount()) {
+            stream_ << ", ";
+        }
+    }
+    stream_ << ")";
+}
+
 void NodePrettyPrinter::visit(ModuleNode& node) {
     indent();
     stream_ << "MODULE " << node.getName() << "{" << node.getLevel() << "};" << std::endl;
@@ -84,18 +93,31 @@ void NodePrettyPrinter::visit(ProcedureNode& node) {
     for (size_t i = 0; i < node.getParameterCount(); i++) {
         node.getParameter(i)->accept(*this);
         if (i + 1 < node.getParameterCount()) {
-            stream_ << ", ";
+            stream_ << "; ";
         }
     }
-    stream_ << ");" << std::endl;
-    block(node, false);
-    indent();
-    stream_ << "BEGIN" << std::endl;
-    indent_ += TAB_WIDTH;
-    node.getStatements()->accept(*this);
-    indent_ -= TAB_WIDTH;
-    indent();
-    stream_ << "END " << node.getName() << ';' << std::endl;
+    if (node.hasVarArgs()) {
+        stream_ << "; ...";
+    }
+    stream_ << ")";
+    if (node.getReturnType() != nullptr) {
+        stream_ << ": ";
+        node.getReturnType()->accept(*this);
+    }
+    stream_ << ";";
+    if (node.isExtern()) {
+        stream_ << " EXTERN;" << std::endl;
+    } else {
+        stream_ << std::endl;
+        block(node, false);
+        indent();
+        stream_ << "BEGIN" << std::endl;
+        indent_ += TAB_WIDTH;
+        node.getStatements()->accept(*this);
+        indent_ -= TAB_WIDTH;
+        indent();
+        stream_ << "END " << node.getName() << ';' << std::endl;
+    }
 }
 
 void NodePrettyPrinter::visit(ReferenceNode &node) {
@@ -157,7 +179,11 @@ void NodePrettyPrinter::visit(IntegerLiteralNode &node) {
 }
 
 void NodePrettyPrinter::visit(StringLiteralNode &node) {
-    stream_ << node.getValue();
+    stream_ << "\"" << Scanner::escape(node.getValue()) << "\"";
+}
+
+void NodePrettyPrinter::visit(FunctionCallNode &node) {
+    call(node);
 }
 
 void NodePrettyPrinter::visit(UnaryExpressionNode &node) {
@@ -238,14 +264,7 @@ void NodePrettyPrinter::visit(ElseIfNode& node) {
 }
 
 void NodePrettyPrinter::visit(ProcedureCallNode &node) {
-    stream_ << node.getProcedure()->getName() << "(";
-    for (size_t i = 0; i < node.getParameterCount(); i++) {
-        node.getParameter(i)->accept(*this);
-        if (i + 1 < node.getParameterCount()) {
-            stream_ << ", ";
-        }
-    }
-    stream_ << ")";
+    call(node);
 }
 
 void NodePrettyPrinter::visit(LoopNode &node) {
@@ -293,3 +312,7 @@ void NodePrettyPrinter::visit(ForLoopNode &node) {
     stream_ << "END";
 }
 
+void NodePrettyPrinter::visit(ReturnNode &node) {
+    stream_ << "RETURN ";
+    node.getValue()->accept(*this);
+}

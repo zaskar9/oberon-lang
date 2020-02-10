@@ -16,7 +16,7 @@
 #include "LiteralNode.h"
 #include "ArrayTypeNode.h"
 #include "RecordTypeNode.h"
-#include "ProcedureCallNode.h"
+#include "CallNode.h"
 #include "AssignmentNode.h"
 #include "IfThenElseNode.h"
 #include "LoopNode.h"
@@ -37,6 +37,7 @@ public:
     virtual void visit(BooleanLiteralNode &node) = 0;
     virtual void visit(IntegerLiteralNode &node) = 0;
     virtual void visit(StringLiteralNode &node) = 0;
+    virtual void visit(FunctionCallNode &node) = 0;
     virtual void visit(UnaryExpressionNode &node) = 0;
     virtual void visit(BinaryExpressionNode &node) = 0;
 
@@ -53,6 +54,7 @@ public:
     virtual void visit(WhileLoopNode &node) = 0;
     virtual void visit(RepeatLoopNode &node) = 0;
     virtual void visit(ForLoopNode &node) = 0;
+    virtual void visit(ReturnNode &node) = 0;
 
 };
 

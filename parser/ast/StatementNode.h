@@ -9,14 +9,33 @@
 
 
 #include "Node.h"
+#include "ExpressionNode.h"
 
 class StatementNode : public Node {
 
 public:
-    explicit StatementNode(NodeType type, FilePos pos);
-    ~StatementNode() override;
+    explicit StatementNode(NodeType type, const FilePos &pos) : Node(type, pos) { };
+    ~StatementNode() override = default;
 
-    void accept(NodeVisitor& visitor) override = 0;
+    void accept(NodeVisitor &visitor) override = 0;
+
+};
+
+class ReturnNode : public StatementNode {
+
+private:
+    std::unique_ptr<ExpressionNode> value_;
+
+public:
+    explicit ReturnNode(const FilePos &pos, std::unique_ptr<ExpressionNode> value) :
+            StatementNode(NodeType::ret, pos), value_(std::move(value)) { };
+    ~ReturnNode() override = default;
+
+    ExpressionNode * getValue() const;
+
+    void accept(NodeVisitor &visitor) final;
+
+    void print(std::ostream &stream) const final;
 
 };
 

@@ -16,7 +16,7 @@
 #include "ast/IfThenElseNode.h"
 #include "ast/LoopNode.h"
 #include "ast/AssignmentNode.h"
-#include "ast/ProcedureCallNode.h"
+#include "ast/CallNode.h"
 
 static OperatorType token_to_operator(TokenType token);
 
@@ -167,7 +167,7 @@ void Parser::type_declarations(BlockNode *block) {
     }
 }
 
-// type = identifier | array_type | record_type .
+// type = ( identifier | array_type | record_type ) .
 TypeNode* Parser::type(BlockNode *block) {
     logger_->debug("", "type");
     auto token = scanner_->peekToken();
@@ -305,29 +305,38 @@ void Parser::var_declarations(BlockNode *block) {
     }
 }
 
-// procedure_declaration = procedure_heading ";" procedure_body identifier ";" .
+// procedure_declaration = procedure_heading ";" ( procedure_body identifier | "EXTERN" ) ";" .
 void Parser::procedure_declaration(BlockNode *block) {
     logger_->debug("", "procedure_declaration");
     auto proc = procedure_heading();
-    auto token = scanner_->nextToken();
+    auto token = scanner_->peekToken();
     if (token->getType() != TokenType::semicolon) {
         logger_->error(token->getPosition(), "; expected.");
+    } else {
+        scanner_->nextToken();
     }
-    procedure_body(proc.get());
-    auto name = ident();
-    token = scanner_->nextToken();
+    if (scanner_->peekToken()->getType() == TokenType::kw_extern) {
+        scanner_->nextToken(); // skip EXTERN keyword
+        proc->setExtern(true);
+    } else {
+        procedure_body(proc.get());
+        auto name = ident();
+        if (name != proc->getName()) {
+            logger_->error(token->getPosition(), "procedure name mismatch: expected \"" + proc->getName()
+                                                 + "\", found \"" + name + "\".");
+        }
+    }
+    token = scanner_->peekToken();
     if (token->getType() != TokenType::semicolon) {
-        logger_->error(token->getPosition(),"; expected.");
-    }
-    if (name != proc->getName()) {
-        logger_->error(token->getPosition(), "procedure name mismatch: expected \"" + proc->getName()
-                + "\", found \"" + name + "\".");
+        logger_->error(token->getPosition(), "; expected.");
+    } else {
+        scanner_->nextToken();
     }
     symbols_->leaveScope();
     block->addProcedure(std::move(proc));
 }
 
-// procedure_heading = "PROCEDURE" identifier [ formal_parameters ] .
+// procedure_heading = "PROCEDURE" identifier [ formal_parameters ] [ ":" type ] .
 std::unique_ptr<ProcedureNode> Parser::procedure_heading() {
     logger_->debug("", "procedure_heading");
     auto token = scanner_->nextToken(); // skip PROCEDURE keyword
@@ -336,6 +345,10 @@ std::unique_ptr<ProcedureNode> Parser::procedure_heading() {
     symbols_->enterScope();
     if (scanner_->peekToken()->getType() == TokenType::lparen) {
         formal_parameters(proc.get());
+    }
+    if (scanner_->peekToken()->getType() == TokenType::colon) {
+        scanner_->nextToken(); // skip colon
+        proc->setReturnType(type(proc.get()));
     }
     return proc;
 }
@@ -362,10 +375,13 @@ void Parser::formal_parameters(ProcedureNode *proc) {
     auto token = scanner_->nextToken(); // skip left parenthesis
     if (token->getType() == TokenType::lparen) {
         TokenType type = scanner_->peekToken()->getType();
-        if (type == TokenType::kw_var || type == TokenType::const_ident) {
+        if (type == TokenType::kw_var || type == TokenType::const_ident || type == TokenType::varargs) {
             fp_section(proc);
             while (scanner_->peekToken()->getType() == TokenType::semicolon) {
-                scanner_->nextToken(); // skip semicolon
+                token = scanner_->nextToken(); // skip semicolon
+                if (proc->hasVarArgs()) {
+                    logger_->error(token->getPosition(), "varargs must be last formal parameter.");
+                }
                 fp_section(proc);
             }
         }
@@ -376,25 +392,30 @@ void Parser::formal_parameters(ProcedureNode *proc) {
     }
 }
 
-// fp_section = [ "VAR" ] ident_list ":" type .
+// fp_section = ( [ "VAR" ] ident_list ":" type | "..." ) .
 void Parser::fp_section(ProcedureNode *proc) {
     logger_->debug("", "fp_section");
-    bool var = false;
-    if (scanner_->peekToken()->getType() == TokenType::kw_var) {
-        scanner_->nextToken(); // skip VAR keyword
-        var = true;
-    }
-    std::vector<std::string> idents;
-    ident_list(idents);
-    auto token = scanner_->nextToken();
-    if (token->getType() != TokenType::colon) {
-        logger_->error(token->getPosition(), ": expected.");
-    }
-    auto node = type(proc);
-    for (auto ident : idents) {
-        auto param = std::make_unique<ParameterNode>(token->getPosition(), ident, node, var, symbols_->getLevel());
-        symbols_->insert(ident, param.get());
-        proc->addParameter(std::move(param));
+    if (scanner_->peekToken()->getType() == TokenType::varargs) {
+        scanner_->nextToken(); // skip varargs
+        proc->setVarArgs(true);
+    } else {
+        bool var = false;
+        if (scanner_->peekToken()->getType() == TokenType::kw_var) {
+            scanner_->nextToken(); // skip VAR keyword
+            var = true;
+        }
+        std::vector<std::string> idents;
+        ident_list(idents);
+        auto token = scanner_->nextToken();
+        if (token->getType() != TokenType::colon) {
+            logger_->error(token->getPosition(), ": expected.");
+        }
+        auto node = type(proc);
+        for (auto ident : idents) {
+            auto param = std::make_unique<ParameterNode>(token->getPosition(), ident, node, var, symbols_->getLevel());
+            symbols_->insert(ident, param.get());
+            proc->addParameter(std::move(param));
+        }
     }
 }
 
@@ -408,9 +429,9 @@ void Parser::statement_sequence(StatementSequenceNode *statements) {
     }
 }
 
-// statement = [ assignment | procedure_call | if_statement | case_statement
+// statement = ( assignment | procedure_call | if_statement | case_statement
 //               while_statement | repeat_statement | for_statement | loop_statement
-//               with_statement | "EXIT" | "RETURN" [ expression ] ] .
+//               with_statement | "EXIT" | "RETURN" [ expression ] ) .
 std::unique_ptr<StatementNode> Parser::statement() {
     logger_->debug("", "statement");
     auto token = scanner_->peekToken();
@@ -455,6 +476,9 @@ std::unique_ptr<StatementNode> Parser::statement() {
         return repeat_statement();
     } else if (token->getType() == TokenType::kw_for) {
         return for_statement();
+    } else if (token->getType() == TokenType::kw_return) {
+        scanner_->nextToken();
+        return std::make_unique<ReturnNode>(token->getPosition(), expression());
     } else {
         logger_->error(token->getPosition(), "unknown statement: too many semi-colons?");
     }
@@ -475,7 +499,7 @@ std::unique_ptr<StatementNode> Parser::assignment(std::unique_ptr<ReferenceNode>
 }
 
 // procedure_call = identifier [ actual_parameters ] .
-void Parser::procedure_call(ProcedureCallNode *call) {
+void Parser::procedure_call(CallNode *call) {
     logger_->debug("", "procedure_call");
     if (scanner_->peekToken()->getType() == TokenType::lparen) {
         actual_parameters(call);
@@ -496,7 +520,6 @@ std::unique_ptr<StatementNode> Parser::if_statement() {
         statement_sequence(statement->addThenStatements(token->getPosition()));
         token = scanner_->nextToken();
         while (token->getType() == TokenType::kw_elsif) {
-            // scanner_->nextToken(); // skip ELSIF keyword
             condition = expression();
             if (condition->getType() != BasicTypeNode::BOOLEAN) {
                 logger_->error(condition->getFilePos(), "Boolean expression expected.");
@@ -644,7 +667,7 @@ std::unique_ptr<StatementNode> Parser::for_statement() {
 }
 
 // actual_parameters = "(" [ expression { "," expression } ] ")" .
-void Parser::actual_parameters(ProcedureCallNode *call) {
+void Parser::actual_parameters(CallNode *call) {
     logger_->debug("", "actual_parameters");
     scanner_->nextToken(); // skip left parenthesis
     if (scanner_->peekToken()->getType() == TokenType::rparen) {
@@ -794,7 +817,7 @@ std::unique_ptr<ExpressionNode> Parser::term() {
     return expr;
 }
 
-// factor = identifier { selector } | integer | string | "TRUE" | "FALSE" | "(" expression ")" | "~" factor .
+// factor = identifier { selector } | function_call | integer | string | "TRUE" | "FALSE" | "(" expression ")" | "~" factor .
 std::unique_ptr<ExpressionNode> Parser::factor() {
     logger_->debug("", "factor");
     auto token = scanner_->peekToken();
@@ -824,7 +847,7 @@ std::unique_ptr<ExpressionNode> Parser::factor() {
                         return nullptr;
                 }
             } else if (node->getNodeType() == NodeType::parameter || node->getNodeType() == NodeType::variable) {
-                auto var = dynamic_cast<DeclarationNode*>(node);
+                auto var = dynamic_cast<DeclarationNode *>(node);
                 auto ref = std::make_unique<ReferenceNode>(pos, var);
                 auto context = var->getType();
                 token = scanner_->peekToken();
@@ -834,8 +857,17 @@ std::unique_ptr<ExpressionNode> Parser::factor() {
                 }
                 ref->setType(context);
                 return ref;
+            } else if (node->getNodeType() == NodeType::procedure) {
+                auto proc = dynamic_cast<ProcedureNode*>(node);
+                if (proc->getReturnType() == nullptr) {
+                    logger_->error(pos, "function expected.");
+                    return nullptr;
+                }
+                auto call = std::make_unique<FunctionCallNode>(pos, proc);
+                procedure_call(call.get());
+                return call;
             } else {
-                logger_->error(pos, "constant, parameter or variable expected.");
+                logger_->error(pos, "constant, parameter, variable or function call expected.");
                 return nullptr;
             }
         } else {
@@ -1020,6 +1052,9 @@ const std::string Parser::foldString(const ExpressionNode *expr) const {
 
 bool Parser::checkActualParameter(const ProcedureNode* proc, size_t num, const ExpressionNode* expr) {
     if (num >= proc->getParameterCount()) {
+        if (proc->hasVarArgs()) {
+            return true;
+        }
         logger_->error(expr->getFilePos(), "more actual than formal parameters.");
         return false;
     }

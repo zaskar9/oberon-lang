@@ -35,6 +35,30 @@ size_t ProcedureNode::getProcedureCount() const {
     return procedures_.size();
 }
 
+void ProcedureNode::setExtern(bool value) {
+    extern_ = value;
+}
+
+bool ProcedureNode::isExtern() const {
+    return extern_;
+}
+
+void ProcedureNode::setReturnType(TypeNode *type) {
+    type_ = type;
+}
+
+TypeNode * ProcedureNode::getReturnType() const {
+    return type_;
+}
+
+void ProcedureNode::setVarArgs(bool value) {
+    varargs_ = value;
+}
+
+bool ProcedureNode::hasVarArgs() const {
+    return varargs_;
+}
+
 void ProcedureNode::accept(NodeVisitor& visitor) {
     visitor.visit(*this);
 }

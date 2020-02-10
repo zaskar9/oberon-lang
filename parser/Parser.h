@@ -24,7 +24,7 @@
 #include "ast/StatementNode.h"
 #include "ast/StatementSequenceNode.h"
 #include "ast/ReferenceNode.h"
-#include "ast/ProcedureCallNode.h"
+#include "ast/CallNode.h"
 #include "symbol/SymbolTable.h"
 
 class Parser {
@@ -57,13 +57,13 @@ private:
     void statement_sequence(StatementSequenceNode* statements);
     std::unique_ptr<StatementNode> statement();
     std::unique_ptr<StatementNode> assignment(std::unique_ptr<ReferenceNode> lvalue);
-    void procedure_call(ProcedureCallNode *call);
+    void procedure_call(CallNode *call);
     std::unique_ptr<StatementNode> if_statement();
     std::unique_ptr<StatementNode> loop_statement();
     std::unique_ptr<StatementNode> while_statement();
     std::unique_ptr<StatementNode> repeat_statement();
     std::unique_ptr<StatementNode> for_statement();
-    void actual_parameters(ProcedureCallNode *call);
+    void actual_parameters(CallNode *call);
     TypeNode* selector(ReferenceNode *ident, const TypeNode *type);
 
     std::unique_ptr<LiteralNode> fold(const ExpressionNode *expr) const;

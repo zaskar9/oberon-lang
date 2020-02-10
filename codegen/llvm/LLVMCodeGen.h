@@ -1,31 +1,40 @@
 /*
- * Header of the node visitor that pretty-prints the abstract syntax tree used by the Oberon-0 compiler.
+ * Simple tree-walk code generator to produce LLVM assembly for the Oberon-0 compiler.
  *
- * Created by Michael Grossniklaus on 12/31/2018.
+ * Created by Michael Grossniklaus on 2/7/20.
  */
 
-#ifndef OBERON0C_NODEPRETTYPRINTER_H
-#define OBERON0C_NODEPRETTYPRINTER_H
+#ifndef OBERON0C_LLVMCODEGEN_H
+#define OBERON0C_LLVMCODEGEN_H
 
-#define TAB_WIDTH 3
 
-#include <iostream>
-#include <iomanip>
-#include "NodeVisitor.h"
+#include <llvm/IR/IRBuilder.h>
+#include <llvm/IR/Module.h>
+#include "../../parser/ast/NodeVisitor.h"
 
-class NodePrettyPrinter final : public NodeVisitor {
+using namespace llvm;
+
+class LLVMCodeGen final : NodeVisitor {
 
 private:
-    size_t indent_;
-    std::ostream &stream_;
+    LLVMContext context_;
+    IRBuilder<> builder_;
+    std::unique_ptr<Module> module_;
+    Value* value_;
+    std::map<DeclarationNode*, Value*> values_;
+    bool deref_;
+    int level_;
+    Function* function_;
 
-    void indent();
-    void block(BlockNode &node, bool isGlobal);
+    Type* getLLVMType(TypeNode* type, bool isPtr = false);
     void call(CallNode &node);
 
 public:
-    explicit NodePrettyPrinter(std::ostream &stream) : indent_(0), stream_(stream) { };
-    ~NodePrettyPrinter() = default;
+    explicit LLVMCodeGen() :
+        context_(), builder_(context_), module_(), value_(), values_(), deref_(false), level_(0), function_() { };
+    ~LLVMCodeGen() = default;
+
+    Module* getModule() const;
 
     void visit(ModuleNode &node) override;
     void visit(ProcedureNode &node) override;
@@ -62,4 +71,4 @@ public:
 };
 
 
-#endif //OBERON0C_NODEPRETTYPRINTER_H
+#endif //OBERON0C_LLVMCODEGEN_H

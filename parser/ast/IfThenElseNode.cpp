@@ -61,6 +61,10 @@ size_t IfThenElseNode::getElseIfCount() const {
     return elseIfs_.size();
 }
 
+bool IfThenElseNode::hasElseIf() const {
+    return elseIfs_.size() > 0;
+}
+
 StatementSequenceNode* IfThenElseNode::addElseStatements(const FilePos pos) {
     elseStatements_ = std::make_unique<StatementSequenceNode>(pos);
     return elseStatements_.get();
@@ -68,6 +72,10 @@ StatementSequenceNode* IfThenElseNode::addElseStatements(const FilePos pos) {
 
 StatementSequenceNode* IfThenElseNode::getElseStatements() const {
     return elseStatements_.get();
+}
+
+bool IfThenElseNode::hasElse() const {
+    return elseStatements_ != nullptr;
 }
 
 void IfThenElseNode::accept(NodeVisitor& visitor) {

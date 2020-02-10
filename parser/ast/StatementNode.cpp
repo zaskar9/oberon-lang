@@ -5,8 +5,17 @@
  */
 
 #include "StatementNode.h"
+#include "NodeVisitor.h"
 
-StatementNode::StatementNode(const NodeType type, const FilePos pos) : Node(type, pos) {
+ExpressionNode * ReturnNode::getValue() const {
+    return value_.get();
 }
 
-StatementNode::~StatementNode() = default;
+void ReturnNode::accept(NodeVisitor &visitor) {
+    visitor.visit(*this);
+}
+
+void ReturnNode::print(std::ostream &stream) const {
+    stream << "RETURN " << *value_;
+}
+
