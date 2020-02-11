@@ -1,7 +1,9 @@
 MODULE CodeGen;
 
-VAR x, y: INTEGER;
-    a: ARRAY 20 OF INTEGER;
+CONST Dim = 20;
+
+VAR x, y, i: INTEGER;
+    a: ARRAY Dim OF INTEGER;
 
 PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
 PROCEDURE rand(): INTEGER; EXTERN;
@@ -16,15 +18,7 @@ BEGIN
     printf("(%d, %d)\n", x, y)
 END WriteTuple;
 
-PROCEDURE Swap(VAR x, y: INTEGER);
-VAR t: INTEGER;
-BEGIN
-    t := x;
-    x := y;
-    y := t
-END Swap;
-
-PROCEDURE max(x, y: INTEGER): INTEGER;
+(* PROCEDURE max(x, y: INTEGER): INTEGER;
 VAR res: INTEGER;
 BEGIN
     IF x > y THEN res := x ELSE res := y END;
@@ -81,16 +75,43 @@ BEGIN
         res := res * i
     END;
     RETURN res
-END iFac;
+END iFac; *)
 
-PROCEDURE Test;
-VAR a: ARRAY 20 OF INTEGER;
+(* Swaps the two values passed as var-parameters. *)
+PROCEDURE Swap(VAR x, y: INTEGER);
+VAR t: INTEGER;
 BEGIN
-    a[19] := 1
-END Test;
+    WriteTuple(x, y);
+    t := x;
+    x := y;
+    y := t
+END Swap;
+
+(* Initializes the array. *)
+PROCEDURE Init();
+VAR i: INTEGER;
+BEGIN
+    FOR i := 0 TO Dim - 1 DO
+        a[i] := rand() MOD 100
+    END
+END Init;
+
+(* Applies the bubble-sort algorithm to the array. *)
+PROCEDURE BubbleSort;
+VAR i, j: INTEGER;
+BEGIN
+    FOR i := 0 TO Dim - 1 DO
+        FOR j := Dim - 1 TO i + 1 BY -1 DO
+            WriteTuple(a[j - 1], a[j]);
+            IF a[j - 1] > a[j] THEN
+                Swap(a[j - 1], a[j])
+            END
+        END
+    END
+END BubbleSort;
 
 BEGIN
-    x := 12;
+    (* x := 12;
     y := 9;
     WriteTuple(x, y);
     Swap(x, y);
@@ -101,7 +122,13 @@ BEGIN
     WriteInt(compare(y, x));
     WriteInt(rFib(10));
     WriteInt(rFac(5));
-    WriteInt(iFac(5))
+    WriteInt(iFac(5));
+    Test *)
+    Init;
+    BubbleSort
+    (* FOR i := 0 TO Dim - 1 DO
+        WriteTuple(i, a[i])
+    END *)
 END CodeGen.
 
 (* ./oberon0c CodeGen.Mod && opt -S -O3 CodeGen.ll | llc -O3 -o CodeGen.s && g++ CodeGen.s -o CodeGen && ./CodeGen *)

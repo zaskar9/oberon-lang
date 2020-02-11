@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+int a[20];
+int x, y;
 
 int max(int x, int y) {
     int res;
@@ -17,6 +19,6 @@ int max(int x, int y) {
 }
 
 int main(int argc, const char* argv[]) {
-    printf("%d\n", max(12, 9));
+    a[x] = y;
     return 0;
 }

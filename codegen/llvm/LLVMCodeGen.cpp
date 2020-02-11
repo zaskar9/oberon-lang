@@ -88,18 +88,25 @@ void LLVMCodeGen::visit(ReferenceNode &node) {
         std::cerr << "Cannot reference value of child procedure." << std::endl;
     }
     auto type = ref->getType();
-    for (size_t i = 0; i < node.getSelectorCount(); i++) {
-        if (type->getNodeType() == NodeType::array_type) {
-            // handle array access
-            auto array_t = dynamic_cast<ArrayTypeNode *>(type);
-            auto base = value_;
-            node.getSelector(i)->accept(*this);
-            // value_ = builder_.CreateGEP(getLLVMType(array_t->getMemberType(), true), base, value_);
-            value_ = builder_.CreateGEP(nullptr, base, value_);
-        } else if (type->getNodeType() == NodeType::record_type) {
-            // todo handle record access
+    if (node.getSelectorCount() > 0) {
+        auto base = value_;
+        std::vector<Value*> indices;
+        indices.push_back(builder_.getInt32(0));
+        for (size_t i = 0; i < node.getSelectorCount(); i++) {
+            if (type->getNodeType() == NodeType::array_type) {
+                // handle array access
+                bool deref = deref_;
+                deref_ = true;
+                node.getSelector(i)->accept(*this);
+                indices.push_back(value_);
+                deref_ = deref;
+            } else if (type->getNodeType() == NodeType::record_type) {
+                // todo handle record access
+            }
         }
+        value_ = builder_.CreateInBoundsGEP(getLLVMType(type), base, indices);
     }
+
     if (deref_) {
         if (ref->getNodeType() == NodeType::variable) {
             value_ = builder_.CreateLoad(value_);
@@ -261,7 +268,11 @@ void LLVMCodeGen::visit(ForLoopNode& node) {
     deref_ = false;
     auto body = BasicBlock::Create(context_, "loop_body", function_);
     auto tail = BasicBlock::Create(context_, "tail", function_);
-    value_ = builder_.CreateICmpNE(counter, end);
+    if (node.getStep() > 0) {
+        value_ = builder_.CreateICmpSLE(counter, end);
+    } else {
+        value_ = builder_.CreateICmpSGE(counter, end);
+    }
     builder_.CreateCondBr(value_, body, tail);
     // loop body
     builder_.SetInsertPoint(body);
@@ -281,8 +292,12 @@ void LLVMCodeGen::visit(ForLoopNode& node) {
     node.getCounter()->accept(*this);
     counter = value_;
     deref_ = false;
-    value_ = builder_.CreateICmpNE(counter, end);
-    builder_.CreateCondBr(value_, body, tail);
+    if (node.getStep() > 0) {
+        value_ = builder_.CreateICmpSGT(counter, end);
+    } else {
+        value_ = builder_.CreateICmpSLT(counter, end);
+    }
+    builder_.CreateCondBr(value_, tail, body);
     // after loop
     builder_.SetInsertPoint(tail);
 }
