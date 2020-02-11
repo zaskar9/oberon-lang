@@ -17,6 +17,7 @@ using namespace llvm;
 class LLVMCodeGen final : NodeVisitor {
 
 private:
+    Logger *logger_;
     LLVMContext context_;
     IRBuilder<> builder_;
     std::unique_ptr<Module> module_;
@@ -30,8 +31,8 @@ private:
     void call(CallNode &node);
 
 public:
-    explicit LLVMCodeGen() :
-        context_(), builder_(context_), module_(), value_(), values_(), deref_(false), level_(0), function_() { };
+    explicit LLVMCodeGen(Logger* logger) : logger_(logger), context_(), builder_(context_), module_(),
+            value_(), values_(), deref_(false), level_(0), function_() { };
     ~LLVMCodeGen() = default;
 
     Module* getModule() const;

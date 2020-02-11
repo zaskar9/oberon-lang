@@ -66,7 +66,11 @@ void LLVMCodeGen::visit(ProcedureNode &node) {
         }
         auto block = builder_.GetInsertBlock();
         if (block->getTerminator() == nullptr) {
-            builder_.CreateUnreachable();
+            if (node.getReturnType() != nullptr && block->size() > 0) {
+                logger_->error(node.getFilePos(), "function \"" + node.getName() + "\" has no return statement.");
+            } else {
+                builder_.CreateUnreachable();
+            }
         }
     }
 }
@@ -84,10 +88,17 @@ void LLVMCodeGen::visit(ReferenceNode &node) {
         std::cerr << "Cannot reference value of child procedure." << std::endl;
     }
     auto type = ref->getType();
-    if (type->getNodeType() == NodeType::array_type) {
-        // todo handle array access
-    } else if (type->getNodeType() == NodeType::record_type) {
-        // todo handle record access
+    for (size_t i = 0; i < node.getSelectorCount(); i++) {
+        if (type->getNodeType() == NodeType::array_type) {
+            // handle array access
+            auto array_t = dynamic_cast<ArrayTypeNode *>(type);
+            auto base = value_;
+            node.getSelector(i)->accept(*this);
+            // value_ = builder_.CreateGEP(getLLVMType(array_t->getMemberType(), true), base, value_);
+            value_ = builder_.CreateGEP(nullptr, base, value_);
+        } else if (type->getNodeType() == NodeType::record_type) {
+            // todo handle record access
+        }
     }
     if (deref_) {
         if (ref->getNodeType() == NodeType::variable) {
@@ -286,7 +297,10 @@ void LLVMCodeGen::visit(ReturnNode& node) {
 Type* LLVMCodeGen::getLLVMType(TypeNode *type, bool isPtr) {
     Type* result = nullptr;
     if (type == nullptr) {
-         result = builder_.getVoidTy();
+        result = builder_.getVoidTy();
+    } else if (type->getNodeType() == NodeType::array_type) {
+        auto array_t = dynamic_cast<ArrayTypeNode*>(type);
+        result = ArrayType::get(getLLVMType(array_t->getMemberType()), array_t->getDimension());
     } else {
         switch (type->getNodeType()) {
             case NodeType::array_type:

@@ -31,7 +31,7 @@ void nasmBackend(std::string filename, Logger* logger, ModuleNode &ast_root) {
 
 void llvmBackend(std::string filename, Logger* logger, ModuleNode &ast_root) {
     std::string name = change_extension(filename, "ll").string();
-    auto codegen = std::make_unique<LLVMCodeGen>();
+    auto codegen = std::make_unique<LLVMCodeGen>(logger);
     codegen->visit(ast_root);
     auto module = codegen->getModule();
     module->setSourceFileName(filename);

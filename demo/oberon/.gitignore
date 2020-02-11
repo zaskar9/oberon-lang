@@ -1,4 +1,5 @@
+/CodeGen
+/oberon0c
+*.asm
 *.ll
 *.s
-*.asm
-/CodeGen

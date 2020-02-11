@@ -125,17 +125,17 @@ void NodePrettyPrinter::visit(ReferenceNode &node) {
     stream_ << ref->getName();
     auto type = ref->getType();
     for (size_t i = 0; i < node.getSelectorCount(); i++) {
-        if (type->getNodeType() == NodeType::record_type) {
+        if (type->getNodeType() == NodeType::array_type) {
+            stream_ << "[";
+            auto selector = node.getSelector(i);
+            selector->accept(*this);
+            stream_ << "]";
+            type = dynamic_cast<ArrayTypeNode*>(type)->getMemberType();
+        } else if (type->getNodeType() == NodeType::record_type) {
             stream_ << ".";
             auto selector = node.getSelector(i);
             selector->accept(*this);
             type = selector->getType();
-        } else if (type->getNodeType() == NodeType::array_type) {
-            auto selector = node.getSelector(i);
-            stream_ << "[";
-            selector->accept(*this);
-            stream_ << "]";
-            type = dynamic_cast<ArrayTypeNode*>(type)->getMemberType();
         }
     }
 }

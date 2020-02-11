@@ -422,10 +422,16 @@ void Parser::fp_section(ProcedureNode *proc) {
 // statement_sequence = statement { ";" statement } .
 void Parser::statement_sequence(StatementSequenceNode *statements) {
     logger_->debug("", "statement_sequence");
-    statements->addStatement(statement());
-    while (scanner_->peekToken()->getType() == TokenType::semicolon) {
-        scanner_->nextToken(); // skip semicolon
+    auto token = scanner_->peekToken();
+    if (token->getType() == TokenType::kw_end || token->getType() == TokenType::kw_elsif ||
+        token->getType() == TokenType::kw_else || token->getType() == TokenType::kw_until) {
+        logger_->error(token->getPosition(), "block cannot be empty.");
+    } else {
         statements->addStatement(statement());
+        while (scanner_->peekToken()->getType() == TokenType::semicolon) {
+            scanner_->nextToken(); // skip semicolon
+            statements->addStatement(statement());
+        }
     }
 }
 

@@ -1,6 +1,7 @@
 MODULE CodeGen;
 
 VAR x, y: INTEGER;
+    a: ARRAY 20 OF INTEGER;
 
 PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
 PROCEDURE rand(): INTEGER; EXTERN;
@@ -72,11 +73,6 @@ BEGIN
     END
 END rFac;
 
-PROCEDURE test: INTEGER;
-BEGIN
-    WriteInt(5)
-END test;
-
 PROCEDURE iFac(n: INTEGER): INTEGER;
 VAR i, res: INTEGER;
 BEGIN
@@ -87,8 +83,14 @@ BEGIN
     RETURN res
 END iFac;
 
+PROCEDURE Test;
+VAR a: ARRAY 20 OF INTEGER;
 BEGIN
-    (* x := 12;
+    a[19] := 1
+END Test;
+
+BEGIN
+    x := 12;
     y := 9;
     WriteTuple(x, y);
     Swap(x, y);
@@ -99,9 +101,7 @@ BEGIN
     WriteInt(compare(y, x));
     WriteInt(rFib(10));
     WriteInt(rFac(5));
-    WriteInt(iFac(5)) *)
-    test()
+    WriteInt(iFac(5))
 END CodeGen.
 
-(* llc -O0 CodeGen.ll && g++ CodeGen.s -o CodeGen && ./CodeGen *)
-(* opt -S -O3 CodeGen.ll -o CodeGen-opt.ll *)
+(* ./oberon0c CodeGen.Mod && opt -S -O3 CodeGen.ll | llc -O3 -o CodeGen.s && g++ CodeGen.s -o CodeGen && ./CodeGen *)
