@@ -8,23 +8,35 @@ VAR x, y, i: INTEGER;
 PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
 PROCEDURE rand(): INTEGER; EXTERN;
 
+PROCEDURE Write(val: STRING);
+BEGIN
+    printf(val)
+END Write;
+
+PROCEDURE WriteLn;
+BEGIN
+    printf("\n")
+END WriteLn;
+
 PROCEDURE WriteInt(val: INTEGER);
 BEGIN
-    printf("%d\n", val)
+    printf("%d", val)
 END WriteInt;
 
 PROCEDURE WriteTuple(x, y: INTEGER);
 BEGIN
-    printf("(%d, %d)\n", x, y)
+    printf("(%d, %d)", x, y)
 END WriteTuple;
 
-(* PROCEDURE max(x, y: INTEGER): INTEGER;
+(* Computes the maximum of two numbers. *)
+PROCEDURE max(x, y: INTEGER): INTEGER;
 VAR res: INTEGER;
 BEGIN
     IF x > y THEN res := x ELSE res := y END;
     RETURN res
 END max;
 
+(* Compares two numbers. *)
 PROCEDURE compare(x, y: INTEGER): INTEGER;
 VAR res: INTEGER;
 BEGIN
@@ -38,6 +50,7 @@ BEGIN
     RETURN res
 END compare;
 
+(* Recursive computation of greatest common denominator. *)
 PROCEDURE gcd(x, y: INTEGER): INTEGER;
 BEGIN
     IF x = y THEN
@@ -49,6 +62,7 @@ BEGIN
     END
 END gcd;
 
+(* Recursive computation of n-th Fibonacci number. *)
 PROCEDURE rFib(n: INTEGER): INTEGER;
 BEGIN
     IF n > 1 THEN
@@ -58,6 +72,7 @@ BEGIN
     END
 END rFib;
 
+(* Recursive computation of factorial. *)
 PROCEDURE rFac(n: INTEGER): INTEGER;
 BEGIN
     IF n > 1 THEN
@@ -67,6 +82,7 @@ BEGIN
     END
 END rFac;
 
+(* Iterative computation of factorial. *)
 PROCEDURE iFac(n: INTEGER): INTEGER;
 VAR i, res: INTEGER;
 BEGIN
@@ -75,13 +91,12 @@ BEGIN
         res := res * i
     END;
     RETURN res
-END iFac; *)
+END iFac;
 
 (* Swaps the two values passed as var-parameters. *)
 PROCEDURE Swap(VAR x, y: INTEGER);
 VAR t: INTEGER;
 BEGIN
-    WriteTuple(x, y);
     t := x;
     x := y;
     y := t
@@ -91,10 +106,27 @@ END Swap;
 PROCEDURE Init();
 VAR i: INTEGER;
 BEGIN
-    FOR i := 0 TO Dim - 1 DO
-        a[i] := rand() MOD 100
-    END
+    i := 0;
+    REPEAT
+        a[i] := rand() MOD 100;
+        i := i + 1
+    UNTIL i = Dim
 END Init;
+
+(* Prints the array. *)
+PROCEDURE Print();
+VAR i: INTEGER;
+BEGIN
+    Write("[");
+    i := 0;
+    WHILE i < Dim DO
+        WriteInt(a[i]);
+        IF i + 1 < Dim THEN Write(", ") END;
+        i := i + 1
+    END;
+    Write("]");
+    WriteLn()
+END Print;
 
 (* Applies the bubble-sort algorithm to the array. *)
 PROCEDURE BubbleSort;
@@ -102,7 +134,6 @@ VAR i, j: INTEGER;
 BEGIN
     FOR i := 0 TO Dim - 1 DO
         FOR j := Dim - 1 TO i + 1 BY -1 DO
-            WriteTuple(a[j - 1], a[j]);
             IF a[j - 1] > a[j] THEN
                 Swap(a[j - 1], a[j])
             END
@@ -125,10 +156,9 @@ BEGIN
     WriteInt(iFac(5));
     Test *)
     Init;
-    BubbleSort
-    (* FOR i := 0 TO Dim - 1 DO
-        WriteTuple(i, a[i])
-    END *)
+    Print;
+    BubbleSort;
+    Print
 END CodeGen.
 
 (* ./oberon0c CodeGen.Mod && opt -S -O3 CodeGen.ll | llc -O3 -o CodeGen.s && g++ CodeGen.s -o CodeGen && ./CodeGen *)

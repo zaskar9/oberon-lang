@@ -95,11 +95,10 @@ void LLVMCodeGen::visit(ReferenceNode &node) {
         for (size_t i = 0; i < node.getSelectorCount(); i++) {
             if (type->getNodeType() == NodeType::array_type) {
                 // handle array access
-                bool deref = deref_;
-                deref_ = true;
+                setRefMode(true);
                 node.getSelector(i)->accept(*this);
                 indices.push_back(value_);
-                deref_ = deref;
+                restoreRefMode();
             } else if (type->getNodeType() == NodeType::record_type) {
                 // todo handle record access
             }
@@ -107,7 +106,7 @@ void LLVMCodeGen::visit(ReferenceNode &node) {
         value_ = builder_.CreateInBoundsGEP(getLLVMType(type), base, indices);
     }
 
-    if (deref_) {
+    if (deref()) {
         if (ref->getNodeType() == NodeType::variable) {
             value_ = builder_.CreateLoad(value_);
         } else if (ref->getNodeType() == NodeType::parameter) {
@@ -119,13 +118,13 @@ void LLVMCodeGen::visit(ReferenceNode &node) {
     }
 }
 
-void LLVMCodeGen::visit(ConstantDeclarationNode &node) { }
+void LLVMCodeGen::visit(ConstantDeclarationNode &node) { /* Node does not need code generation. */ }
 
-void LLVMCodeGen::visit(FieldNode &node) { }
+void LLVMCodeGen::visit(FieldNode &node) { /* Node does not need code generation. */ }
 
-void LLVMCodeGen::visit(ParameterNode &node) { }
+void LLVMCodeGen::visit(ParameterNode &node) { /* Node does not need code generation. */ }
 
-void LLVMCodeGen::visit(VariableDeclarationNode &node) { }
+void LLVMCodeGen::visit(VariableDeclarationNode &node) { /* Node does not need code generation. */ }
 
 void LLVMCodeGen::visit(BooleanLiteralNode &node) {
     value_ = node.getValue() ? builder_.getTrue() : builder_.getFalse();
@@ -174,13 +173,13 @@ void LLVMCodeGen::visit(BinaryExpressionNode &node) {
     }
 }
 
-void LLVMCodeGen::visit(TypeDeclarationNode &node) { }
+void LLVMCodeGen::visit(TypeDeclarationNode &node) { /* Node does not need code generation. */ }
 
-void LLVMCodeGen::visit(ArrayTypeNode &node) { }
+void LLVMCodeGen::visit(ArrayTypeNode &node) { /* Node does not need code generation. */ }
 
-void LLVMCodeGen::visit(BasicTypeNode &node) { }
+void LLVMCodeGen::visit(BasicTypeNode &node) { /* Node does not need code generation. */ }
 
-void LLVMCodeGen::visit(RecordTypeNode &node) { }
+void LLVMCodeGen::visit(RecordTypeNode &node) { /* Node does not need code generation. */ }
 
 void LLVMCodeGen::visit(StatementSequenceNode &node) {
     for (size_t i = 0; i < node.getStatementCount(); i++) {
@@ -189,10 +188,10 @@ void LLVMCodeGen::visit(StatementSequenceNode &node) {
 }
 
 void LLVMCodeGen::visit(AssignmentNode &node) {
-    deref_ = true;
+    setRefMode(true);
     node.getRvalue()->accept(*this);
     Value* rValue = value_;
-    deref_ = false;
+    restoreRefMode();
     node.getLvalue()->accept(*this);
     Value* lValue = value_;
     value_ = builder_.CreateStore(rValue, lValue);
@@ -205,7 +204,9 @@ void LLVMCodeGen::visit(IfThenElseNode& node) {
     if (node.hasElse() || node.hasElseIf()) {
         if_false = BasicBlock::Create(context_, "if_false", function_);
     }
+    setRefMode(true);
     node.getCondition()->accept(*this);
+    restoreRefMode();
     builder_.CreateCondBr(value_, if_true, if_false);
     builder_.SetInsertPoint(if_true);
     node.getThenStatements()->accept(*this);
@@ -244,28 +245,55 @@ void LLVMCodeGen::visit(ProcedureCallNode& node) {
     call(node);
 }
 
-void LLVMCodeGen::visit(LoopNode& node) { }
+void LLVMCodeGen::visit(LoopNode& node) {
+    // todo code generation for general loop
+}
 
-void LLVMCodeGen::visit(WhileLoopNode& node) { }
+void LLVMCodeGen::visit(WhileLoopNode& node) {
+    auto body = BasicBlock::Create(context_, "loop_body", function_);
+    auto tail = BasicBlock::Create(context_, "tail", function_);
+    setRefMode(true);
+    node.getCondition()->accept(*this);
+    restoreRefMode();
+    builder_.CreateCondBr(value_, body, tail);
+    builder_.SetInsertPoint(body);
+    node.getStatements()->accept(*this);
+    setRefMode(true);
+    node.getCondition()->accept(*this);
+    restoreRefMode();
+    builder_.CreateCondBr(value_, body, tail);
+    builder_.SetInsertPoint(tail);
+}
 
-void LLVMCodeGen::visit(RepeatLoopNode& node) { }
+void LLVMCodeGen::visit(RepeatLoopNode& node) {
+    auto body = BasicBlock::Create(context_, "loop_body", function_);
+    auto tail = BasicBlock::Create(context_, "tail", function_);
+    builder_.CreateBr(body);
+    builder_.SetInsertPoint(body);
+    node.getStatements()->accept(*this);
+    setRefMode(true);
+    node.getCondition()->accept(*this);
+    restoreRefMode();
+    builder_.CreateCondBr(value_, tail, body);
+    builder_.SetInsertPoint(tail);
+}
 
 void LLVMCodeGen::visit(ForLoopNode& node) {
     // initialize loop counter
-    deref_ = true;
+    setRefMode(true);
     node.getLow()->accept(*this);
     auto start = value_;
-    deref_ = false;
+    restoreRefMode();
     node.getCounter()->accept(*this);
     auto counter = value_;
     value_ = builder_.CreateStore(start, counter);
     // check whether to skip loop body
-    deref_ = true;
+    setRefMode(true);
     node.getHigh()->accept(*this);
     auto end = value_;
     node.getCounter()->accept(*this);
     counter = value_;
-    deref_ = false;
+    restoreRefMode();
     auto body = BasicBlock::Create(context_, "loop_body", function_);
     auto tail = BasicBlock::Create(context_, "tail", function_);
     if (node.getStep() > 0) {
@@ -278,20 +306,20 @@ void LLVMCodeGen::visit(ForLoopNode& node) {
     builder_.SetInsertPoint(body);
     node.getStatements()->accept(*this);
     // update loop counter
-    deref_ = true;
+    setRefMode(true);
     node.getCounter()->accept(*this);
-    deref_ = false;
+    restoreRefMode();
     counter = builder_.CreateAdd(value_, builder_.getInt32(node.getStep()));
     node.getCounter()->accept(*this);
     auto lValue = value_;
     builder_.CreateStore(counter, lValue);
     // check whether to exit loop body
-    deref_ = true;
+    setRefMode(true);
     node.getHigh()->accept(*this);
     end = value_;
     node.getCounter()->accept(*this);
     counter = value_;
-    deref_ = false;
+    restoreRefMode();
     if (node.getStep() > 0) {
         value_ = builder_.CreateICmpSGT(counter, end);
     } else {
@@ -303,9 +331,9 @@ void LLVMCodeGen::visit(ForLoopNode& node) {
 }
 
 void LLVMCodeGen::visit(ReturnNode& node) {
-    deref_ = true;
+    setRefMode(true);
     node.getValue()->accept(*this);
-    deref_ = false;
+    restoreRefMode();
     value_ = builder_.CreateRet(value_);
 }
 
@@ -348,13 +376,28 @@ void LLVMCodeGen::call(CallNode &node) {
     std::string name = node.getProcedure()->getName();
     size_t fp_cnt = node.getProcedure()->getParameterCount();
     for (size_t i = 0; i < node.getParameterCount(); i++) {
-        deref_ = (i < fp_cnt) ? !node.getProcedure()->getParameter(i)->isVar() : true;
+        setRefMode(i < fp_cnt ? !node.getProcedure()->getParameter(i)->isVar() : true);
         node.getParameter(i)->accept(*this);
         params.push_back(value_);
-        deref_ = false;
+        restoreRefMode();
     }
     auto proc = module_->getFunction(name);
     if (proc) {
         value_ = builder_.CreateCall(proc, params);
     }
+}
+
+void LLVMCodeGen::setRefMode(bool deref) {
+    deref_ctx.push(deref);
+}
+
+void LLVMCodeGen::restoreRefMode() {
+    deref_ctx.pop();
+}
+
+bool LLVMCodeGen::deref() const {
+    if (deref_ctx.empty()) {
+        return false;
+    }
+    return deref_ctx.top();
 }

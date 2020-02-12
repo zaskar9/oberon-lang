@@ -10,6 +10,7 @@
 
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
+#include <stack>
 #include "../../parser/ast/NodeVisitor.h"
 
 using namespace llvm;
@@ -23,16 +24,21 @@ private:
     std::unique_ptr<Module> module_;
     Value* value_;
     std::map<DeclarationNode*, Value*> values_;
-    bool deref_;
+    std::stack<bool> deref_ctx;
     int level_;
     Function* function_;
 
     Type* getLLVMType(TypeNode* type, bool isPtr = false);
+
     void call(CallNode &node);
+
+    void setRefMode(bool deref);
+    void restoreRefMode();
+    bool deref() const;
 
 public:
     explicit LLVMCodeGen(Logger* logger) : logger_(logger), context_(), builder_(context_), module_(),
-            value_(), values_(), deref_(false), level_(0), function_() { };
+            value_(), values_(), deref_ctx(), level_(0), function_() { };
     ~LLVMCodeGen() = default;
 
     Module* getModule() const;

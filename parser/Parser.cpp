@@ -648,6 +648,9 @@ std::unique_ptr<StatementNode> Parser::for_statement() {
             auto expr = expression();
             if (expr->getType()==BasicTypeNode::INTEGER && expr->isConstant()) {
                 step = foldNumber(expr.get());
+                if (step == 0) {
+                    logger_->error(expr->getFilePos(), "step value cannot be zero.");
+                }
             }
             else {
                 logger_->error(expr->getFilePos(), "constant integer expression expected.");
