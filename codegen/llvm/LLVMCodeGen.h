@@ -24,6 +24,7 @@ private:
     std::unique_ptr<Module> module_;
     Value* value_;
     std::map<DeclarationNode*, Value*> values_;
+    std::map<TypeNode*, Type*> types_;
     std::stack<bool> deref_ctx;
     int level_;
     Function* function_;
@@ -38,7 +39,7 @@ private:
 
 public:
     explicit LLVMCodeGen(Logger* logger) : logger_(logger), context_(), builder_(context_), module_(),
-            value_(), values_(), deref_ctx(), level_(0), function_() { };
+            value_(), values_(), types_(), deref_ctx(), level_(0), function_() { };
     ~LLVMCodeGen() = default;
 
     Module* getModule() const;

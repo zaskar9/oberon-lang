@@ -2,8 +2,11 @@ MODULE CodeGen;
 
 CONST Dim = 20;
 
+TYPE Point2D = RECORD x, y: INTEGER END;
+
 VAR x, y, i: INTEGER;
     a: ARRAY Dim OF INTEGER;
+    p: Point2D;
 
 (* Import `printf` function from C <stdio.h> library. *)
 PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
@@ -148,6 +151,14 @@ BEGIN
     END
 END BubbleSort;
 
+PROCEDURE CreatePoint(x, y: INTEGER): Point2D;
+VAR p: Point2D;
+BEGIN
+    (* p.x := x;
+    p.y := y; *)
+    RETURN p
+END CreatePoint;
+
 BEGIN
     x := 12;
     y := 9;
@@ -161,6 +172,7 @@ BEGIN
     WriteInt(rFib(10)); WriteLn;
     WriteInt(rFac(5)); WriteLn;
     WriteInt(iFac(5)); WriteLn;
+    p := CreatePoint(x, y);
     Init;
     Print;
     BubbleSort;

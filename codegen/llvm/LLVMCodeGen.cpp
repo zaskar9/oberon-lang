@@ -341,27 +341,29 @@ Type* LLVMCodeGen::getLLVMType(TypeNode *type, bool isPtr) {
     Type* result = nullptr;
     if (type == nullptr) {
         result = builder_.getVoidTy();
+    } else if (types_[type] != nullptr) {
+        result = types_[type];
     } else if (type->getNodeType() == NodeType::array_type) {
         auto array_t = dynamic_cast<ArrayTypeNode*>(type);
         result = ArrayType::get(getLLVMType(array_t->getMemberType()), array_t->getDimension());
-    } else {
-        switch (type->getNodeType()) {
-            case NodeType::array_type:
-                break;
-            case NodeType::basic_type:
-                if (type == BasicTypeNode::BOOLEAN) {
-                    result = builder_.getInt1Ty();
-                } else if (type == BasicTypeNode::INTEGER) {
-                    result = builder_.getInt32Ty();
-                } else if (type == BasicTypeNode::STRING) {
-                    result = builder_.getInt8PtrTy();
-                }
-                break;
-            case NodeType::record_type:
-                break;
+    } else if (type->getNodeType() == NodeType::record_type) {
+        std::vector<Type*> elem_ts;
+        auto record_t = dynamic_cast<RecordTypeNode*>(type);
+        for (size_t i = 0; i < record_t->getFieldCount(); i++) {
+            elem_ts.push_back(getLLVMType(record_t->getField(i)->getType()));
+        }
+        result = StructType::create(elem_ts);
+    } else if (type->getNodeType() == NodeType::basic_type) {
+        if (type == BasicTypeNode::BOOLEAN) {
+            result = builder_.getInt1Ty();
+        } else if (type == BasicTypeNode::INTEGER) {
+            result = builder_.getInt32Ty();
+        } else if (type == BasicTypeNode::STRING) {
+            result = builder_.getInt8PtrTy();
         }
     }
     if (result != nullptr) {
+        types_[type] = result;
         if (isPtr) {
             result = PointerType::get(result, 0);
         }
