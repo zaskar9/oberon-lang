@@ -5,24 +5,31 @@ CONST Dim = 20;
 VAR x, y, i: INTEGER;
     a: ARRAY Dim OF INTEGER;
 
+(* Import `printf` function from C <stdio.h> library. *)
 PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
+
+(* Import `rand` function from C <stdlib.h> library. *)
 PROCEDURE rand(): INTEGER; EXTERN;
 
+(* Writes a string value to standard out. *)
 PROCEDURE Write(val: STRING);
 BEGIN
     printf(val)
 END Write;
 
+(* Writes a newline to standard out. *)
 PROCEDURE WriteLn;
 BEGIN
     printf("\n")
 END WriteLn;
 
+(* Writes an integer value to standard out. *)
 PROCEDURE WriteInt(val: INTEGER);
 BEGIN
     printf("%d", val)
 END WriteInt;
 
+(* Writes an integer tuple to standard out. *)
 PROCEDURE WriteTuple(x, y: INTEGER);
 BEGIN
     printf("(%d, %d)", x, y)

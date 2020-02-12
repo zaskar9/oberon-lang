@@ -2,14 +2,37 @@
 MODULE Sort;
 
 (* Length of the array to be sorted. *)
-CONST Dim = 2 * 10;
+CONST Dim = 3 * 10;
 
+(* Array to be sorted. *)
 TYPE Vector = ARRAY Dim OF INTEGER;
-     Point2D = RECORD x, y: INTEGER END;
 
 (* Array to be sorted. *)
 VAR a: Vector;
-    i: INTEGER;
+
+(* Import `printf` function from C <stdio.h> library. *)
+PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
+
+(* Import `rand` function from C <stdlib.h> library. *)
+PROCEDURE rand(): INTEGER; EXTERN;
+
+(* Writes a string value to standard out. *)
+PROCEDURE Write(val: STRING);
+BEGIN
+    printf(val)
+END Write;
+
+(* Writes a newline to standard out. *)
+PROCEDURE WriteLn;
+BEGIN
+    printf("\n")
+END WriteLn;
+
+(* Writes an integer value to standard out. *)
+PROCEDURE WriteInt(val: INTEGER);
+BEGIN
+    printf("%d", val)
+END WriteInt;
 
 (* Initializes the array. *)
 PROCEDURE Init();
@@ -17,23 +40,24 @@ VAR i: INTEGER;
 BEGIN
     i := 0;
     WHILE i < Dim DO
-        a[i] := Dim - i;
+        a[i] := rand() MOD Dim;
         i := i + 1
     END
 END Init;
 
 (* Prints the array. *)
-PROCEDURE Print();
+PROCEDURE Print;
 VAR i: INTEGER;
 BEGIN
-    (* Write("["); *)
-    WHILE i <= Dim DO
-        (* Write(a[i]); *)
-        (* IF i + 1 < Dim THEN Write(", ") END *)
+    Write("[");
+    i := 0;
+    WHILE i < Dim DO
+        WriteInt(a[i]);
+        IF i + 1 < Dim THEN Write(", ") END;
         i := i + 1
-    END
-    (* Write("]"); *)
-    (* WriteLn() *)
+    END;
+    Write("]");
+    WriteLn
 END Print;
 
 (* Swaps the two values passed as var-parameters. *)
@@ -89,6 +113,9 @@ END QuickSort;
 (* Main program. *)
 BEGIN
     Init;
-    QuickSort();
-    Print()
+    Print;
+    BubbleSort;
+    Print
 END Sort.
+
+(* ./oberon0c Sort.Mod && opt -S -O3 Sort.ll | llc -O3 -o Sort.s && g++ Sort.s -o Sort && ./Sort *)
