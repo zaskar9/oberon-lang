@@ -142,19 +142,18 @@ BEGIN
 END BubbleSort;
 
 BEGIN
-    (* x := 12;
+    x := 12;
     y := 9;
-    WriteTuple(x, y);
+    WriteTuple(x, y); WriteLn;
     Swap(x, y);
-    WriteTuple(x, y);
-    WriteInt(gcd(x, y));
-    WriteInt(max(x, y));
-    WriteInt(compare(x, y));
-    WriteInt(compare(y, x));
-    WriteInt(rFib(10));
-    WriteInt(rFac(5));
-    WriteInt(iFac(5));
-    Test *)
+    WriteTuple(x, y); WriteLn;
+    WriteInt(gcd(x, y)); WriteLn;
+    WriteInt(max(x, y)); WriteLn;
+    WriteInt(compare(x, y)); WriteLn;
+    WriteInt(compare(y, x)); WriteLn;
+    WriteInt(rFib(10)); WriteLn;
+    WriteInt(rFac(5)); WriteLn;
+    WriteInt(iFac(5)); WriteLn;
     Init;
     Print;
     BubbleSort;
