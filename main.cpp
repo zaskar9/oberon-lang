@@ -71,5 +71,7 @@ int main(const int argc, const char *argv[]) {
                     std::to_string(logger->getErrorCount())   + " error(s), " +
                     std::to_string(logger->getWarningCount()) + " warning(s), " +
                     std::to_string(logger->getInfoCount())    + " message(s).");
-    exit(0);
+
+   // std::cout << "CodeGen.Mod:47:15:{47:8-47:14}{47:17-47:24}: error: invalid operands to binary expression ('int *' and '_Complex float')" << std::endl;
+   exit(0);
 }

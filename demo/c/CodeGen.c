@@ -7,18 +7,18 @@
 
 int a[20];
 int x, y;
+struct Point2D {
+    int x, y;
+};
 
-int max(int x, int y) {
-    int res;
-    if (x > y) {
-        res = x;
-    } else {
-        res = y;
-    }
-    return res;
+void test(struct Point2D point) {
+    printf("(%d, %d)", point.x, point.y);
 }
 
 int main(int argc, const char* argv[]) {
-    a[x] = y;
+    struct Point2D point;
+    point.x = 9;
+    point.y = 27;
+    test(point);
     return 0;
 }

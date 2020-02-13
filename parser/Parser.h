@@ -32,6 +32,7 @@ class Parser {
 private:
     Scanner *scanner_;
     Logger *logger_;
+    std::unique_ptr<const Token> token_;
     std::unique_ptr<SymbolTable> symbols_;
 
     const std::string ident();

@@ -84,34 +84,60 @@ void LLVMCodeGen::visit(ReferenceNode &node) {
         value_ = values_[ref];
     } else if (level > level_) /* parent procedure level */ {
         // todo global display?
+        logger_->error(ref->getFilePos(), "Referencing variables of parent procedures is not yet supported.");
     } else /* error */ {
-        std::cerr << "Cannot reference value of child procedure." << std::endl;
+        logger_->error(ref->getFilePos(), "Cannot reference variable of child procedure.");
     }
     auto type = ref->getType();
     if (node.getSelectorCount() > 0) {
+        auto selector_t = type;
         auto base = value_;
+        if (ref->getNodeType() == NodeType::parameter) {
+            auto param = dynamic_cast<ParameterNode*>(ref);
+            // create a base address within the stack frame of the current procedure for
+            // array and record parameters that are passed by value
+            if (!param->isVar() && (selector_t->getNodeType() == NodeType::array_type ||
+                                    selector_t->getNodeType() == NodeType::record_type)) {
+                base = builder_.CreateAlloca(getLLVMType(type));
+                builder_.CreateStore(value_, base);
+            }
+        }
         std::vector<Value*> indices;
         indices.push_back(builder_.getInt32(0));
         for (size_t i = 0; i < node.getSelectorCount(); i++) {
-            if (type->getNodeType() == NodeType::array_type) {
-                // handle array access
+            if (selector_t->getNodeType() == NodeType::array_type) {
+                // handle array index access
                 setRefMode(true);
                 node.getSelector(i)->accept(*this);
                 indices.push_back(value_);
                 restoreRefMode();
-            } else if (type->getNodeType() == NodeType::record_type) {
-                // todo handle record access
+                selector_t = dynamic_cast<ArrayTypeNode*>(selector_t)->getMemberType();
+            } else if (selector_t->getNodeType() == NodeType::record_type) {
+                // handle record field access
+                auto selector = node.getSelector(i);
+                auto decl = dynamic_cast<ReferenceNode*>(selector)->dereference();
+                auto field = dynamic_cast<FieldNode*>(decl);
+                auto record_t = dynamic_cast<RecordTypeNode*>(selector_t);
+                for (size_t pos = 0; pos < record_t->getFieldCount(); pos++) {
+                    if (field == record_t->getField(pos)) {
+                        indices.push_back(builder_.getInt32(pos));
+                        break;
+                    }
+                }
+                selector_t = selector->getType();
             }
         }
         value_ = builder_.CreateInBoundsGEP(getLLVMType(type), base, indices);
     }
-
     if (deref()) {
         if (ref->getNodeType() == NodeType::variable) {
             value_ = builder_.CreateLoad(value_);
         } else if (ref->getNodeType() == NodeType::parameter) {
             auto param = dynamic_cast<ParameterNode*>(ref);
-            if (param->isVar()) {
+            // load value of parameter that is either passed by reference or is an array or
+            // record parameter since getelementptr only computes the address
+            if (param->isVar() || param->getType()->getNodeType() == NodeType::array_type ||
+                                  param->getType()->getNodeType() == NodeType::record_type) {
                 value_ = builder_.CreateLoad(value_);
             }
         }
@@ -368,7 +394,7 @@ Type* LLVMCodeGen::getLLVMType(TypeNode *type, bool isPtr) {
             result = PointerType::get(result, 0);
         }
     } else {
-        std::cerr << "Cannot map type " << *type << " to LLVM." << std::endl;
+        logger_->error(type->getFilePos(), "Cannot map type to LLVM intermediate representation.");
     }
     return result;
 }
