@@ -16,17 +16,17 @@
 class ProcedureNode final : public BlockNode {
 
 private:
+    const BlockNode *parent_;
     std::string name_;
     std::vector<std::unique_ptr<ParameterNode>> parameters_;
     std::vector<std::unique_ptr<ProcedureNode>> procedures_;
     bool varargs_;
-    TypeNode* type_;
     bool extern_;
 
 public:
-    explicit ProcedureNode(const FilePos pos, const std::string &name, int level) :
-            BlockNode(NodeType::procedure, pos, level),
-            name_(name), parameters_(), procedures_(), varargs_(false), type_(), extern_(false) { };
+    explicit ProcedureNode(const FilePos pos, const BlockNode *parent, std::string name, int level) :
+            BlockNode(NodeType::procedure, pos, level), parent_(parent), name_(std::move(name)),
+            parameters_(), procedures_(), varargs_(false), extern_(false) { };
     ~ProcedureNode() final = default;
 
     const std::string getName() const;
@@ -42,11 +42,10 @@ public:
     void setExtern(bool value);
     bool isExtern() const;
 
-    void setReturnType(TypeNode* type);
-    TypeNode* getReturnType() const;
-
     void setVarArgs(bool value);
     bool hasVarArgs() const;
+
+    const BlockNode * getParent() const;
 
     void accept(NodeVisitor& visitor) final;
 

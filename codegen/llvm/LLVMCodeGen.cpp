@@ -36,6 +36,9 @@ void LLVMCodeGen::visit(ModuleNode &node) {
 
 void LLVMCodeGen::visit(ProcedureNode &node) {
     std::vector<Type*> params;
+    for (size_t i = 0; i < node.getProcedureCount(); i++) {
+        node.getProcedure(i)->accept(*this);
+    }
     for (size_t i = 0; i < node.getParameterCount(); i++) {
         auto param = node.getParameter(i);
         params.push_back(getLLVMType(param->getType(), param->isVar()));

@@ -226,6 +226,31 @@ BEGIN
     RETURN poly3d
 END CreatePoly3D;
 
+PROCEDURE parent(x, y: INTEGER): INTEGER;
+VAR parent_i: INTEGER;
+
+    PROCEDURE _child(z: INTEGER): INTEGER;
+    VAR j: INTEGER;
+
+        PROCEDURE _grand_child(u, v: INTEGER): INTEGER;
+        VAR w: INTEGER;
+
+        BEGIN
+            w := parent_i;
+            RETURN u + v + w + j
+        END _grand_child;
+
+    BEGIN
+        j := _grand_child(parent_i, z);
+        RETURN j
+    END _child;
+
+BEGIN
+    parent_i := x;
+    RETURN _child(y)
+END parent;
+
+
 BEGIN
     x := 27;
     y := 9;
@@ -245,7 +270,8 @@ BEGIN
     Init;
     Print;
     BubbleSort;
-    Print
+    Print;
+    WriteInt(parent(x, y))
 END CodeGen.
 
 (* ./oberon0c CodeGen.Mod && opt -S -O3 CodeGen.ll | llc -O3 -o CodeGen.s && g++ CodeGen.s -o CodeGen && ./CodeGen *)

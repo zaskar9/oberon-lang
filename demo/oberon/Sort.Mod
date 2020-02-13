@@ -114,7 +114,7 @@ END QuickSort;
 BEGIN
     Init;
     Print;
-    BubbleSort;
+    QuickSort;
     Print
 END Sort.
 

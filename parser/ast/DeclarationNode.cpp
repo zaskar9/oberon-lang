@@ -7,6 +7,10 @@
 #include "DeclarationNode.h"
 #include "NodeVisitor.h"
 
+const Node * DeclarationNode::getParent() const {
+    return parent_;
+}
+
 const std::string DeclarationNode::getName() const {
     return name_;
 }

@@ -6,8 +6,9 @@
 
 #include "BlockNode.h"
 
-BlockNode::BlockNode(const NodeType nodeType, const FilePos pos, int level) : Node(nodeType, pos), level_(level), offset_(0),
-        types_(), constants_(), type_declarations_(), variables_(), statements_(std::make_unique<StatementSequenceNode>(pos)) {
+BlockNode::BlockNode(const NodeType nodeType, const FilePos pos, int level) : Node(nodeType, pos), level_(level),
+        offset_(0), types_(), constants_(), type_declarations_(), variables_(),
+        statements_(std::make_unique<StatementSequenceNode>(pos)), return_() {
 }
 
 BlockNode::~BlockNode() = default;
@@ -67,6 +68,15 @@ size_t BlockNode::getVariableCount() const {
 StatementSequenceNode* BlockNode::getStatements() {
     return statements_.get();
 }
+
+void BlockNode::setReturnType(TypeNode *type) {
+    return_ = type;
+}
+
+TypeNode * BlockNode::getReturnType() const {
+    return return_;
+}
+
 
 void BlockNode::print(std::ostream& stream) const {
     for (auto const& constant: constants_) {

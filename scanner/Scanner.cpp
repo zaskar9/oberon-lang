@@ -74,7 +74,7 @@ const Token* Scanner::next() {
     }
     if (ch_ != -1) {
         FilePos pos = getPosition();
-        if (((ch_ >= 'A') && (ch_ <= 'Z')) || ((ch_ >= 'a') && (ch_ <= 'z'))) {
+        if (((ch_ >= 'A') && (ch_ <= 'Z')) || ((ch_ >= 'a') && (ch_ <= 'z')) || ch_ == '_') {
             // Scan identifier
             token = ident();
         } else if ((ch_ >= '0') && (ch_ <= '9')) {
@@ -260,7 +260,7 @@ const Token* Scanner::ident() {
         read();
     } while (((ch_ >= '0') && (ch_ <= '9')) ||
              ((ch_ >= 'a') && (ch_ <= 'z')) ||
-             ((ch_ >= 'A') && (ch_ <= 'Z')));
+             ((ch_ >= 'A') && (ch_ <= 'Z')) || ch_ == '_');
     std::string ident = ss.str();
     auto it = keywords_.find(ident);
     if (it != keywords_.end()) {

@@ -28,6 +28,8 @@ private:
     std::vector<std::unique_ptr<VariableDeclarationNode>> variables_;
     std::unique_ptr<StatementSequenceNode> statements_;
 
+    TypeNode *return_;
+
 public:
     explicit BlockNode(NodeType nodeType, FilePos pos, int level);
     ~BlockNode() override;
@@ -55,6 +57,9 @@ public:
     virtual size_t getProcedureCount() const = 0;
 
     StatementSequenceNode* getStatements();
+
+    void setReturnType(TypeNode* type);
+    TypeNode* getReturnType() const;
 
     void print(std::ostream &stream) const override = 0;
 

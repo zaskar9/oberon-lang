@@ -47,6 +47,7 @@ std::ostream& operator<<(std::ostream &stream, const TokenType &type) {
         case TokenType::rparen: result = ")"; break;
         case TokenType::lbrack: result = "["; break;
         case TokenType::rbrack: result = "]"; break;
+        case TokenType::varargs: result = "..."; break;
         case TokenType::op_times: result = "*"; break;
         case TokenType::op_div: result = "DIV"; break;
         case TokenType::op_mod: result = "MOD"; break;
@@ -85,6 +86,9 @@ std::ostream& operator<<(std::ostream &stream, const TokenType &type) {
         case TokenType::kw_type: result = "TYPE"; break;
         case TokenType::kw_var: result = "VAR"; break;
         case TokenType::kw_of: result = "OF"; break;
+        case TokenType::kw_declare: result = "DECLARE"; break;
+        case TokenType::kw_extern: result = "EXTERN"; break;
+        case TokenType::kw_return: result = "RETURN"; break;
     }
     stream << result;
     return stream;

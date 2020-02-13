@@ -43,20 +43,16 @@ bool ProcedureNode::isExtern() const {
     return extern_;
 }
 
-void ProcedureNode::setReturnType(TypeNode *type) {
-    type_ = type;
-}
-
-TypeNode * ProcedureNode::getReturnType() const {
-    return type_;
-}
-
 void ProcedureNode::setVarArgs(bool value) {
     varargs_ = value;
 }
 
 bool ProcedureNode::hasVarArgs() const {
     return varargs_;
+}
+
+const BlockNode * ProcedureNode::getParent() const {
+    return parent_;
 }
 
 void ProcedureNode::accept(NodeVisitor& visitor) {
