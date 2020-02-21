@@ -17,9 +17,9 @@ PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
 PROCEDURE rand(): INTEGER; EXTERN;
 
 (* Writes a string value to standard out. *)
-PROCEDURE Write(val: STRING);
+PROCEDURE Write(str: STRING);
 BEGIN
-    printf(val)
+    printf(str)
 END Write;
 
 (* Writes a newline to standard out. *)
