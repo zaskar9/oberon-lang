@@ -32,4 +32,4 @@
 /.vs/
 /x64/
 *.DS_Store
-/test/hello
+/CMakeFiles/
