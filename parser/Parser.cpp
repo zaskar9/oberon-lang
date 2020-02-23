@@ -876,7 +876,7 @@ std::unique_ptr<ExpressionNode> Parser::factor(BlockNode *parent) {
                 }
             } else if (node->getNodeType() == NodeType::parameter || node->getNodeType() == NodeType::variable) {
                 auto var = dynamic_cast<DeclarationNode *>(node);
-                if (parent->getLevel() != 1 && var->getLevel() - parent->getLevel() < 1) {
+                if (var->getLevel() != 1 && parent->getLevel() - var->getLevel() > 1) {
                     logger_->warning(pos, "reference to parent procedure: " + var->getName() + ".");
                 }
                 auto ref = std::make_unique<ReferenceNode>(pos, var);

@@ -183,22 +183,53 @@ void LLVMCodeGen::visit(UnaryExpressionNode &node) {
 void LLVMCodeGen::visit(BinaryExpressionNode &node) {
     node.getLeftExpression()->accept(*this);
     Value* lhs = value_;
-    node.getRightExpression()->accept(*this);
-    Value* rhs = value_;
-    switch (node.getOperator()) {
-        case OperatorType::PLUS: value_ = builder_.CreateAdd(lhs, rhs); break;
-        case OperatorType::MINUS: value_= builder_.CreateSub(lhs, rhs); break;
-        case OperatorType::TIMES: value_ = builder_.CreateMul(lhs, rhs); break;
-        case OperatorType::DIV: value_ = builder_.CreateSDiv(lhs, rhs); break;
-        case OperatorType::MOD: value_ = builder_.CreateSRem(lhs, rhs); break;
-        case OperatorType::AND: value_ = builder_.CreateAdd(lhs, rhs); break;
-        case OperatorType::OR: value_ = builder_.CreateOr(lhs, rhs); break;
-        case OperatorType::EQ: value_ = builder_.CreateICmpEQ(lhs, rhs); break;
-        case OperatorType::NEQ: value_ = builder_.CreateICmpNE(lhs, rhs); break;
-        case OperatorType::LT: value_ = builder_.CreateICmpSLT(lhs, rhs); break;
-        case OperatorType::GT: value_ = builder_.CreateICmpSGT(lhs, rhs); break;
-        case OperatorType::LEQ: value_ = builder_.CreateICmpSLE(lhs, rhs); break;
-        case OperatorType::GEQ: value_ = builder_.CreateICmpSGE(lhs, rhs); break;
+    // todo: short-circuiting Boolean expr -> evaluate rhs iff (&&: lhs == false / ||: lhs == true)
+    if (node.getOperator() == OperatorType::AND) {
+        node.getRightExpression()->accept(*this);
+        Value *rhs = value_;
+        value_ = builder_.CreateAdd(lhs, rhs);
+    } else if (node.getOperator() == OperatorType::OR) {
+        node.getRightExpression()->accept(*this);
+        Value *rhs = value_;
+        value_ = builder_.CreateOr(lhs, rhs);
+    } else {
+        node.getRightExpression()->accept(*this);
+        Value *rhs = value_;
+        switch (node.getOperator()) {
+            case OperatorType::PLUS:
+                value_ = builder_.CreateAdd(lhs, rhs);
+                break;
+            case OperatorType::MINUS:
+                value_ = builder_.CreateSub(lhs, rhs);
+                break;
+            case OperatorType::TIMES:
+                value_ = builder_.CreateMul(lhs, rhs);
+                break;
+            case OperatorType::DIV:
+                value_ = builder_.CreateSDiv(lhs, rhs);
+                break;
+            case OperatorType::MOD:
+                value_ = builder_.CreateSRem(lhs, rhs);
+                break;
+            case OperatorType::EQ:
+                value_ = builder_.CreateICmpEQ(lhs, rhs);
+                break;
+            case OperatorType::NEQ:
+                value_ = builder_.CreateICmpNE(lhs, rhs);
+                break;
+            case OperatorType::LT:
+                value_ = builder_.CreateICmpSLT(lhs, rhs);
+                break;
+            case OperatorType::GT:
+                value_ = builder_.CreateICmpSGT(lhs, rhs);
+                break;
+            case OperatorType::LEQ:
+                value_ = builder_.CreateICmpSLE(lhs, rhs);
+                break;
+            case OperatorType::GEQ:
+                value_ = builder_.CreateICmpSGE(lhs, rhs);
+                break;
+        }
     }
 }
 
