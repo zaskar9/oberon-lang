@@ -182,19 +182,42 @@ void LLVMCodeGen::visit(UnaryExpressionNode &node) {
 
 void LLVMCodeGen::visit(BinaryExpressionNode &node) {
     node.getLeftExpression()->accept(*this);
-    Value* lhs = value_;
-    // todo: short-circuiting Boolean expr -> evaluate rhs iff (&&: lhs == false / ||: lhs == true)
-    if (node.getOperator() == OperatorType::AND) {
+    auto lhs = value_;
+    // Logical operators AND and OR are treated explicitly in order to enable short-circuiting.
+    if (node.getOperator() == OperatorType::AND || node.getOperator() == OperatorType::OR) {
+        // Create one block to evaluate the right-hand side and one to skip it.
+        auto eval = BasicBlock::Create(context_, "eval", function_);
+        auto skip = BasicBlock::Create(context_, "skip", function_);
+        // Insert branch to decide whether to skip AND or OR
+        if (node.getOperator() == OperatorType::AND) {
+            builder_.CreateCondBr(value_, eval, skip);
+        } else if (node.getOperator() == OperatorType::OR) {
+            builder_.CreateCondBr(value_, skip, eval);
+        }
+        // Save the current (left-hand side) block.
+        auto lhsBB = builder_.GetInsertBlock();
+        // Create and populate the basic block to evaluate the right-hand side, if required.
+        builder_.SetInsertPoint(eval);
         node.getRightExpression()->accept(*this);
-        Value *rhs = value_;
-        value_ = builder_.CreateAdd(lhs, rhs);
-    } else if (node.getOperator() == OperatorType::OR) {
-        node.getRightExpression()->accept(*this);
-        Value *rhs = value_;
-        value_ = builder_.CreateOr(lhs, rhs);
+        auto rhs = value_;
+        if (node.getOperator() == OperatorType::AND) {
+            value_ = builder_.CreateAnd(lhs, rhs);
+        } else if (node.getOperator() == OperatorType::OR) {
+            value_ = builder_.CreateOr(lhs, rhs);
+        }
+        // Save the current (right-hand side) block.
+        auto rhsBB = builder_.GetInsertBlock();
+        builder_.CreateBr(skip);
+        // Create the basic block after the possible short-circuit,
+        // use phi-value to "combine" value of both branches.
+        builder_.SetInsertPoint(skip);
+        auto phi = builder_.CreatePHI(value_->getType(), 2, "phi");
+        phi->addIncoming(lhs, lhsBB);
+        phi->addIncoming(value_, rhsBB);
+        value_ = phi;
     } else {
         node.getRightExpression()->accept(*this);
-        Value *rhs = value_;
+        auto rhs = value_;
         switch (node.getOperator()) {
             case OperatorType::PLUS:
                 value_ = builder_.CreateAdd(lhs, rhs);
@@ -281,7 +304,9 @@ void LLVMCodeGen::visit(IfThenElseNode& node) {
         if (node.hasElse() || i + 1 < node.getElseIfCount()) {
             elsif_false = BasicBlock::Create(context_, "elsif_false", function_);
         }
+        setRefMode(true);
         elsif->getCondition()->accept(*this);
+        restoreRefMode();
         builder_.CreateCondBr(value_, elsif_true, elsif_false);
         builder_.SetInsertPoint(elsif_true);
         elsif->getStatements()->accept(*this);

@@ -116,9 +116,10 @@ void Parser::const_declarations(BlockNode *parent) {
     logger_->debug("", "const_declarations");
     scanner_->nextToken(); // skip CONST keyword
     while (scanner_->peekToken()->getType() == TokenType::const_ident) {
-        const std::string name = ident();
+        auto pos = scanner_->peekToken()->getPosition();
+        auto name = ident();
         if (symbols_->isDuplicate(name)) {
-            logger_->error(scanner_->peekToken()->getPosition(), "duplicate definition: " + name);
+            logger_->error(pos, "duplicate definition: " + name);
         }
         auto token = scanner_->nextToken();
         if (token->getType() == TokenType::op_eq) {
@@ -148,7 +149,7 @@ void Parser::type_declarations(BlockNode *parent) {
     scanner_->nextToken(); // skip TYPE keyword
     while (scanner_->peekToken()->getType() == TokenType::const_ident) {
         auto pos = scanner_->peekToken()->getPosition();
-        std::string name = ident();
+        auto name = ident();
         if (symbols_->isDuplicate(name)) {
             logger_->error(pos, "duplicate definition: " + name);
         }
@@ -340,7 +341,12 @@ void Parser::procedure_declaration(BlockNode *parent) {
 std::unique_ptr<ProcedureNode> Parser::procedure_heading(BlockNode *parent) {
     logger_->debug("", "procedure_heading");
     auto token = scanner_->nextToken(); // skip PROCEDURE keyword
-    auto proc = std::make_unique<ProcedureNode>(token->getPosition(), parent, ident(), symbols_->getLevel());
+    auto pos = token->getPosition();
+    auto name = ident();
+    if (symbols_->isDuplicate(name)) {
+        logger_->error(pos, "duplicate definition: " + name);
+    }
+    auto proc = std::make_unique<ProcedureNode>(pos, parent, name, symbols_->getLevel());
     symbols_->insert(proc->getName(), proc.get());
     symbols_->enterScope();
     if (scanner_->peekToken()->getType() == TokenType::lparen) {
@@ -484,20 +490,20 @@ std::unique_ptr<StatementNode> Parser::statement(BlockNode *parent) {
         return for_statement(parent);
     } else if (token->getType() == TokenType::kw_return) {
         token_ = scanner_->nextToken();
+        auto pos = token_->getPosition();
         auto expr = expression(parent);
         if (expr) {
             if (!parent->getReturnType()) {
-                logger_->error(token_->getPosition(), "procedure cannot return a value.");
+                logger_->error(pos, "procedure cannot return a value.");
             } else if (expr->getType() != parent->getReturnType()) {
-                logger_->error(token_->getPosition(),
-                               "type mismatch: actual return type does not match declared return type.");
+                logger_->error(pos, "type mismatch: actual return type does not match declared return type.");
             }
         } else {
             if (!expr && parent->getReturnType()) {
-                logger_->error(token_->getPosition(), "function must return value.");
+                logger_->error(pos, "function must return value.");
             }
         }
-        return std::make_unique<ReturnNode>(token->getPosition(), std::move(expr));
+        return std::make_unique<ReturnNode>(pos, std::move(expr));
     } else {
         logger_->error(token->getPosition(), "unknown statement: too many semi-colons?");
     }
