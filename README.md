@@ -27,7 +27,7 @@ different operating systems and with different toolchains. Currently the sourcec
 [Boost](https://www.boost.org), specifically the `system` and `filesystem` component, as well as  [LLVM](http://llvm.org).
 As of February 2020, the following configurations are tested and known to work.
 
-|      | macOS                       | win64                        | 
+|      | macOS                       | Windows (x64)                | 
 |------|-----------------------------|------------------------------|
 |Boost | 1.72.0                      | 1.72.0                       |
 |LLVM  | 9.0.1                       | 9.0.1                        |
