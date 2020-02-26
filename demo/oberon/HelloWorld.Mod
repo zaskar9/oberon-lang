@@ -1,6 +1,6 @@
 MODULE HelloWorld;
 
-CONST Message = "Hello World!\n";
+CONST Message = "Hoi Niklaus!\n";
 
 (* Import `printf` function from C <stdio.h> library. *)
 PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;

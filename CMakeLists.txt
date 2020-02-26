@@ -4,7 +4,7 @@ project(oberon0c)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -W -Wall -Wextra -pedantic -Wshadow -Woverloaded-virtual -Winvalid-pch -Wcast-align -Wformat=2 -Wformat-nonliteral -Wmissing-declarations -Wmissing-format-attribute -Wmissing-include-dirs -Wredundant-decls -Wswitch-default")
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -W -Wall -Wextra -pedantic -Wshadow -Woverloaded-virtual -Winvalid-pch -Wcast-align -Wformat=2 -Wformat-nonliteral -Wmissing-declarations -Wmissing-format-attribute -Wmissing-include-dirs -Wredundant-decls -Wswitch-default")
 
 set(SOURCE_FILES
         main.cpp
@@ -59,7 +59,7 @@ find_package(LLVM REQUIRED CONFIG)
 if (LLVM_FOUND)
     include_directories(SYSTEM ${LLVM_INCLUDE_DIRS})
     add_definitions(${LLVM_DEFINITIONS})
-    llvm_map_components_to_libnames(llvm_libs all)
+    llvm_map_components_to_libnames(llvm_libs core)
     target_link_libraries(oberon0c ${llvm_libs})
 endif()
 

@@ -33,3 +33,6 @@
 /x64/
 *.DS_Store
 /CMakeFiles/
+/out/
+*.pdb
+*.ilk

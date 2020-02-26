@@ -1,0 +1,22 @@
+// llvm
+
+cmake.exe ..\llvm -Thost=x64 -G "Visual Studio 16 2019" -A x64 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DLLVM_TARGETS_TO_BUILD=X86 -DLLVM_USE_CRT_DEBUG=MTd -DLLVM_USE_CRT_RELEASE=MT -DLLVM_BUILD_TOOLS=ON -DLLVM_BUILD_EXAMPLES=OFF -DLLVM_BUILD_TESTS=OFF -DLLVM_BUILD_BENCHMARKS=OFF -DLLVM_BUILD_LLVM_DYLIB=OFF -DLLVM_LINK_LLVM_DYLIB=OFF -DLLVM_TEMPORARILY_ALLOW_OLD_TOOLCHAIN=ON
+
+msbuild /m -p:Configuration=RelWithDebInfo INSTALL.vcxproj
+
+
+
+// vcpkg
+
+cmake -DCMAKE_TOOLCHAIN_FILE="C:\Users\Michael Grossniklaus\source\repos\vcpkg\scripts\buildsystems\vcpkg.cmake" -DLLVM_DIR="C:\Users\Michael Grossniklaus\Documents\Visual Studio 2017\Projects\llvm-project\llvm\cmake\modules" -G "Visual Studio 16 2019" -A x64
+
+
+// Mod -> ll -> obj -> exe
+
+oberon0c Sort.Mod
+
+llc --filetype=obj Sort.ll
+
+From x64 Native Tools Command Prompt for VS 2019
+
+link /nologo Sort.obj /machine:x64 /debug /INCREMENTAL /subsystem:console kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib legacy_stdio_definitions.lib msvcrt.lib

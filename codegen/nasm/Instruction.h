@@ -8,6 +8,7 @@
 #define OBERON0C_INSTRUCTION_H
 
 
+#include <memory>
 #include <string>
 #include <vector>
 #include "Operand.h"
