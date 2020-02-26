@@ -25,7 +25,7 @@ unofficial features) can be found in the Wiki section of this project repository
 Owing to its origin as a course project, care has been taken that the provided C++ sourcecode can be compiled on
 different operating systems and with different toolchains. Currently the sourcecode only depends on 
 [Boost](https://www.boost.org), specifically the `system` and `filesystem` component, as well as  [LLVM](http://llvm.org).
-In particular, the following configurations are known to work.
+As of February 2020, the following configurations are tested and known to work.
 
 |      | macOS                       | win64                        | 
 |------|-----------------------------|------------------------------|
