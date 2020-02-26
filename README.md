@@ -27,11 +27,12 @@ different operating systems and with different toolchains. Currently the sourcec
 [Boost](https://www.boost.org), specifically the `system` and `filesystem` component, as well as  [LLVM](http://llvm.org).
 In particular, the following configurations are known to work.
 
-|      | macOS        | win64  | 
-|------|--------------|--------|
-|Boost | 1.72.0       | 1.72.0 |
-|LLVM  | 9.0.1        | 9.0.1  |
-|IDE   | CLion 2019.3 | Visual Studio 2019 Community |
+|      | macOS                       | win64                        | 
+|------|-----------------------------|------------------------------|
+|Boost | 1.72.0                      | 1.72.0                       |
+|LLVM  | 9.0.1                       | 9.0.1                        |
+|IDE   | CLion 2019.3                | Visual Studio 2019 Community |
+|CXX   | Apple clang Version 11.0.0  | Microsoft CL 19.24.28316     |
  
 Detailed instruction on how to build the Oberon compiler and its dependencies can be found in the Wiki section of this
 project repository.
