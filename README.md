@@ -14,7 +14,7 @@ targeted the Oberon-0 subset of the language, as described in Niklaus Wirth's bo
 ["Compiler Construction"](http://www.ethoberon.ethz.ch/WirthPubl/CBEAll.pdf) (Chapter 6, pp. 30-32). Since then, the
 supported subset of the Oberon has been continuously extended with the goal to eventually cover the full language 
 specification as described in the latest version of the [Oberon Language Report](https://inf.ethz.ch/personal/wirth/Oberon/Oberon07.Report.pdf).
-In addition to these "official" extensions, other features were added to the dialect of the Oberon programming language.
+In addition to these "official" extensions, other features were added to the supported dialect of the Oberon programming language.
 These feature were either inspired by convenience, such as interfacing with standard libraries, or by the compiler 
 author's nostalgia of learning [Turbo Pascal](https://en.wikipedia.org/wiki/Turbo_Pascal) 6.0 as his first programming 
 language at high school. A description of the currently supported Oberon dialect in terms of syntax and semantics (of
