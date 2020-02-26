@@ -20,7 +20,7 @@ author's nostalgia of learning [Turbo Pascal](https://en.wikipedia.org/wiki/Turb
 language at high school. A description of the currently supported Oberon dialect in terms of syntax and semantics (of
 unofficial features) can be found in the Wiki section of this project repository.
 
-## Prerequisites and Dependencies
+## Dependencies and Toolchains
 
 Owing to its origin as a course project, care has been taken that the provided C++ sourcecode can be compiled on
 different operating systems and with different toolchains. Currently the sourcecode only depends on 
