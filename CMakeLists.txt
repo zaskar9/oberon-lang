@@ -4,7 +4,14 @@ project(oberon0c)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -W -Wall -Wextra -pedantic -Wshadow -Woverloaded-virtual -Winvalid-pch -Wcast-align -Wformat=2 -Wformat-nonliteral -Wmissing-declarations -Wmissing-format-attribute -Wmissing-include-dirs -Wredundant-decls -Wswitch-default")
+
+if (MSVC)
+    # warning level 4 and all warnings as errors
+    add_compile_options(/W4)
+else()
+    # lots of warnings and all warnings as errors
+    add_compile_options(-W -Wall -Wextra -pedantic -Werror -Wshadow -Woverloaded-virtual -Winvalid-pch -Wcast-align -Wformat=2 -Wformat-nonliteral -Wmissing-declarations -Wmissing-format-attribute -Wmissing-include-dirs -Wredundant-decls -Wswitch-default)
+endif()
 
 set(SOURCE_FILES
         main.cpp
