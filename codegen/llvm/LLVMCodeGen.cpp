@@ -5,20 +5,46 @@
  */
 
 #include "LLVMCodeGen.h"
+#include <llvm/target/TargetMachine.h>
+#include <llvm/support/TargetRegistry.h>
+#include <llvm/support/TargetSelect.h>
 
-Module* LLVMCodeGen::getModule() const {
-    return module_.get();
-}
+LLVMCodeGen::LLVMCodeGen(Logger *logger) : logger_(logger), context_(), builder_(context_), module_(),
+        value_(), values_(), types_(), deref_ctx(), level_(0), function_(), target_() {
+    // Initialize LLVM
+    llvm::InitializeAllTargetInfos();
+    llvm::InitializeAllTargets();
+    llvm::InitializeAllTargetMCs();
+    llvm::InitializeAllAsmParsers();
+    llvm::InitializeAllAsmPrinters();
+    // Use default target triple of host
+    std::string triple = llvm::sys::getDefaultTargetTriple();
+    // Set up target
+    std::string error;
+    auto target = llvm::TargetRegistry::lookupTarget(triple, error);
+    if (!target) {
+        logger_->error("", error);
+    }
+    // Set up target machine to match host
+    std::string cpu = "generic";
+    std::string features = "";
+    TargetOptions opt;
+    auto model = Optional<Reloc::Model>();
+    target_ = target->createTargetMachine(triple, cpu, features, opt, model);
+};
 
 void LLVMCodeGen::visit(ModuleNode &node) {
+    // Set up the LLVM module
     module_ = std::make_unique<Module>(node.getName(), context_);
+    module_->setDataLayout(target_->createDataLayout());
+    module_->setTargetTriple(target_->getTargetTriple().getTriple());
+    // allocate global variables
     for (size_t i = 0; i < node.getVariableCount(); i++) {
         auto variable = node.getVariable(i);
         auto type = getLLVMType(variable->getType());
         auto value = new GlobalVariable(*module_.get(), type, false,
                 GlobalValue::CommonLinkage, Constant::getNullValue(type), variable->getName());
-        // TODO: set alignment
-        // value->setAlignment(variable->getType()->getSize());
+        value->setAlignment(getLLVMAlign(variable->getType()));
         values_[variable] = value;
     }
     // generate code for procedures
@@ -423,6 +449,10 @@ void LLVMCodeGen::visit(ReturnNode& node) {
     value_ = builder_.CreateRet(value_);
 }
 
+Module* LLVMCodeGen::getModule() const {
+    return module_.get();
+}
+
 Type* LLVMCodeGen::getLLVMType(TypeNode *type, bool isPtr) {
     Type* result = nullptr;
     if (type == nullptr) {
@@ -457,6 +487,34 @@ Type* LLVMCodeGen::getLLVMType(TypeNode *type, bool isPtr) {
         logger_->error(type->getFilePos(), "Cannot map type to LLVM intermediate representation.");
     }
     return result;
+}
+
+unsigned int LLVMCodeGen::getLLVMAlign(TypeNode *type, bool isPtr) {
+    auto layout = module_->getDataLayout();
+    if (type->getNodeType() == NodeType::array_type) {
+        unsigned int size = type->getSize();
+        if (size >= layout.getStackAlignment()) {
+            return layout.getStackAlignment();
+        }
+        auto array_t = dynamic_cast<ArrayTypeNode*>(type);
+        return getLLVMAlign(array_t->getMemberType());
+    } else if (type->getNodeType() == NodeType::record_type) {
+        auto record_t = dynamic_cast<RecordTypeNode*>(type);
+        unsigned int size = 0;
+        for (size_t i = 0; i < record_t->getFieldCount(); i++) {
+            auto field_t = record_t->getField(i)->getType();
+            if (field_t->getNodeType() == NodeType::array_type) {
+                auto array_t = dynamic_cast<ArrayTypeNode*>(field_t);
+                field_t = array_t->getMemberType();
+            }
+            size = std::max(size, getLLVMAlign(field_t));
+        }
+        return size;
+    } else if (type->getNodeType() == NodeType::basic_type) {
+        return layout.getPrefTypeAlignment(getLLVMType(type, isPtr));
+    }
+    return 0;
+
 }
 
 void LLVMCodeGen::call(CallNode &node) {

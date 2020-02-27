@@ -6,11 +6,27 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-int a[20];
-int x, y;
 struct Point2D {
     int x, y;
 };
+struct Point3D {
+    struct Point2D p2d;
+    int z;
+};
+struct ColorRGB {
+    int r, g, b;
+};
+struct Polygon3D {
+    struct Point3D points[20];
+    struct ColorRGB color;
+};
+
+int x, y, z, i;
+int a[20];
+struct Point2D p2d;
+struct Point3D p3d;
+struct Point3D points[20];
+struct Polygon3D poly3d;
 
 void test(struct Point2D point) {
     printf("(%d, %d)", point.x, point.y);

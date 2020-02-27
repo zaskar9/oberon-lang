@@ -12,22 +12,9 @@
 #include "scanner/Scanner.h"
 #include "parser/Parser.h"
 #include "parser/ast/NodePrettyPrinter.h"
-#include "codegen/nasm/NASMCodeGen.h"
-#include "codegen/nasm/Formatter.h"
 #include "codegen/llvm/LLVMCodeGen.h"
 
 using namespace boost::filesystem;
-
-void nasmBackend(std::string filename, Logger* logger, ModuleNode &ast_root) {
-    std::string name = change_extension(filename, "asm").string();
-    auto assembly = std::make_unique<Assembly>();
-    auto codegen = std::make_unique<NASMCodeGen>(assembly.get());
-    codegen->visit(ast_root);
-    auto formatter = std::make_unique<Formatter>(assembly.get());
-    ofstream file(name);
-    formatter->format(file);
-    file.close();
-}
 
 void llvmBackend(std::string filename, Logger* logger, ModuleNode &ast_root) {
     std::string name = change_extension(filename, "ll").string();

@@ -8,9 +8,11 @@
 #define OBERON0C_LLVMCODEGEN_H
 
 
+#include <stack>
+#include <llvm/IR/DataLayout.h>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
-#include <stack>
+#include <llvm/Target/TargetMachine.h>
 #include "../../parser/ast/NodeVisitor.h"
 
 using namespace llvm;
@@ -27,9 +29,11 @@ private:
     std::map<TypeNode*, Type*> types_;
     std::stack<bool> deref_ctx;
     int level_;
-    Function* function_;
+    Function *function_;
+    TargetMachine *target_;
 
-    Type* getLLVMType(TypeNode* type, bool isPtr = false);
+    Type* getLLVMType(TypeNode *type, bool isPtr = false);
+    unsigned int getLLVMAlign(TypeNode *type, bool isPtr = false);
 
     void call(CallNode &node);
 
@@ -38,11 +42,8 @@ private:
     bool deref() const;
 
 public:
-    explicit LLVMCodeGen(Logger* logger) : logger_(logger), context_(), builder_(context_), module_(),
-            value_(), values_(), types_(), deref_ctx(), level_(0), function_() { };
+    explicit LLVMCodeGen(Logger* logger);
     ~LLVMCodeGen() = default;
-
-    Module* getModule() const;
 
     void visit(ModuleNode &node) override;
     void visit(ProcedureNode &node) override;
@@ -75,6 +76,8 @@ public:
     void visit(RepeatLoopNode &node) override;
     void visit(ForLoopNode &node) override;
     void visit(ReturnNode &node) override;
+
+    Module* getModule() const;
 
 };
 
