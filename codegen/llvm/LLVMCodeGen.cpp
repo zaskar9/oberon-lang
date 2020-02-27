@@ -17,7 +17,8 @@ void LLVMCodeGen::visit(ModuleNode &node) {
         auto type = getLLVMType(variable->getType());
         auto value = new GlobalVariable(*module_.get(), type, false,
                 GlobalValue::CommonLinkage, Constant::getNullValue(type), variable->getName());
-        value->setAlignment(variable->getType()->getSize());
+        // TODO: set alignment
+        // value->setAlignment(variable->getType()->getSize());
         values_[variable] = value;
     }
     // generate code for procedures

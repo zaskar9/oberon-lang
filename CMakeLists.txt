@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
+
 project(oberon0c)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -54,7 +55,7 @@ set(SOURCE_FILES
         codegen/nasm/NASMCodeGen.cpp codegen/nasm/NASMCodeGen.h
         codegen/llvm/LLVMCodeGen.cpp codegen/llvm/LLVMCodeGen.h)
 
-add_executable(oberon0c ${SOURCE_FILES})
+add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 
 find_package(Boost COMPONENTS system filesystem REQUIRED)
 if (Boost_FOUND)
@@ -67,6 +68,6 @@ if (LLVM_FOUND)
     include_directories(SYSTEM ${LLVM_INCLUDE_DIRS})
     add_definitions(${LLVM_DEFINITIONS})
     llvm_map_components_to_libnames(llvm_libs core)
-    target_link_libraries(oberon0c ${llvm_libs})
+    target_link_libraries(${PROJECT_NAME} ${llvm_libs})
 endif()
 
