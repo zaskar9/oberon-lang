@@ -117,5 +117,3 @@ BEGIN
     QuickSort;
     Print
 END Sort.
-
-(* ./oberon0c Sort.Mod && opt -S -O3 Sort.ll | llc -O3 -o Sort.s && g++ Sort.s -o Sort && ./Sort *)

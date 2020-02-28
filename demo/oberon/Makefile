@@ -1,5 +1,5 @@
-O0C = ../../cmake-build-debug/oberon0c
-GXX = g++
+O0C = ../../cmake-build-debug/oberon-lang
+GXX = clang
 OPT = opt
 LLC = llc
 

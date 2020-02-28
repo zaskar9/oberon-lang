@@ -7,10 +7,13 @@
 #ifndef OBERON0C_AST_H
 #define OBERON0C_AST_H
 
-#include <utility>
+
 #include <list>
-#include <string>
+#include <memory>
 #include <ostream>
+#include <string>
+#include <utility>
+
 #include "../../util/Logger.h"
 
 enum class NodeType : char {

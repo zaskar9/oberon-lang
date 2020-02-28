@@ -84,5 +84,3 @@ BEGIN
     WriteLn;
     check(1)
 END ShortCircuit.
-
-(* ./oberon0c ShortCircuit.Mod && opt -S -O3 ShortCircuit.ll | llc -O3 -o ShortCircuit.s && g++ ShortCircuit.s -o ShortCircuit && ./ShortCircuit *)

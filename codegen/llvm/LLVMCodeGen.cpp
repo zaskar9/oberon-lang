@@ -5,9 +5,9 @@
  */
 
 #include "LLVMCodeGen.h"
-#include <llvm/target/TargetMachine.h>
-#include <llvm/support/TargetRegistry.h>
-#include <llvm/support/TargetSelect.h>
+#include <llvm/Target/TargetMachine.h>
+#include <llvm/Support/TargetRegistry.h>
+#include <llvm/Support/TargetSelect.h>
 
 LLVMCodeGen::LLVMCodeGen(Logger *logger) : logger_(logger), context_(), builder_(context_), module_(),
         value_(), values_(), types_(), deref_ctx(), level_(0), function_(), target_() {

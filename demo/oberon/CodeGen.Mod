@@ -272,5 +272,3 @@ BEGIN
     Print
     (* WriteInt(parent(x, y)) *)
 END CodeGen.
-
-(* ./oberon0c CodeGen.Mod && opt -S -O3 CodeGen.ll | llc -O3 -o CodeGen.s && g++ CodeGen.s -o CodeGen && ./CodeGen *)
