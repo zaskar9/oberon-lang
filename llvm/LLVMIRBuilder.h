@@ -1,5 +1,5 @@
 /*
- * Simple tree-walk code generator to produce LLVM assembly for the Oberon-0 compiler.
+ * Simple tree-walk implementation that builds LLVM IR for the Oberon compiler.
  *
  * Created by Michael Grossniklaus on 2/7/20.
  */
@@ -12,25 +12,22 @@
 #include <llvm/IR/DataLayout.h>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
-#include <llvm/Target/TargetMachine.h>
-#include "../../parser/ast/NodeVisitor.h"
+#include "../parser/ast/NodeVisitor.h"
 
 using namespace llvm;
 
-class LLVMCodeGen final : NodeVisitor {
+class LLVMIRBuilder final : NodeVisitor {
 
 private:
     Logger *logger_;
-    LLVMContext context_;
     IRBuilder<> builder_;
-    std::unique_ptr<Module> module_;
+    Module *module_;
     Value* value_;
     std::map<DeclarationNode*, Value*> values_;
     std::map<TypeNode*, Type*> types_;
     std::stack<bool> deref_ctx;
     int level_;
     Function *function_;
-    TargetMachine *target_;
 
     Type* getLLVMType(TypeNode *type, bool isPtr = false);
     unsigned int getLLVMAlign(TypeNode *type, bool isPtr = false);
@@ -42,8 +39,8 @@ private:
     bool deref() const;
 
 public:
-    explicit LLVMCodeGen(Logger* logger);
-    ~LLVMCodeGen() = default;
+    explicit LLVMIRBuilder(Logger *logger, LLVMContext &context, Module *module);
+    ~LLVMIRBuilder() = default;
 
     void visit(ModuleNode &node) override;
     void visit(ProcedureNode &node) override;
@@ -76,8 +73,6 @@ public:
     void visit(RepeatLoopNode &node) override;
     void visit(ForLoopNode &node) override;
     void visit(ReturnNode &node) override;
-
-    Module* getModule() const;
 
 };
 

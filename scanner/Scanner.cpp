@@ -6,19 +6,19 @@
 
 
 #include <boost/algorithm/string/replace.hpp>
+#include <config.h>
 #include "Scanner.h"
 #include "IdentToken.h"
 #include "NumberToken.h"
 #include "StringToken.h"
 #include "UndefinedToken.h"
 
-Scanner::Scanner(const std::string &filename, Logger *logger) :
-        filename_(filename), logger_(logger), tokens_(), lineNo_(1), charNo_(0) {
+Scanner::Scanner(boost::filesystem::path path, Logger *logger) :
+        filename_(path.string()), logger_(logger), tokens_(), lineNo_(1), charNo_(0) {
     this->initTable();
     file_.open(filename_, std::ios::in);
     if (!file_.is_open()) {
-        // TODO throw I/O Exception
-        logger_->error(filename_, "Cannot open file.");
+        logger_->error(PROJECT_NAME, "cannot open file: " + filename_ + ".");
         exit(1);
     }
     read();

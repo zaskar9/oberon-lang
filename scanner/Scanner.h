@@ -13,6 +13,7 @@
 #include <sstream>
 #include <unordered_map>
 #include <queue>
+#include <boost/filesystem.hpp>
 #include "Token.h"
 #include "../util/Logger.h"
 
@@ -38,7 +39,7 @@ private:
     void comment();
 
 public:
-    explicit Scanner(const std::string &filename, Logger *logger);
+    explicit Scanner(boost::filesystem::path path, Logger *logger);
     ~Scanner();
     const Token* peekToken();
     std::unique_ptr<const Token> nextToken();

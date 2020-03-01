@@ -16,8 +16,9 @@ struct Point3D {
 struct ColorRGB {
     int r, g, b;
 };
+typedef int Vector[20];
 struct Polygon3D {
-    struct Point3D points[20];
+    struct Point3D Vector;
     struct ColorRGB color;
 };
 

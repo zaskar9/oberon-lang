@@ -9,6 +9,7 @@
 
 
 #include <memory>
+#include <utility>
 #include "TypeNode.h"
 
 class ArrayTypeNode final : public TypeNode {
@@ -18,8 +19,10 @@ private:
     TypeNode* memberType_;
 
 public:
-    explicit ArrayTypeNode(FilePos pos, int dim, TypeNode* memberType);
-    ~ArrayTypeNode() final;
+    explicit ArrayTypeNode(FilePos pos, std::string name, int dim, TypeNode* memberType) :
+            TypeNode(NodeType::array_type, pos, std::move(name), dim * memberType->getSize()),
+            dim_(dim), memberType_(memberType) { };
+    ~ArrayTypeNode() final = default;
 
     int getDimension() const;
     TypeNode* getMemberType() const;

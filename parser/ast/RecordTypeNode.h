@@ -20,10 +20,11 @@ private:
     std::vector<std::unique_ptr<FieldNode>> fields_;
 
 public:
-    explicit RecordTypeNode(FilePos pos);
-    ~RecordTypeNode() final;
+    explicit RecordTypeNode(FilePos pos, const std::string &name) :
+            TypeNode(NodeType::record_type, pos, name, 0), offset_(0), fields_() { };
+    ~RecordTypeNode() final = default;
 
-    int getSize() const final;
+    unsigned int getSize() const final;
 
     int getOffset() const;
     void incOffset(int offset);

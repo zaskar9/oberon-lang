@@ -27,7 +27,9 @@ Parser::Parser(Scanner *scanner, Logger *logger) : scanner_(scanner), logger_(lo
 Parser::~Parser() = default;
 
 std::unique_ptr<ModuleNode> Parser::parse() {
-    return module();
+    auto errors = logger_->getErrorCount();
+    auto ast = module();
+    return (errors == logger_->getErrorCount()) ? std::move(ast) : nullptr;
 }
 
 std::string Parser::ident() {
@@ -155,7 +157,7 @@ void Parser::type_declarations(BlockNode *parent) {
         }
         auto token = scanner_->nextToken();
         if (token->getType() == TokenType::op_eq) {
-            auto node = std::make_unique<TypeDeclarationNode>(pos, parent, name, type(parent), symbols_->getLevel());
+            auto node = std::make_unique<TypeDeclarationNode>(pos, parent, name, type(parent, name), symbols_->getLevel());
             symbols_->insert(name, node.get());
             parent->addTypeDeclaration(std::move(node));
             token = scanner_->nextToken();
@@ -169,15 +171,15 @@ void Parser::type_declarations(BlockNode *parent) {
 }
 
 // type = ( identifier | array_type | record_type ) .
-TypeNode* Parser::type(BlockNode *parent) {
+TypeNode* Parser::type(BlockNode *parent, std::string name) {
     logger_->debug("", "type");
     auto token = scanner_->peekToken();
     if (token->getType() == TokenType::const_ident) {
         auto pos = token->getPosition();
-        std::string name = ident();
-        auto node = symbols_->lookup(name);
+        std::string id = ident();
+        auto node = symbols_->lookup(id);
         if (node == nullptr) {
-            logger_->error(pos, "undefined type: " + name + ".");
+            logger_->error(pos, "undefined type: " + id + ".");
         } else if (node->getNodeType() == NodeType::array_type ||
                    node->getNodeType() == NodeType::basic_type ||
                    node->getNodeType() == NodeType::record_type) {
@@ -186,15 +188,15 @@ TypeNode* Parser::type(BlockNode *parent) {
             auto type = dynamic_cast<TypeDeclarationNode*>(node);
             return type->getType();
         } else {
-            logger_->error(pos, name + " is not a type.");
+            logger_->error(pos, id + " is not a type.");
         }
     } else if (token->getType() == TokenType::kw_array) {
-        std::unique_ptr<ArrayTypeNode> node(array_type(parent));
+        std::unique_ptr<ArrayTypeNode> node(array_type(parent, name));
         auto res = node.get();
         parent->addType(std::move(node));
         return res;
     } else if (token->getType() == TokenType::kw_record) {
-        std::unique_ptr<RecordTypeNode> node(record_type(parent));
+        std::unique_ptr<RecordTypeNode> node(record_type(parent, name));
         auto res = node.get();
         parent->addType(std::move(node));
         return res;
@@ -206,7 +208,7 @@ TypeNode* Parser::type(BlockNode *parent) {
 }
 
 // array_type = "ARRAY" expression "OF" type .
-ArrayTypeNode* Parser::array_type(BlockNode *parent) {
+ArrayTypeNode* Parser::array_type(BlockNode *parent, std::string name) {
     logger_->debug("", "array_type");
     FilePos pos = scanner_->nextToken()->getPosition(); // skip ARRAY keyword and get its position
     auto expr = expression(parent);
@@ -216,7 +218,7 @@ ArrayTypeNode* Parser::array_type(BlockNode *parent) {
             auto token = scanner_->peekToken();
             if (token->getType()==TokenType::kw_of) {
                 scanner_->nextToken(); // skip OF keyword
-                return new ArrayTypeNode(pos, dim, type(parent));
+                return new ArrayTypeNode(pos, name, dim, type(parent));
             }
             else {
                 logger_->error(token->getPosition(), "OF expected.");
@@ -233,10 +235,10 @@ ArrayTypeNode* Parser::array_type(BlockNode *parent) {
 }
 
 // record_type = "RECORD" field_list { ";" field_list } "END" .
-RecordTypeNode* Parser::record_type(BlockNode *parent) {
+RecordTypeNode* Parser::record_type(BlockNode *parent, std::string name) {
     logger_->debug("", "record_type");
     FilePos pos = scanner_->nextToken()->getPosition(); // skip RECORD keyword and get its position
-    auto node = new RecordTypeNode(pos);
+    auto node = new RecordTypeNode(pos, name);
     field_list(parent, node);
     while (scanner_->peekToken()->getType() == TokenType::semicolon) {
         scanner_->nextToken();

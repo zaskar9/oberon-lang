@@ -13,24 +13,23 @@
 
 class BasicTypeNode final : public TypeNode {
 
-private:
-    const std::string name_;
-
 public:
     explicit BasicTypeNode(std::string name, int size) :
-            TypeNode(NodeType::basic_type, { }, size), name_(std::move(name)) { };
+            TypeNode(NodeType::basic_type, { }, name, size) { };
     ~BasicTypeNode() final = default;
 
     void operator=(BasicTypeNode const&) = delete;
-
-    const std::string getName() const;
 
     void accept(NodeVisitor& visitor) final;
 
     void print(std::ostream &stream) const final;
 
     static BasicTypeNode* BOOLEAN;
+    static BasicTypeNode* CHAR;
+    static BasicTypeNode* BYTE;
+    static BasicTypeNode* SHORTINT;
     static BasicTypeNode* INTEGER;
+    static BasicTypeNode* LONGINT;
     static BasicTypeNode* STRING;
 };
 

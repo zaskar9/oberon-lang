@@ -46,9 +46,9 @@ private:
     std::unique_ptr<ExpressionNode> simple_expression(BlockNode *parent);
     std::unique_ptr<ExpressionNode> term(BlockNode *parent);
     std::unique_ptr<ExpressionNode> factor(BlockNode *parent);
-    TypeNode* type(BlockNode *parent);
-    ArrayTypeNode* array_type(BlockNode *parent);
-    RecordTypeNode* record_type(BlockNode *parent);
+    TypeNode* type(BlockNode *parent, std::string name = "");
+    ArrayTypeNode* array_type(BlockNode *parent, std::string name = "");
+    RecordTypeNode* record_type(BlockNode *parent, std::string name = "");
     void field_list(BlockNode *parent, RecordTypeNode *record);
     void ident_list(std::vector<std::string> &idents);
     std::unique_ptr<ProcedureNode> procedure_heading(BlockNode *parent);

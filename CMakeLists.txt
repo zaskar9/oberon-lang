@@ -1,17 +1,17 @@
 cmake_minimum_required(VERSION 3.15)
 
-project(oberon-lang)
+project(oberon-lang VERSION "0.0.0")
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 if (MSVC)
-    # warning level 4 and all warnings as errors
+    # warning level 4
     add_compile_options(/W4)
 else()
-    # lots of warnings and all warnings (as errors -Werror)
-    add_compile_options(-W -Wall -Wextra -pedantic -Wshadow -Woverloaded-virtual -Winvalid-pch -Wcast-align -Wformat=2 -Wformat-nonliteral -Wmissing-declarations -Wmissing-format-attribute -Wmissing-include-dirs -Wredundant-decls -Wswitch-default)
+    # lots of warnings and all warnings as errors
+    add_compile_options(-W -Wall -Wextra -Werror -pedantic -Wshadow -Woverloaded-virtual -Winvalid-pch -Wcast-align -Wformat=2 -Wformat-nonliteral -Wmissing-declarations -Wmissing-format-attribute -Wmissing-include-dirs -Wredundant-decls -Wswitch-default)
 endif()
 
 set(SOURCE_FILES
@@ -48,11 +48,12 @@ set(SOURCE_FILES
         parser/ast/LoopNode.cpp parser/ast/LoopNode.h
         parser/ast/StatementSequenceNode.cpp parser/ast/StatementSequenceNode.h
         parser/ast/NodePrettyPrinter.cpp parser/ast/NodePrettyPrinter.h
-        codegen/llvm/LLVMCodeGen.cpp codegen/llvm/LLVMCodeGen.h)
+        llvm/LLVMIRBuilder.cpp llvm/LLVMIRBuilder.h
+        llvm/LLVMCompiler.cpp llvm/LLVMCompiler.h)
 
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 
-find_package(Boost COMPONENTS system filesystem REQUIRED)
+find_package(Boost COMPONENTS system filesystem program_options REQUIRED)
 if (Boost_FOUND)
     include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
     target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES})
@@ -62,7 +63,9 @@ find_package(LLVM REQUIRED CONFIG)
 if (LLVM_FOUND)
     include_directories(SYSTEM ${LLVM_INCLUDE_DIRS})
     add_definitions(${LLVM_DEFINITIONS})
-    llvm_map_components_to_libnames(llvm_libs core support ${LLVM_TARGETS_TO_BUILD})
+    llvm_map_components_to_libnames(llvm_libs core support passes ${LLVM_TARGETS_TO_BUILD})
     target_link_libraries(${PROJECT_NAME} ${llvm_libs})
 endif()
 
+configure_file(config.h.in config.h @ONLY)
+include_directories(${CMAKE_CURRENT_BINARY_DIR})

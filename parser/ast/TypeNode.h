@@ -8,20 +8,29 @@
 #define OBERON0C_TYPENODE_H
 
 
+#include <utility>
 #include "Node.h"
 
 class TypeNode : public Node {
 
 private:
-    int size_;
+    std::string name_;
+    unsigned int size_;
+    bool anon_;
+
+protected:
+    void setName(std::string name);
 
 public:
-    explicit TypeNode(NodeType nodeType, FilePos pos, int size);
+    explicit TypeNode(NodeType nodeType, FilePos pos, std::string name, int size) :
+            Node(nodeType, pos), name_(std::move(name)), size_(size), anon_(name.empty()) { };
     ~TypeNode() override;
 
     void accept(NodeVisitor& visitor) override = 0;
 
-    virtual int getSize() const;
+    std::string getName() const;
+    virtual unsigned int getSize() const;
+    bool isAnonymous();
 
 };
 

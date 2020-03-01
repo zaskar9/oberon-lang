@@ -7,16 +7,11 @@
 #include "RecordTypeNode.h"
 #include "NodeVisitor.h"
 
-RecordTypeNode::RecordTypeNode(const FilePos pos) : TypeNode(NodeType::record_type, pos, 0), offset_(0), fields_() {
-}
-
-RecordTypeNode::~RecordTypeNode() = default;
-
 void RecordTypeNode::addField(std::unique_ptr<FieldNode> field) {
     fields_.push_back(std::move(field));
 }
 
-int RecordTypeNode::getSize() const {
+unsigned int RecordTypeNode::getSize() const {
     int size = 0;
     for (auto&& itr : fields_) {
         size += itr->getType()->getSize();

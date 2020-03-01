@@ -6,12 +6,16 @@
 
 #include "TypeNode.h"
 
-TypeNode::TypeNode(const NodeType nodeType, const FilePos pos, const int size) :
-        Node(nodeType, pos), size_(size) {
-}
-
 TypeNode::~TypeNode() = default;
 
-int TypeNode::getSize() const {
+void TypeNode::setName(std::string name) {
+    name_ = std::move(name);
+}
+
+std::string TypeNode::getName() const {
+    return name_;
+}
+
+unsigned int TypeNode::getSize() const {
     return size_;
 }

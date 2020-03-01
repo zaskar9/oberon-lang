@@ -1,48 +1,22 @@
 /*
- * Simple tree-walk code generator to produce LLVM assembly for the Oberon-0 compiler.
+ * Simple tree-walk code generator to build LLVM IR for the Oberon compiler.
  *
  * Created by Michael Grossniklaus on 2/7/20.
  */
 
-#include "LLVMCodeGen.h"
-#include <llvm/Target/TargetMachine.h>
-#include <llvm/Support/TargetRegistry.h>
-#include <llvm/Support/TargetSelect.h>
+#include "LLVMIRBuilder.h"
+#include <llvm/IR/Verifier.h>
 
-LLVMCodeGen::LLVMCodeGen(Logger *logger) : logger_(logger), context_(), builder_(context_), module_(),
-        value_(), values_(), types_(), deref_ctx(), level_(0), function_(), target_() {
-    // Initialize LLVM
-    llvm::InitializeAllTargetInfos();
-    llvm::InitializeAllTargets();
-    llvm::InitializeAllTargetMCs();
-    llvm::InitializeAllAsmParsers();
-    llvm::InitializeAllAsmPrinters();
-    // Use default target triple of host
-    std::string triple = llvm::sys::getDefaultTargetTriple();
-    // Set up target
-    std::string error;
-    auto target = llvm::TargetRegistry::lookupTarget(triple, error);
-    if (!target) {
-        logger_->error("", error);
-    }
-    // Set up target machine to match host
-    std::string cpu = "generic";
-    std::string features = "";
-    TargetOptions opt;
-    auto model = Optional<Reloc::Model>();
-    target_ = target->createTargetMachine(triple, cpu, features, opt, model);
-};
+LLVMIRBuilder::LLVMIRBuilder(Logger *logger, LLVMContext &context, Module *module) :
+        logger_(logger), builder_(context), module_(module), value_(), values_(), types_(),
+        deref_ctx(), level_(0), function_() { };
 
-void LLVMCodeGen::visit(ModuleNode &node) {
-    // Set up the LLVM module
-    module_ = std::make_unique<Module>(node.getName(), context_);
-    module_->setDataLayout(target_->createDataLayout());
-    module_->setTargetTriple(target_->getTargetTriple().getTriple());
+void LLVMIRBuilder::visit(ModuleNode &node) {
     // allocate global variables
     for (size_t i = 0; i < node.getVariableCount(); i++) {
         auto variable = node.getVariable(i);
         auto type = getLLVMType(variable->getType());
-        auto value = new GlobalVariable(*module_.get(), type, false,
+        auto value = new GlobalVariable(*module_, type, false,
                 GlobalValue::CommonLinkage, Constant::getNullValue(type), variable->getName());
         value->setAlignment(getLLVMAlign(variable->getType()));
         values_[variable] = value;
@@ -54,14 +28,16 @@ void LLVMCodeGen::visit(ModuleNode &node) {
     // generate code for main
     auto main = module_->getOrInsertFunction("main", getLLVMType(BasicTypeNode::INTEGER));
     function_ = cast<Function>(main.getCallee());
-    auto entry = BasicBlock::Create(context_, "entry", function_);
+    auto entry = BasicBlock::Create(builder_.getContext(), "entry", function_);
     builder_.SetInsertPoint(entry);
     level_ = node.getLevel() + 1;
     node.getStatements()->accept(*this);
     builder_.CreateRet(builder_.getInt32(0));
+    // verify the module
+    llvm::verifyModule(*module_, &errs());
 }
 
-void LLVMCodeGen::visit(ProcedureNode &node) {
+void LLVMIRBuilder::visit(ProcedureNode &node) {
     std::vector<Type*> params;
     for (size_t i = 0; i < node.getProcedureCount(); i++) {
         node.getProcedure(i)->accept(*this);
@@ -82,7 +58,7 @@ void LLVMCodeGen::visit(ProcedureNode &node) {
             values_[param] = arg;
         }
         function_ = cast<Function>(proc.getCallee());
-        auto entry = BasicBlock::Create(context_, "entry", function_);
+        auto entry = BasicBlock::Create(builder_.getContext(), "entry", function_);
         builder_.SetInsertPoint(entry);
         for (size_t i = 0; i < node.getVariableCount(); i++) {
             auto var = node.getVariable(i);
@@ -102,10 +78,11 @@ void LLVMCodeGen::visit(ProcedureNode &node) {
                 builder_.CreateUnreachable();
             }
         }
+        llvm::verifyFunction(*func, &errs());
     }
 }
 
-void LLVMCodeGen::visit(ReferenceNode &node) {
+void LLVMIRBuilder::visit(ReferenceNode &node) {
     auto ref = node.dereference();
     int level = ref->getLevel();
     if (level == 1) /* global level */ {
@@ -174,47 +151,75 @@ void LLVMCodeGen::visit(ReferenceNode &node) {
     }
 }
 
-void LLVMCodeGen::visit(ConstantDeclarationNode &node) { /* Node does not need code generation. */ }
+void LLVMIRBuilder::visit([[maybe_unused]] ConstantDeclarationNode &node) {
+    // Node does not need code generation.
+}
 
-void LLVMCodeGen::visit(FieldNode &node) { /* Node does not need code generation. */ }
+void LLVMIRBuilder::visit([[maybe_unused]] FieldNode &node) {
+    // Node does not need code generation.
+}
 
-void LLVMCodeGen::visit(ParameterNode &node) { /* Node does not need code generation. */ }
+void LLVMIRBuilder::visit([[maybe_unused]] ParameterNode &node) {
+    // Node does not need code generation.
+}
 
-void LLVMCodeGen::visit(VariableDeclarationNode &node) { /* Node does not need code generation. */ }
+void LLVMIRBuilder::visit([[maybe_unused]] VariableDeclarationNode &node) {
+    // Node does not need code generation.
+}
 
-void LLVMCodeGen::visit(BooleanLiteralNode &node) {
+void LLVMIRBuilder::visit(BooleanLiteralNode &node) {
     value_ = node.getValue() ? builder_.getTrue() : builder_.getFalse();
 }
 
-void LLVMCodeGen::visit(IntegerLiteralNode &node) {
+void LLVMIRBuilder::visit(IntegerLiteralNode &node) {
     value_ = builder_.getInt32(node.getValue());
 }
 
-void LLVMCodeGen::visit(StringLiteralNode &node) {
+void LLVMIRBuilder::visit(StringLiteralNode &node) {
     std::string val = node.getValue();
-    value_ = builder_.CreateGlobalStringPtr(val);
+    value_ = builder_.CreateGlobalStringPtr(val, ".str");
 }
 
-void LLVMCodeGen::visit(FunctionCallNode &node) {
+void LLVMIRBuilder::visit(FunctionCallNode &node) {
     call(node);
 }
 
-void LLVMCodeGen::visit(UnaryExpressionNode &node) {
+void LLVMIRBuilder::visit(UnaryExpressionNode &node) {
     node.getExpression()->accept(*this);
     switch (node.getOperator()) {
-        case OperatorType::NOT: value_ = builder_.CreateNot(value_); break;
-        case OperatorType::NEG: value_ = builder_.CreateNeg(value_); break;
+        case OperatorType::NOT:
+            value_ = builder_.CreateNot(value_);
+            break;
+        case OperatorType::NEG:
+            value_ = builder_.CreateNeg(value_);
+            break;
+        case OperatorType::AND:
+        case OperatorType::OR:
+        case OperatorType::PLUS:
+        case OperatorType::MINUS:
+        case OperatorType::TIMES:
+        case OperatorType::DIV:
+        case OperatorType::MOD:
+        case OperatorType::EQ:
+        case OperatorType::NEQ:
+        case OperatorType::LT:
+        case OperatorType::GT:
+        case OperatorType::LEQ:
+        case OperatorType::GEQ:
+            value_ = nullptr;
+            logger_->error(node.getFilePos(), "binary operator in unary expression.");
+            break;
     }
 }
 
-void LLVMCodeGen::visit(BinaryExpressionNode &node) {
+void LLVMIRBuilder::visit(BinaryExpressionNode &node) {
     node.getLeftExpression()->accept(*this);
     auto lhs = value_;
     // Logical operators AND and OR are treated explicitly in order to enable short-circuiting.
     if (node.getOperator() == OperatorType::AND || node.getOperator() == OperatorType::OR) {
         // Create one block to evaluate the right-hand side and one to skip it.
-        auto eval = BasicBlock::Create(context_, "eval", function_);
-        auto skip = BasicBlock::Create(context_, "skip", function_);
+        auto eval = BasicBlock::Create(builder_.getContext(), "eval", function_);
+        auto skip = BasicBlock::Create(builder_.getContext(), "skip", function_);
         // Insert branch to decide whether to skip AND or OR
         if (node.getOperator() == OperatorType::AND) {
             builder_.CreateCondBr(value_, eval, skip);
@@ -279,25 +284,43 @@ void LLVMCodeGen::visit(BinaryExpressionNode &node) {
             case OperatorType::GEQ:
                 value_ = builder_.CreateICmpSGE(lhs, rhs);
                 break;
+            case OperatorType::AND:
+            case OperatorType::OR:
+                // unreachable code due to the if-branch of this else-branch
+                break;
+            case OperatorType::NOT:
+            case OperatorType::NEG:
+                value_ = nullptr;
+                logger_->error(node.getFilePos(), "unary operator in binary expression.");
+                break;
+
         }
     }
 }
 
-void LLVMCodeGen::visit(TypeDeclarationNode &node) { /* Node does not need code generation. */ }
+void LLVMIRBuilder::visit([[maybe_unused]] TypeDeclarationNode &node) {
+    // Node does not need code generation.
+}
 
-void LLVMCodeGen::visit(ArrayTypeNode &node) { /* Node does not need code generation. */ }
+void LLVMIRBuilder::visit([[maybe_unused]] ArrayTypeNode &node) {
+    // Node does not need code generation.
+}
 
-void LLVMCodeGen::visit(BasicTypeNode &node) { /* Node does not need code generation. */ }
+void LLVMIRBuilder::visit([[maybe_unused]] BasicTypeNode &node) {
+    // Node does not need code generation.
+}
 
-void LLVMCodeGen::visit(RecordTypeNode &node) { /* Node does not need code generation. */ }
+void LLVMIRBuilder::visit([[maybe_unused]] RecordTypeNode &node) {
+    // Node does not need code generation.
+}
 
-void LLVMCodeGen::visit(StatementSequenceNode &node) {
+void LLVMIRBuilder::visit(StatementSequenceNode &node) {
     for (size_t i = 0; i < node.getStatementCount(); i++) {
         node.getStatement(i)->accept(*this);
     }
 }
 
-void LLVMCodeGen::visit(AssignmentNode &node) {
+void LLVMIRBuilder::visit(AssignmentNode &node) {
     setRefMode(true);
     node.getRvalue()->accept(*this);
     Value* rValue = value_;
@@ -307,12 +330,12 @@ void LLVMCodeGen::visit(AssignmentNode &node) {
     value_ = builder_.CreateStore(rValue, lValue);
 }
 
-void LLVMCodeGen::visit(IfThenElseNode& node) {
-    auto tail = BasicBlock::Create(context_, "tail", function_);
-    auto if_true = BasicBlock::Create(context_, "if_true", function_);
+void LLVMIRBuilder::visit(IfThenElseNode& node) {
+    auto tail = BasicBlock::Create(builder_.getContext(), "tail", function_);
+    auto if_true = BasicBlock::Create(builder_.getContext(), "if_true", function_);
     auto if_false = tail;
     if (node.hasElse() || node.hasElseIf()) {
-        if_false = BasicBlock::Create(context_, "if_false", function_);
+        if_false = BasicBlock::Create(builder_.getContext(), "if_false", function_);
     }
     setRefMode(true);
     node.getCondition()->accept(*this);
@@ -326,10 +349,10 @@ void LLVMCodeGen::visit(IfThenElseNode& node) {
     builder_.SetInsertPoint(if_false);
     for (size_t i = 0; i < node.getElseIfCount(); i++) {
         auto elsif = node.getElseIf(i);
-        auto elsif_true = BasicBlock::Create(context_, "elsif_true", function_);
+        auto elsif_true = BasicBlock::Create(builder_.getContext(), "elsif_true", function_);
         auto elsif_false = tail;
         if (node.hasElse() || i + 1 < node.getElseIfCount()) {
-            elsif_false = BasicBlock::Create(context_, "elsif_false", function_);
+            elsif_false = BasicBlock::Create(builder_.getContext(), "elsif_false", function_);
         }
         setRefMode(true);
         elsif->getCondition()->accept(*this);
@@ -351,19 +374,21 @@ void LLVMCodeGen::visit(IfThenElseNode& node) {
     builder_.SetInsertPoint(tail);
 }
 
-void LLVMCodeGen::visit(ElseIfNode& node) { /* Code generated in the context of if-then-else node */ }
+void LLVMIRBuilder::visit([[maybe_unused]] ElseIfNode& node) {
+    // Code for this node is generated in the context of if-then-else node.
+}
 
-void LLVMCodeGen::visit(ProcedureCallNode& node) {
+void LLVMIRBuilder::visit(ProcedureCallNode& node) {
     call(node);
 }
 
-void LLVMCodeGen::visit(LoopNode& node) {
+void LLVMIRBuilder::visit([[maybe_unused]] LoopNode& node) {
     // todo code generation for general loop
 }
 
-void LLVMCodeGen::visit(WhileLoopNode& node) {
-    auto body = BasicBlock::Create(context_, "loop_body", function_);
-    auto tail = BasicBlock::Create(context_, "tail", function_);
+void LLVMIRBuilder::visit(WhileLoopNode& node) {
+    auto body = BasicBlock::Create(builder_.getContext(), "loop_body", function_);
+    auto tail = BasicBlock::Create(builder_.getContext(), "tail", function_);
     setRefMode(true);
     node.getCondition()->accept(*this);
     restoreRefMode();
@@ -377,9 +402,9 @@ void LLVMCodeGen::visit(WhileLoopNode& node) {
     builder_.SetInsertPoint(tail);
 }
 
-void LLVMCodeGen::visit(RepeatLoopNode& node) {
-    auto body = BasicBlock::Create(context_, "loop_body", function_);
-    auto tail = BasicBlock::Create(context_, "tail", function_);
+void LLVMIRBuilder::visit(RepeatLoopNode& node) {
+    auto body = BasicBlock::Create(builder_.getContext(), "loop_body", function_);
+    auto tail = BasicBlock::Create(builder_.getContext(), "tail", function_);
     builder_.CreateBr(body);
     builder_.SetInsertPoint(body);
     node.getStatements()->accept(*this);
@@ -390,7 +415,7 @@ void LLVMCodeGen::visit(RepeatLoopNode& node) {
     builder_.SetInsertPoint(tail);
 }
 
-void LLVMCodeGen::visit(ForLoopNode& node) {
+void LLVMIRBuilder::visit(ForLoopNode& node) {
     // initialize loop counter
     setRefMode(true);
     node.getLow()->accept(*this);
@@ -406,8 +431,8 @@ void LLVMCodeGen::visit(ForLoopNode& node) {
     node.getCounter()->accept(*this);
     counter = value_;
     restoreRefMode();
-    auto body = BasicBlock::Create(context_, "loop_body", function_);
-    auto tail = BasicBlock::Create(context_, "tail", function_);
+    auto body = BasicBlock::Create(builder_.getContext(), "loop_body", function_);
+    auto tail = BasicBlock::Create(builder_.getContext(), "tail", function_);
     if (node.getStep() > 0) {
         value_ = builder_.CreateICmpSLE(counter, end);
     } else {
@@ -442,18 +467,14 @@ void LLVMCodeGen::visit(ForLoopNode& node) {
     builder_.SetInsertPoint(tail);
 }
 
-void LLVMCodeGen::visit(ReturnNode& node) {
+void LLVMIRBuilder::visit(ReturnNode& node) {
     setRefMode(true);
     node.getValue()->accept(*this);
     restoreRefMode();
     value_ = builder_.CreateRet(value_);
 }
 
-Module* LLVMCodeGen::getModule() const {
-    return module_.get();
-}
-
-Type* LLVMCodeGen::getLLVMType(TypeNode *type, bool isPtr) {
+Type* LLVMIRBuilder::getLLVMType(TypeNode *type, bool isPtr) {
     Type* result = nullptr;
     if (type == nullptr) {
         result = builder_.getVoidTy();
@@ -468,7 +489,9 @@ Type* LLVMCodeGen::getLLVMType(TypeNode *type, bool isPtr) {
         for (size_t i = 0; i < record_t->getFieldCount(); i++) {
             elem_ts.push_back(getLLVMType(record_t->getField(i)->getType()));
         }
-        result = StructType::create(elem_ts);
+        auto struct_t = StructType::create(elem_ts);
+        struct_t->setName("record." + record_t->getName());
+        result = struct_t;
     } else if (type->getNodeType() == NodeType::basic_type) {
         if (type == BasicTypeNode::BOOLEAN) {
             result = builder_.getInt1Ty();
@@ -489,12 +512,12 @@ Type* LLVMCodeGen::getLLVMType(TypeNode *type, bool isPtr) {
     return result;
 }
 
-unsigned int LLVMCodeGen::getLLVMAlign(TypeNode *type, bool isPtr) {
+unsigned int LLVMIRBuilder::getLLVMAlign(TypeNode *type, bool isPtr) {
     auto layout = module_->getDataLayout();
     if (type->getNodeType() == NodeType::array_type) {
-        unsigned int size = type->getSize();
-        if (size >= layout.getStackAlignment()) {
-            return layout.getStackAlignment();
+        auto align = layout.getStackAlignment();
+        if (type->getSize() >= align) {
+            return align;
         }
         auto array_t = dynamic_cast<ArrayTypeNode*>(type);
         return getLLVMAlign(array_t->getMemberType());
@@ -517,7 +540,7 @@ unsigned int LLVMCodeGen::getLLVMAlign(TypeNode *type, bool isPtr) {
 
 }
 
-void LLVMCodeGen::call(CallNode &node) {
+void LLVMIRBuilder::call(CallNode &node) {
     std::vector<Value*> params;
     std::string name = node.getProcedure()->getName();
     size_t fp_cnt = node.getProcedure()->getParameterCount();
@@ -533,15 +556,15 @@ void LLVMCodeGen::call(CallNode &node) {
     }
 }
 
-void LLVMCodeGen::setRefMode(bool deref) {
+void LLVMIRBuilder::setRefMode(bool deref) {
     deref_ctx.push(deref);
 }
 
-void LLVMCodeGen::restoreRefMode() {
+void LLVMIRBuilder::restoreRefMode() {
     deref_ctx.pop();
 }
 
-bool LLVMCodeGen::deref() const {
+bool LLVMIRBuilder::deref() const {
     if (deref_ctx.empty()) {
         return false;
     }

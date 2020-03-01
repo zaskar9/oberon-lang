@@ -9,7 +9,7 @@ OPTFLAGS = -O3
 .PRECIOUS: %.s %.ll
 
 clean:
-	@rm -f *.s *.ll
+	@rm -f *.s *.ll *.o *.bc
 	@find . -type f -perm +111 -delete 
 
 % : %.s
