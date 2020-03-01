@@ -911,11 +911,13 @@ std::unique_ptr<ExpressionNode> Parser::factor(BlockNode *parent) {
         auto string = dynamic_cast<const StringToken*>(tmp.get());
         return std::make_unique<StringLiteralNode>(string->getPosition(), string->getValue());
     } else if (token->getType() == TokenType::const_true) {
+        auto pos = token->getPosition();
         scanner_->nextToken();
-        return std::make_unique<BooleanLiteralNode>(token->getPosition(), true);
+        return std::make_unique<BooleanLiteralNode>(pos, true);
     } else if (token->getType() == TokenType::const_false) {
+        auto pos = token->getPosition();
         scanner_->nextToken();
-        return std::make_unique<BooleanLiteralNode>(token->getPosition(), false);
+        return std::make_unique<BooleanLiteralNode>(pos, false);
     } else if (token->getType() == TokenType::lparen) {
         scanner_->nextToken();
         auto expr = expression(parent);
