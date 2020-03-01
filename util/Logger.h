@@ -39,6 +39,7 @@ public:
     void error(FilePos pos, const std::string &msg);
     void error(const std::string &fileName, const std::string &msg);
     void warning(FilePos pos, const std::string &msg);
+    void warning(const std::string& fileName, const std::string& msg);
     void info(const std::string &fileName, const std::string &msg);
     void debug(const std::string &fileName, const std::string &msg);
 

@@ -40,12 +40,16 @@ void Logger::error(const FilePos pos, const std::string &msg) {
     log(LogLevel::ERROR, pos.fileName, pos.lineNo, pos.charNo, msg);
 }
 
-void Logger::error(const std::string &fileName, const std::string &msg) {
+void Logger::error(const std::string& fileName, const std::string& msg) {
     log(LogLevel::ERROR, fileName, msg);
 }
 
 void Logger::warning(FilePos pos, const std::string &msg) {
     log(LogLevel::WARNING, pos.fileName, pos.lineNo, pos.charNo, msg);
+}
+
+void Logger::warning(const std::string& fileName, const std::string& msg) {
+    log(LogLevel::WARNING, fileName, msg);
 }
 
 void Logger::info(const std::string &fileName, const std::string &msg) {

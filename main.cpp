@@ -77,8 +77,7 @@ int main(const int argc, const char *argv[]) {
             auto type = vm["filetype"].as<std::string>();
             if (type == "asm") {
                 compiler->setCodeGenFileType(OutputFileType::AssemblyFile);
-                logger->error(PROJECT_NAME, "asm output file type currently not supported.");
-                return 1;
+                logger->warning(PROJECT_NAME, "asm output file type currently not fully supported.");
             } else if (type == "bc") {
                 compiler->setCodeGenFileType(OutputFileType::BitCodeFile);
             } else if (type == "ll") {

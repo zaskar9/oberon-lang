@@ -30,13 +30,14 @@ LLVMCompiler::LLVMCompiler(Logger *logger) : logger_(logger), ctx_(), pb_(), lvl
     auto tm = llvm::TargetRegistry::lookupTarget(triple, error);
     if (!tm) {
         logger_->error(PROJECT_NAME, error);
+    } else {
+        // Set up target machine to match host
+        std::string cpu = "generic";
+        std::string features = "";
+        TargetOptions opt;
+        auto model = Optional<Reloc::Model>();
+        tm_ = tm->createTargetMachine(triple, cpu, features, opt, model);
     }
-    // Set up target machine to match host
-    std::string cpu = "generic";
-    std::string features = "";
-    TargetOptions opt;
-    auto model = Optional<Reloc::Model>();
-    tm_ = tm->createTargetMachine(triple, cpu, features, opt, model);
 }
 
 TargetMachine * LLVMCompiler::getTargetMachine() {
@@ -103,7 +104,11 @@ bool LLVMCompiler::emit(Module *module, boost::filesystem::path path) {
             ext = "ll";
             break;
         default:
+#if defined(_WIN32) || defined(_WIN64)
+            ext = "obj";
+#else
             ext = "o";
+#endif
             break;
     }
     std::string name = change_extension(path, ext).string();
