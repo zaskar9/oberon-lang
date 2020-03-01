@@ -1,5 +1,5 @@
 /*
- * Header file of the symbol table class used by the Oberon-0 compiler.
+ * Symbol table used by the Oberon LLVM compiler.
  *
  * Created by Michael Grossniklaus on 2/8/18.
  */
@@ -26,16 +26,17 @@ public:
     ~SymbolTable();
 
     void insert(const std::string &name, Node *node);
-    Node* lookup(const std::string &name) const;
+    [[nodiscard]] Node* lookup(const std::string &name) const;
 
-    bool isDefined(const std::string &name) const;
-    bool isDuplicate(const std::string &name) const;
+    [[nodiscard]] bool isDefined(const std::string &name) const;
+    [[nodiscard]] bool isDuplicate(const std::string &name) const;
 
     void enterScope();
     void leaveScope();
 
-    int getLevel() const;
+    [[nodiscard]] int getLevel() const;
 
 };
+
 
 #endif //OBERON0C_TABLE_H

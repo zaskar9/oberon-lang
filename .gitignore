@@ -29,11 +29,18 @@
 
 # CMake
 /cmake-build-debug/
+/CMakeFiles/
+
+# Visual Studio
 /.vs/
 /x64/
-*.DS_Store
-/CMakeFiles/
 /out/
 *.pdb
 *.ilk
+
+# LLVM
 *.bc
+*.ll
+
+# macOS
+*.DS_Store

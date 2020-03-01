@@ -1,5 +1,5 @@
 /*
- * Header file of the AST literal nodes used by the Oberon-0 compiler.
+ * AST nodes representing literals in the Oberon LLVM compiler.
  *
  * Created by Michael Grossniklaus on 2/19/18.
  */
@@ -17,14 +17,14 @@ private:
     BasicTypeNode *type_;
 
 public:
-    explicit LiteralNode(NodeType nodeType, const FilePos &pos, BasicTypeNode *type) :
+    explicit LiteralNode(const NodeType nodeType, const FilePos &pos, BasicTypeNode *type) :
             ExpressionNode(nodeType, pos), type_(type) { };
     ~LiteralNode() override = default;
 
     void accept(NodeVisitor& visitor) override = 0;
 
-    bool isConstant() const final;
-    BasicTypeNode* getType() const final;
+    [[nodiscard]] bool isConstant() const final;
+    [[nodiscard]] BasicTypeNode* getType() const final;
 };
 
 
@@ -38,7 +38,7 @@ public:
             LiteralNode(NodeType::boolean, pos, BasicTypeNode::BOOLEAN), value_(value) { };
     ~BooleanLiteralNode() final = default;
 
-    bool getValue() const;
+    [[nodiscard]] bool getValue() const;
 
     void accept(NodeVisitor& visitor) final;
 
@@ -57,7 +57,7 @@ public:
             LiteralNode(NodeType::integer, pos, BasicTypeNode::INTEGER), value_(value) { };
     ~IntegerLiteralNode() final = default;
 
-    int getValue() const;
+    [[nodiscard]] int getValue() const;
 
     void accept(NodeVisitor& visitor) final;
 
@@ -76,7 +76,7 @@ public:
             LiteralNode(NodeType::string, pos, BasicTypeNode::STRING), value_(std::move(value)) { };
     ~StringLiteralNode() final = default;
 
-    const std::string getValue() const;
+    [[nodiscard]] std::string getValue() const;
 
     void accept(NodeVisitor& visitor) final;
 

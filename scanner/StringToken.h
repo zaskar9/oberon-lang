@@ -1,5 +1,5 @@
 /*
- * Header file of the string tokens used by parser of the Oberon-0 compiler.
+ * String token returned by scanner of the Oberon LLVM compiler.
  *
  * Created by Michael Grossniklaus on 2/27/18.
  */
@@ -16,10 +16,11 @@ private:
     std::string value_;
 
 public:
-    explicit StringToken(FilePos pos, const std::string &value);
-    ~StringToken() override;
+    explicit StringToken(const FilePos &pos, std::string value) :
+            Token(TokenType::const_string, pos), value_(std::move(value)) { };
+    ~StringToken() override = default;
 
-    const std::string getValue() const;
+    [[nodiscard]] std::string getValue() const;
 
     void print(std::ostream &stream) const override;
 

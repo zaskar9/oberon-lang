@@ -1,4 +1,4 @@
-(* Oberon-0 implementation of various sorting algorithms. *)
+(* Oberon implementation of various sorting algorithms. *)
 MODULE Sort;
 
 (* Length of the array to be sorted. *)

@@ -1,5 +1,5 @@
 /*
- * Header file of the AST type nodes used by the Oberon-0 compiler.
+ * AST node representing a type in the Oberon LLVM compiler.
  *
  * Created by Michael Grossniklaus on 2/8/18.
  */
@@ -14,23 +14,20 @@
 class TypeNode : public Node {
 
 private:
-    std::string name_;
-    unsigned int size_;
-    bool anon_;
-
-protected:
-    void setName(std::string name);
+    const std::string name_;
+    const unsigned int size_;
+    const bool anon_;
 
 public:
-    explicit TypeNode(NodeType nodeType, FilePos pos, std::string name, int size) :
-            Node(nodeType, pos), name_(std::move(name)), size_(size), anon_(name.empty()) { };
-    ~TypeNode() override;
+    explicit TypeNode(NodeType nodeType, const FilePos &pos, std::string name, unsigned int size) :
+            Node(nodeType, pos), name_(std::move(name)), size_(size), anon_(name_.empty()) { };
+    ~TypeNode() override = default;
 
     void accept(NodeVisitor& visitor) override = 0;
 
-    std::string getName() const;
-    virtual unsigned int getSize() const;
-    bool isAnonymous();
+    [[nodiscard]] std::string getName() const;
+    [[nodiscard]] virtual unsigned int getSize() const;
+    [[nodiscard]] bool isAnonymous();
 
 };
 

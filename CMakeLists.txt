@@ -5,6 +5,7 @@ project(oberon-lang VERSION "0.0.0")
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+set(Boost_USE_MULTITHREADED TRUE)
 
 if (MSVC)
     # warning level 4
@@ -29,12 +30,10 @@ set(SOURCE_FILES
         parser/ast/NodeVisitor.h
         parser/ast/Node.cpp parser/ast/Node.h
         parser/ast/ExpressionNode.cpp parser/ast/ExpressionNode.h
-        parser/ast/UnaryExpressionNode.cpp parser/ast/UnaryExpressionNode.h
-        parser/ast/BinaryExpressionNode.cpp parser/ast/BinaryExpressionNode.h
         parser/ast/LiteralNode.cpp parser/ast/LiteralNode.h
         parser/ast/TypeNode.cpp parser/ast/TypeNode.h
-        parser/ast/BasicTypeNode.cpp parser/ast/BasicTypeNode.h
         parser/ast/ArrayTypeNode.cpp parser/ast/ArrayTypeNode.h
+        parser/ast/BasicTypeNode.cpp parser/ast/BasicTypeNode.h
         parser/ast/RecordTypeNode.cpp parser/ast/RecordTypeNode.h
         parser/ast/BlockNode.cpp parser/ast/BlockNode.h
         parser/ast/ModuleNode.cpp parser/ast/ModuleNode.h

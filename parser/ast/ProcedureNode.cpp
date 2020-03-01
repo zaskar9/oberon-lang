@@ -1,5 +1,5 @@
 /*
- * Implementation of the AST procedure nodes used by the Oberon-0 compiler.
+ * AST node representing a procedure in the Oberon LLVM compiler.
  *
  * Created by Michael Grossniklaus on 3/5/18.
  */
@@ -7,7 +7,7 @@
 #include "ProcedureNode.h"
 #include "NodeVisitor.h"
 
-const std::string ProcedureNode::getName() const {
+std::string ProcedureNode::getName() const {
     return name_;
 }
 

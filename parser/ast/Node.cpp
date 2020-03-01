@@ -1,14 +1,10 @@
 /*
- * Implementation of the base class of all AST nodes used by the Oberon-0 compiler.
+ * Base class for all AST nodes used in the Oberon LLVM compiler.
  *
  * Created by Michael Grossniklaus on 2/2/18.
  */
 
-
 #include "Node.h"
-
-Node::Node(const NodeType nodeType, const FilePos pos) : nodeType_(nodeType), pos_(pos) {
-}
 
 Node::~Node() = default;
 
@@ -16,7 +12,7 @@ NodeType Node::getNodeType() const {
     return nodeType_;
 }
 
-const FilePos Node::getFilePos() const {
+FilePos Node::getFilePos() const {
     return pos_;
 }
 

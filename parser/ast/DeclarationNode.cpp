@@ -1,5 +1,5 @@
 /*
- * Implementation of the AST named-value nodes used by the Oberon-0 compiler.
+ * AST nodes representing declarations in the Oberon LLVM compiler.
  *
  * Created by Michael Grossniklaus on 3/7/18.
  */
@@ -50,18 +50,10 @@ void TypeDeclarationNode::print(std::ostream& stream) const {
 }
 
 
-int VariableDeclarationNode::getOffset() const {
-    return offset_;
-}
-
 void VariableDeclarationNode::accept(NodeVisitor& visitor) {
     visitor.visit(*this);
 }
 
-
-int FieldNode::getOffset() const {
-    return offset_;
-}
 
 void FieldNode::accept(NodeVisitor& visitor) {
     visitor.visit(*this);

@@ -1,5 +1,5 @@
 /*
- * Implementation of the logger class used by the Oberon-0 compiler.
+ * Logger used by the Oberon LLVM compiler.
  *
  * Created by Michael Grossniklaus on 2/8/18.
  */
@@ -36,19 +36,19 @@ void Logger::log(const LogLevel level, const std::string &fileName, const std::s
     log(level, fileName, -1, -1, msg);
 }
 
-void Logger::error(const FilePos pos, const std::string &msg) {
+void Logger::error(const FilePos &pos, const std::string &msg) {
     log(LogLevel::ERROR, pos.fileName, pos.lineNo, pos.charNo, msg);
 }
 
-void Logger::error(const std::string& fileName, const std::string& msg) {
+void Logger::error(const std::string &fileName, const std::string &msg) {
     log(LogLevel::ERROR, fileName, msg);
 }
 
-void Logger::warning(FilePos pos, const std::string &msg) {
+void Logger::warning(const FilePos &pos, const std::string &msg) {
     log(LogLevel::WARNING, pos.fileName, pos.lineNo, pos.charNo, msg);
 }
 
-void Logger::warning(const std::string& fileName, const std::string& msg) {
+void Logger::warning(const std::string &fileName, const std::string &msg) {
     log(LogLevel::WARNING, fileName, msg);
 }
 

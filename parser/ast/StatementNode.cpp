@@ -1,5 +1,5 @@
 /*
- * Implementation of the AST statement node used by the Oberon-0 compiler.
+ * AST node representing a statement in the Oberon LLVM compiler.
  *
  * Created by Michael Grossniklaus on 12/27/18.
  */

@@ -1,5 +1,5 @@
 /*
- * Header of the node visitor that pretty-prints the abstract syntax tree used by the Oberon-0 compiler.
+ * Pretty printer for all nodes of the AST used by the Oberon LLVM compiler.
  *
  * Created by Michael Grossniklaus on 12/31/2018.
  */
@@ -75,7 +75,7 @@ void NodePrettyPrinter::call(CallNode &node) {
 
 void NodePrettyPrinter::visit(ModuleNode& node) {
     indent();
-    stream_ << "MODULE " << node.getName() << "{" << node.getLevel() << "};" << std::endl;
+    stream_ << "MODULE " << node.getName() << ";" << std::endl;
     block(node, true);
     stream_ << std::endl;
     indent();
@@ -89,7 +89,7 @@ void NodePrettyPrinter::visit(ModuleNode& node) {
 
 void NodePrettyPrinter::visit(ProcedureNode& node) {
     indent();
-    stream_ << "PROCEDURE " << node.getName() << "{" << node.getLevel() << "}(";
+    stream_ << "PROCEDURE " << node.getName() << "(";
     for (size_t i = 0; i < node.getParameterCount(); i++) {
         node.getParameter(i)->accept(*this);
         if (i + 1 < node.getParameterCount()) {
@@ -141,31 +141,32 @@ void NodePrettyPrinter::visit(ReferenceNode &node) {
 }
 
 void NodePrettyPrinter::visit(ConstantDeclarationNode &node) {
-    stream_ << node.getName() << "{" << node.getLevel() << "} = ";
+    stream_ << node.getName() << " = ";
     node.getValue()->accept(*this);
     stream_ << ';' << std::endl;
 }
 
 void NodePrettyPrinter::visit(FieldNode &node) {
-    stream_ << node.getName() << "{" << node.getOffset() << "}" << ": ";
+    stream_ << node.getName() << ": ";
     node.getType()->accept(*this);
     stream_ << ';';
 }
 
 void NodePrettyPrinter::visit(ParameterNode &node) {
     stream_ << (node.isVar() ? "VAR " : "");
-    stream_ << node.getName() << "{" << node.getLevel() << "}: ";
+    stream_ << node.getName() << ": ";
     node.getType()->accept(*this);
 }
 
 void NodePrettyPrinter::visit(TypeDeclarationNode &node) {
-    stream_ << node.getName() << "{" << node.getLevel() << "} = ";
+    stream_ << node.getName() << " = ";
+    isDecl_ = true;
     node.getType()->accept(*this);
     stream_ << ';' << std::endl;
 }
 
 void NodePrettyPrinter::visit(VariableDeclarationNode &node) {
-    stream_ << node.getName() << "{" << node.getLevel() << "@" << node.getOffset() << "}: ";
+    stream_ << node.getName() << ": ";
     node.getType()->accept(*this);
     stream_ << ';' << std::endl;
 }
@@ -198,8 +199,13 @@ void NodePrettyPrinter::visit(BinaryExpressionNode &node) {
 }
 
 void NodePrettyPrinter::visit(ArrayTypeNode &node) {
-    stream_ << "ARRAY " << node.getDimension() << " OF ";
-    node.getMemberType()->accept(*this);
+    if (node.isAnonymous() || isDecl_) {
+        isDecl_ = false;
+        stream_ << "ARRAY " << node.getDimension() << " OF ";
+        node.getMemberType()->accept(*this);
+    } else {
+        stream_ << node.getName();
+    }
 }
 
 void NodePrettyPrinter::visit(BasicTypeNode &node) {
@@ -207,12 +213,17 @@ void NodePrettyPrinter::visit(BasicTypeNode &node) {
 }
 
 void NodePrettyPrinter::visit(RecordTypeNode &node) {
-    stream_ << "RECORD ";
-    for (size_t i = 0; i < node.getFieldCount(); i++) {
-        node.getField(i)->accept(*this);
-        stream_ << ' ';
+    if (node.isAnonymous() || isDecl_) {
+        isDecl_ = false;
+        stream_ << "RECORD ";
+        for (size_t i = 0; i < node.getFieldCount(); i++) {
+            node.getField(i)->accept(*this);
+            stream_ << ' ';
+        }
+        stream_ << "END";
+    } else {
+        stream_ << node.getName();
     }
-    stream_ << "END";
 }
 
 void NodePrettyPrinter::visit(StatementSequenceNode &node) {

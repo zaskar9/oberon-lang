@@ -23,7 +23,7 @@ int main(const int argc, const char *argv[]) {
     visible.add_options()
             ("help,h", "Display available visible.")
             ("version,v", "Print version information.")
-            ("filetype", po::value<std::string>()->value_name("<type>"), "Specify type of output file. [obj, ll]")
+            ("filetype", po::value<std::string>()->value_name("<type>"), "Specify type of output file. [asm, bc, obj, ll]")
             (",O", po::value<int>()->value_name("<level>"), "Optimization level. [O0, O1, O2, O3]");
     auto hidden = po::options_description("HIDDEN");
     hidden.add_options()
@@ -77,7 +77,6 @@ int main(const int argc, const char *argv[]) {
             auto type = vm["filetype"].as<std::string>();
             if (type == "asm") {
                 compiler->setCodeGenFileType(OutputFileType::AssemblyFile);
-                logger->warning(PROJECT_NAME, "asm output file type currently not fully supported.");
             } else if (type == "bc") {
                 compiler->setCodeGenFileType(OutputFileType::BitCodeFile);
             } else if (type == "ll") {

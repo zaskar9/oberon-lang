@@ -1,5 +1,5 @@
 /*
- * Header file of the base class of all AST nodes used by the Oberon-0 compiler.
+ * Base class for all AST nodes used in the Oberon LLVM compiler.
  *
  * Created by Michael Grossniklaus on 2/2/18.
  */
@@ -34,11 +34,11 @@ private:
     FilePos pos_;
 
 public:
-    explicit Node(NodeType nodeType, FilePos pos);
+    explicit Node(const NodeType nodeType, const FilePos &pos) : nodeType_(nodeType), pos_(pos) { };
     virtual ~Node() = 0;
-    
-    NodeType getNodeType() const;
-    const FilePos getFilePos() const;
+
+    [[nodiscard]] NodeType getNodeType() const;
+    [[nodiscard]] FilePos getFilePos() const;
 
     virtual void accept(NodeVisitor &visitor) = 0;
 
@@ -46,5 +46,6 @@ public:
     friend std::ostream& operator<<(std::ostream &stream, const Node &node);
 
 };
+
 
 #endif //OBERON0C_AST_H

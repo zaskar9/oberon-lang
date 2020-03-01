@@ -1,5 +1,5 @@
 /*
- * Implementation of the scanner class used by the Oberon-0 compiler.
+ * Scanner used by the Oberon LLVM compiler.
  *
  * Created by Michael Grossniklaus on 12/15/17.
  */
@@ -213,7 +213,7 @@ void Scanner::read() {
 
 }
 
-const FilePos Scanner::getPosition() const {
+FilePos Scanner::getPosition() const {
     FilePos pos;
     pos.fileName = filename_;
     pos.lineNo = lineNo_;
@@ -301,7 +301,7 @@ int Scanner::number() {
     return decValue;
 }
 
-const std::string Scanner::string() {
+std::string Scanner::string() {
     std::stringstream ss;
     read();
     do {

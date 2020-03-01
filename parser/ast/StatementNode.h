@@ -1,5 +1,5 @@
 /*
- * Header of the AST statement node used by the Oberon-0 compiler.
+ * AST node representing a statement in the Oberon LLVM compiler.
  *
  * Created by Michael Grossniklaus on 12/27/18.
  */
@@ -31,12 +31,13 @@ public:
             StatementNode(NodeType::ret, pos), value_(std::move(value)) { };
     ~ReturnNode() override = default;
 
-    ExpressionNode * getValue() const;
+    [[nodiscard]] ExpressionNode * getValue() const;
 
     void accept(NodeVisitor &visitor) final;
 
     void print(std::ostream &stream) const final;
 
 };
+
 
 #endif //OBERON0C_STATEMENTNODE_H

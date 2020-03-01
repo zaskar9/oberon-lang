@@ -1,5 +1,5 @@
 /*
- * Interface of a node visitor for the abstract syntax tree used by the Oberon-0 compiler.
+ * Node visitor for the abstract syntax tree used by the Oberon LLVM compiler.
  *
  * Created by Michael Grossniklaus on 12/31/2018.
  */
@@ -10,8 +10,6 @@
 
 #include "ModuleNode.h"
 #include "DeclarationNode.h"
-#include "UnaryExpressionNode.h"
-#include "BinaryExpressionNode.h"
 #include "ReferenceNode.h"
 #include "LiteralNode.h"
 #include "ArrayTypeNode.h"

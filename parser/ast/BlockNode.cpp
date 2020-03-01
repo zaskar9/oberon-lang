@@ -1,13 +1,13 @@
 /*
- * Implementation of the AST code block nodes used by the Oberon-0 compiler.
+ * AST node representing a code block in the Oberon LLVM compiler.
  *
  * Created by Michael Grossniklaus on 3/6/18.
  */
 
 #include "BlockNode.h"
 
-BlockNode::BlockNode(const NodeType nodeType, const FilePos pos, int level) : Node(nodeType, pos), level_(level),
-        offset_(0), types_(), constants_(), type_declarations_(), variables_(),
+BlockNode::BlockNode(const NodeType nodeType, const FilePos &pos, int level) : Node(nodeType, pos), level_(level),
+        types_(), constants_(), type_declarations_(), variables_(),
         statements_(std::make_unique<StatementSequenceNode>(pos)), return_() {
 }
 
@@ -17,15 +17,7 @@ int BlockNode::getLevel() const {
     return level_;
 }
 
-int BlockNode::getOffset() const {
-    return offset_;
-}
-
-void BlockNode::incOffset(int offset) {
-    offset_ += offset;
-}
-
-void BlockNode::addType(std::unique_ptr<TypeNode> type) {
+void BlockNode::registerType(std::unique_ptr<TypeNode> type) {
     types_.push_back(std::move(type));
 }
 

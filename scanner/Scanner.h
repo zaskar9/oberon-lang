@@ -1,11 +1,12 @@
 /*
- * Header of the scanner class used by the Oberon-0 compiler.
+ * Scanner used by the Oberon LLVM compiler.
  *
  * Created by Michael Grossniklaus on 12/15/17.
  */
 
 #ifndef OBERON0C_SCANNER_H
 #define OBERON0C_SCANNER_H
+
 
 #include <memory>
 #include <string>
@@ -16,7 +17,6 @@
 #include <boost/filesystem.hpp>
 #include "Token.h"
 #include "../util/Logger.h"
-
 
 class Scanner {
 
@@ -31,11 +31,11 @@ private:
 
     void initTable();
     void read();
-    const FilePos getPosition() const;
+    FilePos getPosition() const;
     const Token* next();
     const Token* ident();
     int number();
-    const std::string string();
+    std::string string();
     void comment();
 
 public:
@@ -48,5 +48,6 @@ public:
     static std::string unescape(std::string str);
 
 };
+
 
 #endif //OBERON0C_SCANNER_H

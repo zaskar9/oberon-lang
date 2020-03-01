@@ -1,5 +1,5 @@
 /*
- * Header of the parser class used by the Oberon-0 compiler.
+ * Parser of the Oberon LLVM compiler.
  *
  * Created by Michael Grossniklaus on 2/2/18.
  */
@@ -31,9 +31,9 @@ class Parser {
 
 private:
     Scanner *scanner_;
+    SymbolTable *symbols_;
     Logger *logger_;
     std::unique_ptr<const Token> token_;
-    std::unique_ptr<SymbolTable> symbols_;
 
     std::string ident();
     std::unique_ptr<ModuleNode> module();
@@ -77,10 +77,13 @@ private:
     void resync(std::set<TokenType> types);
 
 public:
-    explicit Parser(Scanner *scanner, Logger *logger);
-    ~Parser();
+    explicit Parser(Scanner *scanner, SymbolTable *symbols, Logger *logger) :
+            scanner_(scanner), symbols_(symbols), logger_(logger), token_() { };
+    ~Parser() = default;
+
     std::unique_ptr<ModuleNode> parse();
 
 };
+
 
 #endif //OBERON0C_PARSER_H

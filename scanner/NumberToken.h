@@ -1,5 +1,5 @@
 /*
- * Header file of the integer tokens used by parser of the Oberon-0 compiler.
+ * Number token returned by scanner of the Oberon LLVM compiler.
  *
  * Created by Michael Grossniklaus on 2/23/18.
  */
@@ -16,10 +16,11 @@ private:
     int value_;
 
 public:
-    NumberToken(FilePos pos, int value);
-    ~NumberToken() override;
+    explicit NumberToken(const FilePos &pos, int value) :
+            Token(TokenType::const_number, pos), value_(value) { };
+    ~NumberToken() override = default;
 
-    int getValue() const;
+    [[nodiscard]] int getValue() const;
 
     void print(std::ostream &stream) const override;
 

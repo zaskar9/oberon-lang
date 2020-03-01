@@ -1,16 +1,10 @@
 /*
- * Implementation of the AST type nodes used by the Oberon-0 compiler.
+ * AST node representing a type in the Oberon LLVM compiler.
  *
  * Created by Michael Grossniklaus on 2/8/18.
  */
 
 #include "TypeNode.h"
-
-TypeNode::~TypeNode() = default;
-
-void TypeNode::setName(std::string name) {
-    name_ = std::move(name);
-}
 
 std::string TypeNode::getName() const {
     return name_;
@@ -18,4 +12,8 @@ std::string TypeNode::getName() const {
 
 unsigned int TypeNode::getSize() const {
     return size_;
+}
+
+bool TypeNode::isAnonymous() {
+    return anon_;
 }

@@ -1,5 +1,5 @@
 /*
- * Header of the AST assignment node used by the Oberon-0 compiler.
+ * AST node representing an assignment in the Oberon LLVM compiler.
  *
  * Created by Michael Grossniklaus on 12/27/18.
  */
@@ -18,11 +18,12 @@ private:
     std::unique_ptr<ExpressionNode> rvalue_;
 
 public:
-    AssignmentNode(FilePos pos, std::unique_ptr<ReferenceNode> lvalue, std::unique_ptr<ExpressionNode> rvalue);
-    ~AssignmentNode() override;
+    AssignmentNode(const FilePos &pos, std::unique_ptr<ReferenceNode> lvalue, std::unique_ptr<ExpressionNode> rvalue) :
+            StatementNode(NodeType::assignment, pos), lvalue_(std::move(lvalue)), rvalue_(std::move(rvalue)) { };
+    ~AssignmentNode() override = default;
 
-    ReferenceNode* getLvalue();
-    ExpressionNode* getRvalue();
+    [[nodiscard]] ReferenceNode* getLvalue();
+    [[nodiscard]] ExpressionNode* getRvalue();
 
     void accept(NodeVisitor& visitor) final;
 

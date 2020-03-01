@@ -1,5 +1,5 @@
 /*
- * Header of the AST procedure call node used by the Oberon-0 compiler.
+ * AST nodes representing procedure or function calls in the Oberon LLVM compiler.
  *
  * Created by Michael Grossniklaus on 12/27/18.
  */
@@ -20,25 +20,25 @@ private:
 public:
     explicit CallNode(const NodeType type, const FilePos &pos, ProcedureNode* procedure) :
             Node(type, pos), procedure_(procedure), parameters_() { };
-    virtual ~CallNode() = default;
+    ~CallNode() override = default;
 
-    ProcedureNode* getProcedure() const;
+    [[nodiscard]] ProcedureNode* getProcedure() const;
 
     void addParameter(std::unique_ptr<ExpressionNode> parameter);
-    ExpressionNode* getParameter(size_t num) const;
-    size_t getParameterCount() const;
+    [[nodiscard]] ExpressionNode* getParameter(size_t num) const;
+    [[nodiscard]] size_t getParameterCount() const;
 
 };
 
-class FunctionCallNode : public ExpressionNode, public CallNode {
+class FunctionCallNode final : public ExpressionNode, public CallNode {
 
 public:
     explicit FunctionCallNode(const FilePos &pos, ProcedureNode *procedure) :
         ExpressionNode(NodeType::procedure_call, pos), CallNode(NodeType::procedure_call, pos, procedure) { };
     ~FunctionCallNode() override = default;
 
-    bool isConstant() const final;
-    TypeNode* getType() const final;
+    [[nodiscard]] bool isConstant() const final;
+    [[nodiscard]] TypeNode* getType() const final;
 
     void accept(NodeVisitor& visitor) final;
 
@@ -46,7 +46,7 @@ public:
 
 };
 
-class ProcedureCallNode : public StatementNode, public CallNode {
+class ProcedureCallNode final : public StatementNode, public CallNode {
 
 public:
     ProcedureCallNode(FilePos pos, ProcedureNode *procedure) :
@@ -58,5 +58,6 @@ public:
     void print(std::ostream &stream) const final;
 
 };
+
 
 #endif //OBERON0C_CALLNODE_H

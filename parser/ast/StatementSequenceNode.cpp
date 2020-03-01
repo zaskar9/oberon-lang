@@ -1,14 +1,11 @@
 /*
- * Implementation of the AST statement sequence node used by the Oberon-0 compiler.
+ * AST node representing a statement sequence in the Oberon LLVM compiler.
  *
  * Created by Michael Grossniklaus on 12/27/18.
  */
 
 #include "StatementSequenceNode.h"
 #include "NodeVisitor.h"
-
-StatementSequenceNode::StatementSequenceNode(const FilePos pos) : Node(NodeType::statement_sequence, pos), statements_() {
-}
 
 void StatementSequenceNode::addStatement(std::unique_ptr<StatementNode> statement) {
     if (statement != nullptr) {

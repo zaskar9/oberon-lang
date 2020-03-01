@@ -1,12 +1,11 @@
 /*
- * Implementation of the AST procedure call node used by the Oberon-0 compiler.
+ * AST nodes representing procedure or function calls in the Oberon LLVM compiler.
  *
  * Created by Michael Grossniklaus on 12/27/18.
  */
 
 #include "CallNode.h"
 #include "NodeVisitor.h"
-
 
 void CallNode::addParameter(std::unique_ptr<ExpressionNode> parameter) {
     parameters_.push_back(std::move(parameter));

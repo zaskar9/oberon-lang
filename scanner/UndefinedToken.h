@@ -1,5 +1,5 @@
 /*
- * Header of the undefined token used by scanner of the Oberon-0 compiler.
+ * Undefined token returned scanner of the Oberon LLVM compiler.
  *
  * Created by Michael Grossniklaus on 12/28/18.
  */
@@ -16,13 +16,15 @@ private:
     const char value_;
 
 public:
-    explicit UndefinedToken(FilePos pos, char value);
-    ~UndefinedToken() override;
+    explicit UndefinedToken(const FilePos &pos, char value) :
+            Token(TokenType::undef, pos), value_(value) { };
+    ~UndefinedToken() override = default;
 
-    char getValue();
+    [[nodiscard]] char getValue();
 
     void print(std::ostream &stream) const override;
 
 };
+
 
 #endif //OBERON0C_UNDEFINEDTOKEN_H

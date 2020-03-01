@@ -1,5 +1,5 @@
 /*
- * Implementation of the AST reference nodes used by the Oberon-0 compiler.
+ * AST node representing a reference to a declaration in the Oberon LLVM compiler.
  *
  * Created by Michael Grossniklaus on 3/6/18.
  */

@@ -1,5 +1,5 @@
 /*
- * Header file of the AST module nodes used by the Oberon-0 compiler.
+ * AST node representing a module in the Oberon LLVM compiler.
  *
  * Created by Michael Grossniklaus on 3/6/18.
  */
@@ -20,15 +20,15 @@ private:
     std::vector<std::unique_ptr<ProcedureNode>> procedures_;
 
 public:
-    explicit ModuleNode(const FilePos pos, const std::string &name, int level) :
-            BlockNode(NodeType::module, pos, level), name_(name), procedures_() { };
+    explicit ModuleNode(const FilePos &pos, std::string name, int level) :
+            BlockNode(NodeType::module, pos, level), name_(std::move(name)), procedures_() { };
     ~ModuleNode() final = default;
 
-    const std::string getName() const;
+    [[nodiscard]] std::string getName() const;
 
     void addProcedure(std::unique_ptr<ProcedureNode> procedure) final;
-    ProcedureNode* getProcedure(size_t num) const final;
-    size_t getProcedureCount() const final;
+    [[nodiscard]] ProcedureNode* getProcedure(size_t num) const final;
+    [[nodiscard]] size_t getProcedureCount() const final;
 
     void accept(NodeVisitor& visitor) final;
 

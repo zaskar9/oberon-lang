@@ -1,5 +1,5 @@
 /*
- * Header file of the class for the token used by parser of the Oberon-0 compiler.
+ * Tokens returned by the scanner of the Oberon LLVM compiler.
  *
  * Created by Michael Grossniklaus on 2/23/18.
  */
@@ -32,11 +32,11 @@ private:
     FilePos pos_;
 
 public:
-    Token(TokenType type, FilePos pos);
+    explicit Token(const TokenType type, const FilePos &pos) : type_(type), pos_(pos) { };
     virtual ~Token();
 
-    TokenType getType() const;
-    const FilePos getPosition() const;
+    [[nodiscard]] TokenType getType() const;
+    [[nodiscard]] FilePos getPosition() const;
 
     virtual void print(std::ostream &stream) const;
     friend std::ostream& operator<<(std::ostream &stream, const Token &symbol);

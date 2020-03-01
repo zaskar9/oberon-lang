@@ -1,5 +1,5 @@
 /*
- * Header of the AST if-then-else node used by the Oberon-0 compiler.
+ * AST node representing an if-then-elsif-else statement in the Oberon LLVM compiler.
  *
  * Created by Michael Grossniklaus on 12/27/18.
  */
@@ -13,17 +13,20 @@
 #include "StatementSequenceNode.h"
 
 
-class ElseIfNode : public Node {
+class ElseIfNode final : public Node {
 
 private:
     std::unique_ptr<ExpressionNode> condition_;
     std::unique_ptr<StatementSequenceNode> statements_;
 
 public:
-    ElseIfNode(FilePos pos, std::unique_ptr<ExpressionNode> condition);
+    explicit ElseIfNode(const FilePos &pos, std::unique_ptr<ExpressionNode> condition) :
+            Node(NodeType::else_if, pos), condition_(std::move(condition)),
+            statements_(std::make_unique<StatementSequenceNode>(pos)) { };
+    ~ElseIfNode() override = default;
 
-    ExpressionNode* getCondition() const;
-    StatementSequenceNode* getStatements() const;
+    [[nodiscard]] ExpressionNode* getCondition() const;
+    [[nodiscard]] StatementSequenceNode* getStatements() const;
 
     void accept(NodeVisitor& visitor) final;
 
@@ -32,7 +35,7 @@ public:
 };
 
 
-class IfThenElseNode : public StatementNode {
+class IfThenElseNode final : public StatementNode {
 
 private:
 
@@ -42,28 +45,28 @@ private:
     std::unique_ptr<StatementSequenceNode> elseStatements_;
 
 public:
-    explicit IfThenElseNode(FilePos pos, std::unique_ptr<ExpressionNode> condition);
-    ~IfThenElseNode() override;
+    explicit IfThenElseNode(const FilePos &pos, std::unique_ptr<ExpressionNode> condition) :
+            StatementNode(NodeType::if_then_else, pos), condition_(std::move(condition)), elseIfs_() { };
+    ~IfThenElseNode() override = default;
 
-    ExpressionNode* getCondition() const;
-    StatementSequenceNode* addThenStatements(FilePos pos);
-    StatementSequenceNode* getThenStatements() const;
+    [[nodiscard]] ExpressionNode* getCondition() const;
+    [[nodiscard]] StatementSequenceNode* addThenStatements(FilePos pos);
+    [[nodiscard]] StatementSequenceNode* getThenStatements() const;
 
-    StatementSequenceNode* addElseIf(FilePos pos, std::unique_ptr<ExpressionNode> condition);
-    ElseIfNode* getElseIf(size_t num) const;
-    size_t getElseIfCount() const;
-    bool hasElseIf() const;
+    [[nodiscard]] StatementSequenceNode* addElseIf(FilePos pos, std::unique_ptr<ExpressionNode> condition);
+    [[nodiscard]] ElseIfNode* getElseIf(size_t num) const;
+    [[nodiscard]] size_t getElseIfCount() const;
+    [[nodiscard]] bool hasElseIf() const;
 
-    StatementSequenceNode* addElseStatements(FilePos pos);
-    StatementSequenceNode* getElseStatements() const;
-    bool hasElse() const;
+    [[nodiscard]] StatementSequenceNode* addElseStatements(FilePos pos);
+    [[nodiscard]] StatementSequenceNode* getElseStatements() const;
+    [[nodiscard]] bool hasElse() const;
 
     void accept(NodeVisitor& visitor) final;
 
     void print(std::ostream &stream) const final;
 
 };
-
 
 
 #endif //OBERON0C_IFTHENELSENODE_H

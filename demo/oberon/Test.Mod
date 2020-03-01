@@ -1,4 +1,4 @@
-(* Test module for the Oberon-0 compiler. *)
+(* Test module containing syntax errors for the Oberon LLVM compiler. *)
 MODULE Test;
 
 (* Length of the array to be sorted. *)

@@ -1,5 +1,5 @@
 /*
- * Header file of the AST procedure nodes used by the Oberon-0 compiler.
+ * AST node representing a procedure in the Oberon LLVM compiler.
  *
  * Created by Michael Grossniklaus on 3/5/18.
  */
@@ -24,28 +24,28 @@ private:
     bool extern_;
 
 public:
-    explicit ProcedureNode(const FilePos pos, const BlockNode *parent, std::string name, int level) :
+    explicit ProcedureNode(const FilePos &pos, const BlockNode *parent, std::string name, int level) :
             BlockNode(NodeType::procedure, pos, level), parent_(parent), name_(std::move(name)),
             parameters_(), procedures_(), varargs_(false), extern_(false) { };
     ~ProcedureNode() final = default;
 
-    const std::string getName() const;
+    [[nodiscard]] std::string getName() const;
 
     void addParameter(std::unique_ptr<ParameterNode> parameter);
-    ParameterNode* getParameter(size_t num) const;
-    size_t getParameterCount() const;
+    [[nodiscard]] ParameterNode* getParameter(size_t num) const;
+    [[nodiscard]] size_t getParameterCount() const;
 
     void addProcedure(std::unique_ptr<ProcedureNode> procedure) final;
-    ProcedureNode* getProcedure(size_t num) const final;
-    size_t getProcedureCount() const final;
+    [[nodiscard]] ProcedureNode* getProcedure(size_t num) const final;
+    [[nodiscard]] size_t getProcedureCount() const final;
 
     void setExtern(bool value);
-    bool isExtern() const;
+    [[nodiscard]] bool isExtern() const;
 
     void setVarArgs(bool value);
-    bool hasVarArgs() const;
+    [[nodiscard]] bool hasVarArgs() const;
 
-    const BlockNode * getParent() const;
+    [[nodiscard]] const BlockNode * getParent() const;
 
     void accept(NodeVisitor& visitor) final;
 

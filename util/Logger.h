@@ -1,5 +1,5 @@
 /*
- * Header file of the logger class used by the Oberon-0 compiler.
+ * Logger used by the Oberon LLVM compiler.
  *
  * Created by Michael Grossniklaus on 2/8/18.
  */
@@ -36,17 +36,17 @@ public:
             level_(level), out_(out), err_(err), debugs_(0), infos_(0), warnings_(0), errors_(0) { };
     ~Logger() = default;
 
-    void error(FilePos pos, const std::string &msg);
+    void error(const FilePos &pos, const std::string &msg);
     void error(const std::string &fileName, const std::string &msg);
-    void warning(FilePos pos, const std::string &msg);
-    void warning(const std::string& fileName, const std::string& msg);
+    void warning(const FilePos &pos, const std::string &msg);
+    void warning(const std::string &fileName, const std::string &msg);
     void info(const std::string &fileName, const std::string &msg);
     void debug(const std::string &fileName, const std::string &msg);
 
-    int getDebugCount() const;
-    int getInfoCount() const;
-    int getWarningCount() const;
-    int getErrorCount() const;
+    [[nodiscard]] int getDebugCount() const;
+    [[nodiscard]] int getInfoCount() const;
+    [[nodiscard]] int getWarningCount() const;
+    [[nodiscard]] int getErrorCount() const;
 
     void setLevel(LogLevel level);
 

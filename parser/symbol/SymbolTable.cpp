@@ -1,5 +1,5 @@
 /*
- * Implementation of the symbol table class used by the Oberon-0 compiler.
+ * Symbol table used by the Oberon LLVM compiler.
  *
  * Created by Michael Grossniklaus on 2/8/18.
  */

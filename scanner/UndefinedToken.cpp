@@ -1,15 +1,10 @@
 /*
- * Implementation of the undefined token used by scanner of the Oberon-0 compiler.
+ * Undefined token returned scanner of the Oberon LLVM compiler.
  *
  * Created by Michael Grossniklaus on 12/28/18.
  */
 
 #include "UndefinedToken.h"
-
-UndefinedToken::UndefinedToken(const FilePos pos, const char value) : Token(TokenType::undef, pos), value_(value) {
-}
-
-UndefinedToken::~UndefinedToken() = default;
 
 char UndefinedToken::getValue() {
     return value_;

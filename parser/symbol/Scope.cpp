@@ -1,11 +1,10 @@
 /*
- * Implementation file of the symbol table scope used by the Oberon-0 compiler.
+ * Scope of the symbol table used by the Oberon LLVM compiler.
  *
  * Created by Michael Grossniklaus on 12/25/18.
  */
 
 #include "Scope.h"
-
 
 Scope::Scope(std::unique_ptr<Scope> parent) : symbols_(), parent_(std::move(parent)) {
 }

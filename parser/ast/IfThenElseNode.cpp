@@ -1,15 +1,11 @@
 /*
- * Implementation of the AST if-then-else node used by the Oberon-0 compiler.
+ * AST node representing an if-then-elsif-else statement in the Oberon LLVM compiler.
  *
  * Created by Michael Grossniklaus on 12/27/18.
  */
 
 #include "IfThenElseNode.h"
 #include "NodeVisitor.h"
-
-ElseIfNode::ElseIfNode(const FilePos pos, std::unique_ptr<ExpressionNode> condition) : Node(NodeType::else_if, pos),
-        condition_(std::move(condition)), statements_(std::make_unique<StatementSequenceNode>(pos)) {
-}
 
 ExpressionNode* ElseIfNode::getCondition() const {
     return condition_.get();
@@ -27,11 +23,6 @@ void ElseIfNode::print(std::ostream& stream) const {
     stream << "ELSIF " << *condition_ << " THEN " << *statements_;
 }
 
-IfThenElseNode::IfThenElseNode(const FilePos pos, std::unique_ptr<ExpressionNode> condition) :
-        StatementNode(NodeType::if_then_else, pos), condition_(std::move(condition)), elseIfs_() {
-}
-
-IfThenElseNode::~IfThenElseNode() = default;
 
 ExpressionNode* IfThenElseNode::getCondition() const {
     return condition_.get();

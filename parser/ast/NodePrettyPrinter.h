@@ -1,11 +1,12 @@
 /*
- * Header of the node visitor that pretty-prints the abstract syntax tree used by the Oberon-0 compiler.
+ * Pretty printer for all nodes of the AST used by the Oberon LLVM compiler.
  *
  * Created by Michael Grossniklaus on 12/31/2018.
  */
 
 #ifndef OBERON0C_NODEPRETTYPRINTER_H
 #define OBERON0C_NODEPRETTYPRINTER_H
+
 
 #define TAB_WIDTH 3
 
@@ -18,13 +19,14 @@ class NodePrettyPrinter final : public NodeVisitor {
 private:
     size_t indent_;
     std::ostream &stream_;
+    bool isDecl_;
 
     void indent();
     void block(BlockNode &node, bool isGlobal);
     void call(CallNode &node);
 
 public:
-    explicit NodePrettyPrinter(std::ostream &stream) : indent_(0), stream_(stream) { };
+    explicit NodePrettyPrinter(std::ostream &stream) : indent_(0), stream_(stream), isDecl_(false) { };
     ~NodePrettyPrinter() = default;
 
     void visit(ModuleNode &node) override;

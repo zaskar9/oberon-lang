@@ -1,5 +1,5 @@
 /*
- * Implementation of the AST basic type nodes used by the Oberon-0 compiler.
+ * AST node representing a basic type in the Oberon LLVM compiler.
  *
  * Created by Michael Grossniklaus on 2/9/18.
  */
@@ -15,7 +15,7 @@ class BasicTypeNode final : public TypeNode {
 
 public:
     explicit BasicTypeNode(std::string name, int size) :
-            TypeNode(NodeType::basic_type, { }, name, size) { };
+            TypeNode(NodeType::basic_type, { }, std::move(name), size) { };
     ~BasicTypeNode() final = default;
 
     void operator=(BasicTypeNode const&) = delete;

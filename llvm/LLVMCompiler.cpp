@@ -14,6 +14,7 @@
 #include <llvm/Support/raw_ostream.h>
 #include <config.h>
 #include "../parser/Parser.h"
+#include "../parser/ast/NodePrettyPrinter.h"
 
 LLVMCompiler::LLVMCompiler(Logger *logger) : logger_(logger), ctx_(), pb_(), lvl_(llvm::PassBuilder::O0),
         type_(OutputFileType::ObjectFile) {
@@ -55,9 +56,12 @@ void LLVMCompiler::setCodeGenFileType(OutputFileType type) {
 void LLVMCompiler::compile(boost::filesystem::path path) {
     // Scan and parse the input file
     auto scanner = std::make_unique<Scanner>(path.string(), logger_);
-    auto parser = std::make_unique<Parser>(scanner.get(), logger_);
+    auto symbols = std::make_unique<SymbolTable>();
+    auto parser = std::make_unique<Parser>(scanner.get(), symbols.get(), logger_);
     auto ast = parser->parse();
     if (ast) {
+        // auto printer = std::make_unique<NodePrettyPrinter>(std::cout);
+        // printer->visit(*ast.get());
         // Set up the LLVM module
         auto name = path.filename().string();
         auto module = std::make_unique<Module>(name, ctx_);

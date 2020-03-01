@@ -1,5 +1,5 @@
 /*
- * Implementation of the AST array type nodes used by the Oberon-0 compiler.
+ * AST node representing an array type in the Oberon LLVM compiler.
  *
  * Created by Michael Grossniklaus on 2/9/18.
  */
@@ -7,7 +7,7 @@
 #include "ArrayTypeNode.h"
 #include "NodeVisitor.h"
 
-int ArrayTypeNode::getDimension() const {
+unsigned int ArrayTypeNode::getDimension() const {
     return dim_;
 }
 

@@ -1,15 +1,11 @@
 /*
- * Implementation of the AST expression nodes used by the Oberon-0 compiler.
+ * AST nodes representing unary and binary expressions in the Oberon LLVM compiler.
  *
- * Created by Michael Grossniklaus on 2/15/18.
+ * Created by Michael Grossniklaus on 3/7/18.
  */
 
 #include "ExpressionNode.h"
-
-ExpressionNode::ExpressionNode(const NodeType type, const FilePos pos) : Node(type, pos) {
-}
-
-ExpressionNode::~ExpressionNode() = default;
+#include "NodeVisitor.h"
 
 std::ostream& operator<<(std::ostream &stream, const OperatorType &op) {
     std::string result;
@@ -32,4 +28,82 @@ std::ostream& operator<<(std::ostream &stream, const OperatorType &op) {
     }
     stream << result;
     return stream;
+}
+
+
+ExpressionNode::~ExpressionNode() = default;
+
+
+bool UnaryExpressionNode::isConstant() const {
+    return expr_->isConstant();
+}
+
+TypeNode* UnaryExpressionNode::getType() const {
+    return expr_->getType();
+}
+
+OperatorType UnaryExpressionNode::getOperator() const {
+    return op_;
+}
+
+ExpressionNode* UnaryExpressionNode::getExpression() const {
+    return expr_.get();
+}
+
+void UnaryExpressionNode::accept(NodeVisitor& visitor) {
+    visitor.visit(*this);
+}
+
+void UnaryExpressionNode::print(std::ostream &stream) const {
+    stream << op_;
+    expr_->print(stream);
+}
+
+
+bool BinaryExpressionNode::isConstant() const {
+    return lhs_->isConstant() && rhs_->isConstant();
+}
+
+TypeNode* BinaryExpressionNode::getType() const {
+    if (lhs_ != nullptr && rhs_ != nullptr) {
+        auto lhsType = lhs_->getType();
+        auto rhsType = rhs_->getType();
+        if (lhsType == rhsType) {
+            if (op_==OperatorType::EQ
+                || op_==OperatorType::NEQ
+                || op_==OperatorType::LT
+                || op_==OperatorType::LEQ
+                || op_==OperatorType::GT
+                || op_==OperatorType::GEQ) {
+                return BasicTypeNode::BOOLEAN;
+            }
+            return lhsType;
+        }
+        return nullptr;
+    }
+    return nullptr;
+}
+
+OperatorType BinaryExpressionNode::getOperator() const {
+    return op_;
+}
+
+ExpressionNode* BinaryExpressionNode::getLeftExpression() const {
+    return lhs_.get();
+}
+
+ExpressionNode* BinaryExpressionNode::getRightExpression() const {
+    return rhs_.get();
+}
+
+void BinaryExpressionNode::accept(NodeVisitor& visitor) {
+    visitor.visit(*this);
+}
+
+void BinaryExpressionNode::print(std::ostream &stream) const {
+    lhs_->print(stream);
+    stream << " ";
+    stream << op_;
+    stream << " ";
+    rhs_->print(stream);
 }

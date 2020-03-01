@@ -1,5 +1,5 @@
 /*
- * Header file of the AST reference nodes used by the Oberon-0 compiler.
+ * AST node representing a reference to a declaration in the Oberon LLVM compiler.
  *
  * Created by Michael Grossniklaus on 3/6/18.
  */
@@ -21,18 +21,18 @@ private:
     std::vector<std::unique_ptr<ExpressionNode>> selectors_;
 
 public:
-    explicit ReferenceNode(FilePos pos, DeclarationNode *node) :
+    explicit ReferenceNode(const FilePos &pos, DeclarationNode *node) :
             ExpressionNode(NodeType::name_reference, pos), node_(node), type_(), selectors_() { };
     ~ReferenceNode() final = default;
 
-    DeclarationNode* dereference() const;
+    [[nodiscard]] DeclarationNode* dereference() const;
     void addSelector(std::unique_ptr<ExpressionNode> selector);
-    ExpressionNode* getSelector(size_t num) const;
-    size_t getSelectorCount() const;
+    [[nodiscard]] ExpressionNode* getSelector(size_t num) const;
+    [[nodiscard]] size_t getSelectorCount() const;
 
-    bool isConstant() const final;
+    [[nodiscard]] bool isConstant() const final;
     void setType(TypeNode *type);
-    TypeNode* getType() const final;
+    [[nodiscard]] TypeNode* getType() const final;
 
     void accept(NodeVisitor& visitor) final;
 

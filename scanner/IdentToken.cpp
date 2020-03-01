@@ -1,18 +1,12 @@
 /*
- * Implementation of the identifier tokens used by parser of the Oberon-0 compiler.
+ * Identifier token returned by scanner of the Oberon LLVM compiler.
  *
  * Created by Michael Grossniklaus on 2/27/18.
  */
 
 #include "IdentToken.h"
 
-IdentToken::IdentToken(const FilePos pos, const std::string &value) :
-        Token(TokenType::const_ident, pos), value_(value) {
-}
-
-IdentToken::~IdentToken() = default;
-
-const std::string IdentToken::getValue() const {
+std::string IdentToken::getValue() const {
     return value_;
 }
 

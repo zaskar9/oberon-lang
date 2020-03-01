@@ -1,5 +1,5 @@
 /*
- * Header file of the AST array type nodes used by the Oberon-0 compiler.
+ * AST node representing an array type in the Oberon LLVM compiler.
  *
  * Created by Michael Grossniklaus on 2/9/18.
  */
@@ -15,17 +15,17 @@
 class ArrayTypeNode final : public TypeNode {
 
 private:
-    const int dim_;
+    const unsigned int dim_;
     TypeNode* memberType_;
 
 public:
-    explicit ArrayTypeNode(FilePos pos, std::string name, int dim, TypeNode* memberType) :
+    explicit ArrayTypeNode(const FilePos &pos, std::string name, int dim, TypeNode* memberType) :
             TypeNode(NodeType::array_type, pos, std::move(name), dim * memberType->getSize()),
             dim_(dim), memberType_(memberType) { };
     ~ArrayTypeNode() final = default;
 
-    int getDimension() const;
-    TypeNode* getMemberType() const;
+    [[nodiscard]] unsigned int getDimension() const;
+    [[nodiscard]] TypeNode* getMemberType() const;
 
     void accept(NodeVisitor& visitor) final;
 

@@ -1,5 +1,5 @@
 /*
- * Header of the AST loop nodes used by the Oberon-0 compiler.
+ * AST nodes representing loop statements in the Oberon LLVM compiler.
  *
  * Created by Michael Grossniklaus on 01/14/19.
  */
@@ -17,11 +17,12 @@ private:
     std::unique_ptr<StatementSequenceNode> statements_;
 
 public:
-    explicit LoopNode(FilePos pos);
-    explicit LoopNode(NodeType type, FilePos pos);
-    ~LoopNode() override;
+    explicit LoopNode(NodeType type, const FilePos &pos) : StatementNode(type, pos),
+            statements_(std::make_unique<StatementSequenceNode>(pos)) { };
+    explicit LoopNode(const FilePos &pos) : LoopNode(NodeType::loop, pos) { };
+    ~LoopNode() override = default;
 
-    StatementSequenceNode* getStatements() const;
+    [[nodiscard]] StatementSequenceNode* getStatements() const;
 
     void accept(NodeVisitor& visitor) override;
 
@@ -35,20 +36,23 @@ private:
     std::unique_ptr<ExpressionNode> condition_;
 
 public:
-    explicit ConditionalLoopNode(NodeType type, FilePos pos, std::unique_ptr<ExpressionNode> condition);
-    explicit ConditionalLoopNode(NodeType type, FilePos pos);
-    ~ConditionalLoopNode() override;
+    explicit ConditionalLoopNode(NodeType type, const FilePos &pos, std::unique_ptr<ExpressionNode> condition) :
+            LoopNode(type, pos), condition_(std::move(condition)) { };
+    explicit ConditionalLoopNode(NodeType type, const FilePos &pos) :
+            ConditionalLoopNode(type, pos, nullptr) { };
+    ~ConditionalLoopNode() override = default;
 
     void setCondition(std::unique_ptr<ExpressionNode> condition);
-    ExpressionNode* getCondition() const;
+    [[nodiscard]] ExpressionNode* getCondition() const;
 
 };
 
-class WhileLoopNode final : public ConditionalLoopNode {
+class WhileLoopNode final: public ConditionalLoopNode {
 
 public:
-    explicit WhileLoopNode(FilePos pos, std::unique_ptr<ExpressionNode> condition);
-    ~WhileLoopNode() override;
+    explicit WhileLoopNode(const FilePos &pos, std::unique_ptr<ExpressionNode> condition) :
+            ConditionalLoopNode(NodeType::while_loop, pos, std::move(condition)) { };
+    ~WhileLoopNode() override = default;
 
     void accept(NodeVisitor& visitor) final;
 
@@ -59,8 +63,8 @@ public:
 class RepeatLoopNode final : public ConditionalLoopNode {
 
 public:
-    explicit RepeatLoopNode(FilePos pos);
-    ~RepeatLoopNode() override;
+    explicit RepeatLoopNode(const FilePos &pos) : ConditionalLoopNode(NodeType::repeat_loop, pos) { };
+    ~RepeatLoopNode() override = default;
 
     void accept(NodeVisitor& visitor) final;
 
@@ -76,19 +80,22 @@ private:
     int step_;
 
 public:
-    explicit ForLoopNode(FilePos pos, std::unique_ptr<ReferenceNode> counter,
-            std::unique_ptr<ExpressionNode> low, std::unique_ptr<ExpressionNode> high, int step);
-    ~ForLoopNode() override;
+    explicit ForLoopNode(const FilePos &pos, std::unique_ptr<ReferenceNode> counter,
+            std::unique_ptr<ExpressionNode> low, std::unique_ptr<ExpressionNode> high, int step) :
+            LoopNode(NodeType::for_loop, pos), counter_(std::move(counter)),
+            low_(std::move(low)), high_(std::move(high)), step_(step) { };
+    ~ForLoopNode() override = default;
 
-    ReferenceNode* getCounter() const;
-    ExpressionNode* getLow() const;
-    ExpressionNode* getHigh() const;
-    int getStep() const;
+    [[nodiscard]] ReferenceNode* getCounter() const;
+    [[nodiscard]] ExpressionNode* getLow() const;
+    [[nodiscard]] ExpressionNode* getHigh() const;
+    [[nodiscard]] int getStep() const;
 
     void accept(NodeVisitor& visitor) final;
 
     void print(std::ostream &stream) const final;
 
 };
+
 
 #endif //OBERON0C_LOOPNODE_H

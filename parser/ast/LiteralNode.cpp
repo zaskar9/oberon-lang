@@ -1,9 +1,8 @@
 /*
- * Implementation of the AST literal nodes used by the Oberon-0 compiler.
+ * AST nodes representing literals in the Oberon LLVM compiler.
  *
  * Created by Michael Grossniklaus on 2/19/18.
  */
-
 
 #include "LiteralNode.h"
 #include "NodeVisitor.h"
@@ -43,7 +42,7 @@ void IntegerLiteralNode::print(std::ostream &stream) const {
 }
 
 
-const std::string StringLiteralNode::getValue() const {
+std::string StringLiteralNode::getValue() const {
     return value_;
 }
 

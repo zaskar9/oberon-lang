@@ -1,5 +1,5 @@
 /*
- * Header file of the identifier tokens used by parser of the Oberon-0 compiler.
+ * Identifier token returned by scanner of the Oberon LLVM compiler.
  *
  * Created by Michael Grossniklaus on 2/27/18.
  */
@@ -16,10 +16,11 @@ private:
     std::string value_;
 
 public:
-    explicit IdentToken(FilePos pos, const std::string &value);
-    ~IdentToken() override;
+    explicit IdentToken(const FilePos &pos, std::string value) :
+            Token(TokenType::const_ident, pos), value_(std::move(value)) { };
+    ~IdentToken() override = default;
 
-    const std::string getValue() const;
+    [[nodiscard]] std::string getValue() const;
 
     void print(std::ostream &stream) const override;
 };

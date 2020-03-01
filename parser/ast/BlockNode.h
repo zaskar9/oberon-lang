@@ -1,5 +1,5 @@
 /*
- * Header file of the AST code block nodes used by the Oberon-0 compiler.
+ * AST node representing a code block in the Oberon LLVM compiler.
  *
  * Created by Michael Grossniklaus on 3/6/18.
  */
@@ -19,7 +19,7 @@ class ProcedureNode;
 class BlockNode : public Node {
 
 private:
-    int level_, offset_;
+    int level_;
 
     std::vector<std::unique_ptr<TypeNode>> types_;
 
@@ -31,35 +31,33 @@ private:
     TypeNode *return_;
 
 public:
-    explicit BlockNode(NodeType nodeType, FilePos pos, int level);
+    explicit BlockNode(NodeType nodeType, const FilePos &pos, int level);
     ~BlockNode() override;
 
-    int getLevel() const;
-    int getOffset() const;
-    void incOffset(int offset);
+    [[nodiscard]] int getLevel() const;
 
-    void addType(std::unique_ptr<TypeNode> type);
+    void registerType(std::unique_ptr<TypeNode> type);
 
     void addConstant(std::unique_ptr<ConstantDeclarationNode> constant);
-    ConstantDeclarationNode* getConstant(size_t num) const;
-    size_t getConstantCount() const;
+    [[nodiscard]] ConstantDeclarationNode* getConstant(size_t num) const;
+    [[nodiscard]] size_t getConstantCount() const;
 
     void addTypeDeclaration(std::unique_ptr<TypeDeclarationNode> type_declaration);
-    TypeDeclarationNode* getTypeDeclaration(size_t num) const;
-    size_t getTypeDeclarationCount() const;
+    [[nodiscard]] TypeDeclarationNode* getTypeDeclaration(size_t num) const;
+    [[nodiscard]] size_t getTypeDeclarationCount() const;
 
     void addVariable(std::unique_ptr<VariableDeclarationNode> variable);
-    VariableDeclarationNode* getVariable(size_t num) const;
-    size_t getVariableCount() const;
+    [[nodiscard]] VariableDeclarationNode* getVariable(size_t num) const;
+    [[nodiscard]] size_t getVariableCount() const;
 
     virtual void addProcedure(std::unique_ptr<ProcedureNode> procedure) = 0;
-    virtual ProcedureNode* getProcedure(size_t num) const = 0;
-    virtual size_t getProcedureCount() const = 0;
+    [[nodiscard]] virtual ProcedureNode* getProcedure(size_t num) const = 0;
+    [[nodiscard]] virtual size_t getProcedureCount() const = 0;
 
     StatementSequenceNode* getStatements();
 
     void setReturnType(TypeNode* type);
-    TypeNode* getReturnType() const;
+    [[nodiscard]] TypeNode* getReturnType() const;
 
     void print(std::ostream &stream) const override = 0;
 

@@ -1,5 +1,5 @@
 /*
- * Header file of the AST named-value nodes used by the Oberon-0 compiler.
+ * AST nodes representing declarations in the Oberon LLVM compiler.
  *
  * Created by Michael Grossniklaus on 3/7/18.
  */
@@ -9,8 +9,12 @@
 
 
 #include "Node.h"
+
+#include <utility>
 #include "TypeNode.h"
 #include "LiteralNode.h"
+
+class TypeNode;
 
 class DeclarationNode : public Node {
 
@@ -26,11 +30,11 @@ public:
             name_(std::move(name)), type_(type), level_(level) { };
     ~DeclarationNode() override = default;
 
-    const Node * getParent() const;
-    const std::string getName() const;
-    TypeNode * getType() const;
+    [[nodiscard]] const Node * getParent() const;
+    [[nodiscard]] const std::string getName() const;
+    [[nodiscard]] TypeNode * getType() const;
 
-    int getLevel() const;
+    [[nodiscard]] int getLevel() const;
 
     void accept(NodeVisitor& visitor) override = 0;
 
@@ -45,12 +49,12 @@ private:
     std::unique_ptr<LiteralNode> value_;
 
 public:
-    explicit ConstantDeclarationNode(const FilePos &pos, Node *parent, const std::string &name,
+    explicit ConstantDeclarationNode(const FilePos &pos, Node *parent, std::string name,
             std::unique_ptr<LiteralNode> value, int level): DeclarationNode(NodeType::constant, pos,
-            parent, name, value->getType(), level), value_(std::move(value)) { };
+            parent, std::move(name), value->getType(), level), value_(std::move(value)) { };
     ~ConstantDeclarationNode() final = default;
 
-    LiteralNode* getValue() const;
+    [[nodiscard]] LiteralNode* getValue() const;
 
     void accept(NodeVisitor& visitor) final;
 
@@ -62,9 +66,9 @@ public:
 class TypeDeclarationNode final : public DeclarationNode {
 
 public:
-    explicit TypeDeclarationNode(const FilePos &pos, Node *parent, const std::string &name,
+    explicit TypeDeclarationNode(const FilePos &pos, Node *parent, std::string name,
             TypeNode *type, int level) : DeclarationNode(NodeType::type_declaration, pos,
-            parent, name, type, level) { };
+            parent, std::move(name), type, level) { };
     ~TypeDeclarationNode() final = default;
 
     void accept(NodeVisitor& visitor) override;
@@ -76,16 +80,11 @@ public:
 
 class VariableDeclarationNode final : public DeclarationNode {
 
-private:
-    int offset_;
-
 public:
-    explicit VariableDeclarationNode(const FilePos &pos, Node *parent, const std::string &name,
-            TypeNode *type, int level, int offset) : DeclarationNode(NodeType::variable, pos,
-            parent, name, type, level), offset_(offset) { };
+    explicit VariableDeclarationNode(const FilePos &pos, Node *parent, std::string name,
+            TypeNode *type, int level) : DeclarationNode(NodeType::variable, pos,
+            parent, std::move(name), type, level) { };
     ~VariableDeclarationNode() final = default;
-
-    int getOffset() const;
 
     void accept(NodeVisitor& visitor) override;
 
@@ -94,15 +93,10 @@ public:
 
 class FieldNode final : public DeclarationNode {
 
-private:
-    int offset_;
-
 public:
-    explicit FieldNode(const FilePos &pos, Node *parent, const std::string &name, TypeNode *type, int offset) :
-            DeclarationNode(NodeType::field, pos, parent, name, type, -1), offset_(offset) { };
+    explicit FieldNode(const FilePos &pos, Node *parent, std::string name, TypeNode *type) :
+            DeclarationNode(NodeType::field, pos, parent, std::move(name), type, -1) { };
     ~FieldNode() final = default;
-
-    int getOffset() const;
 
     void accept(NodeVisitor& visitor) override;
 
@@ -115,12 +109,11 @@ private:
     bool var_;
 
 public:
-    explicit ParameterNode(const FilePos &pos, Node *parent, const std::string &name,
-            TypeNode *type, bool var, int level) :
-            DeclarationNode(NodeType::parameter, pos, parent, name, type, level), var_(var) { };
+    explicit ParameterNode(const FilePos &pos, Node *parent, std::string name, TypeNode *type, bool var, int level) :
+            DeclarationNode(NodeType::parameter, pos, parent, std::move(name), type, level), var_(var) { };
     ~ParameterNode() final = default;
 
-    bool isVar() const;
+    [[nodiscard]] bool isVar() const;
 
     void accept(NodeVisitor& visitor) final;
 

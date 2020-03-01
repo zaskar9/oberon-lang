@@ -1,5 +1,5 @@
 /*
- * Implementation of the AST record type nodes used by the Oberon-0 compiler.
+ * AST node representing a record type in the Oberon LLVM compiler.
  *
  * Created by Michael Grossniklaus on 2/9/18.
  */
@@ -17,14 +17,6 @@ unsigned int RecordTypeNode::getSize() const {
         size += itr->getType()->getSize();
     }
     return size;
-}
-
-int RecordTypeNode::getOffset() const {
-    return offset_;
-}
-
-void RecordTypeNode::incOffset(int offset) {
-    offset_ += offset;
 }
 
 FieldNode* RecordTypeNode::getField(const std::string& name) const {
@@ -50,5 +42,4 @@ void RecordTypeNode::accept(NodeVisitor& visitor) {
 
 void RecordTypeNode::print(std::ostream& stream) const {
     stream << "RECORD ";
-
 }

@@ -1,5 +1,5 @@
 /*
- * Implementation of the AST module nodes used by the Oberon-0 compiler.
+ * AST node representing a module in the Oberon LLVM compiler.
  *
  * Created by Michael Grossniklaus on 3/6/18.
  */
@@ -7,8 +7,7 @@
 #include "ModuleNode.h"
 #include "NodeVisitor.h"
 
-
-const std::string ModuleNode::getName() const {
+std::string ModuleNode::getName() const {
     return name_;
 }
 

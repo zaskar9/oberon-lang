@@ -1,5 +1,5 @@
 /*
- * Header file of the parser class used by the Oberon-0 compiler.
+ * Parser of the Oberon LLVM compiler.
  *
  * Created by Michael Grossniklaus on 2/2/18.
  */
@@ -9,8 +9,6 @@
 #include "../scanner/IdentToken.h"
 #include "../scanner/NumberToken.h"
 #include "../scanner/StringToken.h"
-#include "ast/UnaryExpressionNode.h"
-#include "ast/BinaryExpressionNode.h"
 #include "ast/DeclarationNode.h"
 #include "ast/ReferenceNode.h"
 #include "ast/IfThenElseNode.h"
@@ -19,12 +17,6 @@
 #include "ast/CallNode.h"
 
 static OperatorType token_to_operator(TokenType token);
-
-Parser::Parser(Scanner *scanner, Logger *logger) : scanner_(scanner), logger_(logger), token_() {
-    symbols_ = std::make_unique<SymbolTable>();
-}
-
-Parser::~Parser() = default;
 
 std::unique_ptr<ModuleNode> Parser::parse() {
     auto errors = logger_->getErrorCount();
@@ -193,12 +185,12 @@ TypeNode* Parser::type(BlockNode *parent, std::string name) {
     } else if (token->getType() == TokenType::kw_array) {
         std::unique_ptr<ArrayTypeNode> node(array_type(parent, name));
         auto res = node.get();
-        parent->addType(std::move(node));
+        parent->registerType(std::move(node));
         return res;
     } else if (token->getType() == TokenType::kw_record) {
         std::unique_ptr<RecordTypeNode> node(record_type(parent, name));
         auto res = node.get();
-        parent->addType(std::move(node));
+        parent->registerType(std::move(node));
         return res;
     } else {
         logger_->error(token->getPosition(), "unexpected token.");
@@ -263,8 +255,7 @@ void Parser::field_list(BlockNode *parent, RecordTypeNode *record) {
         auto node = type(parent);
         for (const std::string& ident : idents) {
             if (record->getField(ident) == nullptr) {
-                record->addField(std::make_unique<FieldNode>(token->getPosition(), parent, ident, node, record->getOffset()));
-                record->incOffset(node->getSize());
+                record->addField(std::make_unique<FieldNode>(token->getPosition(), parent, ident, node));
             } else {
                 logger_->error(token->getPosition(), "duplicate record field: " + ident + ".");
             }
@@ -291,11 +282,9 @@ void Parser::var_declarations(BlockNode *parent) {
                         logger_->error(token->getPosition(), "duplicate definition: " + ident);
                         continue;
                     }
-                    auto variable = std::make_unique<VariableDeclarationNode>(pos, parent, ident, node,
-                                                                              symbols_->getLevel(), parent->getOffset());
+                    auto variable = std::make_unique<VariableDeclarationNode>(pos, parent, ident, node, symbols_->getLevel());
                     symbols_->insert(ident, variable.get());
                     parent->addVariable(std::move(variable));
-                    parent->incOffset(node->getSize());
                 }
             }
             token = scanner_->nextToken();
