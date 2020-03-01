@@ -36,3 +36,4 @@
 /out/
 *.pdb
 *.ilk
+*.bc
