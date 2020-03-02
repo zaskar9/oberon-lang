@@ -7,5 +7,5 @@
 #include "LiteralToken.h"
 
 void BooleanLiteralToken::print(std::ostream &stream) const {
-    stream << this->getType() << ": " << (value() ? "TRUE" : "FALSE");
+    stream << this->type() << ": " << (value() ? "TRUE" : "FALSE");
 }

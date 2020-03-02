@@ -30,20 +30,20 @@ private:
     std::ifstream file_;
     char ch_;
 
-    void initTable();
+    void init();
     void read();
-    FilePos getPosition() const;
-    const Token* next();
-    const Token* ident();
-    const Token* number();
-    const Token* string();
-    void comment();
+    FilePos current() const;
+    const Token* scanToken();
+    const Token* scanIdent();
+    const Token* scanNumber();
+    const Token* scanString();
+    void scanComment();
 
 public:
     explicit Scanner(boost::filesystem::path path, Logger *logger);
     ~Scanner();
-    const Token* peekToken();
-    std::unique_ptr<const Token> nextToken();
+    const Token* peek();
+    std::unique_ptr<const Token> next();
 
     static std::string escape(std::string str);
     static std::string unescape(std::string str);

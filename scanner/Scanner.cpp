@@ -16,7 +16,7 @@
 
 Scanner::Scanner(boost::filesystem::path path, Logger *logger) :
         filename_(path.string()), logger_(logger), tokens_(), lineNo_(1), charNo_(0) {
-    this->initTable();
+    init();
     file_.open(filename_, std::ios::in);
     if (!file_.is_open()) {
         logger_->error(PROJECT_NAME, "cannot open file: " + filename_ + ".");
@@ -31,7 +31,7 @@ Scanner::~Scanner() {
     }
 }
 
-void Scanner::initTable() {
+void Scanner::init() {
     keywords_ = { { "DIV", TokenType::op_div }, { "MOD", TokenType::op_mod }, { "OR", TokenType::op_or },
                   { "MODULE", TokenType::kw_module }, { "PROCEDURE", TokenType::kw_procedure },
                   { "DECLARE", TokenType::kw_declare }, { "EXTERN", TokenType::kw_extern },
@@ -49,17 +49,17 @@ void Scanner::initTable() {
                   { "TRUE", TokenType::boolean_literal}, { "FALSE", TokenType::boolean_literal } };
 }
 
-const Token* Scanner::peekToken() {
+const Token* Scanner::peek() {
     if (tokens_.empty()) {
-        tokens_.push(this->next());
+        tokens_.push(scanToken());
     }
     return tokens_.front();
 }
 
-std::unique_ptr<const Token> Scanner::nextToken() {
+std::unique_ptr<const Token> Scanner::next() {
     const Token *token;
     if (tokens_.empty()) {
-        token = this->next();
+        token = scanToken();
     } else {
         token = tokens_.front();
         tokens_.pop();
@@ -67,20 +67,20 @@ std::unique_ptr<const Token> Scanner::nextToken() {
     return std::unique_ptr<const Token>(token);
 }
 
-const Token* Scanner::next() {
+const Token* Scanner::scanToken() {
     const Token *token;
     // Skip whitespace
     while ((ch_ != -1) && (ch_ <= ' ')) {
         read();
     }
     if (ch_ != -1) {
-        FilePos pos = getPosition();
+        FilePos pos = this->current();
         if (((ch_ >= 'A') && (ch_ <= 'Z')) || ((ch_ >= 'a') && (ch_ <= 'z')) || ch_ == '_') {
             // Scan identifier
-            token = ident();
+            token = scanIdent();
         } else if ((ch_ >= '0') && (ch_ <= '9')) {
             // Scan integer
-            token = number();
+            token = scanNumber();
         } else {
             switch (ch_) {
                 case '&':
@@ -158,8 +158,8 @@ const Token* Scanner::next() {
                 case '(':
                     read();
                     if (ch_ == '*') {
-                        comment();
-                        token = next();
+                        scanComment();
+                        token = scanToken();
                     } else {
                         token = new Token(TokenType::lparen, pos);
                     }
@@ -181,7 +181,7 @@ const Token* Scanner::next() {
                     read();
                     break;
                 case '"':
-                    token = string();
+                    token = scanString();
                     read();
                     break;
                 default:
@@ -191,7 +191,7 @@ const Token* Scanner::next() {
             }
         }
     } else {
-        token = new Token(TokenType::eof, getPosition());
+        token = new Token(TokenType::eof, current());
     }
     return token;
 }
@@ -213,7 +213,7 @@ void Scanner::read() {
 
 }
 
-FilePos Scanner::getPosition() const {
+FilePos Scanner::current() const {
     FilePos pos;
     pos.fileName = filename_;
     pos.lineNo = lineNo_;
@@ -221,15 +221,15 @@ FilePos Scanner::getPosition() const {
     return pos;
 }
 
-void Scanner::comment() {
-    FilePos pos = getPosition();
+void Scanner::scanComment() {
+    FilePos pos = current();
     read();
     while (true) {
         while (true) {
             while (ch_ == '(') {
                 read();
                 if (ch_ == '*') {
-                    comment();
+                    scanComment();
                 }
             }
             if (ch_ == '*') {
@@ -252,8 +252,8 @@ void Scanner::comment() {
     }
 }
 
-const Token* Scanner::ident() {
-    FilePos pos = getPosition();
+const Token* Scanner::scanIdent() {
+    FilePos pos = current();
     std::stringstream ss;
     do {
         ss << ch_;
@@ -272,10 +272,10 @@ const Token* Scanner::ident() {
     return new IdentToken(pos, ident);
 }
 
-const Token* Scanner::number() {
+const Token* Scanner::scanNumber() {
     bool isHex = false;
     bool isFloat = false;
-    FilePos pos = getPosition();
+    FilePos pos = current();
     std::stringstream ss;
     while (((ch_ >= '0') && (ch_ <= '9')) ||
            ((toupper(ch_) >= 'A') && (toupper(ch_) <= 'F'))) {
@@ -302,32 +302,40 @@ const Token* Scanner::number() {
         read();
     }
     boost::cnv::cstream ccnv;
-    // TODO error handling: bad optional...
+    auto num = ss.str();
     if (isFloat) {
-        double value = boost::convert<double>(ss.str(), ccnv(std::dec)(std::scientific)).value();
-        if (std::numeric_limits<float>::min() <= value && value <= std::numeric_limits<float>::max()) {
+        double value = 0;
+        try {
+             value = boost::convert<double>(num, ccnv(std::dec)(std::scientific)).value();
+        } catch (boost::bad_optional_access const&) {
+            logger_->error(pos, "invalid real literal: " + num + ".");
+        }
+        if (value >= std::numeric_limits<float>::lowest() && value <= std::numeric_limits<float>::max()) {
             return new RealLiteralToken(pos, static_cast<float>(value));
         }
         return new LongrealLiteralToken(pos, value);
     } else {
         long value;
-        if (isHex) {
-            value = boost::convert<long>(ss.str(), ccnv(std::hex)).value();
-        } else {
-            value = boost::convert<long>(ss.str(), ccnv(std::dec)).value();
+        try {
+            if (isHex) {
+                value = boost::convert<long>(num, ccnv(std::hex)).value();
+            } else {
+                value = boost::convert<long>(num, ccnv(std::dec)).value();
+            }
+        } catch (boost::bad_optional_access const&) {
+            logger_->error(pos, "invalid integer literal: " + num + ".");
+            value = 0;
         }
-        if (std::numeric_limits<int>::min() <= value && value <= std::numeric_limits<int>::max()) {
+        if (value >= std::numeric_limits<int>::lowest() && value <= std::numeric_limits<int>::max()) {
             return new IntegerLiteralToken(pos, static_cast<int>(value));
         }
-        auto tok = new LongintLiteralToken(pos, value);
-        std::cout << tok->value() << std::endl;
-        return tok;
+        return new LongintLiteralToken(pos, value);
     }
 }
 
-const Token* Scanner::string() {
+const Token* Scanner::scanString() {
     std::stringstream ss;
-    auto pos = getPosition();
+    auto p = current();
     read();
     do {
         ss << ch_;
@@ -338,7 +346,7 @@ const Token* Scanner::string() {
         read();
     } while (ch_ != '"');
     std::string str = ss.str();
-    return new StringLiteralToken(pos, unescape(str));
+    return new StringLiteralToken(p, unescape(str));
 }
 
 std::string Scanner::escape(std::string str) {

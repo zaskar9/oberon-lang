@@ -37,8 +37,8 @@ public:
     explicit Token(const TokenType type, const FilePos &pos) : type_(type), pos_(pos) { };
     virtual ~Token();
 
-    [[nodiscard]] TokenType getType() const;
-    [[nodiscard]] FilePos getPosition() const;
+    [[nodiscard]] TokenType type() const;
+    [[nodiscard]] FilePos pos() const;
 
     virtual void print(std::ostream &stream) const;
     friend std::ostream& operator<<(std::ostream &stream, const Token &symbol);

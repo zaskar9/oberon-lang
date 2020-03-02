@@ -11,5 +11,5 @@ char UndefinedToken::getValue() {
 }
 
 void UndefinedToken::print(std::ostream &stream) const {
-    stream << this->getType() << ": " << value_;
+    stream << this->type() << ": " << value_;
 }

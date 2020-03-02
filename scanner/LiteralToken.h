@@ -26,7 +26,7 @@ public:
     };
 
     void print(std::ostream &stream) const override {
-        stream << this->getType() << ": " << value_;
+        stream << this->type() << ": " << value_;
     };
 
 };

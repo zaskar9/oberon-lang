@@ -8,11 +8,11 @@
 
 Token::~Token() = default;
 
-TokenType Token::getType() const {
+TokenType Token::type() const {
     return type_;
 }
 
-FilePos Token::getPosition() const {
+FilePos Token::pos() const {
     return pos_;
 }
 

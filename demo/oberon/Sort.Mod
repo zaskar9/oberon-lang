@@ -3,6 +3,7 @@ MODULE Sort;
 
 (* Length of the array to be sorted. *)
 CONST Dim = 3 * 0AH;
+      Float = 3.3.3;
 
 (* Array to be sorted. *)
 TYPE Vector = ARRAY Dim OF INTEGER;
