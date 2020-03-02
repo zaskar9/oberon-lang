@@ -70,7 +70,7 @@ private:
     std::unique_ptr<LiteralNode> fold(const ExpressionNode *expr) const;
     int foldNumber(const ExpressionNode *expr) const;
     bool foldBoolean(const ExpressionNode *expr) const;
-    const std::string foldString(const ExpressionNode *expr) const;
+    std::string foldString(const ExpressionNode *expr) const;
 
     bool checkActualParameter(const ProcedureNode *proc, size_t num, const ExpressionNode *expr);
 

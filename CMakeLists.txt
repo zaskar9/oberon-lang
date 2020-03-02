@@ -20,9 +20,8 @@ set(SOURCE_FILES
         util/Logger.cpp util/Logger.h
         scanner/Scanner.cpp scanner/Scanner.h
         scanner/Token.cpp scanner/Token.h
+        scanner/LiteralToken.cpp scanner/LiteralToken.h
         scanner/IdentToken.cpp scanner/IdentToken.h
-        scanner/NumberToken.cpp scanner/NumberToken.h
-        scanner/StringToken.cpp scanner/StringToken.h
         scanner/UndefinedToken.cpp scanner/UndefinedToken.h
         parser/Parser.cpp parser/Parser.h
         parser/symbol/SymbolTable.cpp parser/symbol/SymbolTable.h

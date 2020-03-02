@@ -17,8 +17,9 @@ void BasicTypeNode::print(std::ostream &out) const {
 
 BasicTypeNode* BasicTypeNode::BOOLEAN = new BasicTypeNode("BOOLEAN", 1);
 BasicTypeNode* BasicTypeNode::CHAR = new BasicTypeNode("CHAR", 1);
-BasicTypeNode* BasicTypeNode::BYTE = new BasicTypeNode("INTEGER", 1);
-BasicTypeNode* BasicTypeNode::SHORTINT = new BasicTypeNode("INTEGER", 2);
+BasicTypeNode* BasicTypeNode::BYTE = new BasicTypeNode("BYTE", 1);
 BasicTypeNode* BasicTypeNode::INTEGER = new BasicTypeNode("INTEGER", 4);
-BasicTypeNode* BasicTypeNode::LONGINT = new BasicTypeNode("INTEGER", 8);
+BasicTypeNode* BasicTypeNode::LONGINT = new BasicTypeNode("LONGINT", 8);
+BasicTypeNode* BasicTypeNode::REAL = new BasicTypeNode("REAL", 4);
+BasicTypeNode* BasicTypeNode::LONGREAL = new BasicTypeNode("LONGREAL", 8);
 BasicTypeNode* BasicTypeNode::STRING = new BasicTypeNode("STRING", -1);

@@ -2,7 +2,7 @@
 MODULE Test;
 
 (* Length of the array to be sorted. *)
-CONST Dim = 4 + 2 * 8;
+CONST Dim = 4 + 2 * -8;
 
 TYPE Point2D = RECORD x, y: INTEGER END;
      Point3D = RECORD x, y, y: INTEGER END;

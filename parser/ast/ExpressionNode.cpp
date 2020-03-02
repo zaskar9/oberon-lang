@@ -61,11 +61,11 @@ void UnaryExpressionNode::print(std::ostream &stream) const {
 
 
 bool BinaryExpressionNode::isConstant() const {
-    return lhs_->isConstant() && rhs_->isConstant();
+    return lhs_ && lhs_->isConstant() && rhs_ && rhs_->isConstant();
 }
 
 TypeNode* BinaryExpressionNode::getType() const {
-    if (lhs_ != nullptr && rhs_ != nullptr) {
+    if (lhs_ && rhs_) {
         auto lhsType = lhs_->getType();
         auto rhsType = rhs_->getType();
         if (lhsType == rhsType) {

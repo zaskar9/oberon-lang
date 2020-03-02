@@ -6,11 +6,12 @@
 
 
 #include <boost/algorithm/string/replace.hpp>
+#include <boost/convert.hpp>
+#include <boost/convert/stream.hpp>
 #include <config.h>
 #include "Scanner.h"
 #include "IdentToken.h"
-#include "NumberToken.h"
-#include "StringToken.h"
+#include "LiteralToken.h"
 #include "UndefinedToken.h"
 
 Scanner::Scanner(boost::filesystem::path path, Logger *logger) :
@@ -45,7 +46,7 @@ void Scanner::initTable() {
                   { "VAR", TokenType::kw_var }, { "CONST", TokenType::kw_const },
                   { "TYPE", TokenType::kw_type }, { "ARRAY", TokenType::kw_array },
                   { "RECORD", TokenType::kw_record }, { "OF", TokenType::kw_of },
-                  { "TRUE", TokenType::const_true }, { "FALSE", TokenType::const_false } };
+                  { "TRUE", TokenType::boolean_literal}, { "FALSE", TokenType::boolean_literal } };
 }
 
 const Token* Scanner::peekToken() {
@@ -79,7 +80,7 @@ const Token* Scanner::next() {
             token = ident();
         } else if ((ch_ >= '0') && (ch_ <= '9')) {
             // Scan integer
-            token = new NumberToken(pos, number());
+            token = number();
         } else {
             switch (ch_) {
                 case '&':
@@ -180,7 +181,7 @@ const Token* Scanner::next() {
                     read();
                     break;
                 case '"':
-                    token = new StringToken(pos, string());
+                    token = string();
                     read();
                     break;
                 default:
@@ -206,8 +207,7 @@ void Scanner::read() {
         charNo_++;
         ch_ = -1;
     } else {
-        // TODO throw I/O Exception
-        logger_->error(filename_, "Error reading file.");
+        logger_->error(filename_, "error reading file.");
         exit(1);
     }
 
@@ -246,7 +246,7 @@ void Scanner::comment() {
             break;
         }
         if (ch_ == -1) {
-            logger_->error(pos, "Comment not terminated.");
+            logger_->error(pos, "comment not terminated.");
             break;
         }
     }
@@ -264,45 +264,70 @@ const Token* Scanner::ident() {
     std::string ident = ss.str();
     auto it = keywords_.find(ident);
     if (it != keywords_.end()) {
+        if (it->second == TokenType::boolean_literal) {
+            return new BooleanLiteralToken(pos, it->first.compare("TRUE") == 0);
+        }
         return new Token(it->second, pos);
     }
     return new IdentToken(pos, ident);
 }
 
-int Scanner::number() {
+const Token* Scanner::number() {
     bool isHex = false;
-    int decValue = 0;
-    int hexValue = 0;
+    bool isFloat = false;
     FilePos pos = getPosition();
-    do {
-        isHex = isHex | ((ch_ >= 'A') && (ch_ <= 'F'));
-        if (decValue <= ((INT_MAX - ch_ + '0') / 10)) {
-            if ((ch_ >= '0') && (ch_ <= '9')) {
-                decValue = 10 * decValue + (ch_ - '0');
-                hexValue = 16 * hexValue + (ch_ - '0');
-            } else { // A - F
-                hexValue = 16 * hexValue + (ch_ - 'A' + 10);
-            }
-        } else {
-            logger_->error(pos, "Number too large.");
-            return 0;
-        }
+    std::stringstream ss;
+    while (((ch_ >= '0') && (ch_ <= '9')) ||
+           ((toupper(ch_) >= 'A') && (toupper(ch_) <= 'F'))) {
+        ss << ch_;
         read();
-    } while (((ch_ >= '0') && (ch_ <= '9')) ||
-             ((ch_ >= 'A') && (ch_ <= 'F')));
+        if (ch_ == '.') {
+            ss << ch_;
+            isFloat = true;
+            read();
+        }
+        if (isFloat && (ch_ == '+' || ch_ == '-')) {
+            ss << ch_;
+            read();
+        }
+    }
     if (ch_ == 'H') {
-        // hexadecimal integer identified by trailing 'H'
+        if (isFloat) {
+            logger_->error(pos, "undefined number.");
+            auto token = new UndefinedToken(pos, ch_);
+            read();
+            return token;
+        }
         isHex = true;
         read();
     }
-    if (isHex) {
-        return hexValue;
+    boost::cnv::cstream ccnv;
+    // TODO error handling: bad optional...
+    if (isFloat) {
+        double value = boost::convert<double>(ss.str(), ccnv(std::dec)(std::scientific)).value();
+        if (std::numeric_limits<float>::min() <= value && value <= std::numeric_limits<float>::max()) {
+            return new RealLiteralToken(pos, static_cast<float>(value));
+        }
+        return new LongrealLiteralToken(pos, value);
+    } else {
+        long value;
+        if (isHex) {
+            value = boost::convert<long>(ss.str(), ccnv(std::hex)).value();
+        } else {
+            value = boost::convert<long>(ss.str(), ccnv(std::dec)).value();
+        }
+        if (std::numeric_limits<int>::min() <= value && value <= std::numeric_limits<int>::max()) {
+            return new IntegerLiteralToken(pos, static_cast<int>(value));
+        }
+        auto tok = new LongintLiteralToken(pos, value);
+        std::cout << tok->value() << std::endl;
+        return tok;
     }
-    return decValue;
 }
 
-std::string Scanner::string() {
+const Token* Scanner::string() {
     std::stringstream ss;
+    auto pos = getPosition();
     read();
     do {
         ss << ch_;
@@ -313,7 +338,7 @@ std::string Scanner::string() {
         read();
     } while (ch_ != '"');
     std::string str = ss.str();
-    return unescape(str);
+    return new StringLiteralToken(pos, unescape(str));
 }
 
 std::string Scanner::escape(std::string str) {

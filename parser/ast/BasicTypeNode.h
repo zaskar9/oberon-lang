@@ -27,9 +27,10 @@ public:
     static BasicTypeNode* BOOLEAN;
     static BasicTypeNode* CHAR;
     static BasicTypeNode* BYTE;
-    static BasicTypeNode* SHORTINT;
     static BasicTypeNode* INTEGER;
     static BasicTypeNode* LONGINT;
+    static BasicTypeNode* REAL;
+    static BasicTypeNode* LONGREAL;
     static BasicTypeNode* STRING;
 };
 

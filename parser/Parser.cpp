@@ -7,8 +7,7 @@
 #include <iostream>
 #include "Parser.h"
 #include "../scanner/IdentToken.h"
-#include "../scanner/NumberToken.h"
-#include "../scanner/StringToken.h"
+#include "../scanner/LiteralToken.h"
 #include "ast/DeclarationNode.h"
 #include "ast/ReferenceNode.h"
 #include "ast/IfThenElseNode.h"
@@ -118,7 +117,7 @@ void Parser::const_declarations(BlockNode *parent) {
         auto token = scanner_->nextToken();
         if (token->getType() == TokenType::op_eq) {
             auto expr = expression(parent);
-            if (expr->isConstant()) {
+            if (expr && expr->isConstant()) {
                 auto value = fold(expr.get());
                 auto constant = std::make_unique<ConstantDeclarationNode>(token->getPosition(), parent, name,
                                                                           std::move(value), symbols_->getLevel());
@@ -536,7 +535,7 @@ std::unique_ptr<StatementNode> Parser::if_statement(BlockNode *parent) {
     logger_->debug("", "if_statement");
     token_ = scanner_->nextToken(); // skip IF keyword
     auto condition = expression(parent);
-    if (condition->getType() != BasicTypeNode::BOOLEAN) {
+    if (condition && condition->getType() != BasicTypeNode::BOOLEAN) {
         logger_->error(condition->getFilePos(), "Boolean expression expected.");
     }
     auto statement = std::make_unique<IfThenElseNode>(token_->getPosition(), std::move(condition));
@@ -645,7 +644,7 @@ std::unique_ptr<StatementNode> Parser::for_statement(BlockNode *parent) {
         token_ = scanner_->nextToken();
         if (token_->getType()==TokenType::op_becomes) {
             low = expression(parent);
-            if (low->getType() != BasicTypeNode::INTEGER) {
+            if (low && low->getType() != BasicTypeNode::INTEGER) {
                 logger_->error(low->getFilePos(), "integer expression expected.");
             }
         }
@@ -655,7 +654,7 @@ std::unique_ptr<StatementNode> Parser::for_statement(BlockNode *parent) {
         token_ = scanner_->nextToken();
         if (token_->getType()==TokenType::kw_to) {
             high = expression(parent);
-            if (high->getType() != BasicTypeNode::INTEGER) {
+            if (high && high->getType() != BasicTypeNode::INTEGER) {
                 logger_->error(high->getFilePos(), "integer expression expected.");
             }
         }
@@ -806,8 +805,7 @@ std::unique_ptr<ExpressionNode> Parser::simple_expression(BlockNode *parent) {
         auto temp = std::make_unique<BinaryExpressionNode>(token_->getPosition(), op, std::move(expr), term(parent));
         auto lhs = temp->getLeftExpression();
         auto rhs = temp->getRightExpression();
-        if (lhs != nullptr && lhs->isConstant() &&
-            rhs != nullptr && rhs->isConstant()) {
+        if (lhs && lhs->isConstant() && rhs && rhs->isConstant()) {
             expr = fold(temp.get());
         } else {
             expr = std::move(temp);
@@ -902,22 +900,18 @@ std::unique_ptr<ExpressionNode> Parser::factor(BlockNode *parent) {
             logger_->error(pos, "undefined identifier: " + name + ".");
             return nullptr;
         }
-    } else if (token->getType() == TokenType::const_number) {
+    } else if (token->getType() == TokenType::integer_literal) {
         auto tmp = scanner_->nextToken();
-        auto number = dynamic_cast<const NumberToken*>(tmp.get());
-        return std::make_unique<IntegerLiteralNode>(number->getPosition(), number->getValue());
-    } else if (token->getType() == TokenType::const_string) {
+        auto number = dynamic_cast<const IntegerLiteralToken*>(tmp.get());
+        return std::make_unique<IntegerLiteralNode>(number->getPosition(), number->value());
+    } else if (token->getType() == TokenType::string_literal) {
         auto tmp = scanner_->nextToken();
-        auto string = dynamic_cast<const StringToken*>(tmp.get());
-        return std::make_unique<StringLiteralNode>(string->getPosition(), string->getValue());
-    } else if (token->getType() == TokenType::const_true) {
-        auto pos = token->getPosition();
-        scanner_->nextToken();
-        return std::make_unique<BooleanLiteralNode>(pos, true);
-    } else if (token->getType() == TokenType::const_false) {
-        auto pos = token->getPosition();
-        scanner_->nextToken();
-        return std::make_unique<BooleanLiteralNode>(pos, false);
+        auto string = dynamic_cast<const StringLiteralToken*>(tmp.get());
+        return std::make_unique<StringLiteralNode>(string->getPosition(), string->value());
+    } else if (token->getType() == TokenType::boolean_literal) {
+        auto tmp = scanner_->nextToken();
+        auto boolean = dynamic_cast<const BooleanLiteralToken*>(tmp.get());
+        return std::make_unique<BooleanLiteralNode>(boolean->getPosition(), boolean->value());
     } else if (token->getType() == TokenType::lparen) {
         scanner_->nextToken();
         auto expr = expression(parent);
@@ -1053,7 +1047,7 @@ bool Parser::foldBoolean(const ExpressionNode *expr) const {
     return false;
 }
 
-const std::string Parser::foldString(const ExpressionNode *expr) const {
+std::string Parser::foldString(const ExpressionNode *expr) const {
     if (expr->getNodeType() == NodeType::binary_expression) {
         auto binExpr = dynamic_cast<const BinaryExpressionNode*>(expr);
         std::string lValue = foldString(binExpr->getLeftExpression());

@@ -17,6 +17,7 @@
 #include <boost/filesystem.hpp>
 #include "Token.h"
 #include "../util/Logger.h"
+#include "LiteralToken.h"
 
 class Scanner {
 
@@ -34,8 +35,8 @@ private:
     FilePos getPosition() const;
     const Token* next();
     const Token* ident();
-    int number();
-    std::string string();
+    const Token* number();
+    const Token* string();
     void comment();
 
 public:

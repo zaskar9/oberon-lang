@@ -13,7 +13,9 @@
 
 enum class TokenType : char {
     eof, null, undef,
-    const_true, const_false, const_number, const_string, const_ident,
+    boolean_literal, byte_literal, char_literal, integer_literal, longint_literal,
+    real_literal, longreal_literal, string_literal,
+    const_ident,
     period, comma, colon, semicolon, rparen, lparen, lbrack, rbrack, varargs,
     op_times, op_div, op_mod, op_plus, op_minus, op_and, op_or, op_not,
     op_eq, op_neq, op_lt, op_gt, op_leq, op_geq, op_becomes,

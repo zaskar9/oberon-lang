@@ -2,7 +2,7 @@
 MODULE Sort;
 
 (* Length of the array to be sorted. *)
-CONST Dim = 3 * 10;
+CONST Dim = 3 * 0AH;
 
 (* Array to be sorted. *)
 TYPE Vector = ARRAY Dim OF INTEGER;
