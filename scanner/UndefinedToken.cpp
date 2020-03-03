@@ -6,7 +6,7 @@
 
 #include "UndefinedToken.h"
 
-char UndefinedToken::getValue() {
+char UndefinedToken::value() {
     return value_;
 }
 

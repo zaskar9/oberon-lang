@@ -3,6 +3,8 @@ MODULE Test;
 
 (* Length of the array to be sorted. *)
 CONST Dim = 4 + 2 * -8;
+      Float = 3.3.3;
+
 
 TYPE Point2D = RECORD x, y: INTEGER END;
      Point3D = RECORD x, y, y: INTEGER END;

@@ -20,7 +20,7 @@ public:
             Token(TokenType::const_ident, pos), value_(std::move(value)) { };
     ~IdentToken() override = default;
 
-    [[nodiscard]] std::string getValue() const;
+    [[nodiscard]] std::string value() const;
 
     void print(std::ostream &stream) const override;
 };

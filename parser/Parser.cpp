@@ -28,7 +28,7 @@ std::string Parser::ident() {
     if (token_->type() == TokenType::const_ident) {
         auto ident = dynamic_cast<const IdentToken*>(token_.get());
         logger_->debug("", to_string(*ident));
-        return ident->getValue();
+        return ident->value();
     } else {
         logger_->error(token_->pos(), "identifier expected.");
     }
@@ -192,7 +192,7 @@ TypeNode* Parser::type(BlockNode *parent, std::string name) {
         parent->registerType(std::move(node));
         return res;
     } else {
-        logger_->error(token->pos(), "unexpected token.");
+        logger_->error(token->pos(), "unexpected token: " + to_string(*token) + ".");
         resync({ TokenType::semicolon, TokenType::kw_var, TokenType::kw_procedure, TokenType::kw_begin });
     }
     return nullptr;
@@ -926,7 +926,8 @@ std::unique_ptr<ExpressionNode> Parser::factor(BlockNode *parent) {
         scanner_->next();
         return std::make_unique<UnaryExpressionNode>(token->pos(), OperatorType::NOT, factor(parent));
     } else {
-        logger_->error(token->pos(), "unexpected token: " + to_string(*token));
+        logger_->error(token->pos(), "unexpected token: " + to_string(*token) + ".");
+        resync({ TokenType::semicolon });
         return nullptr;
     }
 }

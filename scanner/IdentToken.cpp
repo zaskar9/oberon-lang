@@ -6,7 +6,7 @@
 
 #include "IdentToken.h"
 
-std::string IdentToken::getValue() const {
+std::string IdentToken::value() const {
     return value_;
 }
 

@@ -20,7 +20,7 @@ public:
             Token(TokenType::undef, pos), value_(value) { };
     ~UndefinedToken() override = default;
 
-    [[nodiscard]] char getValue();
+    [[nodiscard]] char value();
 
     void print(std::ostream &stream) const override;
 
