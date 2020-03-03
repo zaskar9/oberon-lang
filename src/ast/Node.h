@@ -13,7 +13,7 @@
 #include <ostream>
 #include <string>
 #include <utility>
-#include "../../util/Logger.h"
+#include "../util/Logger.h"
 
 enum class NodeType : char {
     module, procedure, statement_sequence,

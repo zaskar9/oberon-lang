@@ -13,7 +13,7 @@
 #include <unordered_map>
 #include "Scope.h"
 #include "../ast/TypeNode.h"
-#include "../../util/Logger.h"
+#include "../util/Logger.h"
 
 class SymbolTable {
 

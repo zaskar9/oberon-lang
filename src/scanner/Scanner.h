@@ -10,14 +10,14 @@
 
 #include <memory>
 #include <string>
+#include <queue>
+#include <unordered_map>
 #include <fstream>
 #include <sstream>
-#include <unordered_map>
-#include <queue>
 #include <boost/filesystem.hpp>
 #include "Token.h"
-#include "../util/Logger.h"
 #include "LiteralToken.h"
+#include "../util/Logger.h"
 
 class Scanner {
 

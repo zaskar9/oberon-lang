@@ -12,7 +12,7 @@
 #include <llvm/IR/DataLayout.h>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
-#include "../data/ast/NodeVisitor.h"
+#include "../ast/NodeVisitor.h"
 
 using namespace llvm;
 

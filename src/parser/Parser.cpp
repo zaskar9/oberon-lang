@@ -8,12 +8,12 @@
 #include "Parser.h"
 #include "../scanner/IdentToken.h"
 #include "../scanner/LiteralToken.h"
-#include "../data/ast/DeclarationNode.h"
-#include "../data/ast/ReferenceNode.h"
-#include "../data/ast/IfThenElseNode.h"
-#include "../data/ast/LoopNode.h"
-#include "../data/ast/AssignmentNode.h"
-#include "../data/ast/CallNode.h"
+#include "../ast/DeclarationNode.h"
+#include "../ast/ReferenceNode.h"
+#include "../ast/IfThenElseNode.h"
+#include "../ast/LoopNode.h"
+#include "../ast/AssignmentNode.h"
+#include "../ast/CallNode.h"
 
 static OperatorType token_to_operator(TokenType token);
 

@@ -5,7 +5,7 @@
  */
 
 #include "NodePrettyPrinter.h"
-#include "../../scanner/Scanner.h"
+#include "../scanner/Scanner.h"
 
 void NodePrettyPrinter::indent() {
     stream_ << std::string(indent_, ' ');
