@@ -46,7 +46,7 @@ void SymbolTable::leaveScope() {
         level_--;
     } else {
         // TODO throw exception
-        std::cerr << "Illegal symbol table state: cannot leave current scope." << std::endl;
+        std::cerr << "Illegal symtab table state: cannot leave current scope." << std::endl;
         exit(1);
     }
 }

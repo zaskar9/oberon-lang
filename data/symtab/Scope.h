@@ -1,5 +1,5 @@
 /*
- * Scope of the symbol table used by the Oberon LLVM compiler.
+ * Scope of the symtab table used by the Oberon LLVM compiler.
  *
  * Created by Michael Grossniklaus on 12/25/18.
  */

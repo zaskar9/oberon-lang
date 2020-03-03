@@ -24,28 +24,28 @@ set(SOURCE_FILES
         scanner/IdentToken.cpp scanner/IdentToken.h
         scanner/UndefinedToken.cpp scanner/UndefinedToken.h
         parser/Parser.cpp parser/Parser.h
-        parser/symbol/SymbolTable.cpp parser/symbol/SymbolTable.h
-        parser/symbol/Scope.cpp parser/symbol/Scope.h
-        parser/ast/NodeVisitor.h
-        parser/ast/Node.cpp parser/ast/Node.h
-        parser/ast/ExpressionNode.cpp parser/ast/ExpressionNode.h
-        parser/ast/LiteralNode.cpp parser/ast/LiteralNode.h
-        parser/ast/TypeNode.cpp parser/ast/TypeNode.h
-        parser/ast/ArrayTypeNode.cpp parser/ast/ArrayTypeNode.h
-        parser/ast/BasicTypeNode.cpp parser/ast/BasicTypeNode.h
-        parser/ast/RecordTypeNode.cpp parser/ast/RecordTypeNode.h
-        parser/ast/BlockNode.cpp parser/ast/BlockNode.h
-        parser/ast/ModuleNode.cpp parser/ast/ModuleNode.h
-        parser/ast/ProcedureNode.cpp parser/ast/ProcedureNode.h
-        parser/ast/DeclarationNode.cpp parser/ast/DeclarationNode.h
-        parser/ast/ReferenceNode.cpp parser/ast/ReferenceNode.h
-        parser/ast/StatementNode.cpp parser/ast/StatementNode.h
-        parser/ast/AssignmentNode.cpp parser/ast/AssignmentNode.h
-        parser/ast/CallNode.cpp parser/ast/CallNode.h
-        parser/ast/IfThenElseNode.cpp parser/ast/IfThenElseNode.h
-        parser/ast/LoopNode.cpp parser/ast/LoopNode.h
-        parser/ast/StatementSequenceNode.cpp parser/ast/StatementSequenceNode.h
-        parser/ast/NodePrettyPrinter.cpp parser/ast/NodePrettyPrinter.h
+        data/symtab/SymbolTable.cpp data/symtab/SymbolTable.h
+        data/symtab/Scope.cpp data/symtab/Scope.h
+        data/ast/NodeVisitor.h
+        data/ast/Node.cpp data/ast/Node.h
+        data/ast/ExpressionNode.cpp data/ast/ExpressionNode.h
+        data/ast/LiteralNode.cpp data/ast/LiteralNode.h
+        data/ast/TypeNode.cpp data/ast/TypeNode.h
+        data/ast/ArrayTypeNode.cpp data/ast/ArrayTypeNode.h
+        data/ast/BasicTypeNode.cpp data/ast/BasicTypeNode.h
+        data/ast/RecordTypeNode.cpp data/ast/RecordTypeNode.h
+        data/ast/BlockNode.cpp data/ast/BlockNode.h
+        data/ast/ModuleNode.cpp data/ast/ModuleNode.h
+        data/ast/ProcedureNode.cpp data/ast/ProcedureNode.h
+        data/ast/DeclarationNode.cpp data/ast/DeclarationNode.h
+        data/ast/ReferenceNode.cpp data/ast/ReferenceNode.h
+        data/ast/StatementNode.cpp data/ast/StatementNode.h
+        data/ast/AssignmentNode.cpp data/ast/AssignmentNode.h
+        data/ast/CallNode.cpp data/ast/CallNode.h
+        data/ast/IfThenElseNode.cpp data/ast/IfThenElseNode.h
+        data/ast/LoopNode.cpp data/ast/LoopNode.h
+        data/ast/StatementSequenceNode.cpp data/ast/StatementSequenceNode.h
+        data/ast/NodePrettyPrinter.cpp data/ast/NodePrettyPrinter.h
         llvm/LLVMIRBuilder.cpp llvm/LLVMIRBuilder.h
         llvm/LLVMCompiler.cpp llvm/LLVMCompiler.h)
 

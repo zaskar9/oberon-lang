@@ -14,7 +14,6 @@
 #include <llvm/Support/raw_ostream.h>
 #include <config.h>
 #include "../parser/Parser.h"
-#include "../parser/ast/NodePrettyPrinter.h"
 
 LLVMCompiler::LLVMCompiler(Logger *logger) : logger_(logger), ctx_(), pb_(), lvl_(llvm::PassBuilder::O0),
         type_(OutputFileType::ObjectFile) {

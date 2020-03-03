@@ -23,6 +23,7 @@ public:
     [[nodiscard]] std::string value() const;
 
     void print(std::ostream &stream) const override;
+
 };
 
 
