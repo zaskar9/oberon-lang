@@ -80,5 +80,5 @@ void ForLoopNode::accept(NodeVisitor& visitor) {
 }
 
 void ForLoopNode::print(std::ostream& stream) const {
-    stream << "FOR" << *counter_ << " := " << *low_ << " TO " << *high_ << " BY " << step_ << " DO" << this->getStatements() << "END";
+    stream << "FOR" << *counter_ << " := " << *low_ << " TO " << *high_ << " BY " << *step_ << " DO" << this->getStatements() << "END";
 }

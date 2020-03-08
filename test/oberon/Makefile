@@ -5,12 +5,19 @@ LLC = llc
 
 OPTFLAGS = -O3
 
+UNAME_S := $(shell uname)
+
 .PHONY: clean
 .PRECIOUS: %.s %.ll
 
 clean:
 	@rm -f *.s *.ll *.o *.bc
-	@find . -type f -perm +111 -delete 
+ifeq ($(UNAME_S), Darwin)
+	@find . -type f -perm +111 -delete
+endif
+ifeq ($(UNAME_S), Linux)
+	@find . -type f -executable -delete
+endif
 
 % : %.s
 	@$(GXX) $< -o $@
