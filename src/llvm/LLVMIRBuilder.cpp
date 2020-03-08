@@ -7,9 +7,13 @@
 #include "LLVMIRBuilder.h"
 #include <llvm/IR/Verifier.h>
 
-LLVMIRBuilder::LLVMIRBuilder(Logger *logger, LLVMContext &context, Module *module) :
+LLVMIRBuilder::LLVMIRBuilder(Logger *logger, LLVMContext &context, Module *module) : NodeVisitor(),
         logger_(logger), builder_(context), module_(module), value_(), values_(), types_(),
         deref_ctx(), level_(0), function_() { };
+
+void LLVMIRBuilder::build(Node *node) {
+    node->accept(*this);
+}
 
 void LLVMIRBuilder::visit(ModuleNode &node) {
     // allocate global variables
@@ -73,7 +77,7 @@ void LLVMIRBuilder::visit(ProcedureNode &node) {
         auto block = builder_.GetInsertBlock();
         if (block->getTerminator() == nullptr) {
             if (node.getReturnType() != nullptr && block->size() > 0) {
-                logger_->error(node.getFilePos(), "function \"" + node.getName() + "\" has no return statement.");
+                logger_->error(node.pos(), "function \"" + node.getName() + "\" has no return statement.");
             } else {
                 builder_.CreateUnreachable();
             }
@@ -82,7 +86,7 @@ void LLVMIRBuilder::visit(ProcedureNode &node) {
     }
 }
 
-void LLVMIRBuilder::visit(ReferenceNode &node) {
+void LLVMIRBuilder::visit(ValueReferenceNode &node) {
     auto ref = node.dereference();
     int level = ref->getLevel();
     if (level == 1) /* global level */ {
@@ -91,9 +95,9 @@ void LLVMIRBuilder::visit(ReferenceNode &node) {
         value_ = values_[ref];
     } else if (level > level_) /* parent procedure level */ {
         // todo global display?
-        logger_->error(ref->getFilePos(), "Referencing variables of parent procedures is not yet supported.");
+        logger_->error(ref->pos(), "Referencing variables of parent procedures is not yet supported.");
     } else /* error */ {
-        logger_->error(ref->getFilePos(), "Cannot reference variable of child procedure.");
+        logger_->error(ref->pos(), "Cannot reference variable of child procedure.");
     }
     auto type = ref->getType();
     if (node.getSelectorCount() > 0) {
@@ -122,7 +126,7 @@ void LLVMIRBuilder::visit(ReferenceNode &node) {
             } else if (selector_t->getNodeType() == NodeType::record_type) {
                 // handle record field access
                 auto selector = node.getSelector(i);
-                auto decl = dynamic_cast<ReferenceNode*>(selector)->dereference();
+                auto decl = dynamic_cast<ValueReferenceNode*>(selector)->dereference();
                 auto field = dynamic_cast<FieldNode*>(decl);
                 auto record_t = dynamic_cast<RecordTypeNode*>(selector_t);
                 for (size_t pos = 0; pos < record_t->getFieldCount(); pos++) {
@@ -149,6 +153,10 @@ void LLVMIRBuilder::visit(ReferenceNode &node) {
             }
         }
     }
+}
+
+void LLVMIRBuilder::visit([[maybe_unused]] TypeReferenceNode &node) {
+    // Node does not need code generation.
 }
 
 void LLVMIRBuilder::visit([[maybe_unused]] ConstantDeclarationNode &node) {
@@ -207,7 +215,7 @@ void LLVMIRBuilder::visit(UnaryExpressionNode &node) {
         case OperatorType::LEQ:
         case OperatorType::GEQ:
             value_ = nullptr;
-            logger_->error(node.getFilePos(), "binary operator in unary expression.");
+            logger_->error(node.pos(), "binary operator in unary expression.");
             break;
     }
 }
@@ -291,7 +299,7 @@ void LLVMIRBuilder::visit(BinaryExpressionNode &node) {
             case OperatorType::NOT:
             case OperatorType::NEG:
                 value_ = nullptr;
-                logger_->error(node.getFilePos(), "unary operator in binary expression.");
+                logger_->error(node.pos(), "unary operator in binary expression.");
                 break;
 
         }
@@ -433,7 +441,8 @@ void LLVMIRBuilder::visit(ForLoopNode& node) {
     restoreRefMode();
     auto body = BasicBlock::Create(builder_.getContext(), "loop_body", function_);
     auto tail = BasicBlock::Create(builder_.getContext(), "tail", function_);
-    if (node.getStep() > 0) {
+    auto step = dynamic_cast<IntegerLiteralNode*>(node.getStep())->getValue();
+    if (step > 0) {
         value_ = builder_.CreateICmpSLE(counter, end);
     } else {
         value_ = builder_.CreateICmpSGE(counter, end);
@@ -446,7 +455,7 @@ void LLVMIRBuilder::visit(ForLoopNode& node) {
     setRefMode(true);
     node.getCounter()->accept(*this);
     restoreRefMode();
-    counter = builder_.CreateAdd(value_, builder_.getInt32(node.getStep()));
+    counter = builder_.CreateAdd(value_, builder_.getInt32(step));
     node.getCounter()->accept(*this);
     auto lValue = value_;
     builder_.CreateStore(counter, lValue);
@@ -457,7 +466,7 @@ void LLVMIRBuilder::visit(ForLoopNode& node) {
     node.getCounter()->accept(*this);
     counter = value_;
     restoreRefMode();
-    if (node.getStep() > 0) {
+    if (step > 0) {
         value_ = builder_.CreateICmpSGT(counter, end);
     } else {
         value_ = builder_.CreateICmpSLT(counter, end);
@@ -507,7 +516,7 @@ Type* LLVMIRBuilder::getLLVMType(TypeNode *type, bool isPtr) {
             result = PointerType::get(result, 0);
         }
     } else {
-        logger_->error(type->getFilePos(), "Cannot map type to LLVM intermediate representation.");
+        logger_->error(type->pos(), "Cannot map type to LLVM intermediate representation.");
     }
     return result;
 }
@@ -540,12 +549,12 @@ unsigned int LLVMIRBuilder::getLLVMAlign(TypeNode *type, bool isPtr) {
 
 }
 
-void LLVMIRBuilder::call(CallNode &node) {
+void LLVMIRBuilder::call(ProcedureNodeReference &node) {
     std::vector<Value*> params;
-    std::string name = node.getProcedure()->getName();
-    size_t fp_cnt = node.getProcedure()->getParameterCount();
+    std::string name = node.dereference()->getName();
+    size_t fp_cnt = node.dereference()->getParameterCount();
     for (size_t i = 0; i < node.getParameterCount(); i++) {
-        setRefMode(i < fp_cnt ? !node.getProcedure()->getParameter(i)->isVar() : true);
+        setRefMode(i < fp_cnt ? !node.dereference()->getParameter(i)->isVar() : true);
         node.getParameter(i)->accept(*this);
         params.push_back(value_);
         restoreRefMode();

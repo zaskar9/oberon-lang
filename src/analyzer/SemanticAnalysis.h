@@ -1,42 +1,26 @@
 /*
- * Simple tree-walk implementation that builds LLVM IR for the Oberon compiler.
+ * Semantic analysis pass used by the analyzer of the Oberon LLVM compiler.
  *
- * Created by Michael Grossniklaus on 2/7/20.
+ * Created by Michael Grossniklaus on 3/3/20.
  */
 
-#ifndef OBERON0C_LLVMCODEGEN_H
-#define OBERON0C_LLVMCODEGEN_H
+#ifndef OBERON_LLVM_SEMANTICANALYSIS_H
+#define OBERON_LLVM_SEMANTICANALYSIS_H
 
 
-#include <stack>
-#include <llvm/IR/DataLayout.h>
-#include <llvm/IR/IRBuilder.h>
-#include <llvm/IR/Module.h>
+#include "Analyzer.h"
 #include "../data/ast/NodeVisitor.h"
+#include "../data/symtab/SymbolTable.h"
 
-using namespace llvm;
-
-class LLVMIRBuilder final : private NodeVisitor {
+class SemanticAnalysis final : public Analysis, private NodeVisitor {
 
 private:
+    SymbolTable *symtab_;
     Logger *logger_;
-    IRBuilder<> builder_;
-    Module *module_;
-    Value* value_;
-    std::map<DeclarationNode*, Value*> values_;
-    std::map<TypeNode*, Type*> types_;
-    std::stack<bool> deref_ctx;
-    int level_;
-    Function *function_;
+    BlockNode *parent_;
 
-    Type* getLLVMType(TypeNode *type, bool isPtr = false);
-    unsigned int getLLVMAlign(TypeNode *type, bool isPtr = false);
-
+    void block(BlockNode &node);
     void call(ProcedureNodeReference &node);
-
-    void setRefMode(bool deref);
-    void restoreRefMode();
-    bool deref() const;
 
     void visit(ModuleNode &node) override;
     void visit(ProcedureNode &node) override;
@@ -46,8 +30,8 @@ private:
     void visit(ParameterNode &node) override;
     void visit(VariableDeclarationNode &node) override;
 
-    void visit(ValueReferenceNode &node) override;
     void visit(TypeReferenceNode &node) override;
+    void visit(ValueReferenceNode &node) override;
 
     void visit(BooleanLiteralNode &node) override;
     void visit(IntegerLiteralNode &node) override;
@@ -72,13 +56,24 @@ private:
     void visit(ForLoopNode &node) override;
     void visit(ReturnNode &node) override;
 
-public:
-    explicit LLVMIRBuilder(Logger *logger, LLVMContext &context, Module *module);
-    ~LLVMIRBuilder() = default;
+    void assertUnique(const std::string &name, Node &node);
+    bool assertCompatible(const FilePos &pos, TypeNode *expected, TypeNode *actual);
 
-    void build(Node *node);
+    std::unique_ptr<LiteralNode> fold(const ExpressionNode *expr) const;
+    int foldNumber(const ExpressionNode *expr) const;
+    bool foldBoolean(const ExpressionNode *expr) const;
+    std::string foldString(const ExpressionNode *expr) const;
+
+    TypeNode * resolveType(TypeNode *type);
+
+public:
+    explicit SemanticAnalysis(SymbolTable *symtab) : Analysis(), NodeVisitor(),
+            symtab_(symtab), logger_(), parent_() { };
+    ~SemanticAnalysis() override = default;
+
+    void run(Logger *logger, Node* node) override;
 
 };
 
 
-#endif //OBERON0C_LLVMCODEGEN_H
+#endif //OBERON_LLVM_SEMANTICANALYSIS_H

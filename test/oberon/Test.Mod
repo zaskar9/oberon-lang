@@ -1,9 +1,10 @@
 (* Test module containing syntax errors for the Oberon LLVM compiler. *)
-MODULE Test;
+MODULE 123;
 
 (* Length of the array to be sorted. *)
 CONST Dim = 4 + 2 * -8;
       Float = 3.3.3;
+      Huge = 10000000000000000000;
 
 
 TYPE Point2D = RECORD x, y: INTEGER END;
@@ -34,7 +35,7 @@ BEGIN
     rect.points[3].y := y.y
 END InitRect2D;
 
-PROCEDURE CheckDimension(VAR dim: INTEGER);
+PROCEDURE CheckDimension(VAR dim: INTEGER) : BOOLEAN;
 BEGIN
     IF dim < 1 THEN
         Dim := 1
@@ -49,7 +50,8 @@ BEGIN
         ELSIF dim # dim THEN
             dim := dim
         END
-    END
+    END;
+    RETURN dim
 END CheckDimension;
 
 PROCEDURE Test(VAR value: INTEGER);
@@ -69,7 +71,8 @@ BEGIN
     WHILE 1 # 1 DO
         i := Dim;
         IF 1 > 2 THEN i := 1 ELSE i := 2 END
-    END
+    END;
+    RETURN point
 END Test;
 
 (* Initializes the array. *)
@@ -83,10 +86,11 @@ BEGIN
     END
 END Init;
 
+(* Initializes the array. *)
 PROCEDURE Initialize();
 VAR i, j: INTEGER;
 BEGIN
-    FOR i := 0 TO Dim DO
+    FOR i := 0 TO Dim BY 0 DO
         FOR j := Dim TO i BY -1 DO
             a[i] := j
         END
@@ -159,5 +163,6 @@ BEGIN
         IF i + 1 < Dim THEN Write(", ") END
     END;
     Write("]");
-    WriteLn()
+    WriteLn();
+    RETURN i
 END Tester.

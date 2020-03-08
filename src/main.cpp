@@ -94,7 +94,8 @@ int main(const int argc, const char *argv[]) {
             auto path = fs::path(input);
             compiler->compile(path);
         }
-        logger->info(PROJECT_NAME, "compilation complete: " +
+        std::string status = (logger->getErrorCount() == 0 ? "complete" : "failed");
+        logger->info(PROJECT_NAME, "compilation " + status + ": " +
                                    std::to_string(logger->getErrorCount()) + " error(s), " +
                                    std::to_string(logger->getWarningCount()) + " warning(s), " +
                                    std::to_string(logger->getInfoCount()) + " message(s).");

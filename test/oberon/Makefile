@@ -1,4 +1,4 @@
-O0C = ../../cmake-build-debug/oberon-lang
+O0C = ../../cmake-build-debug/src/oberon-lang
 GXX = clang
 OPT = opt
 LLC = llc
@@ -19,4 +19,4 @@ clean:
 	@$(OPT) $(OPTFLAGS) -S $< | $(LLC) $(OPTFLAGS) -o $@
 
 %.ll : %.Mod
-	@$(O0C) $<
+	@$(O0C) --filetype=ll $<

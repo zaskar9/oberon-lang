@@ -1,42 +1,29 @@
 /*
- * Simple tree-walk implementation that builds LLVM IR for the Oberon compiler.
+ * Pretty printer for all nodes of the AST used by the Oberon LLVM compiler.
  *
- * Created by Michael Grossniklaus on 2/7/20.
+ * Created by Michael Grossniklaus on 12/31/2018.
  */
 
-#ifndef OBERON0C_LLVMCODEGEN_H
-#define OBERON0C_LLVMCODEGEN_H
+#ifndef OBERON0C_NODEPRETTYPRINTER_H
+#define OBERON0C_NODEPRETTYPRINTER_H
 
 
-#include <stack>
-#include <llvm/IR/DataLayout.h>
-#include <llvm/IR/IRBuilder.h>
-#include <llvm/IR/Module.h>
-#include "../data/ast/NodeVisitor.h"
+#define TAB_WIDTH 3
 
-using namespace llvm;
+#include <iostream>
+#include <iomanip>
+#include "NodeVisitor.h"
 
-class LLVMIRBuilder final : private NodeVisitor {
+class NodePrettyPrinter final : private NodeVisitor {
 
 private:
-    Logger *logger_;
-    IRBuilder<> builder_;
-    Module *module_;
-    Value* value_;
-    std::map<DeclarationNode*, Value*> values_;
-    std::map<TypeNode*, Type*> types_;
-    std::stack<bool> deref_ctx;
-    int level_;
-    Function *function_;
+    size_t indent_;
+    std::ostream &stream_;
+    bool isDecl_;
 
-    Type* getLLVMType(TypeNode *type, bool isPtr = false);
-    unsigned int getLLVMAlign(TypeNode *type, bool isPtr = false);
-
+    void indent();
+    void block(BlockNode &node, bool isGlobal);
     void call(ProcedureNodeReference &node);
-
-    void setRefMode(bool deref);
-    void restoreRefMode();
-    bool deref() const;
 
     void visit(ModuleNode &node) override;
     void visit(ProcedureNode &node) override;
@@ -73,12 +60,12 @@ private:
     void visit(ReturnNode &node) override;
 
 public:
-    explicit LLVMIRBuilder(Logger *logger, LLVMContext &context, Module *module);
-    ~LLVMIRBuilder() = default;
+    explicit NodePrettyPrinter(std::ostream &stream) : indent_(0), stream_(stream), isDecl_(false) { };
+    ~NodePrettyPrinter() = default;
 
-    void build(Node *node);
+    void print(Node *node);
 
 };
 
 
-#endif //OBERON0C_LLVMCODEGEN_H
+#endif //OBERON0C_NODEPRETTYPRINTER_H

@@ -269,6 +269,9 @@ BEGIN
     Init;
     Print;
     BubbleSort;
-    Print
+    Print;
+    FOR x := 5 TO 0 BY -1 DO
+        WriteInt(x); WriteLn
+    END
     (* WriteInt(parent(x, y)) *)
 END CodeGen.

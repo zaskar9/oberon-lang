@@ -18,29 +18,29 @@ set(SOURCE_FILES
         scanner/LiteralToken.cpp scanner/LiteralToken.h
         scanner/IdentToken.cpp scanner/IdentToken.h
         scanner/UndefinedToken.cpp scanner/UndefinedToken.h
+        data/ast/NodeVisitor.h
+        data/ast/Node.cpp data/ast/Node.h
+        data/ast/ExpressionNode.cpp data/ast/ExpressionNode.h
+        data/ast/TypeNode.cpp data/ast/TypeNode.h
+        data/ast/ArrayTypeNode.cpp data/ast/ArrayTypeNode.h
+        data/ast/BasicTypeNode.cpp data/ast/BasicTypeNode.h
+        data/ast/RecordTypeNode.cpp data/ast/RecordTypeNode.h
+        data/ast/BlockNode.cpp data/ast/BlockNode.h
+        data/ast/ModuleNode.cpp data/ast/ModuleNode.h
+        data/ast/ProcedureNode.cpp data/ast/ProcedureNode.h
+        data/ast/DeclarationNode.cpp data/ast/DeclarationNode.h
+        data/ast/NodeReference.cpp data/ast/NodeReference.h
+        data/ast/StatementNode.cpp data/ast/StatementNode.h
+        data/ast/AssignmentNode.cpp data/ast/AssignmentNode.h
+        data/ast/IfThenElseNode.cpp data/ast/IfThenElseNode.h
+        data/ast/LoopNode.cpp data/ast/LoopNode.h
+        data/ast/StatementSequenceNode.cpp data/ast/StatementSequenceNode.h
+        data/ast/NodePrettyPrinter.cpp data/ast/NodePrettyPrinter.h
+        data/symtab/SymbolTable.cpp data/symtab/SymbolTable.h
+        data/symtab/Scope.cpp data/symtab/Scope.h
         parser/Parser.cpp parser/Parser.h
-        symtab/SymbolTable.cpp symtab/SymbolTable.h
-        symtab/Scope.cpp symtab/Scope.h
-        ast/NodeVisitor.h
-        ast/Node.cpp ast/Node.h
-        ast/ExpressionNode.cpp ast/ExpressionNode.h
-        ast/LiteralNode.cpp ast/LiteralNode.h
-        ast/TypeNode.cpp ast/TypeNode.h
-        ast/ArrayTypeNode.cpp ast/ArrayTypeNode.h
-        ast/BasicTypeNode.cpp ast/BasicTypeNode.h
-        ast/RecordTypeNode.cpp ast/RecordTypeNode.h
-        ast/BlockNode.cpp ast/BlockNode.h
-        ast/ModuleNode.cpp ast/ModuleNode.h
-        ast/ProcedureNode.cpp ast/ProcedureNode.h
-        ast/DeclarationNode.cpp ast/DeclarationNode.h
-        ast/ReferenceNode.cpp ast/ReferenceNode.h
-        ast/StatementNode.cpp ast/StatementNode.h
-        ast/AssignmentNode.cpp ast/AssignmentNode.h
-        ast/CallNode.cpp ast/CallNode.h
-        ast/IfThenElseNode.cpp ast/IfThenElseNode.h
-        ast/LoopNode.cpp ast/LoopNode.h
-        ast/StatementSequenceNode.cpp ast/StatementSequenceNode.h
-        ast/NodePrettyPrinter.cpp ast/NodePrettyPrinter.h
+        analyzer/Analyzer.cpp analyzer/Analyzer.h
+        analyzer/SemanticAnalysis.cpp analyzer/SemanticAnalysis.h
         llvm/LLVMIRBuilder.cpp llvm/LLVMIRBuilder.h
         llvm/LLVMCompiler.cpp llvm/LLVMCompiler.h)
 

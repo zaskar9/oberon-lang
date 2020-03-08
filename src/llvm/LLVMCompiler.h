@@ -11,8 +11,9 @@
 #include <boost/filesystem.hpp>
 #include <llvm/Passes/PassBuilder.h>
 #include <llvm/Target/TargetMachine.h>
-#include "../util/Logger.h"
 #include "LLVMIRBuilder.h"
+#include "../util/Logger.h"
+#include "../analyzer/Analyzer.h"
 
 enum class OutputFileType {
     AssemblyFile, BitCodeFile, LLVMIRFile, ObjectFile

@@ -20,8 +20,8 @@ void Token::print(std::ostream &stream) const {
     stream << type_;
 }
 
-std::ostream& operator<<(std::ostream &stream, const Token &symbol) {
-    symbol.print(stream);
+std::ostream& operator<<(std::ostream &stream, const Token &token) {
+    token.print(stream);
     return stream;
 }
 

@@ -38,10 +38,8 @@ END WriteInt;
 PROCEDURE Init();
 VAR i: INTEGER;
 BEGIN
-    i := 0;
-    WHILE i < Dim DO
-        a[i] := rand() MOD Dim;
-        i := i + 1
+    FOR i := 0 TO Dim -1 BY 1 DO
+        a[i] := rand() MOD Dim
     END
 END Init;
 
@@ -114,6 +112,6 @@ END QuickSort;
 BEGIN
     Init;
     Print;
-    QuickSort;
+    BubbleSort;
     Print
 END Sort.

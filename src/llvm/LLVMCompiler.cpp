@@ -14,6 +14,8 @@
 #include <llvm/Support/raw_ostream.h>
 #include <config.h>
 #include "../parser/Parser.h"
+#include "../analyzer/SemanticAnalysis.h"
+#include "../data/ast/NodePrettyPrinter.h"
 
 LLVMCompiler::LLVMCompiler(Logger *logger) : logger_(logger), ctx_(), pb_(), lvl_(llvm::PassBuilder::O0),
         type_(OutputFileType::ObjectFile) {
@@ -54,23 +56,34 @@ void LLVMCompiler::setCodeGenFileType(OutputFileType type) {
 
 void LLVMCompiler::compile(boost::filesystem::path path) {
     // Scan and parse the input file
+    logger_->debug(PROJECT_NAME, "parsing...");
+    auto errors = logger_->getErrorCount();
     auto scanner = std::make_unique<Scanner>(path.string(), logger_);
     auto symbols = std::make_unique<SymbolTable>();
-    auto parser = std::make_unique<Parser>(scanner.get(), symbols.get(), logger_);
+    auto parser = std::make_unique<Parser>(scanner.get(), logger_);
     auto ast = parser->parse();
-    if (ast) {
-        // auto printer = std::make_unique<NodePrettyPrinter>(std::cout);
-        // printer->visit(*ast.get());
+    // Run the analyzer
+    logger_->debug(PROJECT_NAME, "analyzing...");
+    auto analyzer = std::make_unique<Analyzer>(logger_);
+    analyzer->add(std::make_unique<SemanticAnalysis>(symbols.get()));
+    analyzer->run(ast.get());
+    if (logger_->getErrorCount() == errors) {
+
+//        auto printer = std::make_unique<NodePrettyPrinter>(std::cout);
+//        printer->print(ast.get());
+
         // Set up the LLVM module
+        logger_->debug(PROJECT_NAME, "generating LLVM code...");
         auto name = path.filename().string();
         auto module = std::make_unique<Module>(name, ctx_);
         module->setDataLayout(tm_->createDataLayout());
         module->setTargetTriple(tm_->getTargetTriple().getTriple());
         // Generate LLVM intermediate representation
         auto builder = std::make_unique<LLVMIRBuilder>(logger_, ctx_, module.get());
-        builder->visit(*ast.get());
+        builder->build(ast.get());
         module->setSourceFileName(name);
         if (lvl_ != llvm::PassBuilder::O0) {
+            logger_->debug(PROJECT_NAME, "optimizing...");
             // Create basic analyses
             llvm::LoopAnalysisManager lam;
             llvm::FunctionAnalysisManager fam;
@@ -87,12 +100,15 @@ void LLVMCompiler::compile(boost::filesystem::path path) {
             mpm.run(*module.get(), mam);
         }
         if (module) {
+            logger_->debug(PROJECT_NAME, "emitting code...");
             emit(module.get(), path);
         } else {
             logger_->error(path.string(), "code generation failed.");
         }
+
     }
 }
+
 
 bool LLVMCompiler::emit(Module *module, boost::filesystem::path path) {
     std::string ext;
