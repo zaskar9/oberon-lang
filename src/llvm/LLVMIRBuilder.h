@@ -26,7 +26,7 @@ private:
     std::map<DeclarationNode*, Value*> values_;
     std::map<TypeNode*, Type*> types_;
     std::stack<bool> deref_ctx;
-    int level_;
+    unsigned int level_;
     Function *function_;
 
     Type* getLLVMType(TypeNode *type, bool isPtr = false);

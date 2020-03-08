@@ -2,14 +2,6 @@ project("oberon-lang" VERSION "0.0.0")
 
 set(Boost_USE_MULTITHREADED TRUE)
 
-if (MSVC)
-    # warning level 4
-    add_compile_options(/W4)
-else()
-    # lots of warnings and all warnings as errors
-    add_compile_options(-W -Wall -Wextra -Werror -pedantic -Wshadow -Woverloaded-virtual -Winvalid-pch -Wcast-align -Wformat=2 -Wformat-nonliteral -Wmissing-declarations -Wmissing-format-attribute -Wmissing-include-dirs -Wredundant-decls -Wswitch-default)
-endif()
-
 set(SOURCE_FILES
         main.cpp
         util/Logger.cpp util/Logger.h

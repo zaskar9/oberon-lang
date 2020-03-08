@@ -22,7 +22,7 @@ private:
 
 public:
     explicit ArrayTypeNode(const FilePos &pos, std::string name, std::unique_ptr<ExpressionNode> expr, TypeNode* memberType) :
-            TypeNode(NodeType::array_type, pos, std::move(name), -1),
+            TypeNode(NodeType::array_type, pos, std::move(name), 0),
             expr_(std::move(expr)), dim_(0), memberType_(memberType) { };
     ~ArrayTypeNode() final = default;
 

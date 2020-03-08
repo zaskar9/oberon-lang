@@ -22,5 +22,5 @@ BasicTypeNode* BasicTypeNode::INTEGER = new BasicTypeNode("INTEGER", 4);
 BasicTypeNode* BasicTypeNode::LONGINT = new BasicTypeNode("LONGINT", 8);
 BasicTypeNode* BasicTypeNode::REAL = new BasicTypeNode("REAL", 4);
 BasicTypeNode* BasicTypeNode::LONGREAL = new BasicTypeNode("LONGREAL", 8);
-BasicTypeNode* BasicTypeNode::STRING = new BasicTypeNode("STRING", -1);
-BasicTypeNode* BasicTypeNode::UNDEF = new BasicTypeNode("UNDEFINED", -1);
+BasicTypeNode* BasicTypeNode::STRING = new BasicTypeNode("STRING", 0);
+BasicTypeNode* BasicTypeNode::UNDEF = new BasicTypeNode("UNDEFINED", 0);

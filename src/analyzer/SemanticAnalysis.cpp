@@ -301,7 +301,11 @@ void SemanticAnalysis::visit(ArrayTypeNode &node) {
         if (expr->isConstant()) {
             if (expr->getType() == BasicTypeNode::INTEGER) {
                 auto dim = foldNumber(expr);
-                node.setDimension(dim);
+                if (dim > 0) {
+                    node.setDimension((unsigned int) dim);
+                } else {
+                    logger_->error(expr->pos(), "array dimension must be a positive value.");
+                }
             } else {
                 logger_->error(expr->pos(), "integer expression expected.");
             }

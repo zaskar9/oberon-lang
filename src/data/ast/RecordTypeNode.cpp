@@ -12,7 +12,7 @@ void RecordTypeNode::addField(std::unique_ptr<FieldNode> field) {
 }
 
 unsigned int RecordTypeNode::getSize() const {
-    int size = 0;
+    unsigned int size = 0;
     for (auto&& itr : fields_) {
         size += itr->getType()->getSize();
     }

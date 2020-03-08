@@ -88,7 +88,7 @@ void LLVMIRBuilder::visit(ProcedureNode &node) {
 
 void LLVMIRBuilder::visit(ValueReferenceNode &node) {
     auto ref = node.dereference();
-    int level = ref->getLevel();
+    auto level = ref->getLevel();
     if (level == 1) /* global level */ {
         value_ = values_[ref];
     } else if (level == level_) /* same procedure level */ {
@@ -180,7 +180,7 @@ void LLVMIRBuilder::visit(BooleanLiteralNode &node) {
 }
 
 void LLVMIRBuilder::visit(IntegerLiteralNode &node) {
-    value_ = builder_.getInt32(node.getValue());
+    value_ = ConstantInt::getSigned(builder_.getInt32Ty(), node.getValue());
 }
 
 void LLVMIRBuilder::visit(StringLiteralNode &node) {
@@ -455,7 +455,7 @@ void LLVMIRBuilder::visit(ForLoopNode& node) {
     setRefMode(true);
     node.getCounter()->accept(*this);
     restoreRefMode();
-    counter = builder_.CreateAdd(value_, builder_.getInt32(step));
+    counter = builder_.CreateAdd(value_, ConstantInt::getSigned(builder_.getInt32Ty(), step));
     node.getCounter()->accept(*this);
     auto lValue = value_;
     builder_.CreateStore(counter, lValue);

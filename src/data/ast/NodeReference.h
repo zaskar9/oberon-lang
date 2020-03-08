@@ -73,7 +73,7 @@ private:
 
 public:
     explicit TypeReferenceNode(const FilePos &pos, std::string name) :
-            TypeNode(NodeType::type_reference, pos, std::move(name), -1), NodeReference(), node_() { };
+            TypeNode(NodeType::type_reference, pos, std::move(name), 0), NodeReference(), node_() { };
     ~TypeReferenceNode() final = default;
 
     [[nodiscard]] bool isResolved() const final;

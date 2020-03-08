@@ -14,7 +14,7 @@
 class BasicTypeNode final : public TypeNode {
 
 public:
-    explicit BasicTypeNode(std::string name, int size) :
+    explicit BasicTypeNode(std::string name, unsigned int size) :
             TypeNode(NodeType::basic_type, { }, std::move(name), size) { };
     ~BasicTypeNode() final = default;
 
