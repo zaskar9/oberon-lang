@@ -1,42 +1,20 @@
 /*
- * Simple tree-walk implementation that builds LLVM IR for the Oberon compiler.
+ * Analysis pass that removes nested procedures used the Oberon LLVM compiler.
  *
- * Created by Michael Grossniklaus on 2/7/20.
+ * Created by Michael Grossniklaus on 3/9/20.
  */
 
-#ifndef OBERON0C_LLVMCODEGEN_H
-#define OBERON0C_LLVMCODEGEN_H
+#ifndef OBERON_LLVM_LAMBDALIFTER_H
+#define OBERON_LLVM_LAMBDALIFTER_H
 
 
-#include <stack>
-#include <llvm/IR/DataLayout.h>
-#include <llvm/IR/IRBuilder.h>
-#include <llvm/IR/Module.h>
+#include "Analyzer.h"
 #include "../data/ast/NodeVisitor.h"
 
-using namespace llvm;
-
-class LLVMIRBuilder final : private NodeVisitor {
+class LambdaLifter final : public Analysis, private NodeVisitor {
 
 private:
-    Logger *logger_;
-    IRBuilder<> builder_;
-    Module *module_;
-    Value *value_;
-    std::map<DeclarationNode*, Value*> values_;
-    std::map<TypeNode*, Type*> types_;
-    std::stack<bool> deref_ctx;
-    unsigned int level_;
-    Function *function_;
-
-    Type* getLLVMType(TypeNode *type, bool isPtr = false);
-    unsigned int getLLVMAlign(TypeNode *type, bool isPtr = false);
-
-    void call(ProcedureNodeReference &node);
-
-    void setRefMode(bool deref);
-    void restoreRefMode();
-    bool deref() const;
+    ModuleNode *module_;
 
     void visit(ModuleNode &node) override;
     void visit(ProcedureNode &node) override;
@@ -46,8 +24,8 @@ private:
     void visit(ParameterNode &node) override;
     void visit(VariableDeclarationNode &node) override;
 
-    void visit(ValueReferenceNode &node) override;
     void visit(TypeReferenceNode &node) override;
+    void visit(ValueReferenceNode &node) override;
 
     void visit(BooleanLiteralNode &node) override;
     void visit(IntegerLiteralNode &node) override;
@@ -73,12 +51,12 @@ private:
     void visit(ReturnNode &node) override;
 
 public:
-    explicit LLVMIRBuilder(Logger *logger, LLVMContext &context, Module *module);
-    ~LLVMIRBuilder() = default;
+    explicit LambdaLifter() : module_() { };
+    ~LambdaLifter() override = default;
 
-    void build(Node *node);
+    void run(Logger *logger, Node* node) override;
 
 };
 
 
-#endif //OBERON0C_LLVMCODEGEN_H
+#endif //OBERON_LLVM_LAMBDALIFTER_H

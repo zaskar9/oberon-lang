@@ -34,7 +34,7 @@ set(SOURCE_FILES
         analyzer/Analyzer.cpp analyzer/Analyzer.h
         analyzer/SemanticAnalysis.cpp analyzer/SemanticAnalysis.h
         llvm/LLVMIRBuilder.cpp llvm/LLVMIRBuilder.h
-        llvm/LLVMCompiler.cpp llvm/LLVMCompiler.h)
+        llvm/LLVMCompiler.cpp llvm/LLVMCompiler.h analyzer/LambdaLifter.cpp analyzer/LambdaLifter.h)
 
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 
