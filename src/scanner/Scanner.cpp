@@ -34,7 +34,7 @@ Scanner::~Scanner() {
 void Scanner::init() {
     keywords_ = { { "DIV", TokenType::op_div }, { "MOD", TokenType::op_mod }, { "OR", TokenType::op_or },
                   { "MODULE", TokenType::kw_module }, { "PROCEDURE", TokenType::kw_procedure },
-                  { "DECLARE", TokenType::kw_declare }, { "EXTERN", TokenType::kw_extern },
+                  { "EXTERN", TokenType::kw_extern },
                   { "BEGIN", TokenType::kw_begin }, { "END", TokenType::kw_end },
                   { "RETURN", TokenType::kw_return },
                   { "LOOP", TokenType::kw_loop }, { "EXIT", TokenType::kw_exit },
@@ -174,6 +174,18 @@ const Token* Scanner::scanToken() {
                     break;
                 case ']':
                     token = new Token(TokenType::rbrack, pos);
+                    read();
+                    break;
+                case '{':
+                    token = new Token(TokenType::lbrace, pos);
+                    read();
+                    break;
+                case '}':
+                    token = new Token(TokenType::rbrace, pos);
+                    read();
+                    break;
+                case '|':
+                    token = new Token(TokenType::pipe, pos);
                     read();
                     break;
                 case '~':

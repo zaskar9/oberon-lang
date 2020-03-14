@@ -1,0 +1,71 @@
+(* Supported subset of the grammar of the Oberon programming language, 2020-03-14 *)
+
+ident = "ident_literal" .
+
+integer = "integer_literal" .
+
+string = "string_literal" .
+
+ident_list = ident { "," ident } .
+
+module* = "MODULE" ident ";" declarations [ "BEGIN" statement_sequence ] "END" ident "." .
+
+declarations = [ const_declarations ] [ type_declarations ] [ var_declarations ] { procedure_declaration } .
+
+const_declarations = "CONST" { ident "=" expression ";" } .
+
+type_declarations =  "TYPE" { ident "=" type ";" } .
+
+type = ident | array_type | record_type .
+
+array_type = "ARRAY" expression "OF" type .
+
+record_type = "RECORD" field_list { ";" field_list } "END" .
+
+field_list = ident_list ":" type .
+
+var_declarations =  "VAR" { ident_list ":" type ";" } .
+
+procedure_declaration = procedure_heading ";" ( procedure_body ident | "EXTERN" ) ";" .
+
+procedure_heading = "PROCEDURE" ident [ formal_parameters ] [ ":" type ] .
+
+procedure_body = declarations [ "BEGIN" statement_sequence ] "END" .
+
+formal_parameters = "(" [ fp_section { ";" fp_section } ] ")".
+
+fp_section = ( [ "VAR" ] ident_list ":" type | "..." ) .
+
+statement_sequence = statement { ";" statement } .
+
+statement = ( assignment | procedure_call | if_statement | case_statement |
+              while_statement | repeat_statement | for_statement | loop_statement |
+              with_statement | "EXIT" | "RETURN" [ expression ] ) .
+
+assignment = ident { selector } ":=" expression .
+
+selector = "." ident | "[" expression "]" .
+
+procedure_call = ident [ actual_parameters ] .
+
+actual_parameters = "(" [ expression { "," expression } ] ")" .
+
+if_statement = "IF" expression "THEN" statement_sequence
+               { "ELSIF" expression "THEN" statement_sequence }
+               [ "ELSE" statement_sequence ] "END" .
+
+loop_statement = "LOOP" statement_sequence "END" .
+
+while_statement = "WHILE" expression "DO" statement_sequence "END" .
+
+repeat_statement = "REPEAT" statement_sequence "UNTIL" expression .
+
+for_statement = "FOR" ident ":=" expression "TO" expression [ "BY" expression ] "DO" statement_sequence "END" .
+
+expression = simple_expression [ ( "=" | "#" | "<" | "<=" | ">" | ">=" ) simple_expression ] .
+
+simple_expression = [ "+" | "-" ] term { ( "+" | "-" | "OR" ) term } .
+
+term = factor { ( "*" | "DIV" | "MOD" | "&" ) factor } .
+
+factor = ident [ actual_parameters ] { selector } | integer | string | "TRUE" | "FALSE" | "(" expression ")" | "~" factor .

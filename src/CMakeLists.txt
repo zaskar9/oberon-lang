@@ -2,14 +2,17 @@ project("oberon-lang" VERSION "0.0.0")
 
 set(Boost_USE_MULTITHREADED TRUE)
 
-set(SOURCE_FILES
-        main.cpp
-        util/Logger.cpp util/Logger.h
+set(UTIL_SOURCES
+        util/Logger.cpp util/Logger.h)
+
+set(SCANNER_SOURCES
         scanner/Scanner.cpp scanner/Scanner.h
         scanner/Token.cpp scanner/Token.h
         scanner/LiteralToken.cpp scanner/LiteralToken.h
         scanner/IdentToken.cpp scanner/IdentToken.h
-        scanner/UndefinedToken.cpp scanner/UndefinedToken.h
+        scanner/UndefinedToken.cpp scanner/UndefinedToken.h)
+
+set(PARSER_SOURCES
         data/ast/NodeVisitor.h
         data/ast/Node.cpp data/ast/Node.h
         data/ast/ExpressionNode.cpp data/ast/ExpressionNode.h
@@ -30,13 +33,22 @@ set(SOURCE_FILES
         data/ast/NodePrettyPrinter.cpp data/ast/NodePrettyPrinter.h
         data/symtab/SymbolTable.cpp data/symtab/SymbolTable.h
         data/symtab/Scope.cpp data/symtab/Scope.h
-        parser/Parser.cpp parser/Parser.h
+        parser/Parser.cpp parser/Parser.h)
+
+set(ANALYZER_SOURCES
         analyzer/Analyzer.cpp analyzer/Analyzer.h
         analyzer/SemanticAnalysis.cpp analyzer/SemanticAnalysis.h
-        llvm/LLVMIRBuilder.cpp llvm/LLVMIRBuilder.h
-        llvm/LLVMCompiler.cpp llvm/LLVMCompiler.h analyzer/LambdaLifter.cpp analyzer/LambdaLifter.h)
+        analyzer/LambdaLifter.cpp analyzer/LambdaLifter.h)
 
-add_executable(${PROJECT_NAME} ${SOURCE_FILES})
+set(CODEGEN_SOURCES
+        llvm/LLVMIRBuilder.cpp llvm/LLVMIRBuilder.h
+        llvm/LLVMCompiler.cpp llvm/LLVMCompiler.h)
+
+set(ALL_SOURCES ${UTIL_SOURCES} ${SCANNER_SOURCES} ${PARSER_SOURCES} ${ANALYZER_SOURCES} ${CODEGEN_SOURCES})
+
+
+add_executable(${PROJECT_NAME} main.cpp ${SOURCE_FILES})
+
 
 find_package(Boost COMPONENTS system filesystem program_options REQUIRED)
 if (Boost_FOUND)
@@ -52,5 +64,15 @@ if (LLVM_FOUND)
     target_link_libraries(${PROJECT_NAME} ${llvm_libs})
 endif()
 
+
 configure_file(config.h.in config.h @ONLY)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
+
+
+add_executable("grammar-tool"
+        grammar/main.cpp
+        grammar/Grammar.cpp grammar/Grammar.h
+        grammar/Validator.cpp grammar/Validator.h
+        grammar/Loader.cpp grammar/Loader.h
+        ${SCANNER_SOURCES}
+        ${UTIL_SOURCES})

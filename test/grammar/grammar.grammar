@@ -1,0 +1,15 @@
+(* Grammar understood by the grammar loader utility. *)
+
+grammar* = { production } .
+
+production = non_terminal [ "*" ] "=" alternation "." .
+
+non_terminal = ident .
+
+terminal = string_literal .
+
+symbol_list = symbol { symbol } .
+
+alternation = symbol_list { "|" symbol_list } .
+
+symbol = non_terminal | terminal | "(" alternation ")" | "[" alternation "]" | "{" alternation "}" .

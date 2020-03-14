@@ -28,17 +28,17 @@ std::ostream& operator<<(std::ostream &stream, const Token &token) {
 std::ostream& operator<<(std::ostream &stream, const TokenType &type) {
     std::string result;
     switch(type) {
-        case TokenType::eof: result = "EOF"; break;
-        case TokenType::null: result = "NULL"; break;
-        case TokenType::undef: result = "UNDEFINED"; break;
-        case TokenType::boolean_literal: result = "boolean literal"; break;
-        case TokenType::byte_literal: result = "byte literal"; break;
-        case TokenType::char_literal: result = "char literal"; break;
-        case TokenType::integer_literal: result = "integer literal"; break;
-        case TokenType::longint_literal: result = "longint literal"; break;
-        case TokenType::real_literal: result = "real literal"; break;
-        case TokenType::longreal_literal: result = "longreal literal"; break;
-        case TokenType::string_literal: result = "string literal"; break;
+        case TokenType::eof: result = "<eof>"; break;
+        case TokenType::nil: result = "NIL"; break;
+        case TokenType::undef: result = "<undefined>"; break;
+        case TokenType::boolean_literal: result = "BOOLEAN literal"; break;
+        case TokenType::byte_literal: result = "BYTE literal"; break;
+        case TokenType::char_literal: result = "CHAR literal"; break;
+        case TokenType::integer_literal: result = "INTEGER literal"; break;
+        case TokenType::longint_literal: result = "LONGINT literal"; break;
+        case TokenType::real_literal: result = "REAL literal"; break;
+        case TokenType::longreal_literal: result = "LONGREAL literal"; break;
+        case TokenType::string_literal: result = "STRING literal"; break;
         case TokenType::const_ident: result = "identifier"; break;
         case TokenType::period: result = "."; break;
         case TokenType::comma: result = ","; break;
@@ -48,7 +48,10 @@ std::ostream& operator<<(std::ostream &stream, const TokenType &type) {
         case TokenType::rparen: result = ")"; break;
         case TokenType::lbrack: result = "["; break;
         case TokenType::rbrack: result = "]"; break;
+        case TokenType::lbrace: result = "{"; break;
+        case TokenType::rbrace: result = "}"; break;
         case TokenType::varargs: result = "..."; break;
+        case TokenType::pipe: result = "|"; break;
         case TokenType::op_times: result = "*"; break;
         case TokenType::op_div: result = "DIV"; break;
         case TokenType::op_mod: result = "MOD"; break;
@@ -87,7 +90,6 @@ std::ostream& operator<<(std::ostream &stream, const TokenType &type) {
         case TokenType::kw_type: result = "TYPE"; break;
         case TokenType::kw_var: result = "VAR"; break;
         case TokenType::kw_of: result = "OF"; break;
-        case TokenType::kw_declare: result = "DECLARE"; break;
         case TokenType::kw_extern: result = "EXTERN"; break;
         case TokenType::kw_return: result = "RETURN"; break;
     }

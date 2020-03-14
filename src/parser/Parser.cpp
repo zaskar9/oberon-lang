@@ -30,7 +30,7 @@ std::string Parser::ident() {
     return "";
 }
 
-// ident_list = ident { "," identifier } .
+// ident_list = ident { "," ident } .
 void Parser::ident_list(std::vector<std::string> &idents) {
     logger_->debug("", "ident_list");
     idents.push_back(ident());
@@ -71,7 +71,7 @@ std::unique_ptr<ModuleNode> Parser::module() {
     return nullptr;
 }
 
-// declarations = [ const_declarations ] [ type_declarations ] [ var_declarations ] { ProcedureDeclaration } .
+// declarations = [ const_declarations ] [ type_declarations ] [ var_declarations ] { procedure_declaration } .
 void Parser::declarations(BlockNode *block) {
     logger_->debug("", "declarations");
     if (scanner_->peek()->type() == TokenType::kw_const) {
@@ -88,7 +88,7 @@ void Parser::declarations(BlockNode *block) {
     }
 }
 
-// const_declarations = "CONST" { identifier "=" expression ";" } .
+// const_declarations = "CONST" { ident "=" expression ";" } .
 void Parser::const_declarations(BlockNode *block) {
     logger_->debug("", "const_declarations");
     scanner_->next(); // skip CONST keyword
@@ -107,7 +107,7 @@ void Parser::const_declarations(BlockNode *block) {
     }
 }
 
-// type_declarations =  "TYPE" { identifier "=" type ";" } .
+// type_declarations =  "TYPE" { ident "=" type ";" } .
 void Parser::type_declarations(BlockNode *block) {
     logger_->debug("", "type_declarations");
     scanner_->next(); // skip TYPE keyword
@@ -126,7 +126,7 @@ void Parser::type_declarations(BlockNode *block) {
     }
 }
 
-// type = ( identifier | array_type | record_type ) .
+// type = ( ident | array_type | record_type ) .
 TypeNode* Parser::type(BlockNode *block, std::string name) {
     logger_->debug("", "type");
     auto token = scanner_->peek();
@@ -219,7 +219,7 @@ void Parser::var_declarations(BlockNode *block) {
     }
 }
 
-// procedure_declaration = procedure_heading ";" ( procedure_body identifier | "EXTERN" ) ";" .
+// procedure_declaration = procedure_heading ";" ( procedure_body ident | "EXTERN" ) ";" .
 void Parser::procedure_declaration(BlockNode *block) {
     logger_->debug("", "procedure_declaration");
     auto proc = procedure_heading();
@@ -249,7 +249,7 @@ void Parser::procedure_declaration(BlockNode *block) {
     block->addProcedure(std::move(proc));
 }
 
-// procedure_heading = "PROCEDURE" identifier [ formal_parameters ] [ ":" type ] .
+// procedure_heading = "PROCEDURE" ident [ formal_parameters ] [ ":" type ] .
 std::unique_ptr<ProcedureNode> Parser::procedure_heading() {
     logger_->debug("", "procedure_heading");
     auto token = scanner_->next(); // skip PROCEDURE keyword
@@ -401,14 +401,14 @@ std::unique_ptr<StatementNode> Parser::statement() {
     return nullptr;
 }
 
-// assignment = identifier { selector } ":=" expression .
+// assignment = ident { selector } ":=" expression .
 std::unique_ptr<StatementNode> Parser::assignment(std::unique_ptr<ValueReferenceNode> lvalue) {
     logger_->debug("", "assignment");
     scanner_->next(); // skip assign operator
     return std::make_unique<AssignmentNode>(lvalue->pos(), std::move(lvalue), expression());
 }
 
-// procedure_call = identifier [ actual_parameters ] .
+// procedure_call = ident [ actual_parameters ] .
 void Parser::procedure_call(ProcedureNodeReference *call) {
     logger_->debug("", "procedure_call");
     if (scanner_->peek()->type() == TokenType::lparen) {
@@ -542,7 +542,7 @@ void Parser::actual_parameters(ProcedureNodeReference *call) {
     }
 }
 
-// selector = "." identifier | "[" expression "]" .
+// selector = "." ident | "[" expression "]" .
 void Parser::selector(ValueReferenceNode *ref) {
     logger_->debug("", "selector");
     token_ = scanner_->next();
@@ -623,7 +623,7 @@ std::unique_ptr<ExpressionNode> Parser::term() {
     return expr;
 }
 
-// factor = identifier [ actural_parameters ] { selector } | integer | string | "TRUE" | "FALSE" | "(" expression ")" | "~" factor .
+// factor = ident [ actural_parameters ] { selector } | integer | string | "TRUE" | "FALSE" | "(" expression ")" | "~" factor .
 std::unique_ptr<ExpressionNode> Parser::factor() {
     logger_->debug("", "factor");
     auto token = scanner_->peek();
