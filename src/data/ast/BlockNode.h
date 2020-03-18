@@ -43,8 +43,10 @@ public:
     [[nodiscard]] size_t getTypeDeclarationCount() const;
 
     void addVariable(std::unique_ptr<VariableDeclarationNode> variable);
+    void insertVariable(size_t pos, std::unique_ptr<VariableDeclarationNode> variable);
     [[nodiscard]] VariableDeclarationNode* getVariable(size_t num) const;
     [[nodiscard]] size_t getVariableCount() const;
+    void removeVariables(size_t from, size_t to);
 
     virtual void addProcedure(std::unique_ptr<ProcedureNode> procedure) = 0;
     [[nodiscard]] virtual ProcedureNode* getProcedure(size_t num) const = 0;

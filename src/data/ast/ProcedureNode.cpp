@@ -11,8 +11,17 @@ void ProcedureNode::addParameter(std::unique_ptr<ParameterNode> parameter) {
     parameters_.push_back(std::move(parameter));
 }
 
-ParameterNode* ProcedureNode::getParameter(const size_t num) const {
-    return parameters_.at(num).get();
+ParameterNode *ProcedureNode::getParameter(const std::string &name) {
+    auto result = std::find_if(parameters_.begin(), parameters_.end(),
+                               [&](std::unique_ptr<ParameterNode> &param) { return param->getName() == name; });
+    if (result != parameters_.end()) {
+        return (*result).get();
+    }
+    return nullptr;
+}
+
+ParameterNode *ProcedureNode::getParameter(const size_t num) const {
+    return parameters_[num].get();
 }
 
 size_t ProcedureNode::getParameterCount() const {
@@ -23,12 +32,18 @@ void ProcedureNode::addProcedure(std::unique_ptr<ProcedureNode> procedure) {
     procedures_.push_back(std::move(procedure));
 }
 
-ProcedureNode* ProcedureNode::getProcedure(size_t num) const {
-    return procedures_.at(num).get();
+ProcedureNode *ProcedureNode::getProcedure(size_t num) const {
+    return procedures_[num].get();
 }
 
 size_t ProcedureNode::getProcedureCount() const {
     return procedures_.size();
+}
+
+std::unique_ptr<ProcedureNode> ProcedureNode::moveProcedure(size_t num) {
+    auto res = std::move(procedures_[num]);
+    procedures_.erase(procedures_.begin() + (long) num);
+    return res;
 }
 
 void ProcedureNode::setVarArgs(bool value) {
@@ -43,7 +58,7 @@ void ProcedureNode::setReturnType(TypeNode *type) {
     setType(type);
 }
 
-TypeNode * ProcedureNode::getReturnType() const {
+TypeNode *ProcedureNode::getReturnType() const {
     return getType();
 }
 
@@ -55,7 +70,7 @@ bool ProcedureNode::isExtern() const {
     return extern_;
 }
 
-void ProcedureNode::accept(NodeVisitor& visitor) {
+void ProcedureNode::accept(NodeVisitor &visitor) {
     visitor.visit(*this);
 }
 

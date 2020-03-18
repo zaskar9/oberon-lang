@@ -8,9 +8,11 @@
 #include "NodeVisitor.h"
 
 void StatementSequenceNode::addStatement(std::unique_ptr<StatementNode> statement) {
-    if (statement != nullptr) {
-        statements_.push_back(std::move(statement));
-    }
+    statements_.push_back(std::move(statement));
+}
+
+void StatementSequenceNode::insertStatement(size_t pos, std::unique_ptr<StatementNode> statement) {
+    statements_.insert(statements_.begin() + (long) pos, std::move(statement));
 }
 
 StatementNode* StatementSequenceNode::getStatement(size_t num) const {

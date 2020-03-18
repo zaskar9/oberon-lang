@@ -41,6 +41,9 @@ public:
             name_(std::move(name)), node_(), type_(), selectors_(), types_() { };
     explicit ValueReferenceNode(const FilePos &pos, std::string name) :
             ValueReferenceNode(NodeType::value_reference, pos, std::move(name)) { };
+    explicit ValueReferenceNode(const FilePos &pos, DeclarationNode *node) :
+            ExpressionNode(NodeType::value_reference, pos), NodeReference(),
+            name_(node->getName()), node_(node), type_(node->getType()), selectors_(), types_() { };
     ~ValueReferenceNode() override = default;
 
     [[nodiscard]] std::string getName() const;
@@ -50,6 +53,8 @@ public:
     [[nodiscard]] DeclarationNode* dereference() const override;
 
     void addSelector(NodeType nodeType, std::unique_ptr<ExpressionNode> selector);
+    void insertSelector(size_t num, NodeType nodeType, std::unique_ptr<ExpressionNode> selector);
+    void setSelector(size_t num, std::unique_ptr<ExpressionNode> selector);
     [[nodiscard]] ExpressionNode* getSelector(size_t num) const;
     [[nodiscard]] NodeType getSelectorType(size_t num) const;
     [[nodiscard]] size_t getSelectorCount() const;

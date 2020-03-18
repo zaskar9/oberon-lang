@@ -24,6 +24,7 @@ public:
     ~StatementSequenceNode() override = default;
 
     void addStatement(std::unique_ptr<StatementNode> statement);
+    void insertStatement(size_t pos, std::unique_ptr<StatementNode> statement);
     [[nodiscard]] StatementNode* getStatement(size_t num) const;
     [[nodiscard]] size_t getStatementCount() const;
 

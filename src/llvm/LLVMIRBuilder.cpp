@@ -8,7 +8,7 @@
 #include <llvm/IR/Verifier.h>
 
 LLVMIRBuilder::LLVMIRBuilder(Logger *logger, LLVMContext &context, Module *module) : NodeVisitor(),
-        logger_(logger), builder_(context), module_(module), value_(), values_(), types_(),
+        logger_(logger), builder_(context), module_(module), value_(), values_(), types_(), functions_(),
         deref_ctx(), level_(0), function_() { };
 
 void LLVMIRBuilder::build(Node *node) {
@@ -24,6 +24,18 @@ void LLVMIRBuilder::visit(ModuleNode &node) {
                 GlobalValue::CommonLinkage, Constant::getNullValue(type), variable->getName());
         value->setAlignment(getLLVMAlign(variable->getType()));
         values_[variable] = value;
+    }
+    // generate procedure signatures
+    for (size_t i = 0; i < node.getProcedureCount(); i++) {
+        std::vector<Type*> params;
+        auto proc = node.getProcedure(i);
+        for (size_t j = 0; j < proc->getParameterCount(); j++) {
+            auto param = proc->getParameter(j);
+            params.push_back(getLLVMType(param->getType(), param->isVar()));
+        }
+        auto type = FunctionType::get(getLLVMType(proc->getReturnType()), params, proc->hasVarArgs());
+        auto callee = module_->getOrInsertFunction(proc->getName(), type);
+        functions_[proc] = cast<Function>(callee.getCallee());
     }
     // generate code for procedures
     for (size_t i = 0; i < node.getProcedureCount(); i++) {
@@ -42,26 +54,18 @@ void LLVMIRBuilder::visit(ModuleNode &node) {
 }
 
 void LLVMIRBuilder::visit(ProcedureNode &node) {
-    std::vector<Type*> params;
-    for (size_t i = 0; i < node.getProcedureCount(); i++) {
-        node.getProcedure(i)->accept(*this);
+    if (node.getProcedureCount() > 0) {
+        logger_->error(node.pos(), "Found unsupported nested procedures in " + node.getName() + ".");
     }
-    for (size_t i = 0; i < node.getParameterCount(); i++) {
-        auto param = node.getParameter(i);
-        params.push_back(getLLVMType(param->getType(), param->isVar()));
-    }
-    auto type = FunctionType::get(getLLVMType(node.getReturnType()), params, node.hasVarArgs());
-    auto proc = module_->getOrInsertFunction(node.getName(), type);
     if (!node.isExtern()) {
-        auto func = cast<Function>(proc.getCallee());
-        Function::arg_iterator args = func->arg_begin();
+        function_ = functions_[&node];
+        Function::arg_iterator args = function_->arg_begin();
         for (size_t i = 0; i < node.getParameterCount(); i++) {
             auto arg = args++;
             auto param = node.getParameter(i);
             arg->setName(param->getName());
             values_[param] = arg;
         }
-        function_ = cast<Function>(proc.getCallee());
         auto entry = BasicBlock::Create(builder_.getContext(), "entry", function_);
         builder_.SetInsertPoint(entry);
         for (size_t i = 0; i < node.getVariableCount(); i++) {
@@ -82,7 +86,7 @@ void LLVMIRBuilder::visit(ProcedureNode &node) {
                 builder_.CreateUnreachable();
             }
         }
-        llvm::verifyFunction(*func, &errs());
+        llvm::verifyFunction(*function_, &errs());
     }
 }
 
@@ -94,21 +98,20 @@ void LLVMIRBuilder::visit(ValueReferenceNode &node) {
     } else if (level == level_) /* same procedure level */ {
         value_ = values_[ref];
     } else if (level > level_) /* parent procedure level */ {
-        // todo global display?
         logger_->error(ref->pos(), "Referencing variables of parent procedures is not yet supported.");
     } else /* error */ {
         logger_->error(ref->pos(), "Cannot reference variable of child procedure.");
     }
     auto type = ref->getType();
-    if (node.getSelectorCount() > 0) {
+    if (type->getNodeType() == NodeType::array_type ||
+        type->getNodeType() == NodeType::record_type) {
         auto selector_t = type;
         auto base = value_;
         if (ref->getNodeType() == NodeType::parameter) {
             auto param = dynamic_cast<ParameterNode*>(ref);
             // create a base address within the stack frame of the current procedure for
             // array and record parameters that are passed by value
-            if (!param->isVar() && (selector_t->getNodeType() == NodeType::array_type ||
-                                    selector_t->getNodeType() == NodeType::record_type)) {
+            if (!param->isVar()) {
                 base = builder_.CreateAlloca(getLLVMType(type));
                 builder_.CreateStore(value_, base);
             }
@@ -562,6 +565,8 @@ void LLVMIRBuilder::call(ProcedureNodeReference &node) {
     auto proc = module_->getFunction(name);
     if (proc) {
         value_ = builder_.CreateCall(proc, params);
+    } else {
+        logger_->error(node.pos(), "Undefined procedure: " + name + ".");
     }
 }
 

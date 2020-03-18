@@ -211,6 +211,12 @@ void SemanticAnalysis::visit(ValueReferenceNode &node) {
                     if (sel->getType() != BasicTypeNode::INTEGER) {
                         logger_->error(sel->pos(), "integer expression expected.");
                     }
+                    if (sel->isConstant()) {
+                        auto value = fold(sel);
+                        if (value) {
+                            node.setSelector(i, std::move(value));
+                        }
+                    }
                     type = array_t->getMemberType();
                 } else if (type->getNodeType() == NodeType::record_type) {
                     auto record_t = dynamic_cast<RecordTypeNode*>(type);
@@ -236,7 +242,7 @@ void SemanticAnalysis::visit(ValueReferenceNode &node) {
             logger_->error(node.pos(), "constant, parameter, variable, function call expected.");
         }
     } else {
-        logger_->error(node.pos(), "undefined identifier (valref): " + node.getName() + ".");
+        logger_->error(node.pos(), "undefined identifier: " + node.getName() + ".");
     }
 }
 
@@ -350,7 +356,10 @@ void SemanticAnalysis::visit(RecordTypeNode &node) {
 
 void SemanticAnalysis::visit(StatementSequenceNode &node) {
     for (size_t i = 0; i < node.getStatementCount(); i++) {
-        node.getStatement(i)->accept(*this);
+        auto statement = node.getStatement(i);
+        if (statement) {
+            node.getStatement(i)->accept(*this);
+        }
     }
 }
 

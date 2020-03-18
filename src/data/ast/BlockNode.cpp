@@ -38,12 +38,20 @@ void BlockNode::addVariable(std::unique_ptr<VariableDeclarationNode> variable) {
     variables_.push_back(std::move(variable));
 }
 
+void BlockNode::insertVariable(size_t pos, std::unique_ptr<VariableDeclarationNode> variable) {
+    variables_.insert(variables_.begin() + (long) pos, std::move(variable));
+}
+
 VariableDeclarationNode* BlockNode::getVariable(size_t num) const {
     return variables_.at(num).get();
 }
 
 size_t BlockNode::getVariableCount() const {
     return variables_.size();
+}
+
+void BlockNode::removeVariables(size_t from, size_t to) {
+    variables_.erase(variables_.begin() + (long) from, variables_.begin() + (long) to);
 }
 
 StatementSequenceNode* BlockNode::getStatements() {

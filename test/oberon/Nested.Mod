@@ -1,9 +1,20 @@
 MODULE Nested;
 
-CONST Const1 = 27;
+CONST const0 = 10;
+
+TYPE TPoint2D = RECORD x, y: INTEGER; color: RECORD r, g, b: INTEGER END END;
+
+VAR var0: INTEGER;
+    array0: ARRAY const0 OF INTEGER;
 
 (* Import `printf` function from C <stdio.h> library. *)
 PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
+
+(* Writes a string value to standard out. *)
+PROCEDURE Write(str: STRING);
+BEGIN
+    printf(str)
+END Write;
 
 (* Writes a newline to standard out. *)
 PROCEDURE WriteLn;
@@ -17,31 +28,59 @@ BEGIN
     printf("%d", val)
 END WriteInt;
 
-PROCEDURE Procedure1(param2: INTEGER);
-VAR var2: INTEGER;
+PROCEDURE PrintArray;
+VAR i: INTEGER;
+BEGIN
+    Write("[");
+    i := 0;
+    WHILE i < const0 DO
+        WriteInt(array0[i]);
+        IF i + 1 < const0 THEN Write(", ") END;
+        i := i + 1
+    END;
+    Write("]");
+    WriteLn
+END PrintArray;
 
-    PROCEDURE Procedure2(param3: INTEGER);
-    VAR var3: INTEGER;
+PROCEDURE Procedure1(param: INTEGER);
+VAR var1: INTEGER;
+    array1: ARRAY const0 OF TPoint2D;
 
-        PROCEDURE Procedure3(param4: INTEGER);
-        VAR var4: INTEGER;
+    PROCEDURE Procedure2(param: INTEGER);
+    VAR var2: INTEGER;
+
+        PROCEDURE Procedure3(param: INTEGER);
+        VAR var3: INTEGER;
         BEGIN
-            var4 := Const1 + var2 + var3 + param4;
-            WriteInt(var4); WriteLn
+            var3 := const0;
+            array0[const0 - 1] := param;
+            array0[var3 - 2] := param;
+            var0 := param;
+            var1 := param;
+            var2 := param;
+            array1[var2 - var1 + 1].x := param;
+            array1[var2 - var1 + 2].color.r := param
         END Procedure3;
 
     BEGIN
-        var3 := Const1 + var2 + param3;
-        Procedure3(var3);
-        WriteInt(var3); WriteLn
+        var2 := 0;
+        WriteInt(var2); WriteLn;
+        Procedure3(param);
+        WriteInt(var2); WriteLn
     END Procedure2;
 
 BEGIN
-    var2 := Const1 + param2;
-    Procedure2(var2);
-    WriteInt(var2); WriteLn
+    var0 := 0;
+    var1 := 0;
+    WriteInt(var0); WriteLn;
+    WriteInt(var1); WriteLn;
+    PrintArray();
+    Procedure2(param);
+    WriteInt(var0); WriteLn;
+    WriteInt(var1); WriteLn;
+    PrintArray
 END Procedure1;
 
 BEGIN
-    Procedure1(Const1)
+    Procedure1(100)
 END Nested.

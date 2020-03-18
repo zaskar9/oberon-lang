@@ -20,18 +20,17 @@ private:
 
 public:
     explicit RecordTypeNode(const FilePos &pos, const std::string &name) :
-            TypeNode(NodeType::record_type, pos, name, 0), fields_() { };
+            TypeNode(NodeType::record_type, pos, name, 0), fields_() {};
     ~RecordTypeNode() final = default;
 
     [[nodiscard]] unsigned int getSize() const final;
 
     void addField(std::unique_ptr<FieldNode> field);
-    [[nodiscard]] FieldNode* getField(const std::string &name) const;
-    [[nodiscard]] FieldNode* getField(size_t num) const;
+    [[nodiscard]] FieldNode *getField(const std::string &name) const;
+    [[nodiscard]] FieldNode *getField(size_t num) const;
     [[nodiscard]] size_t getFieldCount();
 
-    void accept(NodeVisitor& visitor) final;
-
+    void accept(NodeVisitor &visitor) final;
     void print(std::ostream &stream) const final;
 
 };

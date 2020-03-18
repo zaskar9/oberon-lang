@@ -15,6 +15,14 @@ class LambdaLifter final : public Analysis, private NodeVisitor {
 
 private:
     ModuleNode *module_;
+    DeclarationNode *env_;
+    unsigned int level_;
+
+    static const std::string THIS_;
+    static const std::string PARENT_;
+    static const FilePos POS_;
+
+    void call(ProcedureNodeReference &node);
 
     void visit(ModuleNode &node) override;
     void visit(ProcedureNode &node) override;
@@ -50,8 +58,11 @@ private:
     void visit(ForLoopNode &node) override;
     void visit(ReturnNode &node) override;
 
+    static std::unique_ptr<AssignmentNode> envFieldInitializer(DeclarationNode *var, DeclarationNode *decl) ;
+    static bool envFieldResolver(ValueReferenceNode *var, const std::string &field_name, TypeNode *field_type) ;
+
 public:
-    explicit LambdaLifter() : module_() { };
+    explicit LambdaLifter() : module_(), env_(), level_() { };
     ~LambdaLifter() override = default;
 
     void run(Logger *logger, Node* node) override;

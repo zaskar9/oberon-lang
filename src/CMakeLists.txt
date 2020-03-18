@@ -47,7 +47,7 @@ set(CODEGEN_SOURCES
 set(ALL_SOURCES ${UTIL_SOURCES} ${SCANNER_SOURCES} ${PARSER_SOURCES} ${ANALYZER_SOURCES} ${CODEGEN_SOURCES})
 
 
-add_executable(${PROJECT_NAME} main.cpp ${SOURCE_FILES})
+add_executable(${PROJECT_NAME} main.cpp ${ALL_SOURCES})
 
 
 find_package(Boost COMPONENTS system filesystem program_options REQUIRED)

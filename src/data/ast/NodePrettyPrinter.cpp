@@ -79,7 +79,7 @@ void NodePrettyPrinter::call(ProcedureNodeReference &node) {
 
 void NodePrettyPrinter::visit(ModuleNode& node) {
     indent();
-    stream_ << "MODULE " << node.getName() << ";" << std::endl;
+    stream_ << "MODULE " << node.getName() << "(*" << node.getLevel() << "*);" << std::endl;
     block(node, true);
     stream_ << std::endl;
     indent();
@@ -93,7 +93,7 @@ void NodePrettyPrinter::visit(ModuleNode& node) {
 
 void NodePrettyPrinter::visit(ProcedureNode& node) {
     indent();
-    stream_ << "PROCEDURE " << node.getName() << "(";
+    stream_ << "PROCEDURE " << node.getName() << "(*" << node.getLevel() << "*)(";
     for (size_t i = 0; i < node.getParameterCount(); i++) {
         node.getParameter(i)->accept(*this);
         if (i + 1 < node.getParameterCount()) {
@@ -139,6 +139,7 @@ void NodePrettyPrinter::visit(ValueReferenceNode &node) {
             selector->accept(*this);
         }
     }
+    // stream_ << "(*" << node.getType()->getName() << "*)";
 }
 
 void NodePrettyPrinter::visit(TypeReferenceNode &node) {
@@ -146,7 +147,7 @@ void NodePrettyPrinter::visit(TypeReferenceNode &node) {
 }
 
 void NodePrettyPrinter::visit(ConstantDeclarationNode &node) {
-    stream_ << node.getName() << " = ";
+    stream_ << node.getName() << "(*" << node.getLevel() << "*) = ";
     node.getValue()->accept(*this);
     stream_ << ';' << std::endl;
 }
@@ -159,19 +160,19 @@ void NodePrettyPrinter::visit(FieldNode &node) {
 
 void NodePrettyPrinter::visit(ParameterNode &node) {
     stream_ << (node.isVar() ? "VAR " : "");
-    stream_ << node.getName() << ": ";
+    stream_ << node.getName() << "(*" << node.getLevel() << "*): ";
     node.getType()->accept(*this);
 }
 
 void NodePrettyPrinter::visit(TypeDeclarationNode &node) {
-    stream_ << node.getName() << " = ";
+    stream_ << node.getName() << "(*" << node.getLevel() << "*) = ";
     isDecl_ = true;
     node.getType()->accept(*this);
     stream_ << ';' << std::endl;
 }
 
 void NodePrettyPrinter::visit(VariableDeclarationNode &node) {
-    stream_ << node.getName() << ": ";
+    stream_ << node.getName() << "(*" << node.getLevel() << "*): ";
     node.getType()->accept(*this);
     stream_ << ';' << std::endl;
 }

@@ -7,6 +7,9 @@
 #include "DeclarationNode.h"
 #include "NodeVisitor.h"
 
+void DeclarationNode::setName(const std::string &name) {
+    name_ = name;
+}
 std::string DeclarationNode::getName() const {
     return name_;
 }

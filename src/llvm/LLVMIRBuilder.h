@@ -25,6 +25,7 @@ private:
     Value *value_;
     std::map<DeclarationNode*, Value*> values_;
     std::map<TypeNode*, Type*> types_;
+    std::map<ProcedureNode*, Function*> functions_;
     std::stack<bool> deref_ctx;
     unsigned int level_;
     Function *function_;

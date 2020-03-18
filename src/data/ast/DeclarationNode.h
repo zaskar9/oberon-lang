@@ -19,7 +19,7 @@ class TypeNode;
 class DeclarationNode : public Node {
 
 private:
-    const std::string name_;
+    std::string name_;
     TypeNode *type_;
     unsigned int level_;
 
@@ -28,6 +28,7 @@ public:
             Node(nodeType, pos), name_(std::move(name)), type_(type), level_() { };
     ~DeclarationNode() override = default;
 
+    void setName(const std::string &name);
     [[nodiscard]] std::string getName() const;
 
     void setType(TypeNode *type);

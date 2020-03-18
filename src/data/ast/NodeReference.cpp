@@ -8,6 +8,9 @@
 #include "NodeVisitor.h"
 
 std::string ValueReferenceNode::getName() const {
+    if (isResolved()) {
+        return dereference()->getName();
+    }
     return name_;
 }
 
@@ -17,6 +20,7 @@ bool ValueReferenceNode::isResolved() const {
 
 void ValueReferenceNode::resolve(DeclarationNode *node) {
     node_ = node;
+    type_ = node->getType();
 }
 
 DeclarationNode* ValueReferenceNode::dereference() const {
@@ -26,6 +30,15 @@ DeclarationNode* ValueReferenceNode::dereference() const {
 void ValueReferenceNode::addSelector(NodeType nodeType, std::unique_ptr<ExpressionNode> selector) {
     selectors_.push_back(std::move(selector));
     types_.push_back(nodeType);
+}
+
+void ValueReferenceNode::insertSelector(size_t num, NodeType nodeType, std::unique_ptr<ExpressionNode> selector) {
+    selectors_.insert(selectors_.begin() + (long) num, std::move(selector));
+    types_.insert(types_.begin() + (long) num, nodeType);
+}
+
+void ValueReferenceNode::setSelector(size_t num, std::unique_ptr<ExpressionNode> selector) {
+    selectors_[num] = std::move(selector);
 }
 
 ExpressionNode* ValueReferenceNode::getSelector(size_t num) const {
@@ -41,7 +54,11 @@ size_t ValueReferenceNode::getSelectorCount() const {
 }
 
 bool ValueReferenceNode::isConstant() const {
-    return dereference()->getNodeType() == NodeType::constant;
+    if (isResolved()) {
+        return dereference()->getNodeType() == NodeType::constant;
+    } else {
+        return false;
+    }
 }
 
 void ValueReferenceNode::setType(TypeNode *type) {
@@ -49,9 +66,6 @@ void ValueReferenceNode::setType(TypeNode *type) {
 }
 
 TypeNode* ValueReferenceNode::getType() const {
-    if (type_ == nullptr) {
-        return dereference()->getType();
-    }
     return type_;
 }
 
@@ -139,6 +153,9 @@ void FunctionCallNode::print(std::ostream &stream) const {
 
 
 std::string ProcedureCallNode::getName() const {
+    if (isResolved()) {
+        return dereference()->getName();
+    }
     return name_;
 }
 
