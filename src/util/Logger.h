@@ -17,8 +17,7 @@ struct FilePos {
 
 enum class LogLevel : unsigned int { DEBUG = 1, INFO = 2, WARNING = 3, ERROR = 4 };
 
-class Logger
-{
+class Logger {
 
 private:
     LogLevel level_;

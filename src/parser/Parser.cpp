@@ -7,12 +7,8 @@
 #include <iostream>
 #include "Parser.h"
 #include "../scanner/IdentToken.h"
-#include "../scanner/LiteralToken.h"
-#include "../data/ast/DeclarationNode.h"
-#include "../data/ast/NodeReference.h"
 #include "../data/ast/IfThenElseNode.h"
 #include "../data/ast/LoopNode.h"
-#include "../data/ast/AssignmentNode.h"
 
 static OperatorType token_to_operator(TokenType token);
 
@@ -21,22 +17,41 @@ std::unique_ptr<ModuleNode> Parser::parse() {
 }
 
 std::string Parser::ident() {
-    token_ = scanner_->next();
-    if (assertToken(token_.get(), TokenType::const_ident)) {
+    if (assertToken(scanner_->peek(), TokenType::const_ident)) {
+        token_ = scanner_->next();
         auto ident = dynamic_cast<const IdentToken*>(token_.get());
         logger_->debug("", to_string(*ident));
         return ident->value();
     }
+    // [<END>, <ELSE>, <ELSIF>, <THEN>, <UNTIL>, <BY>, <DO>, <TO>, <OF>, <MOD>, <DIV>, <OR>,
+    // <<=>, <<>, <=>, <#>, <>=>, <>>, <+>, <->, <*>, <&>, <:=>, <[>, <]>, <(>, <)>, <;>, <,>, <:>, <.>]
+    resync({ TokenType::kw_end, TokenType::kw_else, TokenType::kw_elsif, TokenType::kw_then,
+             TokenType::kw_until, TokenType::kw_by, TokenType::kw_do, TokenType::kw_to,
+             TokenType::op_mod, TokenType::op_div, TokenType::op_or, TokenType::op_leq, TokenType::op_lt,
+             TokenType::op_eq, TokenType::op_neq, TokenType::op_gt, TokenType::op_geq,
+             TokenType::op_plus, TokenType::op_minus, TokenType::op_times, TokenType::op_and, TokenType::op_becomes,
+             TokenType::rbrack, TokenType::lbrack, TokenType::rparen, TokenType::lparen,
+             TokenType::semicolon, TokenType::colon, TokenType::comma, TokenType::period });
     return "";
 }
 
 // ident_list = ident { "," ident } .
 void Parser::ident_list(std::vector<std::string> &idents) {
     logger_->debug("", "ident_list");
-    idents.push_back(ident());
-    while (scanner_->peek()->type() == TokenType::comma) {
-        token_ = scanner_->next(); // skip comma
+    while (true) {
         idents.push_back(ident());
+        auto token = scanner_->peek();
+        if (token->type() == TokenType::comma) {
+            scanner_->next(); // skip comma
+        } else if (token->type() == TokenType::const_ident) {
+            logger_->error(token->pos(), "missing comma.");
+        } else if (token->type() == TokenType::colon) {
+            break;
+        } else {
+            logger_->error(token->pos(), "unexpected token: " + to_string(token->type()) + ".");
+            // [<:>]
+            resync({ TokenType::colon });
+        }
     }
 }
 
@@ -68,6 +83,8 @@ std::unique_ptr<ModuleNode> Parser::module() {
         }
         return module;
     }
+    // [<EOF>]
+    resync({ TokenType::eof });
     return nullptr;
 }
 
@@ -86,6 +103,8 @@ void Parser::declarations(BlockNode *block) {
     while (scanner_->peek()->type() == TokenType::kw_procedure) {
         procedure_declaration(block);
     }
+    // [<END>, <BEGIN>]
+    resync({ TokenType::kw_begin, TokenType::kw_end });
 }
 
 // const_declarations = "CONST" { ident "=" expression ";" } .
@@ -105,6 +124,8 @@ void Parser::const_declarations(BlockNode *block) {
             }
         }
     }
+    // [<VAR>, <TYPE>, <PROCEDURE>, <END>, <BEGIN>]
+    resync({ TokenType::kw_type, TokenType::kw_var, TokenType::kw_procedure, TokenType::kw_begin, TokenType::kw_end });
 }
 
 // type_declarations =  "TYPE" { ident "=" type ";" } .
@@ -124,6 +145,8 @@ void Parser::type_declarations(BlockNode *block) {
             }
         }
     }
+    // [<PROCEDURE>, <VAR>, <END>, <BEGIN>]
+    resync({ TokenType::kw_var, TokenType::kw_procedure, TokenType::kw_begin, TokenType::kw_end });
 }
 
 // type = ( ident | array_type | record_type ) .
@@ -147,8 +170,9 @@ TypeNode* Parser::type(BlockNode *block, std::string name) {
         return res;
     } else {
         logger_->error(token->pos(), "unexpected token: " + to_string(token->type()) + ".");
-        resync({ TokenType::semicolon, TokenType::kw_var, TokenType::kw_procedure, TokenType::kw_begin });
     }
+    // [<)>, <;>, <END>]
+    resync({ TokenType::semicolon, TokenType::rparen, TokenType::kw_end });
     return nullptr;
 }
 
@@ -160,9 +184,9 @@ ArrayTypeNode* Parser::array_type(BlockNode *block, std::string name) {
     if (assertToken(scanner_->peek(), TokenType::kw_of)) {
         scanner_->next(); // skip OF keyword
         return new ArrayTypeNode(pos, name, std::move(expr), type(block));
-    } else {
-        resync({TokenType::semicolon, TokenType::kw_var, TokenType::kw_procedure, TokenType::kw_begin});
     }
+    // [<)>, <;>, <END>]
+    resync({ TokenType::semicolon, TokenType::rparen, TokenType::kw_end });
     return nullptr;
 }
 
@@ -179,6 +203,8 @@ RecordTypeNode* Parser::record_type(BlockNode *block, std::string name) {
     if (assertToken(scanner_->peek(), TokenType::kw_end)) {
         scanner_->next();
     }
+    // [<)>, <;>, <END>]
+    resync({ TokenType::semicolon, TokenType::rparen, TokenType::kw_end });
     return node;
 }
 
@@ -194,9 +220,11 @@ void Parser::field_list(BlockNode *block, RecordTypeNode *record) {
             record->addField(std::make_unique<FieldNode>(token->pos(), ident, node));
         }
     }
+    // [<;>, <END>]
+    resync({ TokenType::semicolon, TokenType::kw_end });
 }
 
-// var_declarations =  "VAR" { ident_list ":" type ";" } .
+// var_declarations = "VAR" { ident_list ":" type ";" } .
 void Parser::var_declarations(BlockNode *block) {
     logger_->debug("", "var_declarations");
     scanner_->next(); // skip VAR keyword
@@ -217,6 +245,8 @@ void Parser::var_declarations(BlockNode *block) {
             }
         }
     }
+    // [<END>, <PROCEDURE>, <BEGIN>]
+    resync({ TokenType::kw_procedure, TokenType::kw_begin, TokenType::kw_end });
 }
 
 // procedure_declaration = procedure_heading ";" ( procedure_body ident | "EXTERN" ) ";" .
@@ -247,6 +277,8 @@ void Parser::procedure_declaration(BlockNode *block) {
         scanner_->next();
     }
     block->addProcedure(std::move(proc));
+    // [<PROCEDURE>, <END>, <BEGIN>]
+    resync({ TokenType::kw_procedure, TokenType::kw_begin, TokenType::kw_end });
 }
 
 // procedure_heading = "PROCEDURE" ident [ formal_parameters ] [ ":" type ] .
@@ -263,6 +295,8 @@ std::unique_ptr<ProcedureNode> Parser::procedure_heading() {
         scanner_->next(); // skip colon
         proc->setReturnType(type(proc.get()));
     }
+    // [<;>]
+    resync({ TokenType::semicolon });
     return proc;
 }
 
@@ -277,6 +311,8 @@ void Parser::procedure_body(ProcedureNode *proc) {
     if (assertToken(scanner_->peek(), TokenType::kw_end)) {
         scanner_->next();
     }
+    // [<ident>]
+    resync({ TokenType::const_ident });
 }
 
 // formal_parameters = "(" [ fp_section { ";" fp_section } ] ")".
@@ -300,6 +336,8 @@ void Parser::formal_parameters(ProcedureNode *proc) {
             logger_->error(token->pos(), ") expected, found " + to_string(token->type()) + ".");
         }
     }
+    // [<:>, <;>]
+    resync({ TokenType::colon, TokenType::semicolon });
 }
 
 // fp_section = ( [ "VAR" ] ident_list ":" type | "..." ) .
@@ -325,12 +363,15 @@ void Parser::fp_section(ProcedureNode *proc) {
             proc->addParameter(std::make_unique<ParameterNode>(token->pos(), ident, node, var));
         }
     }
+    // [<;>, <)>]
+    resync({ TokenType::semicolon, TokenType::rparen });
 }
 
 // statement_sequence = statement { ";" statement } .
 void Parser::statement_sequence(StatementSequenceNode *statements) {
     logger_->debug("", "statement_sequence");
     auto token = scanner_->peek();
+    // [<UNTIL>, <ELSIF>, <ELSE>, <END>]
     if (token->type() == TokenType::kw_end || token->type() == TokenType::kw_elsif ||
         token->type() == TokenType::kw_else || token->type() == TokenType::kw_until) {
         logger_->error(token->pos(), "empty statement sequence.");
@@ -338,16 +379,21 @@ void Parser::statement_sequence(StatementSequenceNode *statements) {
         while (true) {
             statements->addStatement(statement());
             token = scanner_->peek();
-            while (token->type() == TokenType::semicolon) {
+            if (token->type() == TokenType::semicolon) {
                 scanner_->next(); // skip semicolon
-                statements->addStatement(statement());
-                token = scanner_->peek();
-            }
-            if (token->type() == TokenType::kw_end || token->type() == TokenType::kw_elsif ||
-               token->type() == TokenType::kw_else || token->type() == TokenType::kw_until) {
+            } else if (token->type() == TokenType::const_ident || token->type() == TokenType::kw_if ||
+                       token->type() == TokenType::kw_loop || token->type() == TokenType::kw_repeat ||
+                       token->type() == TokenType::kw_for || token->type() == TokenType::kw_while ||
+                       token->type() == TokenType::kw_exit || token->type() == TokenType::kw_return) {
+                logger_->error(token->pos(), "missing semicolon.");
+            } else if (token->type() == TokenType::kw_end || token->type() == TokenType::kw_elsif ||
+                       token->type() == TokenType::kw_else || token->type() == TokenType::kw_until) {
                 break;
             } else {
-                resync({ TokenType::semicolon, TokenType::kw_end, TokenType::kw_elsif, TokenType::kw_else, TokenType::kw_until });
+                logger_->error(token->pos(), "unexpected token: " + to_string(token->type()) + ".");
+                // [<;>] and [<UNTIL>, <ELSIF>, <ELSE>, <END>]
+                resync({ TokenType::semicolon,
+                               TokenType::kw_end, TokenType::kw_elsif, TokenType::kw_else, TokenType::kw_until});
             }
         }
     }
@@ -395,9 +441,10 @@ std::unique_ptr<StatementNode> Parser::statement() {
         token_ = scanner_->next();
         return std::make_unique<ReturnNode>(token_->pos(), expression());
     } else {
-        logger_->error(token->pos(), "unknown statement: too many semi-colons?");
+        logger_->error(token->pos(), "unknown or empty statement.");
     }
-    resync({ TokenType::semicolon, TokenType::kw_end, TokenType::kw_if, TokenType::kw_elsif, TokenType::kw_else, TokenType::kw_while });
+    // [<;>, <END>, <ELSIF>, <ELSE>, <UNTIL>]
+    // resync({ TokenType::semicolon, TokenType::kw_end, TokenType::kw_elsif, TokenType::kw_else, TokenType::kw_until });
     return nullptr;
 }
 
@@ -405,7 +452,10 @@ std::unique_ptr<StatementNode> Parser::statement() {
 std::unique_ptr<StatementNode> Parser::assignment(std::unique_ptr<ValueReferenceNode> lvalue) {
     logger_->debug("", "assignment");
     scanner_->next(); // skip assign operator
-    return std::make_unique<AssignmentNode>(lvalue->pos(), std::move(lvalue), expression());
+    auto statement = std::make_unique<AssignmentNode>(lvalue->pos(), std::move(lvalue), expression());
+    // [<;>, <END>, <ELSIF>, <ELSE>, <UNTIL>]
+    // resync({ TokenType::semicolon, TokenType::kw_end, TokenType::kw_elsif, TokenType::kw_else, TokenType::kw_until });
+    return statement;
 }
 
 // procedure_call = ident [ actual_parameters ] .
@@ -414,6 +464,8 @@ void Parser::procedure_call(ProcedureNodeReference *call) {
     if (scanner_->peek()->type() == TokenType::lparen) {
         actual_parameters(call);
     }
+    // [<;>, <END>, <ELSIF>, <ELSE>, <UNTIL>]
+    // resync({ TokenType::semicolon, TokenType::kw_end, TokenType::kw_elsif, TokenType::kw_else, TokenType::kw_until });
 }
 
 // if_statement = "IF" expression "THEN" statement_sequence { "ELSIF" expression "THEN" statement_sequence } [ "ELSE" statement_sequence ] "END" .
@@ -442,6 +494,8 @@ std::unique_ptr<StatementNode> Parser::if_statement() {
             logger_->error(token_->pos(), "END expected, found " + to_string(token_->type()) + ".");
         }
     }
+    // [<;>, <END>, <ELSIF>, <ELSE>, <UNTIL>]
+    // resync({ TokenType::semicolon, TokenType::kw_end, TokenType::kw_elsif, TokenType::kw_else, TokenType::kw_until });
     return statement;
 }
 
@@ -455,6 +509,8 @@ std::unique_ptr<StatementNode> Parser::loop_statement() {
     if (token_->type() != TokenType::kw_end) {
         logger_->error(token_->pos(), "END expected, found " + to_string(token_->type()) + ".");
     }
+    // [<;>, <END>, <ELSIF>, <ELSE>, <UNTIL>]
+    // resync({ TokenType::semicolon, TokenType::kw_end, TokenType::kw_elsif, TokenType::kw_else, TokenType::kw_until });
     return statement;
 }
 
@@ -471,6 +527,8 @@ std::unique_ptr<StatementNode> Parser::while_statement() {
             logger_->error(token_->pos(), "END expected, found " + to_string(token_->type()) + ".");
         }
     }
+    // [<;>, <END>, <ELSIF>, <ELSE>, <UNTIL>]
+    // resync({ TokenType::semicolon, TokenType::kw_end, TokenType::kw_elsif, TokenType::kw_else, TokenType::kw_until });
     return statement;
 }
 
@@ -486,6 +544,8 @@ std::unique_ptr<StatementNode> Parser::repeat_statement() {
     } else {
         logger_->error(token_->pos(), "UNTIL expected.");
     }
+    // [<;>, <END>, <ELSIF>, <ELSE>, <UNTIL>]
+    // resync({ TokenType::semicolon, TokenType::kw_end, TokenType::kw_elsif, TokenType::kw_else, TokenType::kw_until });
     return statement;
 }
 
@@ -520,6 +580,8 @@ std::unique_ptr<StatementNode> Parser::for_statement() {
     if (token_->type() != TokenType::kw_end) {
         logger_->error(token_->pos(), "END expected, found " + to_string(token_->type()) + ".");
     }
+    // [<;>, <END>, <ELSIF>, <ELSE>, <UNTIL>]
+    // resync({ TokenType::semicolon, TokenType::kw_end, TokenType::kw_elsif, TokenType::kw_else, TokenType::kw_until });
     return statement;
 }
 
@@ -551,7 +613,9 @@ void Parser::selector(ValueReferenceNode *ref) {
         ref->addSelector(NodeType::record_type, std::make_unique<ValueReferenceNode>(token_->pos(), name));
     } else if (token_->type() == TokenType::lbrack) {
         auto expr = expression();
-        ref->addSelector(NodeType::array_type, std::move(expr));
+        if (expr) {
+            ref->addSelector(NodeType::array_type, std::move(expr));
+        }
         token_ = scanner_->next();
         if (token_->type() != TokenType::rbrack) {
             logger_->error(token_->pos(), "] expected, found " + to_string(token_->type()) + ".");
@@ -564,7 +628,7 @@ void Parser::selector(ValueReferenceNode *ref) {
 // expression = simple_expression [ ( "=" | "#" | "<" | "<=" | ">" | ">=" ) simple_expression ] .
 std::unique_ptr<ExpressionNode> Parser::expression() {
     logger_->debug("", "expression");
-    auto lhs = simple_expression();
+    auto result = simple_expression();
     TokenType token = scanner_->peek()->type();
     if (token == TokenType::op_eq
         || token == TokenType::op_neq
@@ -575,9 +639,16 @@ std::unique_ptr<ExpressionNode> Parser::expression() {
         token_ = scanner_->next();
         OperatorType op = token_to_operator(token_->type());
         auto rhs = simple_expression();
-        return std::make_unique<BinaryExpressionNode>(token_->pos(), op, std::move(lhs), std::move(rhs));
+        result = std::make_unique<BinaryExpressionNode>(token_->pos(), op, std::move(result), std::move(rhs));
     }
-    return lhs;
+    // [<END>, <ELSE>, <TO>, <THEN>, <UNTIL>, <ELSIF>, <BY>, <DO>, <OF>, <)>, <]>, <,>, <;>]
+    // resync({ TokenType::kw_end, TokenType::kw_else, TokenType::kw_to, TokenType::kw_then, TokenType::kw_until,
+    //         TokenType::kw_elsif, TokenType::kw_by, TokenType::kw_do, TokenType::kw_of,
+    //         TokenType::rparen, TokenType::rbrack, TokenType::comma, TokenType::semicolon });
+    if (!result) {
+        logger_->error(scanner_->peek()->pos(), "expression expected.");
+    }
+    return result;
 }
 
 // simple_expression = [ "+" | "-" ] term { ( "+" | "-" | OR ) term } .
@@ -670,7 +741,6 @@ std::unique_ptr<ExpressionNode> Parser::factor() {
         return std::make_unique<UnaryExpressionNode>(token->pos(), OperatorType::NOT, factor());
     } else {
         logger_->error(token->pos(), "unexpected token: " + to_string(token->type()) + ".");
-        resync({ TokenType::semicolon });
         return nullptr;
     }
 }

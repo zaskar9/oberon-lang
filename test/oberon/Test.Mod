@@ -9,7 +9,7 @@ CONST Dim = 4 + 2 * -8;
 
 TYPE Point2D = RECORD x, y: INTEGER END;
      Point3D = RECORD x, y, y: INTEGER END;
-     PointList = ARRAY 30 OF Point2D;
+     PointList = ARRAY 2.5 OF Point2D;
      ColorRGB = RECORD r, g, b: INTEGER END;
      Rect2D = RECORD color: ColorRGB; points: PointList END;
 
@@ -25,7 +25,7 @@ BEGIN
     rect.color.r := r;
     rect.color.g := g;
     rect.color.b := TRUE;
-    rect.points[0].x := x.x;
+    rect.points[].x := x.x;
     rect.points[0].y := x.y;
     rect.points[1].x := y.x;
     rect.points[1].y := x.y;
@@ -87,7 +87,7 @@ BEGIN
 END Init;
 
 (* Initializes the array. *)
-PROCEDURE Initialize();
+PROCEDURE Initialize(a b: INTEGER);
 VAR i, j: INTEGER;
 BEGIN
     FOR i := 0 TO Dim BY 0 DO
@@ -98,10 +98,11 @@ BEGIN
 END Initialise;
 
 (* Swaps the two values passed as var-parameters. *)
-PROCEDURE Swap(VAR a, b: INTEGER);
+PROCEDURE Swap(VAR a, b, : INTEGER);
 VAR t: INTEGER;
 BEGIN
-    t := a;
+    IF a > b THEN END;
+    t := a
     a := b; 
     b := t
 END Swap;
@@ -112,7 +113,7 @@ VAR i, j: INTEGER;
 BEGIN
     i := 0;
     WHILE i < Dim DO
-        j := Dim - 1;
+        j := Dim - 1
         WHILE j > i DO
             IF a[j-1] > a[j] THEN Swap(a[j - 1], a[j]) END;
             j := j - 1
@@ -134,7 +135,7 @@ PROCEDURE QuickSort;
             WHILE a[i] < x DO i := i + 1 END;
             WHILE x < a[j] DO j := j - 1 END;
             IF i <= j THEN
-                Swap(a[i], a[j]);
+                Swap(a[i], a[j])
                 i := i + 1;
                 j := j - 1
             END
@@ -144,7 +145,7 @@ PROCEDURE QuickSort;
     END QSort;
 
 BEGIN
-    QSort(0, Dim - 1)
+    QSort(0, Dim - 1);
 END QuickSort;
 
 (* Main program. *)
@@ -160,7 +161,8 @@ BEGIN
     Write("[");
     WHILE i <= Dim DO
         Write(a[i]);
-        IF i + 1 < Dim THEN Write(", ") END
+        IF i + 1 < Dim THEN Write(", ") END;
+        i := i + 1
     END;
     Write("]");
     WriteLn();
