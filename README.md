@@ -29,9 +29,9 @@ As of February 2020, the following configurations are tested and known to work.
 
 |      | macOS                       | Windows (x64)                | 
 |------|-----------------------------|------------------------------|
-|Boost | 1.72.0                      | 1.72.0                       |
-|LLVM  | 9.0.1                       | 9.0.1                        |
-|CMake | 3.15                        | 3.15                         |
+|Boost | 1.73.0                      | 1.73.0                       |
+|LLVM  | 10.0.1                      | 10.0.1                       |
+|CMake | 3.18.2                      | 3.18.2                       |
 |IDE   | CLion 2019.3                | Visual Studio 2019 Community |
 |CXX   | Apple clang Version 11.0.0  | Microsoft CL 19.24.28316     |
  
