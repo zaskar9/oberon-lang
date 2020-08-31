@@ -150,13 +150,13 @@ bool LLVMCompiler::emit(Module *module, boost::filesystem::path path) {
         output.flush();
         return false;
     }
-    TargetMachine::CodeGenFileType type;
+    llvm::CodeGenFileType type;
     switch (type_) {
         case OutputFileType::AssemblyFile:
-            type = TargetMachine::CGFT_AssemblyFile;
+            type = CGFT_AssemblyFile;
             break;
         default:
-            type = TargetMachine::CGFT_ObjectFile;
+            type = CGFT_ObjectFile;
             break;
     }
     legacy::PassManager pass;

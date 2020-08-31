@@ -3,7 +3,8 @@ project("oberon-lang" VERSION "0.0.0")
 set(Boost_USE_MULTITHREADED TRUE)
 
 set(UTIL_SOURCES
-        util/Logger.cpp util/Logger.h)
+        util/Logger.cpp util/Logger.h
+        util/CompilationStatus.cpp util/CompilationStatus.h)
 
 set(SCANNER_SOURCES
         scanner/Scanner.cpp scanner/Scanner.h
@@ -44,7 +45,7 @@ set(CODEGEN_SOURCES
         llvm/LLVMIRBuilder.cpp llvm/LLVMIRBuilder.h
         llvm/LLVMCompiler.cpp llvm/LLVMCompiler.h)
 
-set(ALL_SOURCES ${UTIL_SOURCES} ${SCANNER_SOURCES} ${PARSER_SOURCES} ${ANALYZER_SOURCES} ${CODEGEN_SOURCES})
+set(ALL_SOURCES global.h ${UTIL_SOURCES} ${SCANNER_SOURCES} ${PARSER_SOURCES} ${ANALYZER_SOURCES} ${CODEGEN_SOURCES})
 
 
 add_executable(${PROJECT_NAME} main.cpp ${ALL_SOURCES})

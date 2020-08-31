@@ -31,7 +31,7 @@ private:
     Function *function_;
 
     Type* getLLVMType(TypeNode *type, bool isPtr = false);
-    unsigned int getLLVMAlign(TypeNode *type, bool isPtr = false);
+    MaybeAlign getLLVMAlign(TypeNode *type, bool isPtr = false);
 
     void call(ProcedureNodeReference &node);
 

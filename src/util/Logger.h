@@ -3,17 +3,15 @@
  *
  * Created by Michael Grossniklaus on 2/8/18.
  */
+
 #ifndef OBERON0C_LOGGER_H
 #define OBERON0C_LOGGER_H
+
 
 #include <string>
 #include <iostream>
 #include <sstream>
-
-struct FilePos {
-    std::string fileName;
-    int lineNo, charNo;
-};
+#include "../global.h"
 
 enum class LogLevel : unsigned int { DEBUG = 1, INFO = 2, WARNING = 3, ERROR = 4 };
 

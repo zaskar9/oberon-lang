@@ -524,31 +524,31 @@ Type* LLVMIRBuilder::getLLVMType(TypeNode *type, bool isPtr) {
     return result;
 }
 
-unsigned int LLVMIRBuilder::getLLVMAlign(TypeNode *type, bool isPtr) {
+MaybeAlign LLVMIRBuilder::getLLVMAlign(TypeNode *type, bool isPtr) {
     auto layout = module_->getDataLayout();
     if (type->getNodeType() == NodeType::array_type) {
         auto align = layout.getStackAlignment();
-        if (type->getSize() >= align) {
-            return align;
+        if (type->getSize() >= align.value()) {
+            return MaybeAlign(align);
         }
         auto array_t = dynamic_cast<ArrayTypeNode*>(type);
         return getLLVMAlign(array_t->getMemberType());
     } else if (type->getNodeType() == NodeType::record_type) {
         auto record_t = dynamic_cast<RecordTypeNode*>(type);
-        unsigned int size = 0;
+        uint64_t size = 0;
         for (size_t i = 0; i < record_t->getFieldCount(); i++) {
             auto field_t = record_t->getField(i)->getType();
             if (field_t->getNodeType() == NodeType::array_type) {
                 auto array_t = dynamic_cast<ArrayTypeNode*>(field_t);
                 field_t = array_t->getMemberType();
             }
-            size = std::max(size, getLLVMAlign(field_t));
+            size = std::max(size, getLLVMAlign(field_t)->value());
         }
-        return size;
+        return MaybeAlign(size);
     } else if (type->getNodeType() == NodeType::basic_type) {
-        return layout.getPrefTypeAlignment(getLLVMType(type, isPtr));
+        return MaybeAlign(layout.getPrefTypeAlignment(getLLVMType(type, isPtr)));
     }
-    return 0;
+    return MaybeAlign();
 
 }
 
