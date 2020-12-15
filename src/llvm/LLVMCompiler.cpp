@@ -9,6 +9,7 @@
 #include <llvm/IR/LegacyPassManager.h>
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/Support/FileSystem.h>
+#include <llvm/Support/Host.h>
 #include <llvm/Support/TargetRegistry.h>
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Support/raw_ostream.h>
@@ -18,8 +19,8 @@
 #include "../analyzer/LambdaLifter.h"
 #include "../data/ast/NodePrettyPrinter.h"
 
-LLVMCompiler::LLVMCompiler(Logger *logger) : logger_(logger), ctx_(), pb_(), lvl_(llvm::PassBuilder::O0),
-        type_(OutputFileType::ObjectFile) {
+LLVMCompiler::LLVMCompiler(Logger *logger) : logger_(logger), ctx_(), pb_(),
+        lvl_(llvm::PassBuilder::OptimizationLevel::O0), type_(OutputFileType::ObjectFile) {
     // Initialize LLVM
     llvm::InitializeAllTargetInfos();
     llvm::InitializeAllTargets();
@@ -72,8 +73,8 @@ void LLVMCompiler::compile(boost::filesystem::path path) {
         analyzer->run(ast.get());
         if (logger_->getErrorCount() == errors) {
 
-            // auto printer = std::make_unique<NodePrettyPrinter>(std::cout);
-            // printer->print(ast.get());
+            auto printer = std::make_unique<NodePrettyPrinter>(std::cout);
+            printer->print(ast.get());
 
             // Set up the LLVM module
             logger_->debug(PROJECT_NAME, "generating LLVM code...");
@@ -85,7 +86,7 @@ void LLVMCompiler::compile(boost::filesystem::path path) {
             auto builder = std::make_unique<LLVMIRBuilder>(logger_, ctx_, module.get());
             builder->build(ast.get());
             module->setSourceFileName(name);
-            if (lvl_ != llvm::PassBuilder::O0) {
+            if (lvl_ != llvm::PassBuilder::OptimizationLevel::O0) {
                 logger_->debug(PROJECT_NAME, "optimizing...");
                 // Create basic analyses
                 llvm::LoopAnalysisManager lam;

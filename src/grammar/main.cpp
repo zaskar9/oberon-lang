@@ -18,7 +18,7 @@ int main(const int argc, const char *argv[]) {
     logger->setLevel(LogLevel::INFO);
     if (argc < 2) {
         logger->error(PROJECT_NAME, "Too few arguments.");
-        exit(0);
+        exit(1);
     }
     auto loader = std::make_unique<Loader>(fs::path(argv[1]), logger.get());
     auto grammar = loader->load();

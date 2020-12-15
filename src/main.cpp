@@ -60,13 +60,13 @@ int main(const int argc, const char *argv[]) {
                 case 0:
                     break;
                 case 1:
-                    compiler->setOptimizationLevel(PassBuilder::O1);
+                    compiler->setOptimizationLevel(PassBuilder::OptimizationLevel::O1);
                     break;
                 case 2:
-                    compiler->setOptimizationLevel(PassBuilder::O2);
+                    compiler->setOptimizationLevel(PassBuilder::OptimizationLevel::O2);
                     break;
                 case 3:
-                    compiler->setOptimizationLevel(PassBuilder::O3);
+                    compiler->setOptimizationLevel(PassBuilder::OptimizationLevel::O3);
                     break;
                 default:
                     logger->error(PROJECT_NAME, "unsupported optimization level: " + to_string(level) + ".");
