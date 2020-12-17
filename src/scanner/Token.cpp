@@ -92,6 +92,7 @@ std::ostream& operator<<(std::ostream &stream, const TokenType &type) {
         case TokenType::kw_of: result = "OF"; break;
         case TokenType::kw_extern: result = "EXTERN"; break;
         case TokenType::kw_return: result = "RETURN"; break;
+        default: result = "unknown token"; break;
     }
     stream << result;
     return stream;

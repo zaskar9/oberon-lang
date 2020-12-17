@@ -25,6 +25,7 @@ std::ostream& operator<<(std::ostream &stream, const OperatorType &op) {
         case OperatorType::OR: result = "OR"; break;
         case OperatorType::NOT: result = "~"; break;
         case OperatorType::NEG: result = "-"; break;
+        default: result = "unknown operator"; break;
     }
     stream << result;
     return stream;

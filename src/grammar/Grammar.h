@@ -8,6 +8,7 @@
 #define OBERON_LLVM_GRAMMAR_H
 
 
+#include <memory>
 #include <vector>
 #include <unordered_set>
 #include <unordered_map>
@@ -98,17 +99,17 @@ public:
 
     [[nodiscard]] Terminal * lookupTerminal(std::string name);
     [[nodiscard]] Terminal * createTerminal(std::string name);
-    [[nodiscard]] Terminals::iterator terminals_begin() const;
-    [[nodiscard]] Terminals::iterator terminals_end() const;
+    [[nodiscard]] Terminals::const_iterator terminals_begin() const;
+    [[nodiscard]] Terminals::const_iterator terminals_end() const;
 
     [[nodiscard]] NonTerminal * lookupNonTerminal(std::string name);
     [[nodiscard]] NonTerminal * createNonTerminal(std::string name, bool isStart = false);
-    [[nodiscard]] NonTerminals::iterator nonterminals_begin() const;
-    [[nodiscard]] NonTerminals::iterator nonterminals_end() const;
+    [[nodiscard]] NonTerminals::const_iterator nonterminals_begin() const;
+    [[nodiscard]] NonTerminals::const_iterator nonterminals_end() const;
 
     Production * createProduction(NonTerminal *lhs, std::vector<Symbol*> rhs);
-    [[nodiscard]] Productions::iterator productions_begin() const;
-    [[nodiscard]] Productions::iterator productions_end() const;
+    [[nodiscard]] Productions::const_iterator productions_begin() const;
+    [[nodiscard]] Productions::const_iterator productions_end() const;
 
     friend std::ostream& operator<<(std::ostream &stream, const Grammar &grammar);
 

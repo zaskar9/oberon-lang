@@ -79,11 +79,11 @@ Terminal * Grammar::createTerminal(std::string name) {
     return result;
 }
 
-Terminals::iterator Grammar::terminals_begin() const {
+Terminals::const_iterator Grammar::terminals_begin() const {
     return terminals_.begin();
 }
 
-Terminals::iterator Grammar::terminals_end() const {
+Terminals::const_iterator Grammar::terminals_end() const {
     return terminals_.end();
 }
 
@@ -102,11 +102,11 @@ NonTerminal * Grammar::createNonTerminal(std::string name, bool isStart) {
     return result;
 }
 
-NonTerminals::iterator Grammar::nonterminals_begin() const {
+NonTerminals::const_iterator Grammar::nonterminals_begin() const {
     return nonterminals_.begin();
 }
 
-NonTerminals::iterator Grammar::nonterminals_end() const {
+NonTerminals::const_iterator Grammar::nonterminals_end() const {
     return nonterminals_.end();
 }
 
@@ -117,11 +117,11 @@ Production * Grammar::createProduction(NonTerminal *lhs, std::vector<Symbol *> r
     return result;
 }
 
-Productions::iterator Grammar::productions_begin() const {
+Productions::const_iterator Grammar::productions_begin() const {
     return productions_.begin();
 }
 
-Productions::iterator Grammar::productions_end() const {
+Productions::const_iterator Grammar::productions_end() const {
     return productions_.end();
 }
 

@@ -9,7 +9,7 @@
 
 LLVMIRBuilder::LLVMIRBuilder(Logger *logger, LLVMContext &context, Module *module) : NodeVisitor(),
         logger_(logger), builder_(context), module_(module), value_(), values_(), types_(), functions_(),
-        deref_ctx(), level_(0), function_() { };
+        deref_ctx(), level_(0), function_() { }
 
 void LLVMIRBuilder::build(Node *node) {
     node->accept(*this);
@@ -220,6 +220,9 @@ void LLVMIRBuilder::visit(UnaryExpressionNode &node) {
             value_ = nullptr;
             logger_->error(node.pos(), "binary operator in unary expression.");
             break;
+        default: value_ = nullptr;
+            logger_->error(node.pos(), "unknown operator,");
+            break;
     }
 }
 
@@ -304,7 +307,10 @@ void LLVMIRBuilder::visit(BinaryExpressionNode &node) {
                 value_ = nullptr;
                 logger_->error(node.pos(), "unary operator in binary expression.");
                 break;
-
+            default:
+                value_ = nullptr;
+                logger_->error(node.pos(), " unknown operator.");
+                break;
         }
     }
 }

@@ -27,6 +27,7 @@ void Logger::log(const LogLevel level, const std::string &fileName, int lineNo, 
             case LogLevel::INFO:    *out << "info";    infos_++;    break;
             case LogLevel::WARNING: *out << "warning"; warnings_++; break;
             case LogLevel::ERROR:   *out << "error";   errors_++;   break;
+            default: break; // do nothing
         }
         *out << "] " << msg << std::endl;
     }
