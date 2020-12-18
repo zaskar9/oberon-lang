@@ -33,7 +33,7 @@ As of December 2020, the following configurations are tested and known to work.
 |LLVM  | 11.0.0                      | 11.0.0                       | 11.0.0                       |
 |CMake | 3.19.1                      | 3.19.2                       | 3.19.2                       |
 |IDE   | CLion 2020.3                | Visual Studio 2019 Community | CLion 2020.3                 |
-|CXX   | Apple clang Version 11.0.0  | Microsoft CL 19.24.28316     | GCC 9.3.0                    |
+|CXX   | Apple Clang 12.0.0.12000032 | Microsoft CL 19.24.28316     | GCC 9.3.0                    |
  
 Detailed instruction on how to build the Oberon compiler and its dependencies can be found in the Wiki section of this
 project repository.
