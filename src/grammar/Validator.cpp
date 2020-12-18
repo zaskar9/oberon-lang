@@ -5,7 +5,7 @@
  * Created by Michael Grossniklaus on 3/11/20.
  */
 
-#include <iomanip>
+#include <algorithm>
 #include "Validator.h"
 
 first_sets Validator::computeFirstSets() const {

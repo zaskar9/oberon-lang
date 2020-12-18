@@ -4,6 +4,7 @@
  * Created by Michael Grossniklaus on 3/5/18.
  */
 
+#include <algorithm>
 #include "ProcedureNode.h"
 #include "NodeVisitor.h"
 
