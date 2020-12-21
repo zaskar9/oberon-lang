@@ -1,6 +1,7 @@
-project("oberon-lang" VERSION "0.0.0")
-
 set(Boost_USE_MULTITHREADED TRUE)
+set(OBERON_LANG "oberon-lang")
+set(GRAMMAR_TOOL "grammar-tool")
+
 
 set(UTIL_SOURCES
         util/Logger.cpp util/Logger.h
@@ -47,13 +48,12 @@ set(CODEGEN_SOURCES
 
 set(ALL_SOURCES global.h ${UTIL_SOURCES} ${SCANNER_SOURCES} ${PARSER_SOURCES} ${ANALYZER_SOURCES} ${CODEGEN_SOURCES})
 
-
-add_executable(${PROJECT_NAME} main.cpp ${ALL_SOURCES})
+add_executable(${OBERON_LANG} main.cpp ${ALL_SOURCES})
 
 find_package(Boost REQUIRED COMPONENTS filesystem program_options)
 if (Boost_FOUND)
     include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
-    target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES})
+    target_link_libraries(${OBERON_LANG} ${Boost_LIBRARIES})
 endif()
 
 find_package(LLVM REQUIRED CONFIG)
@@ -61,22 +61,21 @@ if (LLVM_FOUND)
     include_directories(SYSTEM ${LLVM_INCLUDE_DIRS})
     add_definitions(${LLVM_DEFINITIONS})
     llvm_map_components_to_libnames(llvm_libs core support passes ${LLVM_TARGETS_TO_BUILD})
-    target_link_libraries(${PROJECT_NAME} ${llvm_libs})
+    target_link_libraries(${OBERON_LANG} ${llvm_libs})
 endif()
 
 
-add_executable("grammar-tool"
-        grammar/main.cpp
+set(GRAMMAR_SOURCES     
         grammar/Grammar.cpp grammar/Grammar.h
         grammar/Validator.cpp grammar/Validator.h
-        grammar/Loader.cpp grammar/Loader.h
-        ${SCANNER_SOURCES}
-        ${UTIL_SOURCES})
+        grammar/Loader.cpp grammar/Loader.h)
+
+add_executable(${GRAMMAR_TOOL} grammar/main.cpp ${GRAMMAR_SOURCES} ${SCANNER_SOURCES} ${UTIL_SOURCES})
 
 find_package(Boost REQUIRED COMPONENTS filesystem program_options)
 if (Boost_FOUND)
     include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
-    target_link_libraries("grammar-tool" ${Boost_LIBRARIES})
+    target_link_libraries(${GRAMMAR_TOOL} ${Boost_LIBRARIES})
 endif()
 
 
