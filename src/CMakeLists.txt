@@ -50,8 +50,7 @@ set(ALL_SOURCES global.h ${UTIL_SOURCES} ${SCANNER_SOURCES} ${PARSER_SOURCES} ${
 
 add_executable(${PROJECT_NAME} main.cpp ${ALL_SOURCES})
 
-
-find_package(Boost COMPONENTS system filesystem program_options REQUIRED)
+find_package(Boost REQUIRED COMPONENTS filesystem program_options)
 if (Boost_FOUND)
     include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
     target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES})
@@ -66,10 +65,6 @@ if (LLVM_FOUND)
 endif()
 
 
-configure_file(config.h.in config.h @ONLY)
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
-
-
 add_executable("grammar-tool"
         grammar/main.cpp
         grammar/Grammar.cpp grammar/Grammar.h
@@ -77,3 +72,13 @@ add_executable("grammar-tool"
         grammar/Loader.cpp grammar/Loader.h
         ${SCANNER_SOURCES}
         ${UTIL_SOURCES})
+
+find_package(Boost REQUIRED COMPONENTS filesystem program_options)
+if (Boost_FOUND)
+    include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
+    target_link_libraries("grammar-tool" ${Boost_LIBRARIES})
+endif()
+
+
+configure_file(config.h.in config.h @ONLY)
+include_directories(${CMAKE_CURRENT_BINARY_DIR})

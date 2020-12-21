@@ -7,9 +7,8 @@
 #include <iomanip>
 #include <boost/filesystem.hpp>
 #include <config.h>
-#include "Grammar.h"
-#include "Validator.h"
 #include "Loader.h"
+#include "Validator.h"
 
 namespace fs = boost::filesystem;
 
