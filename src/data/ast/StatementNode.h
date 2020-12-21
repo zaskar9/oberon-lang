@@ -15,7 +15,7 @@ class StatementNode : public Node {
 
 public:
     explicit StatementNode(NodeType type, const FilePos &pos) : Node(type, pos) { };
-    ~StatementNode() override = default;
+    ~StatementNode() override;
 
     void accept(NodeVisitor &visitor) override = 0;
 

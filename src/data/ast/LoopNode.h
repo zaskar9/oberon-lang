@@ -40,7 +40,7 @@ public:
             LoopNode(type, pos), condition_(std::move(condition)) { };
     explicit ConditionalLoopNode(NodeType type, const FilePos &pos) :
             ConditionalLoopNode(type, pos, nullptr) { };
-    ~ConditionalLoopNode() override = default;
+    ~ConditionalLoopNode() override;
 
     void setCondition(std::unique_ptr<ExpressionNode> condition);
     [[nodiscard]] ExpressionNode * getCondition() const;

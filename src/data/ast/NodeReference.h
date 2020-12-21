@@ -18,7 +18,7 @@ class NodeReference {
 
 public:
     explicit NodeReference() = default;
-    virtual ~NodeReference() = default;
+    virtual ~NodeReference();
 
     [[nodiscard]] virtual bool isResolved() const = 0;
     [[nodiscard]] virtual Node* dereference() const = 0;

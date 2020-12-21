@@ -36,7 +36,7 @@ private:
 
 public:
     explicit Node(const NodeType nodeType, const FilePos &pos) : nodeType_(nodeType), pos_(pos) { };
-    virtual ~Node() = 0;
+    virtual ~Node();
 
     [[nodiscard]] NodeType getNodeType() const;
     [[nodiscard]] FilePos pos() const;

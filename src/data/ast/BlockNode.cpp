@@ -6,6 +6,8 @@
 
 #include "BlockNode.h"
 
+BlockNode::~BlockNode() = default;
+
 void BlockNode::registerType(std::unique_ptr<TypeNode> type) {
     types_.push_back(std::move(type));
 }

@@ -23,11 +23,11 @@ public:
 
     [[nodiscard]] T value() const {
         return value_;
-    };
+    }
 
     void print(std::ostream &stream) const override {
         stream << this->type() << ": " << value_;
-    };
+    }
 
 };
 
@@ -37,7 +37,7 @@ class BooleanLiteralToken : public LiteralToken<bool> {
 public:
     explicit BooleanLiteralToken(const FilePos &pos, bool value) :
             LiteralToken(TokenType::boolean_literal, pos, value) { };
-    ~BooleanLiteralToken() override = default;
+    ~BooleanLiteralToken() noexcept override;
 
     void print(std::ostream &stream) const override;
 
@@ -49,7 +49,7 @@ class IntegerLiteralToken final : public LiteralToken<int> {
 public:
     explicit IntegerLiteralToken(const FilePos &pos, int value) :
             LiteralToken(TokenType::integer_literal, pos, value) { };
-    ~IntegerLiteralToken() override = default;
+    ~IntegerLiteralToken() noexcept override;
 
 };
 
@@ -59,7 +59,7 @@ class LongintLiteralToken final : public LiteralToken<long> {
 public:
     explicit LongintLiteralToken(const FilePos &pos, long value) :
             LiteralToken(TokenType::longint_literal, pos, value) { };
-    ~LongintLiteralToken() override = default;
+    ~LongintLiteralToken() noexcept override;
 
 };
 
@@ -69,7 +69,7 @@ class RealLiteralToken final : public LiteralToken<float> {
 public:
     explicit RealLiteralToken(const FilePos &pos, float value) :
             LiteralToken(TokenType::real_literal, pos, value) { };
-    ~RealLiteralToken() override = default;
+    ~RealLiteralToken() noexcept override;
 
 };
 
@@ -79,7 +79,7 @@ class LongrealLiteralToken final : public LiteralToken<double> {
 public:
     explicit LongrealLiteralToken(const FilePos &pos, double value) :
             LiteralToken(TokenType::longreal_literal, pos, value) { };
-    ~LongrealLiteralToken() override = default;
+    ~LongrealLiteralToken() noexcept override;
 
 };
 
@@ -88,7 +88,7 @@ class StringLiteralToken final : public LiteralToken<std::string> {
 public:
     explicit StringLiteralToken(const FilePos &pos, std::string value) :
             LiteralToken(TokenType::string_literal, pos, std::move(value)) { };
-    ~StringLiteralToken() override = default;
+    ~StringLiteralToken() noexcept override;
 
 };
 

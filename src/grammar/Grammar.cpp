@@ -6,6 +6,7 @@
 
 #include "Grammar.h"
 
+Symbol::~Symbol() = default;
 
 std::string Symbol::getName() const {
     return name_;

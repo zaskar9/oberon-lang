@@ -12,12 +12,11 @@
 #include <vector>
 #include "../data/ast/Node.h"
 
-
 class Analysis {
 
 public:
-    explicit Analysis() { };
-    virtual ~Analysis() = 0;
+    explicit Analysis() = default;
+    virtual ~Analysis();
 
     virtual void run(Logger *logger, Node *node) = 0;
 

@@ -20,6 +20,9 @@
 class NodeVisitor {
 
 public:
+    explicit NodeVisitor() = default;
+    virtual ~NodeVisitor() noexcept;
+
     virtual void visit(ModuleNode &node) = 0;
     virtual void visit(ProcedureNode &node) = 0;
 

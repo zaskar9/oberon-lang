@@ -7,6 +7,8 @@
 #include "NodeReference.h"
 #include "NodeVisitor.h"
 
+NodeReference::~NodeReference() = default;
+
 std::string ValueReferenceNode::getName() const {
     if (isResolved()) {
         return dereference()->getName();

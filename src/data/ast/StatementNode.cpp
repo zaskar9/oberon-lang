@@ -7,6 +7,8 @@
 #include "StatementNode.h"
 #include "NodeVisitor.h"
 
+StatementNode::~StatementNode() = default;
+
 ExpressionNode * ReturnNode::getValue() const {
     return value_.get();
 }

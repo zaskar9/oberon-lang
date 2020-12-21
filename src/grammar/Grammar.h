@@ -21,7 +21,7 @@ private:
 
 public:
     explicit Symbol(std::string name) : name_(std::move(name)) { };
-    virtual ~Symbol() = default;
+    virtual ~Symbol();
 
     [[nodiscard]] std::string getName() const;
 

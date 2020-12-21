@@ -25,7 +25,7 @@ class ExpressionNode : public Node {
 
 public:
     explicit ExpressionNode(const NodeType type, const FilePos &pos) : Node(type, pos) { };
-    ~ExpressionNode() override = 0;
+    ~ExpressionNode() override;
 
     [[nodiscard]] virtual bool isConstant() const = 0;
     [[nodiscard]] virtual TypeNode* getType() const = 0;

@@ -28,7 +28,7 @@ private:
 public:
     explicit BlockNode(const FilePos &pos) : types_(), constants_(), type_declarations_(), variables_(),
             statements_(std::make_unique<StatementSequenceNode>(pos)) { };
-    ~BlockNode() = default;
+    virtual ~BlockNode();
 
     void registerType(std::unique_ptr<TypeNode> type);
 
