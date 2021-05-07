@@ -7,10 +7,18 @@
 
 struct TParent { int x, y, z; };
 struct TRecord { int a, b, c; struct TParent parent; };
+struct Test { int m, n;  int a[]; };
 
 void Proc1(struct TRecord param, struct TParent parent) {
     param.a = 1; param.b = 2; param.c = 3;
     param.parent = parent;
+}
+
+void Proc2(struct Test *rec) {
+    struct Test copy = *rec;
+    copy.a[0] = 0;
+    copy.m = 1;
+    copy.n = 2;
 }
 
 int main(int argc, const char* argv[]) {

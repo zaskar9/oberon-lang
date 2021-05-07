@@ -58,6 +58,7 @@ endif()
 
 find_package(LLVM REQUIRED CONFIG)
 if (LLVM_FOUND)
+    # message(STATUS "Found LLVM: ${LLVM_PACKAGE_VERSION}")
     include_directories(SYSTEM ${LLVM_INCLUDE_DIRS})
     add_definitions(${LLVM_DEFINITIONS})
     llvm_map_components_to_libnames(llvm_libs core support passes ${LLVM_TARGETS_TO_BUILD})
@@ -68,7 +69,7 @@ endif()
 set(GRAMMAR_SOURCES     
         grammar/Grammar.cpp grammar/Grammar.h
         grammar/Validator.cpp grammar/Validator.h
-        grammar/Loader.cpp grammar/Loader.h)
+        grammar/Loader.cpp grammar/Loader.h ../test/c/Arrays.c)
 
 add_executable(${GRAMMAR_TOOL} grammar/main.cpp ${GRAMMAR_SOURCES} ${SCANNER_SOURCES} ${UTIL_SOURCES})
 
