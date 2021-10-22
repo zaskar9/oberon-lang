@@ -142,17 +142,18 @@ void LLVMIRBuilder::visit(ValueReferenceNode &node) {
             }
         }
         value_ = builder_.CreateInBoundsGEP(getLLVMType(type), base, indices);
+        type = selector_t;
     }
     if (deref()) {
         if (ref->getNodeType() == NodeType::variable) {
-            value_ = builder_.CreateLoad(value_);
+            value_ = builder_.CreateLoad(getLLVMType(type), value_);
         } else if (ref->getNodeType() == NodeType::parameter) {
             auto param = dynamic_cast<ParameterNode*>(ref);
             // load value of parameter that is either passed by reference or is an array or
             // record parameter since getelementptr only computes the address
             if (param->isVar() || param->getType()->getNodeType() == NodeType::array_type ||
                                   param->getType()->getNodeType() == NodeType::record_type) {
-                value_ = builder_.CreateLoad(value_);
+                value_ = builder_.CreateLoad(getLLVMType(type), value_);
             }
         }
     }
