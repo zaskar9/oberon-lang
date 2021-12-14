@@ -69,7 +69,7 @@ endif()
 set(GRAMMAR_SOURCES     
         grammar/Grammar.cpp grammar/Grammar.h
         grammar/Validator.cpp grammar/Validator.h
-        grammar/Loader.cpp grammar/Loader.h ../test/c/Arrays.c)
+        grammar/Loader.cpp grammar/Loader.h)
 
 add_executable(${GRAMMAR_TOOL} grammar/main.cpp ${GRAMMAR_SOURCES} ${SCANNER_SOURCES} ${UTIL_SOURCES})
 

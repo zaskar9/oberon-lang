@@ -132,7 +132,7 @@ void LambdaLifter::visit(VariableDeclarationNode &node) {
     node.setLevel(level_);
 }
 
-void LambdaLifter::visit([[maybe_unused]]   TypeReferenceNode &node) { }
+void LambdaLifter::visit([[maybe_unused]] TypeReferenceNode &node) { }
 
 void LambdaLifter::visit(ValueReferenceNode &node) {
     auto decl = node.dereference();
