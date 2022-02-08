@@ -152,6 +152,7 @@ END QuickSort;
 BEGIN
     i := 1;
     bool := (i >= 0) OR (i < 100) & (point.x > 0);
+    IF i != 2 THEN i := i + 1 END; (* interrupted by signal 11: SIGSEGV *)
     REPEAT
         Init();
         QuickSort();

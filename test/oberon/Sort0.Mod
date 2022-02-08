@@ -1,69 +1,32 @@
-(* Oberon implementations of various sorting algorithms. *)
-MODULE Sort;
+(* Oberon-0 implementations of various sort algorithms. *)
+MODULE Sort0;
 
 (* Length of the array to be sorted. *)
-CONST Dim = 3 * 0AH;
+CONST Dim = 2 * 10;
+
+(* Array type *)
+TYPE INTARRAY = ARRAY Dim OF INTEGER;
 
 (* Array to be sorted. *)
-TYPE Vector = ARRAY Dim OF INTEGER;
-
-(* Array to be sorted. *)
-VAR a: Vector;
-
-(* Import `printf` function from C <stdio.h> library. *)
-PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
-
-(* Import `rand` function from C <stdlib.h> library. *)
-PROCEDURE rand(): INTEGER; EXTERN;
-
-(* Writes a string value to standard out. *)
-PROCEDURE Write(str: STRING);
-BEGIN
-    printf(str)
-END Write;
-
-(* Writes a newline to standard out. *)
-PROCEDURE WriteLn;
-BEGIN
-    printf("\n")
-END WriteLn;
-
-(* Writes an integer value to standard out. *)
-PROCEDURE WriteInt(val: INTEGER);
-BEGIN
-    printf("%d", val)
-END WriteInt;
+VAR a: INTARRAY;
 
 (* Initializes the array. *)
 PROCEDURE Init();
 VAR i: INTEGER;
 BEGIN
-    FOR i := 0 TO Dim -1 BY 1 DO
-        a[i] := rand() MOD Dim
-    END
-END Init;
-
-(* Prints the array. *)
-PROCEDURE Print;
-VAR i: INTEGER;
-BEGIN
-    Write("[");
     i := 0;
     WHILE i < Dim DO
-        WriteInt(a[i]);
-        IF i + 1 < Dim THEN Write(", ") END;
+        a[i] := Dim-i;
         i := i + 1
-    END;
-    Write("]");
-    WriteLn
-END Print;
+    END
+END Init;
 
 (* Swaps the two values passed as var-parameters. *)
 PROCEDURE Swap(VAR a, b: INTEGER);
 VAR t: INTEGER;
 BEGIN
     t := a;
-    a := b;
+    a := b; 
     b := t
 END Swap;
 
@@ -99,7 +62,7 @@ BEGIN
         i := i + 1
     END
 END SelectionSort;
-
+    
 (* Applies the bubble-sort algorithm to the global array. *)
 PROCEDURE BubbleSort;
 VAR i, j: INTEGER;
@@ -144,7 +107,7 @@ END QuickSort;
 (* Main program. *)
 BEGIN
     Init;
-    Print;
-    QuickSort;
-    Print
-END Sort.
+    BubbleSort;
+    Init;
+    QuickSort
+END Sort0.
