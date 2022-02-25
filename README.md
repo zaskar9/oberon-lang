@@ -25,15 +25,15 @@ unofficial features) can be found in the Wiki section of this project repository
 Owing to its origin as a course project, care has been taken that the provided C++ sourcecode can be compiled on
 different operating systems and with different toolchains. Currently the sourcecode only depends on 
 [Boost](https://www.boost.org) and [LLVM](https://llvm.org).
-As of December 2020, the following configurations are tested and known to work.
+As of February 2022, the following configurations are tested and known to work.
 
-|      | macOS                       | Windows 10 (x64)             | Linux (Ubuntu 20.04.1 LTS)   |
-|------|-----------------------------|------------------------------|------------------------------|
-|Boost | 1.74.0                      | 1.74.0                       | 1.71.0                       |
-|LLVM  | 11.0.0                      | 11.0.0                       | 11.0.0                       |
-|CMake | 3.19.1                      | 3.19.2                       | 3.19.2                       |
-|IDE   | CLion 2020.3                | Visual Studio 2019 Community | CLion 2020.3                 |
-|CXX   | Apple Clang 12.0.0.12000032 | Microsoft CL 19.24.28316     | GCC 9.3.0                    |
+|      | macOS              | Windows              | Linux (Ubuntu) |
+|------|--------------------|----------------------|----------------|
+|Boost | 1.74.0             | 1.74.0               | 1.74.0         |
+|LLVM  | 13.0.0             | 13.0.0               | 13.0.0         |
+|CMake | 3.21.1             | 3.19.2               | 3.22.2         |
+|IDE   | CLion 2021.3.3     | Visual Studio 17.1.0 | CLion 2021.3.3 |
+|CXX   | Apple Clang 13.0.0 | CL 19.31.31104       | GCC 11.2.0     |
  
 Detailed instruction on how to build the Oberon compiler and its dependencies can be found in the Wiki section of this
 project repository.
