@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 
-project(oberon-llvm)
+project(oberon-lang)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     # warning level 4
