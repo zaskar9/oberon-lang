@@ -48,7 +48,7 @@ void Parser::ident_list(std::vector<std::string> &idents) {
         } else if (token->type() == TokenType::colon) {
             break;
         } else {
-            logger_->error(token->pos(), "unexpected token: " + to_string(token->type()) + ".");
+            logger_->error(token->pos(), "[ident_list] unexpected token: " + to_string(token->type()) + ".");
             // [<:>]
             resync({ TokenType::colon });
         }
@@ -169,7 +169,7 @@ TypeNode* Parser::type(BlockNode *block, std::string name) {
         block->registerType(std::move(node));
         return res;
     } else {
-        logger_->error(token->pos(), "unexpected token: " + to_string(token->type()) + ".");
+        logger_->error(token->pos(), "[type] unexpected token: " + to_string(token->type()) + ".");
     }
     // [<)>, <;>, <END>]
     resync({ TokenType::semicolon, TokenType::rparen, TokenType::kw_end });
@@ -390,7 +390,7 @@ void Parser::statement_sequence(StatementSequenceNode *statements) {
                        token->type() == TokenType::kw_else || token->type() == TokenType::kw_until) {
                 break;
             } else {
-                logger_->error(token->pos(), "unexpected token: " + to_string(token->type()) + ".");
+                logger_->error(token->pos(), "[stmt_seq] unexpected token: " + to_string(token->type()) + ".");
                 // [<;>] and [<UNTIL>, <ELSIF>, <ELSE>, <END>]
                 resync({ TokenType::semicolon,
                                TokenType::kw_end, TokenType::kw_elsif, TokenType::kw_else, TokenType::kw_until});
@@ -641,12 +641,12 @@ std::unique_ptr<ExpressionNode> Parser::expression() {
         auto rhs = simple_expression();
         result = std::make_unique<BinaryExpressionNode>(token_->pos(), op, std::move(result), std::move(rhs));
     }
-    // [<END>, <ELSE>, <TO>, <THEN>, <UNTIL>, <ELSIF>, <BY>, <DO>, <OF>, <)>, <]>, <,>, <;>]
-    // resync({ TokenType::kw_end, TokenType::kw_else, TokenType::kw_to, TokenType::kw_then, TokenType::kw_until,
-    //         TokenType::kw_elsif, TokenType::kw_by, TokenType::kw_do, TokenType::kw_of,
-    //         TokenType::rparen, TokenType::rbrack, TokenType::comma, TokenType::semicolon });
     if (!result) {
-        logger_->error(scanner_->peek()->pos(), "expression expected.");
+        // [<END>, <ELSE>, <TO>, <THEN>, <UNTIL>, <ELSIF>, <BY>, <DO>, <OF>, <)>, <]>, <,>, <;>]
+        resync({TokenType::kw_end, TokenType::kw_else, TokenType::kw_to, TokenType::kw_then, TokenType::kw_until,
+                TokenType::kw_elsif, TokenType::kw_by, TokenType::kw_do, TokenType::kw_of,
+                TokenType::rparen, TokenType::rbrack, TokenType::comma, TokenType::semicolon});
+        // logger_->error(scanner_->peek()->pos(), "expression expected.");
     }
     return result;
 }
@@ -740,7 +740,7 @@ std::unique_ptr<ExpressionNode> Parser::factor() {
         scanner_->next();
         return std::make_unique<UnaryExpressionNode>(token->pos(), OperatorType::NOT, factor());
     } else {
-        logger_->error(token->pos(), "unexpected token: " + to_string(token->type()) + ".");
+        logger_->error(token->pos(), "[factor] unexpected token: " + to_string(token->type()) + ".");
         return nullptr;
     }
 }
