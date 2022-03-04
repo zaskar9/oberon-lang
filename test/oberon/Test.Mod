@@ -115,6 +115,9 @@ BEGIN
     WHILE i < Dim DO
         j := Dim - 1
         WHILE j > i DO
+            j := Dim + 0 * 1
+            j := Dim * 1
+            j := Dim ! 1;
             IF a[j-1] > a[j] THEN Swap(a[j - 1], a[j]) END;
             j := j - 1
         END;

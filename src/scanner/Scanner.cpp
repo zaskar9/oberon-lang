@@ -14,7 +14,7 @@
 #include "LiteralToken.h"
 #include "UndefinedToken.h"
 
-Scanner::Scanner(boost::filesystem::path path, Logger *logger) :
+Scanner::Scanner(const boost::filesystem::path &path, Logger *logger) :
         filename_(path.string()), logger_(logger), tokens_(), lineNo_(1), charNo_(0) {
     init();
     file_.open(filename_, std::ios::in);
@@ -32,7 +32,8 @@ Scanner::~Scanner() {
 }
 
 void Scanner::init() {
-    keywords_ = { { "DIV", TokenType::op_div }, { "MOD", TokenType::op_mod }, { "OR", TokenType::op_or },
+    keywords_ = { { "DIV", TokenType::op_div }, { "MOD", TokenType::op_mod },
+                  { "OR", TokenType::op_or },
                   { "MODULE", TokenType::kw_module }, { "PROCEDURE", TokenType::kw_procedure },
                   { "EXTERN", TokenType::kw_extern },
                   { "BEGIN", TokenType::kw_begin }, { "END", TokenType::kw_end },
@@ -40,12 +41,14 @@ void Scanner::init() {
                   { "LOOP", TokenType::kw_loop }, { "EXIT", TokenType::kw_exit },
                   { "WHILE", TokenType::kw_while }, { "DO", TokenType::kw_do },
                   { "REPEAT", TokenType::kw_repeat }, { "UNTIL", TokenType::kw_until },
-                  { "FOR", TokenType::kw_for }, { "TO", TokenType::kw_to }, { "BY", TokenType::kw_by },
+                  { "FOR", TokenType::kw_for }, { "TO", TokenType::kw_to },
+                  { "BY", TokenType::kw_by },
                   { "IF", TokenType::kw_if }, { "THEN", TokenType::kw_then },
                   { "ELSE", TokenType::kw_else }, { "ELSIF", TokenType::kw_elsif },
                   { "VAR", TokenType::kw_var }, { "CONST", TokenType::kw_const },
                   { "TYPE", TokenType::kw_type }, { "ARRAY", TokenType::kw_array },
                   { "RECORD", TokenType::kw_record }, { "OF", TokenType::kw_of },
+                  { "NIL", TokenType::kw_nil},
                   { "TRUE", TokenType::boolean_literal}, { "FALSE", TokenType::boolean_literal } };
 }
 
@@ -73,8 +76,8 @@ const Token* Scanner::scanToken() {
     while ((ch_ != -1) && (ch_ <= ' ')) {
         read();
     }
+    FilePos pos = this->current();
     if (ch_ != -1) {
-        FilePos pos = this->current();
         if (((ch_ >= 'A') && (ch_ <= 'Z')) || ((ch_ >= 'a') && (ch_ <= 'z')) || ch_ == '_') {
             // Scan identifier
             token = scanIdent();
@@ -205,6 +208,10 @@ const Token* Scanner::scanToken() {
     } else {
         token = new Token(TokenType::eof, current());
     }
+    if (token->type() == TokenType::undef) {
+        logger_->error(pos, "bad character.");
+        token = scanToken();
+    }
     return token;
 }
 
@@ -277,7 +284,7 @@ const Token* Scanner::scanIdent() {
     auto it = keywords_.find(ident);
     if (it != keywords_.end()) {
         if (it->second == TokenType::boolean_literal) {
-            return new BooleanLiteralToken(pos, it->first.compare("TRUE") == 0);
+            return new BooleanLiteralToken(pos, it->first == "TRUE");
         }
         return new Token(it->second, pos);
     }

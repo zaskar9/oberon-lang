@@ -28,7 +28,7 @@ private:
     int lineNo_, charNo_;
     std::unordered_map<std::string, TokenType> keywords_;
     std::ifstream file_;
-    char ch_;
+    char ch_{};
 
     void init();
     void read();
@@ -40,7 +40,7 @@ private:
     void scanComment();
 
 public:
-    explicit Scanner(boost::filesystem::path path, Logger *logger);
+    explicit Scanner(const boost::filesystem::path& path, Logger *logger);
     ~Scanner();
     const Token* peek();
     std::unique_ptr<const Token> next();

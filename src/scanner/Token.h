@@ -12,7 +12,7 @@
 #include "../util/Logger.h"
 
 enum class TokenType : char {
-    eof, nil, undef,
+    eof, undef,
     boolean_literal, byte_literal, char_literal, integer_literal, longint_literal,
     real_literal, longreal_literal, string_literal,
     const_ident,
@@ -22,7 +22,7 @@ enum class TokenType : char {
     op_eq, op_neq, op_lt, op_gt, op_leq, op_geq, op_becomes,
     kw_module, kw_procedure, kw_begin, kw_end, kw_if, kw_then, kw_else, kw_elsif,
     kw_loop, kw_exit, kw_while, kw_do, kw_repeat, kw_until, kw_for, kw_to, kw_by,
-    kw_array, kw_record, kw_const, kw_type, kw_var, kw_of, kw_extern, kw_return
+    kw_array, kw_record, kw_const, kw_type, kw_var, kw_of, kw_extern, kw_return, kw_nil
 };
 
 std::ostream& operator<<(std::ostream &stream, const TokenType &type);

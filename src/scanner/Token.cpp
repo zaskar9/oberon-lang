@@ -29,7 +29,6 @@ std::ostream& operator<<(std::ostream &stream, const TokenType &type) {
     std::string result;
     switch(type) {
         case TokenType::eof: result = "<eof>"; break;
-        case TokenType::nil: result = "NIL"; break;
         case TokenType::undef: result = "<undefined>"; break;
         case TokenType::boolean_literal: result = "BOOLEAN literal"; break;
         case TokenType::byte_literal: result = "BYTE literal"; break;
@@ -92,7 +91,8 @@ std::ostream& operator<<(std::ostream &stream, const TokenType &type) {
         case TokenType::kw_of: result = "OF"; break;
         case TokenType::kw_extern: result = "EXTERN"; break;
         case TokenType::kw_return: result = "RETURN"; break;
-        default: result = "unknown token"; break;
+        case TokenType::kw_nil: result = "NIL"; break;
+        default: result = "undefined token"; break;
     }
     stream << result;
     return stream;
