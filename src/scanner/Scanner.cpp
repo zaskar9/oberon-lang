@@ -34,8 +34,8 @@ Scanner::~Scanner() {
 void Scanner::init() {
     keywords_ = { { "DIV", TokenType::op_div }, { "MOD", TokenType::op_mod },
                   { "OR", TokenType::op_or },
-                  { "MODULE", TokenType::kw_module }, { "PROCEDURE", TokenType::kw_procedure },
-                  { "EXTERN", TokenType::kw_extern },
+                  { "MODULE", TokenType::kw_module }, { "IMPORT", TokenType::kw_import },
+                  { "PROCEDURE", TokenType::kw_procedure }, { "EXTERN", TokenType::kw_extern },
                   { "BEGIN", TokenType::kw_begin }, { "END", TokenType::kw_end },
                   { "RETURN", TokenType::kw_return },
                   { "LOOP", TokenType::kw_loop }, { "EXIT", TokenType::kw_exit },
@@ -48,7 +48,7 @@ void Scanner::init() {
                   { "VAR", TokenType::kw_var }, { "CONST", TokenType::kw_const },
                   { "TYPE", TokenType::kw_type }, { "ARRAY", TokenType::kw_array },
                   { "RECORD", TokenType::kw_record }, { "OF", TokenType::kw_of },
-                  { "NIL", TokenType::kw_nil},
+                  { "POINTER", TokenType::kw_pointer }, { "NIL", TokenType::kw_nil },
                   { "TRUE", TokenType::boolean_literal}, { "FALSE", TokenType::boolean_literal } };
 }
 

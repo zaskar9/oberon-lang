@@ -19,7 +19,7 @@ private:
     unsigned int level_;
 
     static const std::string THIS_;
-    static const std::string PARENT_;
+    static const std::string SUPER_;
     static const FilePos POS_;
 
     void call(ProcedureNodeReference &node);
@@ -58,7 +58,6 @@ private:
     void visit(ForLoopNode &node) override;
     void visit(ReturnNode &node) override;
 
-    static std::unique_ptr<AssignmentNode> envFieldInitializer(DeclarationNode *var, DeclarationNode *decl) ;
     static bool envFieldResolver(ValueReferenceNode *var, const std::string &field_name, TypeNode *field_type) ;
 
 public:

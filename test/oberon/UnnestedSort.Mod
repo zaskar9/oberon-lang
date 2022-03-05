@@ -131,7 +131,7 @@ MODULE UnnestedSort(*0*);
    BEGIN
       i := l;
       j := r;
-      x := a[r + l DIV 2];
+      x := a[(r + l) DIV 2];
       WHILE i <= j DO
          WHILE a[i] < x DO
             i := i + 1
@@ -162,7 +162,7 @@ MODULE UnnestedSort(*0*);
           tmp(*2*): ARRAY 30 OF INTEGER;
    BEGIN
       IF l < r THEN
-         m := l + r DIV 2;
+         m := (l + r) DIV 2;
          MSort(a, l, m, parent);
          MSort(a, m + 1, r, parent);
          i := l;
@@ -197,14 +197,16 @@ MODULE UnnestedSort(*0*);
       VAR this(*2*): TQuickSort;
    BEGIN
       this.a := a;
-      QSort(this.a, 0, 29, this)
+      QSort(this.a, 0, 29, this);
+      a := this.a
    END QuickSort;
 
    PROCEDURE MergeSort(*1*)(VAR a(*2*): Vector);
       VAR this(*2*): TMergeSort;
    BEGIN
       this.a := a;
-      MSort(this.a, 0, 29, this)
+      MSort(this.a, 0, 29, this);
+      a := this.a
    END MergeSort;
 
 BEGIN

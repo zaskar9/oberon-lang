@@ -42,31 +42,31 @@ BEGIN
     WriteLn
 END PrintArray;
 
-PROCEDURE Procedure1(param: INTEGER);
+PROCEDURE Procedure1(param1: INTEGER);
 VAR var1: INTEGER;
     array1: ARRAY const0 OF TPoint2D;
 
-    PROCEDURE Procedure2(param: INTEGER);
+    PROCEDURE Procedure2(param2: INTEGER);
     VAR var2: INTEGER;
 
-        PROCEDURE Procedure3(param: INTEGER);
+        PROCEDURE Procedure3(param3: INTEGER);
         VAR var3: INTEGER;
         BEGIN
             var3 := const0;
-            array0[const0 - 1] := param;
-            array0[var3 - 2] := param;
-            var0 := param;
-            var1 := param;
-            var2 := param;
-            array1[var2 - var1 + 1].x := param;
-            array1[var2 - var1 + 2].color.r := param
+            array0[const0 - 1] := param3;
+            array0[var3 - 2] := param3;
+            var0 := param3;
+            var1 := param3;
+            var2 := param3;
+            array1[var2 - var1 + 1].x := param3;
+            array1[var2 - var1 + 2].color.r := param3
         END Procedure3;
 
     BEGIN
         var2 := 0;
         WriteInt(var2); WriteLn;
-        Procedure3(param);
-        WriteInt(var2); WriteLn
+        Procedure3(param2);
+        WriteInt(var2); WriteLn;
     END Procedure2;
 
 BEGIN
@@ -75,10 +75,10 @@ BEGIN
     WriteInt(var0); WriteLn;
     WriteInt(var1); WriteLn;
     PrintArray();
-    Procedure2(param);
+    Procedure2(param1);
     WriteInt(var0); WriteLn;
     WriteInt(var1); WriteLn;
-    PrintArray
+    PrintArray;
 END Procedure1;
 
 BEGIN

@@ -7,7 +7,7 @@
 #include "LambdaLifter.h"
 
 const std::string LambdaLifter::THIS_ = "_this";
-const std::string LambdaLifter::PARENT_ = "_parent";
+const std::string LambdaLifter::SUPER_ = "_super";
 const FilePos LambdaLifter::POS_ = {"", 0, 0};
 
 void LambdaLifter::run(Logger *logger, Node *node) {
@@ -24,7 +24,7 @@ void LambdaLifter::call(ProcedureNodeReference &node) {
     if (proc->getParameterCount() > node.getParameterCount()) {
         auto param = std::make_unique<ValueReferenceNode>(POS_, env_);
         if (proc->getLevel() != env_->getLevel()) {
-            envFieldResolver(param.get(), PARENT_, proc->getParameter(node.getParameterCount())->getType());
+            envFieldResolver(param.get(), SUPER_, proc->getParameter(node.getParameterCount())->getType());
         }
         node.addParameter(std::move(param));
     }
@@ -40,8 +40,8 @@ void LambdaLifter::visit(ModuleNode &node) {
 void LambdaLifter::visit(ProcedureNode &node) {
     env_ = nullptr;
     level_ = node.getLevel();
-    bool is_parent = node.getProcedureCount();
-    if (is_parent) /* parent procedure */ {
+    bool is_super = node.getProcedureCount();
+    if (is_super) /* super procedure */ {
         if (node.getParameterCount() > 0 || node.getVariableCount() > 0) {
             std::string name = "_T" + node.getName();
             auto record_t = std::make_unique<RecordTypeNode>(POS_, name);
@@ -60,26 +60,46 @@ void LambdaLifter::visit(ProcedureNode &node) {
             module_->addTypeDeclaration(std::move(decl));
             for (size_t i = 0; i < node.getProcedureCount(); i++) {
                 auto proc = node.getProcedure(i);
-                auto param = std::make_unique<ParameterNode>(POS_, PARENT_, type, true);
+                auto param = std::make_unique<ParameterNode>(POS_, SUPER_, type, true);
                 param->setLevel(proc->getLevel() + 1);
                 proc->addParameter(std::move(param));
             }
+            // create local variable to manage for the procedure's environment (this)
             auto var = std::make_unique<VariableDeclarationNode>(POS_, THIS_, type);
             var->setLevel(level_ + 1);
             env_ = var.get();
+            // initialize the procedure's environment (this)
             for (size_t i = 0; i < node.getParameterCount(); i++) {
-                node.getStatements()->insertStatement(i, envFieldInitializer(env_, node.getParameter(i)));
+                auto param = node.getParameter(i);
+                auto lhs = std::make_unique<ValueReferenceNode>(POS_, env_);
+                lhs->addSelector(NodeType::record_type,
+                                 std::make_unique<ValueReferenceNode>(POS_, type->getField(param->getName())));
+                auto rhs = std::make_unique<ValueReferenceNode>(POS_, param);
+                node.getStatements()->insertStatement(i, std::make_unique<AssignmentNode>(POS_, std::move(lhs), std::move(rhs)));
             }
             node.insertVariable(0, std::move(var));
+            // alter the statement's of the procedure to use the procedure's environment (this)
             for (size_t i = node.getParameterCount(); i < node.getStatements()->getStatementCount(); i++) {
                 node.getStatements()->getStatement(i)->accept(*this);
             }
+            // append statements to write values of var-parameters back from procedure's environment (this)
+            for (size_t i = 0; i < node.getParameterCount(); i++ ){
+                auto param = node.getParameter(i);
+                if (param->isVar()) {
+                    auto lhs = std::make_unique<ValueReferenceNode>(POS_, param);
+                    auto rhs = std::make_unique<ValueReferenceNode>(POS_, env_);
+                    rhs->addSelector(NodeType::record_type,
+                                     std::make_unique<ValueReferenceNode>(POS_, type->getField(param->getName())));
+                    node.getStatements()->addStatement(std::make_unique<AssignmentNode>(POS_, std::move(lhs), std::move(rhs)));
+                }
+            }
             if (level_ > 1) /* neither root, nor leaf procedure */ {
-                auto param = node.getParameter(PARENT_);
+                auto param = node.getParameter(SUPER_);
                 if (param) {
                     auto lhs = std::make_unique<ValueReferenceNode>(POS_, param);
                     auto rhs = std::make_unique<ValueReferenceNode>(POS_, env_);
-                    rhs->addSelector(NodeType::record_type, std::make_unique<ValueReferenceNode>(POS_, type->getField(PARENT_)));
+                    rhs->addSelector(NodeType::record_type,
+                                     std::make_unique<ValueReferenceNode>(POS_, type->getField(SUPER_)));
                     node.getStatements()->addStatement(std::make_unique<AssignmentNode>(POS_, std::move(lhs), std::move(rhs)));
                 }
             }
@@ -93,7 +113,7 @@ void LambdaLifter::visit(ProcedureNode &node) {
         // TODO remove unnecessary local variables
         // node.removeVariables(1, node.getVariableCount());
     } else if (level_ > 1) /* leaf procedure */ {
-        if ((env_ = node.getParameter(PARENT_))) {
+        if ((env_ = node.getParameter(SUPER_))) {
             for (size_t i = 0; i < node.getStatements()->getStatementCount(); i++) {
                 node.getStatements()->getStatement(i)->accept(*this);
             }
@@ -137,7 +157,7 @@ void LambdaLifter::visit([[maybe_unused]] TypeReferenceNode &node) { }
 void LambdaLifter::visit(ValueReferenceNode &node) {
     auto decl = node.dereference();
     if (decl->getLevel() == 1 ||
-        (env_->getName() == PARENT_ && env_->getLevel() == decl->getLevel())) {
+        (env_->getName() == SUPER_ && env_->getLevel() == decl->getLevel())) {
         // global variable or local variable in leaf procedure
         return;
     }
@@ -239,14 +259,6 @@ void LambdaLifter::visit(ReturnNode &node) {
     node.getValue()->accept(*this);
 }
 
-std::unique_ptr<AssignmentNode> LambdaLifter::envFieldInitializer(DeclarationNode *var, DeclarationNode *decl) {
-    auto type = dynamic_cast<RecordTypeNode*>(var->getType());
-    auto lhs = std::make_unique<ValueReferenceNode>(POS_, var);
-    lhs->addSelector(NodeType::record_type, std::make_unique<ValueReferenceNode>(POS_, type->getField(decl->getName())));
-    auto rhs = std::make_unique<ValueReferenceNode>(POS_, decl);
-    return std::make_unique<AssignmentNode>(POS_, std::move(lhs), std::move(rhs));
-}
-
 bool LambdaLifter::envFieldResolver(ValueReferenceNode *var, const std::string &field_name, TypeNode *field_type) {
     auto type = dynamic_cast<RecordTypeNode*>(var->getType());
     size_t num = 0;
@@ -257,7 +269,7 @@ bool LambdaLifter::envFieldResolver(ValueReferenceNode *var, const std::string &
             var->setType(field->getType());
             return true;
         } else {
-            field = type->getField(PARENT_);
+            field = type->getField(SUPER_);
             if (field) {
                 var->insertSelector(num, NodeType::record_type, std::make_unique<ValueReferenceNode>(POS_, field));
                 type = dynamic_cast<RecordTypeNode *>(field->getType());
