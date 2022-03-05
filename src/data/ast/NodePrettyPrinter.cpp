@@ -155,7 +155,6 @@ void NodePrettyPrinter::visit(ConstantDeclarationNode &node) {
 void NodePrettyPrinter::visit(FieldNode &node) {
     stream_ << node.getName() << ": ";
     node.getType()->accept(*this);
-    stream_ << ';';
 }
 
 void NodePrettyPrinter::visit(ParameterNode &node) {
@@ -199,9 +198,15 @@ void NodePrettyPrinter::visit(UnaryExpressionNode &node) {
 }
 
 void NodePrettyPrinter::visit(BinaryExpressionNode &node) {
-    node.getLeftExpression()->accept(*this);
+    auto lhs = node.getLeftExpression();
+    stream_ << (lhs->getPrecedence() < node.getPrecedence() ? "(" : "");
+    lhs->accept(*this);
+    stream_ << (lhs->getPrecedence() < node.getPrecedence() ? ")" : "");
     stream_ << ' ' << node.getOperator() << ' ';
+    auto rhs = node.getRightExpression();
+    stream_ << (rhs->getPrecedence() < node.getPrecedence() ? "(" : "");
     node.getRightExpression()->accept(*this);
+    stream_ << (rhs->getPrecedence() < node.getPrecedence() ? ")" : "");
 }
 
 void NodePrettyPrinter::visit(ArrayTypeNode &node) {
@@ -224,7 +229,11 @@ void NodePrettyPrinter::visit(RecordTypeNode &node) {
         stream_ << "RECORD ";
         for (size_t i = 0; i < node.getFieldCount(); i++) {
             node.getField(i)->accept(*this);
-            stream_ << ' ';
+            if (i + 1 < node.getFieldCount()) {
+                stream_ << "; ";
+            } else {
+                stream_ << ' ';
+            }
         }
         stream_ << "END";
     } else {

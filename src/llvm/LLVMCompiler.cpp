@@ -64,7 +64,7 @@ void LLVMCompiler::compile(boost::filesystem::path path) {
     auto symbols = std::make_unique<SymbolTable>();
     auto parser = std::make_unique<Parser>(scanner.get(), logger_);
     auto ast = parser->parse();
-    if (ast) {
+    if (ast && logger_->getErrorCount() == errors) {
         // Run the analyzer
         logger_->debug(PROJECT_NAME, "analyzing...");
         auto analyzer = std::make_unique<Analyzer>(logger_);

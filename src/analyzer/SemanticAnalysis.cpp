@@ -367,13 +367,18 @@ void SemanticAnalysis::visit(AssignmentNode &node) {
     auto lvalue = node.getLvalue();
     if (lvalue) {
         lvalue->accept(*this);
-        if (lvalue->dereference()->getNodeType() == NodeType::parameter) {
-            auto param = dynamic_cast<ParameterNode *>(lvalue->dereference());
-            if (!param->isVar()) {
-                logger_->error(lvalue->pos(), "cannot assign non-var parameter.");
+        auto decl = lvalue->dereference();
+        if (decl) {
+            if (decl->getNodeType() == NodeType::parameter) {
+                auto param = dynamic_cast<ParameterNode *>(lvalue->dereference());
+                if (!param->isVar()) {
+                    logger_->error(lvalue->pos(), "cannot assign non-var parameter.");
+                }
+            } else if (lvalue->dereference()->getNodeType() == NodeType::constant) {
+                logger_->error(lvalue->pos(), "cannot assign constant.");
             }
-        } else if (lvalue->dereference()->getNodeType() == NodeType::constant) {
-            logger_->error(lvalue->pos(), "cannot assign constant.");
+        } else {
+            logger_->error(node.pos(), "undefined left-hand side in assignment.");
         }
     } else {
         logger_->error(node.pos(), "undefined left-hand side in assignment.");

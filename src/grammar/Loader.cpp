@@ -23,7 +23,7 @@ void Loader::production(Grammar *grammar) {
     if (scanner_->peek()->type() == TokenType::op_times) {
         auto token = scanner_->next();
         if (grammar->getStart()) {
-            logger_->error(token->pos(), "duplicate start symbol: " + head->getName() + ".");
+            logger_->error(token->start(), "duplicate start symbol: " + head->getName() + ".");
         } else {
             grammar->setStart(head);
         }
@@ -34,7 +34,7 @@ void Loader::production(Grammar *grammar) {
         scanner_->next();
     } else {
         auto token = scanner_->next();
-        logger_->error(token->pos(), "unexpected token (production): " + to_string(token->type()) + ".");
+        logger_->error(token->start(), "unexpected token (production): " + to_string(token->type()) + ".");
     }
 }
 
@@ -69,7 +69,7 @@ Symbol * Loader::symbol(Grammar *grammar) {
         scanner_->next();
         return head;
     }
-    logger_->error(token->pos(), "unexpected token (symbol): " + to_string(token->type()) + ".");
+    logger_->error(token->start(), "unexpected token (symbol): " + to_string(token->type()) + ".");
     return nullptr;
 }
 
@@ -92,7 +92,7 @@ NonTerminal * Loader::non_terminal(Grammar *grammar) {
         auto nonterminal = grammar->lookupNonTerminal(ident->value());
         return (nonterminal ? nonterminal : grammar->createNonTerminal(ident->value()));
     }
-    logger_->error(token->pos(), "unexpected token (non-terminal): " + to_string(token->type()) + ".");
+    logger_->error(token->start(), "unexpected token (non-terminal): " + to_string(token->type()) + ".");
     return nullptr;
 }
 
@@ -105,7 +105,7 @@ Terminal * Loader::terminal(Grammar *grammar) {
         auto terminal = grammar->lookupTerminal(literal->value());
         return (terminal ? terminal : grammar->createTerminal(literal->value()));
     }
-    logger_->error(token->pos(), "unexpected token (terminal): " + to_string(token->type()) + ".");
+    logger_->error(token->start(), "unexpected token (terminal): " + to_string(token->type()) + ".");
     return nullptr;
 }
 

@@ -31,14 +31,18 @@ class Token {
 
 private:
     TokenType type_;
-    FilePos pos_;
+    FilePos start_, end_;
 
 public:
-    explicit Token(const TokenType type, const FilePos &pos) : type_(type), pos_(pos) { };
+    explicit Token(const TokenType type, const FilePos &start) :
+            Token(type, start, { start.fileName, start.lineNo, start.charNo + 1 }) { };
+    explicit Token(const TokenType type, const FilePos &start, const FilePos &end) :
+            type_(type), start_(start), end_(end) { };
     virtual ~Token();
 
     [[nodiscard]] TokenType type() const;
-    [[nodiscard]] FilePos pos() const;
+    [[nodiscard]] FilePos start() const;
+    [[nodiscard]] FilePos end() const;
 
     virtual void print(std::ostream &stream) const;
     friend std::ostream& operator<<(std::ostream &stream, const Token &symbol);

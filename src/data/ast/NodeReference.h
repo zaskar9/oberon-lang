@@ -64,6 +64,8 @@ public:
     void setType(TypeNode *type);
     [[nodiscard]] TypeNode* getType() const override;
 
+    [[nodiscard]] int getPrecedence() const final;
+
     void accept(NodeVisitor& visitor) override;
 
     void print(std::ostream &stream) const override;

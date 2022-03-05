@@ -71,6 +71,11 @@ TypeNode* ValueReferenceNode::getType() const {
     return type_;
 }
 
+int ValueReferenceNode::getPrecedence() const {
+    return 4;
+}
+
+
 void ValueReferenceNode::accept(NodeVisitor& visitor) {
     visitor.visit(*this);
 }
@@ -135,7 +140,6 @@ ExpressionNode * ProcedureNodeReference::getParameter(size_t num) const {
 size_t ProcedureNodeReference::getParameterCount() const {
     return parameters_.size();
 }
-
 
 bool FunctionCallNode::isConstant() const {
     return false;

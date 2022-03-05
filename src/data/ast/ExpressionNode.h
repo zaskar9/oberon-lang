@@ -20,6 +20,7 @@ enum class OperatorType : char {
 };
 
 std::ostream& operator<<(std::ostream &stream, const OperatorType &op);
+int precedence(const OperatorType &op);
 
 class ExpressionNode : public Node {
 
@@ -29,6 +30,7 @@ public:
 
     [[nodiscard]] virtual bool isConstant() const = 0;
     [[nodiscard]] virtual TypeNode* getType() const = 0;
+    [[nodiscard]] virtual int getPrecedence() const = 0;
 
     void accept(NodeVisitor& visitor) override = 0;
 
@@ -48,6 +50,7 @@ public:
 
     [[nodiscard]] bool isConstant() const final;
     [[nodiscard]] TypeNode* getType() const final;
+    [[nodiscard]] virtual int getPrecedence() const final;
 
     [[nodiscard]] OperatorType getOperator() const;
 
@@ -76,6 +79,7 @@ public:
 
     [[nodiscard]] bool isConstant() const final;
     [[nodiscard]] TypeNode* getType() const final;
+    [[nodiscard]] virtual int getPrecedence() const final;
 
     [[nodiscard]] OperatorType getOperator() const;
 
@@ -106,6 +110,8 @@ public:
 
     [[nodiscard]] bool isConstant() const final;
     [[nodiscard]] BasicTypeNode* getType() const final;
+    [[nodiscard]] virtual int getPrecedence() const final;
+
 };
 
 

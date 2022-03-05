@@ -12,8 +12,12 @@ TokenType Token::type() const {
     return type_;
 }
 
-FilePos Token::pos() const {
-    return pos_;
+FilePos Token::start() const {
+    return start_;
+}
+
+FilePos Token::end() const {
+    return end_;
 }
 
 void Token::print(std::ostream &stream) const {

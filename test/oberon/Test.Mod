@@ -59,7 +59,7 @@ VAR point: Point2D;
     i: INTEGER;
     foo: FooType;
     bar: foo;
-    v1: ++;
+    v1: "Hello World!";
     v2: ARRAY 1 > 2;
     v3: ARRAY 1;
     v4: ARRAY;

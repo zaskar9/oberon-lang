@@ -76,7 +76,7 @@ const Token* Scanner::scanToken() {
     while ((ch_ != -1) && (ch_ <= ' ')) {
         read();
     }
-    FilePos pos = this->current();
+    FilePos pos = current();
     if (ch_ != -1) {
         if (((ch_ >= 'A') && (ch_ <= 'Z')) || ((ch_ >= 'a') && (ch_ <= 'z')) || ch_ == '_') {
             // Scan identifier
@@ -84,37 +84,39 @@ const Token* Scanner::scanToken() {
         } else if ((ch_ >= '0') && (ch_ <= '9')) {
             // Scan integer
             token = scanNumber();
+        } else if (ch_ == '"') {
+            token = scanString();
         } else {
             switch (ch_) {
                 case '&':
-                    token = new Token(TokenType::op_and, pos);
                     read();
+                    token = new Token(TokenType::op_and, pos);
                     break;
                 case '*':
-                    token = new Token(TokenType::op_times, pos);
                     read();
+                    token = new Token(TokenType::op_times, pos);
                     break;
                 case '+':
-                    token = new Token(TokenType::op_plus, pos);
                     read();
+                    token = new Token(TokenType::op_plus, pos);
                     break;
                 case '-':
-                    token = new Token(TokenType::op_minus, pos);
                     read();
+                    token = new Token(TokenType::op_minus, pos);
                     break;
                 case '=':
-                    token = new Token(TokenType::op_eq, pos);
                     read();
+                    token = new Token(TokenType::op_eq, pos);
                     break;
                 case '#':
-                    token = new Token(TokenType::op_neq, pos);
                     read();
+                    token = new Token(TokenType::op_neq, pos);
                     break;
                 case '<':
                     read();
                     if (ch_ == '=') {
-                        token = new Token(TokenType::op_leq, pos);
                         read();
+                        token = new Token(TokenType::op_leq, pos, current());
                     } else {
                         token = new Token(TokenType::op_lt, pos);
                     }
@@ -122,39 +124,40 @@ const Token* Scanner::scanToken() {
                 case '>':
                     read();
                     if (ch_ == '=') {
-                        token = new Token(TokenType::op_geq, pos);
                         read();
+                        token = new Token(TokenType::op_geq, pos, current());
                     } else {
                         token = new Token(TokenType::op_gt, pos);
                     }
                     break;
                 case ';':
-                    token = new Token(TokenType::semicolon, pos);
                     read();
+                    token = new Token(TokenType::semicolon, pos);
                     break;
                 case ',':
-                    token = new Token(TokenType::comma, pos);
                     read();
+                    token = new Token(TokenType::comma, pos);
                     break;
                 case ':':
                     read();
                     if (ch_ == '=') {
-                        token = new Token(TokenType::op_becomes, pos);
                         read();
+                        token = new Token(TokenType::op_becomes, pos, current());
                     } else {
                         token = new Token(TokenType::colon, pos);
                     }
                     break;
                 case '.':
-                    token = new Token(TokenType::period, pos);
                     read();
+                    token = new Token(TokenType::period, pos);
                     if (ch_ == '.') {
+                        FilePos nextPos = current();
                         read();
                         if (ch_ == '.') {
-                            token = new Token(TokenType::varargs, pos);
                             read();
+                            token = new Token(TokenType::varargs, pos, current());
                         } else {
-                            tokens_.push(new Token(TokenType::period, pos));
+                            tokens_.push(new Token(TokenType::period, nextPos));
                         }
                     }
                     break;
@@ -168,40 +171,36 @@ const Token* Scanner::scanToken() {
                     }
                     break;
                 case ')':
-                    token = new Token(TokenType::rparen, pos);
                     read();
+                    token = new Token(TokenType::rparen, pos);
                     break;
                 case '[':
-                    token = new Token(TokenType::lbrack, pos);
                     read();
+                    token = new Token(TokenType::lbrack, pos);
                     break;
                 case ']':
-                    token = new Token(TokenType::rbrack, pos);
                     read();
+                    token = new Token(TokenType::rbrack, pos);
                     break;
                 case '{':
-                    token = new Token(TokenType::lbrace, pos);
                     read();
+                    token = new Token(TokenType::lbrace, pos);
                     break;
                 case '}':
-                    token = new Token(TokenType::rbrace, pos);
                     read();
+                    token = new Token(TokenType::rbrace, pos);
                     break;
                 case '|':
-                    token = new Token(TokenType::pipe, pos);
                     read();
+                    token = new Token(TokenType::pipe, pos);
                     break;
                 case '~':
+                    read();
                     token = new Token(TokenType::op_not, pos);
-                    read();
-                    break;
-                case '"':
-                    token = scanString();
-                    read();
                     break;
                 default:
-                    token = new UndefinedToken(pos, ch_);
                     read();
+                    token = new UndefinedToken(pos, ch_);
                     break;
             }
         }
@@ -284,11 +283,11 @@ const Token* Scanner::scanIdent() {
     auto it = keywords_.find(ident);
     if (it != keywords_.end()) {
         if (it->second == TokenType::boolean_literal) {
-            return new BooleanLiteralToken(pos, it->first == "TRUE");
+            return new BooleanLiteralToken(pos, current(), it->first == "TRUE");
         }
-        return new Token(it->second, pos);
+        return new Token(it->second, pos, current());
     }
-    return new IdentToken(pos, ident);
+    return new IdentToken(pos, current(), ident);
 }
 
 const Token* Scanner::scanNumber() {
@@ -330,9 +329,9 @@ const Token* Scanner::scanNumber() {
             logger_->error(pos, "invalid real literal: " + num + ".");
         }
         if (value >= std::numeric_limits<float>::lowest() && value <= std::numeric_limits<float>::max()) {
-            return new RealLiteralToken(pos, static_cast<float>(value));
+            return new RealLiteralToken(pos, current(), static_cast<float>(value));
         }
-        return new LongrealLiteralToken(pos, value);
+        return new LongrealLiteralToken(pos, current(), value);
     } else {
         long value;
         try {
@@ -346,9 +345,9 @@ const Token* Scanner::scanNumber() {
             value = 0;
         }
         if (value >= std::numeric_limits<int>::lowest() && value <= std::numeric_limits<int>::max()) {
-            return new IntegerLiteralToken(pos, static_cast<int>(value));
+            return new IntegerLiteralToken(pos, current(), static_cast<int>(value));
         }
-        return new LongintLiteralToken(pos, value);
+        return new LongintLiteralToken(pos, current(), value);
     }
 }
 
@@ -364,8 +363,9 @@ const Token* Scanner::scanString() {
         }
         read();
     } while (ch_ != '"');
+    read();
     std::string str = ss.str();
-    return new StringLiteralToken(p, unescape(str));
+    return new StringLiteralToken(p, current(), unescape(str));
 }
 
 std::string Scanner::escape(std::string str) {

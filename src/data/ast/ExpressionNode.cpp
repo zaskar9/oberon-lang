@@ -31,6 +31,32 @@ std::ostream& operator<<(std::ostream &stream, const OperatorType &op) {
     return stream;
 }
 
+int precedence(const OperatorType &op) {
+    switch (op) {
+        case OperatorType::EQ:
+        case OperatorType::NEQ:
+        case OperatorType::LT:
+        case OperatorType::GT:
+        case OperatorType::GEQ:
+        case OperatorType::LEQ:
+            return 0;
+        case OperatorType::PLUS:
+        case OperatorType::MINUS:
+        case OperatorType::OR:
+            return 1;
+        case OperatorType::TIMES:
+        case OperatorType::DIV:
+        case OperatorType::MOD:
+        case OperatorType::AND:
+            return 2;
+        case OperatorType::NOT:
+        case OperatorType::NEG:
+            return 3;
+        default:
+            return 4;
+    }
+}
+
 
 ExpressionNode::~ExpressionNode() = default;
 
@@ -41,6 +67,10 @@ bool UnaryExpressionNode::isConstant() const {
 
 TypeNode* UnaryExpressionNode::getType() const {
     return expr_->getType();
+}
+
+int UnaryExpressionNode::getPrecedence() const {
+    return precedence(op_);
 }
 
 OperatorType UnaryExpressionNode::getOperator() const {
@@ -89,6 +119,10 @@ TypeNode* BinaryExpressionNode::getType() const {
     return nullptr;
 }
 
+int BinaryExpressionNode::getPrecedence() const {
+    return precedence(op_);
+}
+
 OperatorType BinaryExpressionNode::getOperator() const {
     return op_;
 }
@@ -129,6 +163,9 @@ BasicTypeNode* LiteralNode::getType() const {
     return type_;
 }
 
+int LiteralNode::getPrecedence() const {
+    return 4;
+}
 
 bool BooleanLiteralNode::getValue() const {
     return value_;
