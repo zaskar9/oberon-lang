@@ -10,27 +10,28 @@
 
 #include <memory>
 #include <string>
+#include <optional>
 #include "BlockNode.h"
-#include "ProcedureNode.h"
+#include "ImportNode.h"
 
 class ModuleNode final : public DeclarationNode, public BlockNode {
 
 private:
-    std::vector<std::unique_ptr<ProcedureNode>> procedures_;
+    std::vector<std::unique_ptr<ImportNode>> imports_;
 
 public:
     explicit ModuleNode(const FilePos &pos, std::string name) :
             DeclarationNode(NodeType::module, pos, std::move(name), nullptr),
-            BlockNode(pos), procedures_() { };
+            BlockNode(pos), imports_() { };
     ~ModuleNode() override = default;
 
     [[nodiscard]] NodeType getNodeType() const override {
         return DeclarationNode::getNodeType();
     }
 
-    void addProcedure(std::unique_ptr<ProcedureNode> procedure) override;
-    [[nodiscard]] ProcedureNode* getProcedure(size_t num) const override;
-    [[nodiscard]] size_t getProcedureCount() const override;
+    void addImport(std::unique_ptr<ImportNode> import);
+    [[nodiscard]] ImportNode* getImport(size_t num) const;
+    [[nodiscard]] size_t getImportCount() const;
 
     void accept(NodeVisitor& visitor) override;
 

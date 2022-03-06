@@ -26,6 +26,8 @@ public:
     virtual void visit(ModuleNode &node) = 0;
     virtual void visit(ProcedureNode &node) = 0;
 
+    virtual void visit(ImportNode &node) = 0;
+
     virtual void visit(ConstantDeclarationNode &node) = 0;
     virtual void visit(FieldNode &node) = 0;
     virtual void visit(ParameterNode &node) = 0;

@@ -1,5 +1,6 @@
 (* Oberon implementations of various sorting algorithms. *)
 MODULE Sort;
+IMPORT StdIO, Random := RandomNumbers;
 
 (* Length of the array to be sorted. *)
 CONST Dim = 3 * 0AH;

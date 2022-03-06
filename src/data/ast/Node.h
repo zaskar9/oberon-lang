@@ -17,7 +17,7 @@
 
 enum class NodeType : char {
     ident,
-    module, procedure, statement_sequence,
+    module, import, procedure, statement_sequence,
     unary_expression, binary_expression,
     record_type, array_type, basic_type,
     field, parameter, variable, constant, type_declaration,

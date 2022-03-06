@@ -32,6 +32,7 @@ set(PARSER_SOURCES
         data/ast/IfThenElseNode.cpp data/ast/IfThenElseNode.h
         data/ast/LoopNode.cpp data/ast/LoopNode.h
         data/ast/StatementSequenceNode.cpp data/ast/StatementSequenceNode.h
+        data/ast/ImportNode.cpp data/ast/ImportNode.h
         data/ast/NodePrettyPrinter.cpp data/ast/NodePrettyPrinter.h
         data/symtab/SymbolTable.cpp data/symtab/SymbolTable.h
         data/symtab/Scope.cpp data/symtab/Scope.h

@@ -23,11 +23,12 @@ private:
     std::vector<std::unique_ptr<ConstantDeclarationNode>> constants_;
     std::vector<std::unique_ptr<TypeDeclarationNode>> type_declarations_;
     std::vector<std::unique_ptr<VariableDeclarationNode>> variables_;
+    std::vector<std::unique_ptr<ProcedureNode>> procedures_;
+
     std::unique_ptr<StatementSequenceNode> statements_;
 
 public:
-    explicit BlockNode(const FilePos &pos) : types_(), constants_(), type_declarations_(), variables_(),
-            statements_(std::make_unique<StatementSequenceNode>(pos)) { };
+    explicit BlockNode(const FilePos &pos);
     virtual ~BlockNode();
 
     void registerType(std::unique_ptr<TypeNode> type);
@@ -48,9 +49,10 @@ public:
     [[nodiscard]] size_t getVariableCount() const;
     void removeVariables(size_t from, size_t to);
 
-    virtual void addProcedure(std::unique_ptr<ProcedureNode> procedure) = 0;
-    [[nodiscard]] virtual ProcedureNode* getProcedure(size_t num) const = 0;
-    [[nodiscard]] virtual size_t getProcedureCount() const = 0;
+    void addProcedure(std::unique_ptr<ProcedureNode> procedure);
+    [[nodiscard]] ProcedureNode* getProcedure(size_t num) const;
+    [[nodiscard]] size_t getProcedureCount() const;
+    [[nodiscard]] std::unique_ptr<ProcedureNode> removeProcedure(size_t num);
 
     StatementSequenceNode* getStatements();
 

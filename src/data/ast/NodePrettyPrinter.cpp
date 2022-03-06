@@ -80,6 +80,13 @@ void NodePrettyPrinter::call(ProcedureNodeReference &node) {
 void NodePrettyPrinter::visit(ModuleNode& node) {
     indent();
     stream_ << "MODULE " << node.getName() << "(*" << node.getLevel() << "*);" << std::endl;
+    if (node.getImportCount() > 0) {
+        stream_ << "IMPORT ";
+        for (size_t i = 0; i < node.getImportCount(); i++) {
+            node.getImport(i)->accept(*this);
+        }
+        stream_ << std::endl;
+    }
     block(node, true);
     stream_ << std::endl;
     indent();
@@ -122,6 +129,13 @@ void NodePrettyPrinter::visit(ProcedureNode& node) {
         indent();
         stream_ << "END " << node.getName() << ';' << std::endl;
     }
+}
+
+void NodePrettyPrinter::visit(ImportNode &node) {
+    if (!node.getAlias().empty()) {
+        stream_ << node.getAlias() << " := ";
+    }
+    stream_ << node.getModule()->getName() << "; ";
 }
 
 void NodePrettyPrinter::visit(ValueReferenceNode &node) {

@@ -5,6 +5,10 @@
  */
 
 #include "BlockNode.h"
+#include "ProcedureNode.h"
+
+BlockNode::BlockNode(const FilePos &pos) : types_(), constants_(), type_declarations_(), variables_(), procedures_(),
+        statements_(std::make_unique<StatementSequenceNode>(pos)) { };
 
 BlockNode::~BlockNode() = default;
 
@@ -54,6 +58,24 @@ size_t BlockNode::getVariableCount() const {
 
 void BlockNode::removeVariables(size_t from, size_t to) {
     variables_.erase(variables_.begin() + (long) from, variables_.begin() + (long) to);
+}
+
+void BlockNode::addProcedure(std::unique_ptr<ProcedureNode> procedure) {
+    procedures_.push_back(std::move(procedure));
+}
+
+ProcedureNode* BlockNode::getProcedure(size_t num) const {
+    return procedures_.at(num).get();
+}
+
+size_t BlockNode::getProcedureCount() const {
+    return procedures_.size();
+}
+
+std::unique_ptr<ProcedureNode> BlockNode::removeProcedure(size_t num) {
+    auto res = std::move(procedures_[num]);
+    procedures_.erase(procedures_.begin() + (long) num);
+    return res;
 }
 
 StatementSequenceNode* BlockNode::getStatements() {

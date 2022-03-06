@@ -7,16 +7,16 @@
 #include "ModuleNode.h"
 #include "NodeVisitor.h"
 
-void ModuleNode::addProcedure(std::unique_ptr<ProcedureNode> procedure) {
-    procedures_.push_back(std::move(procedure));
+void ModuleNode::addImport(std::unique_ptr<ImportNode> import) {
+    imports_.push_back(std::move(import));
 }
 
-ProcedureNode* ModuleNode::getProcedure(size_t num) const {
-    return procedures_.at(num).get();
+ImportNode* ModuleNode::getImport(size_t num) const {
+    return imports_.at(num).get();
 }
 
-size_t ModuleNode::getProcedureCount() const {
-    return procedures_.size();
+size_t ModuleNode::getImportCount() const {
+    return imports_.size();
 }
 
 void ModuleNode::accept(NodeVisitor& visitor) {

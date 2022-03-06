@@ -88,6 +88,8 @@ void SemanticAnalysis::visit(ModuleNode &node) {
     symtab_->leaveScope();
 }
 
+void SemanticAnalysis::visit([[maybe_unused]] ImportNode &node) { }
+
 void SemanticAnalysis::visit(ConstantDeclarationNode &node) {
     assertUnique(node.getName(), node);
     node.setLevel(symtab_->getLevel());

@@ -108,7 +108,7 @@ void LambdaLifter::visit(ProcedureNode &node) {
         for (size_t i = 0; i < node.getProcedureCount(); i++) {
             auto proc = node.getProcedure(i);
             proc->setName("_" + proc->getName());
-            module_->addProcedure(node.moveProcedure(i));
+            module_->addProcedure(node.removeProcedure(i));
         }
         // TODO remove unnecessary local variables
         // node.removeVariables(1, node.getVariableCount());
@@ -137,6 +137,8 @@ void LambdaLifter::visit(ProcedureNode &node) {
         }
     }
 }
+
+void LambdaLifter::visit([[maybe_unused]] ImportNode &node) { }
 
 void LambdaLifter::visit(ConstantDeclarationNode &node) {
     node.setLevel(level_);

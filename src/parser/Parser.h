@@ -34,6 +34,8 @@ private:
 
     std::string ident();
     std::unique_ptr<ModuleNode> module();
+    void import_list(ModuleNode *block);
+    void import(ModuleNode *block);
     void declarations(BlockNode *block);
     void const_declarations(BlockNode *block);
     void type_declarations(BlockNode *block);

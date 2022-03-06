@@ -27,6 +27,8 @@ private:
     void visit(ModuleNode &node) override;
     void visit(ProcedureNode &node) override;
 
+    void visit(ImportNode &node) override;
+
     void visit(ConstantDeclarationNode &node) override;
     void visit(FieldNode &node) override;
     void visit(ParameterNode &node) override;

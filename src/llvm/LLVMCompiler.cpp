@@ -73,8 +73,8 @@ void LLVMCompiler::compile(boost::filesystem::path path) {
         analyzer->run(ast.get());
         if (logger_->getErrorCount() == errors) {
 
-            // auto printer = std::make_unique<NodePrettyPrinter>(std::cout);
-            // printer->print(ast.get());
+            auto printer = std::make_unique<NodePrettyPrinter>(std::cout);
+            printer->print(ast.get());
 
             // Set up the LLVM module
             logger_->debug(PROJECT_NAME, "generating LLVM code...");

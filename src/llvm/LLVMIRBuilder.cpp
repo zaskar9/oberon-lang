@@ -90,6 +90,8 @@ void LLVMIRBuilder::visit(ProcedureNode &node) {
     }
 }
 
+void LLVMIRBuilder::visit([[maybe_unused]] ImportNode &node) { }
+
 void LLVMIRBuilder::visit(ValueReferenceNode &node) {
     auto ref = node.dereference();
     auto level = ref->getLevel();

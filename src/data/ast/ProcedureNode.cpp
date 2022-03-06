@@ -29,24 +29,6 @@ size_t ProcedureNode::getParameterCount() const {
     return parameters_.size();
 }
 
-void ProcedureNode::addProcedure(std::unique_ptr<ProcedureNode> procedure) {
-    procedures_.push_back(std::move(procedure));
-}
-
-ProcedureNode *ProcedureNode::getProcedure(size_t num) const {
-    return procedures_[num].get();
-}
-
-size_t ProcedureNode::getProcedureCount() const {
-    return procedures_.size();
-}
-
-std::unique_ptr<ProcedureNode> ProcedureNode::moveProcedure(size_t num) {
-    auto res = std::move(procedures_[num]);
-    procedures_.erase(procedures_.begin() + (long) num);
-    return res;
-}
-
 void ProcedureNode::setVarArgs(bool value) {
     varargs_ = value;
 }
