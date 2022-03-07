@@ -3,14 +3,14 @@ MODULE Sort;
 IMPORT StdIO, Random := RandomNumbers;
 
 (* Length of the array to be sorted. *)
-CONST Dim = 3 * 0AH;
+CONST Dim* = 3 * 0AH;
       MaxVal = 10 * Dim;
 
 (* Array to be sorted. *)
-TYPE Vector = ARRAY Dim OF INTEGER;
+TYPE Vector* = ARRAY Dim OF INTEGER;
 
 (* Array to be sorted. *)
-VAR list: Vector;
+VAR list*: Vector;
 
 (* Import `printf` function from C <stdio.h> library. *)
 PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
@@ -19,19 +19,19 @@ PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
 PROCEDURE rand(): INTEGER; EXTERN;
 
 (* Writes a string value to standard out. *)
-PROCEDURE Write(str: STRING);
+PROCEDURE Write*(str: STRING);
 BEGIN
     printf(str)
 END Write;
 
 (* Writes a newline to standard out. *)
-PROCEDURE WriteLn;
+PROCEDURE WriteLn*;
 BEGIN
     printf("\n")
 END WriteLn;
 
 (* Writes an integer value to standard out. *)
-PROCEDURE WriteInt(val: INTEGER);
+PROCEDURE WriteInt*(val: INTEGER);
 BEGIN
     printf("%d", val)
 END WriteInt;

@@ -15,6 +15,7 @@ set(SCANNER_SOURCES
         scanner/UndefinedToken.cpp scanner/UndefinedToken.h)
 
 set(PARSER_SOURCES
+        data/ast/Identifier.cpp data/ast/Identifier.h
         data/ast/NodeVisitor.cpp data/ast/NodeVisitor.h
         data/ast/Node.cpp data/ast/Node.h
         data/ast/ExpressionNode.cpp data/ast/ExpressionNode.h

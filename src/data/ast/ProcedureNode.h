@@ -21,8 +21,8 @@ private:
     bool extern_;
 
 public:
-    explicit ProcedureNode(const FilePos &pos, std::string name) :
-            DeclarationNode(NodeType::procedure, pos, std::move(name), nullptr), BlockNode(pos),
+    explicit ProcedureNode(const FilePos &pos, std::unique_ptr<Identifier> ident) :
+            DeclarationNode(NodeType::procedure, pos, std::move(ident), nullptr), BlockNode(pos),
             parameters_(), varargs_(false), extern_(false) {};
     ~ProcedureNode() override = default;
 

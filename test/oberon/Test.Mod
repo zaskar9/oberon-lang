@@ -1,25 +1,28 @@
 (* Test module containing syntax errors for the Oberon LLVM compiler. *)
 MODULE 123;
+IMPORT A, B := C, D E, F :=, G;
 
 (* Length of the array to be sorted. *)
 CONST Dim = 4 + 2 * -8;
       Float = 3.3.3;
       Huge = 10000000000000000000;
+      Pi* = 3.14159268;
 
 
-TYPE Point2D = RECORD x, y: INTEGER END;
-     Point3D = RECORD x, y, y: INTEGER END;
+TYPE Point2D* = RECORD x, y: INTEGER END;
+     Point3D* = RECORD x, y, y: INTEGER END;
      PointList = ARRAY 2.5 OF Point2D;
-     ColorRGB = RECORD r, g, b: INTEGER END;
-     Rect2D = RECORD color: ColorRGB; points: PointList END;
+     ColorRGB* = RECORD r*, g*, b*: INTEGER END;
+     Rect2D = RECORD color: ColorRGB; points*: PointList END;
 
 (* Array to be sorted. *)
 VAR a: ARRAY Dim OF INTEGER;
     i: INTEGER;
-    point: Point2D;
+    point*: Point2D;
     bool: BOOLEAN;
 
-PROCEDURE InitRect2D(VAR rect: Rect2D; r, g, b: INTEGER; x, y: Point2D);
+PROCEDURE InitRect2D*(VAR rect: Rect2D; r, g, b: INTEGER; x, y: Point2D);
+TYPE TRecord* = RECORD a, b*, c: INTEGER END;
 BEGIN
     x.y := i;
     rect.color.r := r;
@@ -55,13 +58,14 @@ BEGIN
 END CheckDimension;
 
 PROCEDURE Test(VAR value: INTEGER);
+CONST one* = 1;
 VAR point: Point2D;
     i: INTEGER;
     foo: FooType;
     bar: foo;
     v1: "Hello World!";
     v2: ARRAY 1 > 2;
-    v3: ARRAY 1;
+    v3: ARRAY one;
     v4: ARRAY;
 BEGIN
     point.x := (1 + CheckDimension;
@@ -99,7 +103,7 @@ END Initialise;
 
 (* Swaps the two values passed as var-parameters. *)
 PROCEDURE Swap(VAR a, b, : INTEGER);
-VAR t: INTEGER;
+VAR t*: INTEGER;
 BEGIN
     IF a > b THEN END;
     t := a
@@ -128,8 +132,8 @@ END BubbleSort;
 (* Applies the quick-sort algorithm to the array. *)
 PROCEDURE QuickSort;
 
-    PROCEDURE QSort(l, r: INTEGER);
-    VAR i, j, x: INTEGER;
+    PROCEDURE QSort*(l, r: INTEGER);
+    VAR i, j x: INTEGER;
     BEGIN
         i := l;
         j := r;

@@ -6,8 +6,8 @@
 
 #include "TypeNode.h"
 
-std::string TypeNode::getName() const {
-    return name_;
+const Identifier * TypeNode::getIdentifier() const {
+    return ident_;
 }
 
 void TypeNode::setSize(unsigned int size) {
@@ -18,6 +18,6 @@ unsigned int TypeNode::getSize() const {
     return size_;
 }
 
-bool TypeNode::isAnonymous() {
+bool TypeNode::isAnonymous() const {
     return anon_;
 }

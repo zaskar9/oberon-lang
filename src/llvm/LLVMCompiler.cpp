@@ -64,7 +64,7 @@ void LLVMCompiler::compile(boost::filesystem::path path) {
     auto symbols = std::make_unique<SymbolTable>();
     auto parser = std::make_unique<Parser>(scanner.get(), logger_);
     auto ast = parser->parse();
-    if (ast && logger_->getErrorCount() == errors) {
+    if (ast) {
         // Run the analyzer
         logger_->debug(PROJECT_NAME, "analyzing...");
         auto analyzer = std::make_unique<Analyzer>(logger_);
@@ -73,8 +73,8 @@ void LLVMCompiler::compile(boost::filesystem::path path) {
         analyzer->run(ast.get());
         if (logger_->getErrorCount() == errors) {
 
-            auto printer = std::make_unique<NodePrettyPrinter>(std::cout);
-            printer->print(ast.get());
+            // auto printer = std::make_unique<NodePrettyPrinter>(std::cout);
+            // printer->print(ast.get());
 
             // Set up the LLVM module
             logger_->debug(PROJECT_NAME, "generating LLVM code...");

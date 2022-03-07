@@ -67,7 +67,7 @@ void NodePrettyPrinter::block(BlockNode& node, bool isGlobal) {
 }
 
 void NodePrettyPrinter::call(ProcedureNodeReference &node) {
-    stream_ << node.getName() << "(";
+    stream_ << *node.getIdentifier() << "(";
     for (size_t i = 0; i < node.getParameterCount(); i++) {
         node.getParameter(i)->accept(*this);
         if (i + 1 < node.getParameterCount()) {
@@ -79,7 +79,7 @@ void NodePrettyPrinter::call(ProcedureNodeReference &node) {
 
 void NodePrettyPrinter::visit(ModuleNode& node) {
     indent();
-    stream_ << "MODULE " << node.getName() << "(*" << node.getLevel() << "*);" << std::endl;
+    stream_ << "MODULE " << *node.getIdentifier() << "(*" << node.getLevel() << "*);" << std::endl;
     if (node.getImportCount() > 0) {
         stream_ << "IMPORT ";
         for (size_t i = 0; i < node.getImportCount(); i++) {
@@ -95,12 +95,12 @@ void NodePrettyPrinter::visit(ModuleNode& node) {
     node.getStatements()->accept(*this);
     indent_ -= TAB_WIDTH;
     indent();
-    stream_ << "END " << node.getName() << '.' << std::endl;
+    stream_ << "END " << *node.getIdentifier() << '.' << std::endl;
 }
 
 void NodePrettyPrinter::visit(ProcedureNode& node) {
     indent();
-    stream_ << "PROCEDURE " << node.getName() << "(*" << node.getLevel() << "*)(";
+    stream_ << "PROCEDURE " << *node.getIdentifier() << "(*" << node.getLevel() << "*)(";
     for (size_t i = 0; i < node.getParameterCount(); i++) {
         node.getParameter(i)->accept(*this);
         if (i + 1 < node.getParameterCount()) {
@@ -127,19 +127,19 @@ void NodePrettyPrinter::visit(ProcedureNode& node) {
         node.getStatements()->accept(*this);
         indent_ -= TAB_WIDTH;
         indent();
-        stream_ << "END " << node.getName() << ';' << std::endl;
+        stream_ << "END " << *node.getIdentifier() << ';' << std::endl;
     }
 }
 
 void NodePrettyPrinter::visit(ImportNode &node) {
-    if (!node.getAlias().empty()) {
-        stream_ << node.getAlias() << " := ";
+    if (node.getAlias()) {
+        stream_ << *node.getAlias() << " := ";
     }
-    stream_ << node.getModule()->getName() << "; ";
+    stream_ << *node.getModule()->getIdentifier() << "; ";
 }
 
 void NodePrettyPrinter::visit(ValueReferenceNode &node) {
-    stream_ << node.getName();
+    stream_ << *node.getIdentifier();
     for (size_t i = 0; i < node.getSelectorCount(); i++) {
         auto type = node.getSelectorType(i);
         if (type == NodeType::array_type) {
@@ -153,39 +153,39 @@ void NodePrettyPrinter::visit(ValueReferenceNode &node) {
             selector->accept(*this);
         }
     }
-    // stream_ << "(*" << node.getType()->getName() << "*)";
+    // stream_ << "(*" << node.getType()->getIdentifier() << "*)";
 }
 
 void NodePrettyPrinter::visit(TypeReferenceNode &node) {
-    stream_ << "->" << node.getName();
+    stream_ << "->" << *node.getIdentifier();
 }
 
 void NodePrettyPrinter::visit(ConstantDeclarationNode &node) {
-    stream_ << node.getName() << "(*" << node.getLevel() << "*) = ";
+    stream_ << *node.getIdentifier() << "(*" << node.getLevel() << "*) = ";
     node.getValue()->accept(*this);
     stream_ << ';' << std::endl;
 }
 
 void NodePrettyPrinter::visit(FieldNode &node) {
-    stream_ << node.getName() << ": ";
+    stream_ << *node.getIdentifier() << ": ";
     node.getType()->accept(*this);
 }
 
 void NodePrettyPrinter::visit(ParameterNode &node) {
     stream_ << (node.isVar() ? "VAR " : "");
-    stream_ << node.getName() << "(*" << node.getLevel() << "*): ";
+    stream_ << *node.getIdentifier() << "(*" << node.getLevel() << "*): ";
     node.getType()->accept(*this);
 }
 
 void NodePrettyPrinter::visit(TypeDeclarationNode &node) {
-    stream_ << node.getName() << "(*" << node.getLevel() << "*) = ";
+    stream_ << *node.getIdentifier() << "(*" << node.getLevel() << "*) = ";
     isDecl_ = true;
     node.getType()->accept(*this);
     stream_ << ';' << std::endl;
 }
 
 void NodePrettyPrinter::visit(VariableDeclarationNode &node) {
-    stream_ << node.getName() << "(*" << node.getLevel() << "*): ";
+    stream_ << *node.getIdentifier() << "(*" << node.getLevel() << "*): ";
     node.getType()->accept(*this);
     stream_ << ';' << std::endl;
 }
@@ -229,12 +229,12 @@ void NodePrettyPrinter::visit(ArrayTypeNode &node) {
         stream_ << "ARRAY " << node.getDimension() << " OF ";
         node.getMemberType()->accept(*this);
     } else {
-        stream_ << node.getName();
+        stream_ << *node.getIdentifier();
     }
 }
 
 void NodePrettyPrinter::visit(BasicTypeNode &node) {
-    stream_ << node.getName();
+    stream_ << *node.getIdentifier();
 }
 
 void NodePrettyPrinter::visit(RecordTypeNode &node) {
@@ -251,7 +251,7 @@ void NodePrettyPrinter::visit(RecordTypeNode &node) {
         }
         stream_ << "END";
     } else {
-        stream_ << node.getName();
+        stream_ << *node.getIdentifier();
     }
 }
 

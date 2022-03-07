@@ -11,9 +11,9 @@
 SymbolTable::SymbolTable() {
     level_ = 0;
     std::unique_ptr<Scope> predefined = std::make_unique<Scope>(nullptr);
-    predefined->insert(BasicTypeNode::BOOLEAN->getName(), BasicTypeNode::BOOLEAN);
-    predefined->insert(BasicTypeNode::INTEGER->getName(), BasicTypeNode::INTEGER);
-    predefined->insert(BasicTypeNode::STRING->getName(), BasicTypeNode::STRING);
+    predefined->insert(BasicTypeNode::BOOLEAN->getIdentifier()->name(), BasicTypeNode::BOOLEAN);
+    predefined->insert(BasicTypeNode::INTEGER->getIdentifier()->name(), BasicTypeNode::INTEGER);
+    predefined->insert(BasicTypeNode::STRING->getIdentifier()->name(), BasicTypeNode::STRING);
     scope_ = std::make_unique<Scope>(std::move(predefined));
 }
 

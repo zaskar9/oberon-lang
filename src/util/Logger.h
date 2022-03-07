@@ -10,7 +10,6 @@
 
 #include <string>
 #include <iostream>
-#include <sstream>
 #include "../global.h"
 
 enum class LogLevel : unsigned int { DEBUG = 1, INFO = 2, WARNING = 3, ERROR = 4 };
@@ -48,13 +47,6 @@ public:
     void setLevel(LogLevel level);
 
 };
-
-template <typename T>
-static std::string to_string(T obj) {
-    std::stringstream stream;
-    stream << obj;
-    return stream.str();
-}
 
 
 #endif //OBERON0C_LOGGER_H

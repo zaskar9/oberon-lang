@@ -10,25 +10,26 @@
 
 #include <utility>
 #include "Node.h"
+#include "Identifier.h"
 
 class TypeNode : public Node {
 
 private:
-    const std::string name_;
+    const Identifier* ident_;
     unsigned int size_;
     const bool anon_;
 
 public:
-    explicit TypeNode(NodeType nodeType, const FilePos &pos, std::string name, unsigned int size) :
-            Node(nodeType, pos), name_(std::move(name)), size_(size), anon_(name_.empty()) { };
+    explicit TypeNode(NodeType nodeType, const FilePos &pos, const Identifier* ident, unsigned int size) :
+            Node(nodeType, pos), ident_(ident), size_(size), anon_(ident == nullptr) { };
     ~TypeNode() override = default;
 
-    [[nodiscard]] std::string getName() const;
+    [[nodiscard]] const Identifier * getIdentifier() const;
 
     void setSize(unsigned int size);
     [[nodiscard]] virtual unsigned int getSize() const;
 
-    [[nodiscard]] bool isAnonymous();
+    [[nodiscard]] bool isAnonymous() const;
 
     void accept(NodeVisitor& visitor) override = 0;
 

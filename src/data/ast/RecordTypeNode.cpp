@@ -21,7 +21,7 @@ unsigned int RecordTypeNode::getSize() const {
 
 FieldNode *RecordTypeNode::getField(const std::string &name) const {
     for (auto &&itr : fields_) {
-        if (itr->getName() == name) {
+        if (itr->getIdentifier()->name() == name) {
             return itr.get();
         }
     }

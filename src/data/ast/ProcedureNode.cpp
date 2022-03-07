@@ -14,7 +14,7 @@ void ProcedureNode::addParameter(std::unique_ptr<ParameterNode> parameter) {
 
 ParameterNode *ProcedureNode::getParameter(const std::string &name) {
     auto result = std::find_if(parameters_.begin(), parameters_.end(),
-                               [&](std::unique_ptr<ParameterNode> &param) { return param->getName() == name; });
+                               [&](std::unique_ptr<ParameterNode> &param) { return param->getIdentifier()->name() == name; });
     if (result != parameters_.end()) {
         return (*result).get();
     }
@@ -58,5 +58,5 @@ void ProcedureNode::accept(NodeVisitor &visitor) {
 }
 
 void ProcedureNode::print(std::ostream &stream) const {
-    stream << "PROCEDURE " << getName() << ";";
+    stream << "PROCEDURE " << getIdentifier() << ";";
 }

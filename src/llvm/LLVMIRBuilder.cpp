@@ -21,7 +21,7 @@ void LLVMIRBuilder::visit(ModuleNode &node) {
         auto variable = node.getVariable(i);
         auto type = getLLVMType(variable->getType());
         auto value = new GlobalVariable(*module_, type, false,
-                GlobalValue::CommonLinkage, Constant::getNullValue(type), variable->getName());
+                GlobalValue::CommonLinkage, Constant::getNullValue(type), variable->getIdentifier()->name());
         value->setAlignment(getLLVMAlign(variable->getType()));
         values_[variable] = value;
     }
@@ -34,7 +34,7 @@ void LLVMIRBuilder::visit(ModuleNode &node) {
             params.push_back(getLLVMType(param->getType(), param->isVar()));
         }
         auto type = FunctionType::get(getLLVMType(proc->getReturnType()), params, proc->hasVarArgs());
-        auto callee = module_->getOrInsertFunction(proc->getName(), type);
+        auto callee = module_->getOrInsertFunction(proc->getIdentifier()->name(), type);
         functions_[proc] = cast<Function>(callee.getCallee());
     }
     // generate code for procedures
@@ -55,7 +55,7 @@ void LLVMIRBuilder::visit(ModuleNode &node) {
 
 void LLVMIRBuilder::visit(ProcedureNode &node) {
     if (node.getProcedureCount() > 0) {
-        logger_->error(node.pos(), "Found unsupported nested procedures in " + node.getName() + ".");
+        logger_->error(node.pos(), "Found unsupported nested procedures in " + to_string(node.getIdentifier()) + ".");
     }
     if (!node.isExtern()) {
         function_ = functions_[&node];
@@ -63,14 +63,14 @@ void LLVMIRBuilder::visit(ProcedureNode &node) {
         for (size_t i = 0; i < node.getParameterCount(); i++) {
             auto arg = args++;
             auto param = node.getParameter(i);
-            arg->setName(param->getName());
+            arg->setName(param->getIdentifier()->name());
             values_[param] = arg;
         }
         auto entry = BasicBlock::Create(builder_.getContext(), "entry", function_);
         builder_.SetInsertPoint(entry);
         for (size_t i = 0; i < node.getVariableCount(); i++) {
             auto var = node.getVariable(i);
-            auto value = builder_.CreateAlloca(getLLVMType(var->getType()), 0, var->getName());
+            auto value = builder_.CreateAlloca(getLLVMType(var->getType()), 0, var->getIdentifier()->name());
             values_[var] = value;
         }
         level_ = node.getLevel() + 1;
@@ -81,7 +81,7 @@ void LLVMIRBuilder::visit(ProcedureNode &node) {
         auto block = builder_.GetInsertBlock();
         if (block->getTerminator() == nullptr) {
             if (node.getReturnType() != nullptr && block->size() > 0) {
-                logger_->error(node.pos(), "function \"" + node.getName() + "\" has no return statement.");
+                logger_->error(node.pos(), "function \"" + to_string(node.getIdentifier()) + "\" has no return statement.");
             } else {
                 builder_.CreateUnreachable();
             }
@@ -511,7 +511,9 @@ Type* LLVMIRBuilder::getLLVMType(TypeNode *type, bool isPtr) {
             elem_ts.push_back(getLLVMType(record_t->getField(i)->getType()));
         }
         auto struct_t = StructType::create(elem_ts);
-        struct_t->setName("record." + record_t->getName());
+        if (!record_t->isAnonymous()) {
+            struct_t->setName("T_" + record_t->getIdentifier()->name());
+        }
         result = struct_t;
     } else if (type->getNodeType() == NodeType::basic_type) {
         if (type == BasicTypeNode::BOOLEAN) {
@@ -563,10 +565,10 @@ MaybeAlign LLVMIRBuilder::getLLVMAlign(TypeNode *type, bool isPtr) {
 
 void LLVMIRBuilder::call(ProcedureNodeReference &node) {
     std::vector<Value*> params;
-    std::string name = node.dereference()->getName();
+    std::string name = node.dereference()->getIdentifier()->name();
     size_t fp_cnt = node.dereference()->getParameterCount();
     for (size_t i = 0; i < node.getParameterCount(); i++) {
-        setRefMode(i < fp_cnt ? !node.dereference()->getParameter(i)->isVar() : true);
+        setRefMode(!(i < fp_cnt) || !node.dereference()->getParameter(i)->isVar());
         node.getParameter(i)->accept(*this);
         params.push_back(value_);
         restoreRefMode();

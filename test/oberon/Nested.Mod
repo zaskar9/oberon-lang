@@ -66,7 +66,7 @@ VAR var1: INTEGER;
         var2 := 0;
         WriteInt(var2); WriteLn;
         Procedure3(param2);
-        WriteInt(var2); WriteLn;
+        WriteInt(var2); WriteLn
     END Procedure2;
 
 BEGIN
@@ -78,7 +78,7 @@ BEGIN
     Procedure2(param1);
     WriteInt(var0); WriteLn;
     WriteInt(var1); WriteLn;
-    PrintArray;
+    PrintArray
 END Procedure1;
 
 BEGIN

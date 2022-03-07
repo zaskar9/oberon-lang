@@ -20,7 +20,7 @@ private:
     std::vector<std::unique_ptr<ImportNode>> imports_;
 
 public:
-    explicit ModuleNode(const FilePos &pos, std::string name) :
+    explicit ModuleNode(const FilePos &pos, std::unique_ptr<Identifier> name) :
             DeclarationNode(NodeType::module, pos, std::move(name), nullptr),
             BlockNode(pos), imports_() { };
     ~ModuleNode() override = default;

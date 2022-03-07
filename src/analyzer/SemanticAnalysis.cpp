@@ -33,15 +33,15 @@ void SemanticAnalysis::block(BlockNode &node) {
 
 void SemanticAnalysis::call(ProcedureNodeReference &node) {
     if (!node.isResolved()) {
-        auto symbol = symtab_->lookup(node.getName());
+        auto symbol = symtab_->lookup(node.getIdentifier()->name());
         if (symbol) {
             if (symbol->getNodeType() == NodeType::procedure) {
                 node.resolve(dynamic_cast<ProcedureNode*>(symbol));
             } else {
-                logger_->error(node.pos(), node.getName() + " is not a procedure or function.");
+                logger_->error(node.pos(), to_string(*node.getIdentifier()) + " is not a procedure or function.");
             }
         } else {
-            logger_->error(node.pos(), "undeclared identifier: " + node.getName() + ".");
+            logger_->error(node.pos(), "undeclared identifier: " + to_string(*node.getIdentifier()) + ".");
         }
     }
     if (node.isResolved()) {
@@ -81,7 +81,7 @@ void SemanticAnalysis::call(ProcedureNodeReference &node) {
 }
 
 void SemanticAnalysis::visit(ModuleNode &node) {
-    assertUnique(node.getName(), node);
+    assertUnique(node.getIdentifier()->name(), node);
     node.setLevel(symtab_->getLevel());
     symtab_->enterScope();
     block(node);
@@ -91,8 +91,9 @@ void SemanticAnalysis::visit(ModuleNode &node) {
 void SemanticAnalysis::visit([[maybe_unused]] ImportNode &node) { }
 
 void SemanticAnalysis::visit(ConstantDeclarationNode &node) {
-    assertUnique(node.getName(), node);
+    assertUnique(node.getIdentifier()->name(), node);
     node.setLevel(symtab_->getLevel());
+    checkExport(node);
     auto expr = node.getValue();
     if (expr) {
         expr->accept(*this);
@@ -113,8 +114,9 @@ void SemanticAnalysis::visit(ConstantDeclarationNode &node) {
 }
 
 void SemanticAnalysis::visit(TypeDeclarationNode &node) {
-    assertUnique(node.getName(), node);
+    assertUnique(node.getIdentifier()->name(), node);
     node.setLevel(symtab_->getLevel());
+    checkExport(node);
     auto type = node.getType();
     if (type) {
         type->accept(*this);
@@ -125,9 +127,9 @@ void SemanticAnalysis::visit(TypeDeclarationNode &node) {
 }
 
 void SemanticAnalysis::visit(TypeReferenceNode &node) {
-    auto sym = symtab_->lookup(node.getName());
+    auto sym = symtab_->lookup(node.getIdentifier()->name());
     if (sym == nullptr) {
-        logger_->error(node.pos(), "undefined type: " + node.getName() + ".");
+        logger_->error(node.pos(), "undefined type: " + to_string(*node.getIdentifier()) + ".");
     } else if (sym->getNodeType() == NodeType::array_type ||
                sym->getNodeType() == NodeType::basic_type ||
                sym->getNodeType() == NodeType::record_type) {
@@ -136,14 +138,15 @@ void SemanticAnalysis::visit(TypeReferenceNode &node) {
         auto type = dynamic_cast<TypeDeclarationNode*>(sym);
         node.resolve(type->getType());
     } else {
-        logger_->error(node.pos(), node.getName() + " is not a type.");
+        logger_->error(node.pos(), to_string(*node.getIdentifier()) + " is not a type.");
     }
 }
 
 
 void SemanticAnalysis::visit(VariableDeclarationNode &node) {
-    assertUnique(node.getName(), node);
+    assertUnique(node.getIdentifier()->name(), node);
     node.setLevel(symtab_->getLevel());
+    checkExport(node);
     auto type = node.getType();
     if (type) {
         type->accept(*this);
@@ -154,8 +157,9 @@ void SemanticAnalysis::visit(VariableDeclarationNode &node) {
 }
 
 void SemanticAnalysis::visit(ProcedureNode &node) {
-    assertUnique(node.getName(), node);
+    assertUnique(node.getIdentifier()->name(), node);
     node.setLevel(symtab_->getLevel());
+    checkExport(node);
     symtab_->enterScope();
     for (size_t i = 0; i < node.getParameterCount(); i++) {
         node.getParameter(i)->accept(*this);
@@ -170,7 +174,7 @@ void SemanticAnalysis::visit(ProcedureNode &node) {
 }
 
 void SemanticAnalysis::visit(ParameterNode &node) {
-    assertUnique(node.getName(), node);
+    assertUnique(node.getIdentifier()->name(), node);
     node.setLevel(symtab_->getLevel());
     auto type = node.getType();
     if (type) {
@@ -192,7 +196,15 @@ void SemanticAnalysis::visit(FieldNode &node) {
 }
 
 void SemanticAnalysis::visit(ValueReferenceNode &node) {
-    auto sym = symtab_->lookup(node.getName());
+    auto ident = node.getIdentifier();
+    auto sym = symtab_->lookup(ident->name());
+    if (!sym && ident->isQualified()) {
+        sym = symtab_->lookup(ident->qualifier());
+        auto pos = node.pos();
+        pos.charNo += ident->qualifier().size() + 1;
+        node.insertSelector(0, NodeType::record_type,
+                            std::make_unique<ValueReferenceNode>(pos, std::make_unique<Identifier>(pos, ident->name())));
+    }
     if (sym) {
         if (sym->getNodeType() == NodeType::constant ||
             sym->getNodeType() == NodeType::parameter ||
@@ -201,8 +213,12 @@ void SemanticAnalysis::visit(ValueReferenceNode &node) {
             auto decl = dynamic_cast<DeclarationNode*>(sym);
             node.resolve(decl);
             auto type = decl->getType();
-            if (sym->getNodeType() == NodeType::procedure && type == nullptr) {
-                logger_->error(node.pos(), "function expected.");
+            if (type == nullptr) {
+                if (sym->getNodeType() == NodeType::procedure) {
+                    logger_->error(node.pos(), "function expected.");
+                    return;
+                }
+                logger_->error(node.pos(), "type undefined for " + to_string(*node.getIdentifier()) + ".");
                 return;
             }
             for (size_t i = 0; i < node.getSelectorCount(); i++) {
@@ -224,13 +240,13 @@ void SemanticAnalysis::visit(ValueReferenceNode &node) {
                     auto record_t = dynamic_cast<RecordTypeNode*>(type);
                     if (sel->getNodeType() == NodeType::value_reference) {
                         auto ref = dynamic_cast<ValueReferenceNode*>(sel);
-                        auto field = record_t->getField(ref->getName());
+                        auto field = record_t->getField(ref->getIdentifier()->name());
                         if (field) {
                             type = field->getType();
                             ref->resolve(field);
                             ref->setType(type);
                         } else {
-                            logger_->error(ref->pos(), "unknown record field: " + ref->getName() + ".");
+                            logger_->error(ref->pos(), "unknown record field: " + to_string(*ref->getIdentifier()) + ".");
                         }
                     } else {
                         logger_->error(sel->pos(), "identifier expected.");
@@ -244,7 +260,7 @@ void SemanticAnalysis::visit(ValueReferenceNode &node) {
             logger_->error(node.pos(), "constant, parameter, variable, function call expected.");
         }
     } else {
-        logger_->error(node.pos(), "undefined identifier: " + node.getName() + ".");
+        logger_->error(node.pos(), "undefined identifier: " + to_string(*node.getIdentifier()) + ".");
     }
 }
 
@@ -346,9 +362,16 @@ void SemanticAnalysis::visit(RecordTypeNode &node) {
     if (node.getFieldCount() > 0) {
         for (size_t i = 0; i < node.getFieldCount(); i++) {
             auto field = node.getField(i);
+            if (field->getIdentifier()->isExported()) {
+                if (symtab_->getLevel() > 1) {
+                    logger_->error(field->pos(), "only top-level declarations can be exported.");
+                } else if (!node.getIdentifier()->isExported()) {
+                    logger_->error(field->pos(), "cannot export fields of non-exported record type.");
+                }
+            }
             field->accept(*this);
-            if (fields.count(field->getName())) {
-                logger_->error(field->pos(), "duplicate record field: " + field->getName() + ".");
+            if (fields.count(field->getIdentifier()->name())) {
+                logger_->error(field->pos(), "duplicate record field: " + to_string(*field->getIdentifier()) + ".");
             }
         }
     } else {
@@ -481,7 +504,7 @@ void SemanticAnalysis::visit(ForLoopNode &node) {
                 logger_->error(var->pos(), "integer variable expected.");
             }
         } else {
-            logger_->error(counter->pos(), counter->getName() + " cannot be used as a loop counter.");
+            logger_->error(counter->pos(), to_string(*counter->getIdentifier()) + " cannot be used as a loop counter.");
         }
     } else {
         logger_->error(node.pos(), "undefined counter variable in for-loop.");
@@ -563,11 +586,18 @@ bool SemanticAnalysis::assertCompatible(const FilePos &pos, TypeNode *expected, 
     if (expected == actual) {
         return true;
     } else if (expected && actual) {
-        logger_->error(pos, "type mismatch: expected " + expected->getName() + ", found " + actual->getName() + ".");
+        logger_->error(pos, "type mismatch: expected " + to_string(*expected->getIdentifier()) +
+                            ", found " + to_string(*actual->getIdentifier()) + ".");
         return false;
     } else {
         logger_->error(pos, "type mismatch.");
         return false;
+    }
+}
+
+void SemanticAnalysis::checkExport(DeclarationNode &node) {
+    if (node.getLevel() > 1 && node.getIdentifier()->isExported()) {
+        logger_->error(node.getIdentifier()->pos(), "only top-level declarations can be exported.");
     }
 }
 
@@ -722,7 +752,7 @@ TypeNode* SemanticAnalysis::resolveType(TypeNode *type) {
         if (ref->isResolved()) {
             return ref->dereference();
         } else {
-            logger_->error(ref->pos(), "unresolved type reference: " + ref->getName() + ".");
+            logger_->error(ref->pos(), "unresolved type reference: " + to_string(*ref->getIdentifier()) + ".");
         }
     }
     return type;

@@ -29,24 +29,25 @@ public:
 class ValueReferenceNode : public ExpressionNode, public NodeReference {
 
 private:
-    std::string name_;
+    std::unique_ptr<Identifier> ident_;
     DeclarationNode *node_;
     TypeNode *type_;
     std::vector<std::unique_ptr<ExpressionNode>> selectors_;
     std::vector<NodeType> types_;
 
 public:
-    explicit ValueReferenceNode(const NodeType nodeType, const FilePos &pos, std::string name) :
+    explicit ValueReferenceNode(const NodeType nodeType, const FilePos &pos, std::unique_ptr<Identifier> ident) :
             ExpressionNode(nodeType, pos), NodeReference(),
-            name_(std::move(name)), node_(), type_(), selectors_(), types_() { };
-    explicit ValueReferenceNode(const FilePos &pos, std::string name) :
-            ValueReferenceNode(NodeType::value_reference, pos, std::move(name)) { };
+            ident_(std::move(ident)), node_(), type_(), selectors_(), types_() { };
+    explicit ValueReferenceNode(const FilePos &pos, std::unique_ptr<Identifier> ident) :
+            ValueReferenceNode(NodeType::value_reference, pos, std::move(ident)) { };
     explicit ValueReferenceNode(const FilePos &pos, DeclarationNode *node) :
             ExpressionNode(NodeType::value_reference, pos), NodeReference(),
-            name_(node->getName()), node_(node), type_(node->getType()), selectors_(), types_() { };
+            ident_(std::make_unique<Identifier>(node->getIdentifier())),
+            node_(node), type_(node->getType()), selectors_(), types_() { };
     ~ValueReferenceNode() override = default;
 
-    [[nodiscard]] std::string getName() const;
+    [[nodiscard]] Identifier* getIdentifier() const;
 
     [[nodiscard]] bool isResolved() const override;
     void resolve(DeclarationNode *node);
@@ -76,11 +77,13 @@ public:
 class TypeReferenceNode final : public TypeNode, public NodeReference {
 
 private:
+    std::unique_ptr<Identifier> ident_;
     TypeNode *node_;
 
 public:
-    explicit TypeReferenceNode(const FilePos &pos, std::string name) :
-            TypeNode(NodeType::type_reference, pos, std::move(name), 0), NodeReference(), node_() { };
+    explicit TypeReferenceNode(const FilePos &pos, std::unique_ptr<Identifier> ident) :
+            TypeNode(NodeType::type_reference, pos, ident.get(), 0),
+            NodeReference(), ident_(std::move(ident)), node_() { };
     ~TypeReferenceNode() final = default;
 
     [[nodiscard]] bool isResolved() const final;
@@ -108,7 +111,7 @@ public:
 
     [[nodiscard]] virtual FilePos pos() const = 0;
 
-    [[nodiscard]] virtual std::string getName() const = 0;
+    [[nodiscard]] virtual Identifier * getIdentifier() const = 0;
 
     [[nodiscard]] bool isResolved() const override;
     void resolve(ProcedureNode *procedure);
@@ -125,8 +128,8 @@ public:
 class FunctionCallNode final : public ValueReferenceNode, public ProcedureNodeReference {
 
 public:
-    explicit FunctionCallNode(const FilePos &pos, std::string name) :
-            ValueReferenceNode(NodeType::procedure_call, pos, std::move(name)),
+    explicit FunctionCallNode(const FilePos &pos, std::unique_ptr<Identifier> ident) :
+            ValueReferenceNode(NodeType::procedure_call, pos, std::move(ident)),
             ProcedureNodeReference() { };
     ~FunctionCallNode() override = default;
 
@@ -134,8 +137,8 @@ public:
         return ValueReferenceNode::pos();
     }
 
-    [[nodiscard]] std::string getName() const override {
-        return ValueReferenceNode::getName();
+    [[nodiscard]] Identifier * getIdentifier() const override {
+        return ValueReferenceNode::getIdentifier();
     }
 
     [[nodiscard]] ProcedureNode * dereference() const override {
@@ -154,19 +157,19 @@ public:
 class ProcedureCallNode final : public StatementNode, public ProcedureNodeReference {
 
 private:
-    std::string name_;
+    std::unique_ptr<Identifier> ident_;
 
 public:
-    ProcedureCallNode(FilePos pos, std::string name) :
+    ProcedureCallNode(FilePos pos, std::unique_ptr<Identifier> ident) :
             StatementNode(NodeType::procedure_call, pos),
-            ProcedureNodeReference(), name_(std::string(name)) { };
+            ProcedureNodeReference(), ident_(std::move(ident)) { };
     ~ProcedureCallNode() override = default;
 
     [[nodiscard]] FilePos pos() const override {
         return StatementNode::pos();
     }
 
-    [[nodiscard]] std::string getName() const override;
+    [[nodiscard]] Identifier * getIdentifier() const override;
 
     void accept(NodeVisitor& visitor) final;
 

@@ -15,6 +15,7 @@
 #include "../ast/TypeNode.h"
 #include "../../util/Logger.h"
 
+// TODO Use Identifier instead of std::string
 class SymbolTable {
 
 private:

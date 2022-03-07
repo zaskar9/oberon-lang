@@ -9,11 +9,11 @@
 
 NodeReference::~NodeReference() = default;
 
-std::string ValueReferenceNode::getName() const {
+Identifier * ValueReferenceNode::getIdentifier() const {
     if (isResolved()) {
-        return dereference()->getName();
+        return dereference()->getIdentifier();
     }
-    return name_;
+    return ident_.get();
 }
 
 bool ValueReferenceNode::isResolved() const {
@@ -154,15 +154,15 @@ void FunctionCallNode::accept(NodeVisitor &visitor) {
 }
 
 void FunctionCallNode::print(std::ostream &stream) const {
-    stream << this->dereference()->getName() << "()";
+    stream << this->dereference()->getIdentifier() << "()";
 }
 
 
-std::string ProcedureCallNode::getName() const {
+Identifier * ProcedureCallNode::getIdentifier() const {
     if (isResolved()) {
-        return dereference()->getName();
+        return dereference()->getIdentifier();
     }
-    return name_;
+    return ident_.get();
 }
 
 void ProcedureCallNode::accept(NodeVisitor &visitor) {
@@ -170,5 +170,5 @@ void ProcedureCallNode::accept(NodeVisitor &visitor) {
 }
 
 void ProcedureCallNode::print(std::ostream &stream) const {
-    stream << this->dereference()->getName() << "()";
+    stream << this->dereference()->getIdentifier() << "()";
 }

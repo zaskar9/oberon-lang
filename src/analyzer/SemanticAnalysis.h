@@ -60,6 +60,7 @@ private:
 
     void assertUnique(const std::string &name, Node &node);
     bool assertCompatible(const FilePos &pos, TypeNode *expected, TypeNode *actual);
+    void checkExport(DeclarationNode &node);
 
     std::unique_ptr<LiteralNode> fold(const ExpressionNode *expr) const;
     int foldNumber(const ExpressionNode *expr) const;

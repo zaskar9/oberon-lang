@@ -12,15 +12,15 @@ void BasicTypeNode::accept(NodeVisitor& visitor) {
 }
 
 void BasicTypeNode::print(std::ostream &out) const {
-    out << this->getName();
+    out << *this->getIdentifier();
 }
 
-BasicTypeNode* BasicTypeNode::BOOLEAN = new BasicTypeNode("BOOLEAN", 1);
-BasicTypeNode* BasicTypeNode::CHAR = new BasicTypeNode("CHAR", 1);
-BasicTypeNode* BasicTypeNode::BYTE = new BasicTypeNode("BYTE", 1);
-BasicTypeNode* BasicTypeNode::INTEGER = new BasicTypeNode("INTEGER", 4);
-BasicTypeNode* BasicTypeNode::LONGINT = new BasicTypeNode("LONGINT", 8);
-BasicTypeNode* BasicTypeNode::REAL = new BasicTypeNode("REAL", 4);
-BasicTypeNode* BasicTypeNode::LONGREAL = new BasicTypeNode("LONGREAL", 8);
-BasicTypeNode* BasicTypeNode::STRING = new BasicTypeNode("STRING", 0);
-BasicTypeNode* BasicTypeNode::UNDEF = new BasicTypeNode("UNDEFINED", 0);
+BasicTypeNode* BasicTypeNode::BOOLEAN = new BasicTypeNode(std::make_unique<Identifier>(EMPTY_POS, "BOOLEAN"), 1);
+BasicTypeNode* BasicTypeNode::CHAR = new BasicTypeNode(std::make_unique<Identifier>(EMPTY_POS, "CHAR"), 1);
+BasicTypeNode* BasicTypeNode::BYTE = new BasicTypeNode(std::make_unique<Identifier>(EMPTY_POS, "BYTE"), 1);
+BasicTypeNode* BasicTypeNode::INTEGER = new BasicTypeNode(std::make_unique<Identifier>(EMPTY_POS, "INTEGER"), 4);
+BasicTypeNode* BasicTypeNode::LONGINT = new BasicTypeNode(std::make_unique<Identifier>(EMPTY_POS, "LONGINT"), 8);
+BasicTypeNode* BasicTypeNode::REAL = new BasicTypeNode(std::make_unique<Identifier>(EMPTY_POS, "REAL"), 4);
+BasicTypeNode* BasicTypeNode::LONGREAL = new BasicTypeNode(std::make_unique<Identifier>(EMPTY_POS, "LONGREAL"), 8);
+BasicTypeNode* BasicTypeNode::STRING = new BasicTypeNode(std::make_unique<Identifier>(EMPTY_POS, "STRING"), 0);
+BasicTypeNode* BasicTypeNode::UNDEF = new BasicTypeNode(std::make_unique<Identifier>(EMPTY_POS, "UNDEFINED"), 0);

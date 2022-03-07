@@ -19,8 +19,8 @@ private:
     std::vector<std::unique_ptr<FieldNode>> fields_;
 
 public:
-    explicit RecordTypeNode(const FilePos &pos, const std::string &name) :
-            TypeNode(NodeType::record_type, pos, name, 0), fields_() {};
+    explicit RecordTypeNode(const FilePos &pos, const Identifier* ident) :
+            TypeNode(NodeType::record_type, pos, ident, 0), fields_() {};
     ~RecordTypeNode() final = default;
 
     [[nodiscard]] unsigned int getSize() const final;

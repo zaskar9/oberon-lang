@@ -13,9 +13,12 @@
 
 class BasicTypeNode final : public TypeNode {
 
+private:
+    std::unique_ptr<const Identifier> ident_;
+
 public:
-    explicit BasicTypeNode(std::string name, unsigned int size) :
-            TypeNode(NodeType::basic_type, { }, std::move(name), size) { };
+    explicit BasicTypeNode(std::unique_ptr<Identifier> ident, unsigned int size) :
+            TypeNode(NodeType::basic_type, EMPTY_POS, ident.get(), size), ident_(std::move(ident)) { };
     ~BasicTypeNode() final = default;
 
     void operator=(BasicTypeNode const&) = delete;

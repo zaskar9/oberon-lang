@@ -24,5 +24,5 @@ void ModuleNode::accept(NodeVisitor& visitor) {
 }
 
 void ModuleNode::print(std::ostream &stream) const {
-    stream << "MODULE " << getName();
+    stream << "MODULE " << *getIdentifier();
 }

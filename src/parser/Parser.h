@@ -24,6 +24,7 @@
 #include "../data/ast/StatementSequenceNode.h"
 #include "../data/ast/NodeReference.h"
 #include "../data/symtab/SymbolTable.h"
+#include "../data/ast/Identifier.h"
 
 class Parser {
 
@@ -32,10 +33,14 @@ private:
     Logger *logger_;
     std::unique_ptr<const Token> token_;
 
-    std::string ident();
+    std::unique_ptr<Identifier> ident();
+    std::unique_ptr<Identifier> qualident();
+    std::unique_ptr<Identifier> identdef();
+    void ident_list(std::vector<std::unique_ptr<Identifier>> &idents);
+
     std::unique_ptr<ModuleNode> module();
-    void import_list(ModuleNode *block);
-    void import(ModuleNode *block);
+    void import_list(ModuleNode *module);
+    void import(ModuleNode *module);
     void declarations(BlockNode *block);
     void const_declarations(BlockNode *block);
     void type_declarations(BlockNode *block);
@@ -45,11 +50,10 @@ private:
     std::unique_ptr<ExpressionNode> simple_expression();
     std::unique_ptr<ExpressionNode> term();
     std::unique_ptr<ExpressionNode> factor();
-    TypeNode* type(BlockNode *block, std::string name = "");
-    ArrayTypeNode* array_type(BlockNode *block, std::string name = "");
-    RecordTypeNode* record_type(BlockNode *block, std::string name = "");
+    TypeNode* type(BlockNode *block, const Identifier* identifier = nullptr);
+    ArrayTypeNode* array_type(BlockNode *block, const Identifier* identifier = nullptr);
+    RecordTypeNode* record_type(BlockNode *block, const Identifier* identifier = nullptr);
     void field_list(BlockNode *block, RecordTypeNode *record);
-    void ident_list(std::vector<std::string> &idents);
     std::unique_ptr<ProcedureNode> procedure_heading();
     void procedure_body(ProcedureNode *proc);
     void formal_parameters(ProcedureNode *proc);
