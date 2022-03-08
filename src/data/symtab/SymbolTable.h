@@ -15,12 +15,17 @@
 #include "../ast/TypeNode.h"
 #include "../../util/Logger.h"
 
-// TODO Use Identifier instead of std::string
 class SymbolTable {
 
 private:
     unsigned int level_;
-    std::unique_ptr<Scope> scope_;
+    std::unordered_map<std::string, std::unique_ptr<Scope>> scopes_;
+    Scope *scope_;
+    std::vector<std::unique_ptr<Node>> builtins;
+    std::unique_ptr<Scope> universe_;
+
+    Node* basicType(std::string name, TypeKind kind, unsigned int size);
+
 
 public:
     explicit SymbolTable();
@@ -28,14 +33,26 @@ public:
 
     void insert(const std::string &name, Node *node);
     [[nodiscard]] Node* lookup(const std::string &name) const;
+    [[nodiscard]] Node* lookup(const std::string &qualifier, const std::string &name) const;
+    [[nodiscard]] Node* lookup(Identifier *ident) const;
 
-    [[nodiscard]] bool isDefined(const std::string &name) const;
     [[nodiscard]] bool isDuplicate(const std::string &name) const;
 
-    void enterScope();
-    void leaveScope();
+    void openNamespace(const std::string &module);
+
+    void openScope();
+    void closeScope();
 
     [[nodiscard]] unsigned int getLevel() const;
+
+    static const std::string BOOLEAN;
+    static const std::string BYTE;
+    static const std::string CHAR;
+    static const std::string INTEGER;
+    static const std::string LONGINT;
+    static const std::string REAL;
+    static const std::string LONGREAL;
+    static const std::string STRING;
 
 };
 

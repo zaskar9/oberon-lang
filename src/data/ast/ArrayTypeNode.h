@@ -21,8 +21,8 @@ private:
     TypeNode *memberType_;
 
 public:
-    explicit ArrayTypeNode(const FilePos &pos, const Identifier* ident, std::unique_ptr<ExpressionNode> expr, TypeNode* memberType) :
-            TypeNode(NodeType::array_type, pos, ident, 0),
+    explicit ArrayTypeNode(const FilePos &pos, Identifier* ident, std::unique_ptr<ExpressionNode> expr, TypeNode* memberType) :
+            TypeNode(NodeType::array_type, pos, ident, TypeKind::ARRAY, 0),
             expr_(std::move(expr)), dim_(0), memberType_(memberType) { };
     ~ArrayTypeNode() final = default;
 

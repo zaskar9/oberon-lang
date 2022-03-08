@@ -60,13 +60,16 @@ int precedence(const OperatorType &op) {
 
 ExpressionNode::~ExpressionNode() = default;
 
+void ExpressionNode::setType(TypeNode *type) {
+    type_ = type;
+}
+
+TypeNode *ExpressionNode::getType() const {
+    return type_;
+}
 
 bool UnaryExpressionNode::isConstant() const {
     return expr_->isConstant();
-}
-
-TypeNode* UnaryExpressionNode::getType() const {
-    return expr_->getType();
 }
 
 int UnaryExpressionNode::getPrecedence() const {
@@ -97,26 +100,6 @@ void UnaryExpressionNode::print(std::ostream &stream) const {
 
 bool BinaryExpressionNode::isConstant() const {
     return lhs_ && lhs_->isConstant() && rhs_ && rhs_->isConstant();
-}
-
-TypeNode* BinaryExpressionNode::getType() const {
-    if (lhs_ && rhs_) {
-        auto lhsType = lhs_->getType();
-        auto rhsType = rhs_->getType();
-        if (lhsType == rhsType) {
-            if (op_==OperatorType::EQ
-                || op_==OperatorType::NEQ
-                || op_==OperatorType::LT
-                || op_==OperatorType::LEQ
-                || op_==OperatorType::GT
-                || op_==OperatorType::GEQ) {
-                return BasicTypeNode::BOOLEAN;
-            }
-            return lhsType;
-        }
-        return nullptr;
-    }
-    return nullptr;
 }
 
 int BinaryExpressionNode::getPrecedence() const {
@@ -159,8 +142,8 @@ bool LiteralNode::isConstant() const {
     return true;
 }
 
-BasicTypeNode* LiteralNode::getType() const {
-    return type_;
+TypeKind LiteralNode::kind() const {
+    return kind_;
 }
 
 int LiteralNode::getPrecedence() const {

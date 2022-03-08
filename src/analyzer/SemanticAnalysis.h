@@ -18,6 +18,7 @@ private:
     SymbolTable *symtab_;
     Logger *logger_;
     BlockNode *parent_;
+    TypeNode *tBoolean, *tByte, *tChar, *tInteger, *tReal, *tString;
 
     void block(BlockNode &node);
     void call(ProcedureNodeReference &node);
@@ -58,7 +59,7 @@ private:
     void visit(ForLoopNode &node) override;
     void visit(ReturnNode &node) override;
 
-    void assertUnique(const std::string &name, Node &node);
+    void assertUnique(Identifier *ident, Node &node);
     bool assertCompatible(const FilePos &pos, TypeNode *expected, TypeNode *actual);
     void checkExport(DeclarationNode &node);
 
@@ -67,14 +68,13 @@ private:
     bool foldBoolean(const ExpressionNode *expr) const;
     std::string foldString(const ExpressionNode *expr) const;
 
-    TypeNode * resolveType(TypeNode *type);
+    TypeNode *resolveType(TypeNode *type);
 
 public:
-    explicit SemanticAnalysis(SymbolTable *symtab) : Analysis(), NodeVisitor(),
-            symtab_(symtab), logger_(), parent_() { };
+    explicit SemanticAnalysis(SymbolTable *symtab);
     ~SemanticAnalysis() override = default;
 
-    void run(Logger *logger, Node* node) override;
+    void run(Logger *logger, Node *node) override;
 
 };
 

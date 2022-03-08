@@ -19,6 +19,8 @@ private:
     bool exported_;
 
 public:
+    explicit Identifier(std::string name) :
+            pos_(EMPTY_POS), name_(std::move(name)), qualifier_(), exported_(false) { };
     explicit Identifier(const FilePos &pos, std::string name, bool exported = false) :
             pos_(pos), name_(std::move(name)), qualifier_(), exported_(exported) { };
     explicit Identifier(const FilePos &pos, std::string qualifier, std::string name) :

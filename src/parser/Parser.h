@@ -50,9 +50,9 @@ private:
     std::unique_ptr<ExpressionNode> simple_expression();
     std::unique_ptr<ExpressionNode> term();
     std::unique_ptr<ExpressionNode> factor();
-    TypeNode* type(BlockNode *block, const Identifier* identifier = nullptr);
-    ArrayTypeNode* array_type(BlockNode *block, const Identifier* identifier = nullptr);
-    RecordTypeNode* record_type(BlockNode *block, const Identifier* identifier = nullptr);
+    TypeNode* type(BlockNode *block, Identifier* identifier = nullptr);
+    ArrayTypeNode* array_type(BlockNode *block, Identifier* identifier = nullptr);
+    RecordTypeNode* record_type(BlockNode *block, Identifier* identifier = nullptr);
     void field_list(BlockNode *block, RecordTypeNode *record);
     std::unique_ptr<ProcedureNode> procedure_heading();
     void procedure_body(ProcedureNode *proc);

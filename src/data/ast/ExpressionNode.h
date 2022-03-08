@@ -19,20 +19,25 @@ enum class OperatorType : char {
     NEG
 };
 
-std::ostream& operator<<(std::ostream &stream, const OperatorType &op);
+std::ostream &operator<<(std::ostream &stream, const OperatorType &op);
 int precedence(const OperatorType &op);
 
 class ExpressionNode : public Node {
 
+private:
+    TypeNode *type_;
+
 public:
-    explicit ExpressionNode(const NodeType type, const FilePos &pos) : Node(type, pos) { };
+    explicit ExpressionNode(const NodeType nodeType, const FilePos &pos) : ExpressionNode(nodeType, pos, nullptr) { };
+    explicit ExpressionNode(const NodeType nodeType, const FilePos &pos, TypeNode *type) : Node(nodeType, pos), type_(type) { };
     ~ExpressionNode() override;
 
     [[nodiscard]] virtual bool isConstant() const = 0;
-    [[nodiscard]] virtual TypeNode* getType() const = 0;
+    void setType(TypeNode *type);
+    [[nodiscard]] virtual TypeNode *getType() const;
     [[nodiscard]] virtual int getPrecedence() const = 0;
 
-    void accept(NodeVisitor& visitor) override = 0;
+    void accept(NodeVisitor &visitor) override = 0;
 
 };
 
@@ -45,19 +50,18 @@ private:
 
 public:
     UnaryExpressionNode(const FilePos &pos, OperatorType op, std::unique_ptr<ExpressionNode> expr) :
-            ExpressionNode(NodeType::unary_expression, pos), op_(op), expr_(std::move(expr)) { };
+            ExpressionNode(NodeType::unary_expression, pos), op_(op), expr_(std::move(expr)) {};
     ~UnaryExpressionNode() final = default;
 
     [[nodiscard]] bool isConstant() const final;
-    [[nodiscard]] TypeNode* getType() const final;
-    [[nodiscard]] virtual int getPrecedence() const final;
+    [[nodiscard]] int getPrecedence() const final;
 
     [[nodiscard]] OperatorType getOperator() const;
 
     void setExpression(std::unique_ptr<ExpressionNode> expr);
-    [[nodiscard]] ExpressionNode* getExpression() const;
+    [[nodiscard]] ExpressionNode *getExpression() const;
 
-    void accept(NodeVisitor& visitor) final;
+    void accept(NodeVisitor &visitor) final;
 
     void print(std::ostream &stream) const final;
 
@@ -71,25 +75,22 @@ private:
     std::unique_ptr<ExpressionNode> lhs_, rhs_;
 
 public:
-    BinaryExpressionNode(const FilePos &pos, OperatorType op,
-                         std::unique_ptr<ExpressionNode> lhs, std::unique_ptr<ExpressionNode> rhs) :
-            ExpressionNode(NodeType::binary_expression, pos),
-            op_(op), lhs_(std::move(lhs)), rhs_(std::move(rhs)) { };
+    BinaryExpressionNode(const FilePos &pos, OperatorType op, std::unique_ptr<ExpressionNode> lhs, std::unique_ptr<ExpressionNode> rhs) :
+            ExpressionNode(NodeType::binary_expression, pos), op_(op), lhs_(std::move(lhs)), rhs_(std::move(rhs)) {};
     ~BinaryExpressionNode() final = default;
 
     [[nodiscard]] bool isConstant() const final;
-    [[nodiscard]] TypeNode* getType() const final;
-    [[nodiscard]] virtual int getPrecedence() const final;
+    [[nodiscard]] int getPrecedence() const final;
 
     [[nodiscard]] OperatorType getOperator() const;
 
     void setLeftExpression(std::unique_ptr<ExpressionNode> expr);
-    [[nodiscard]] ExpressionNode* getLeftExpression() const;
+    [[nodiscard]] ExpressionNode *getLeftExpression() const;
 
     void setRightExpression(std::unique_ptr<ExpressionNode> expr);
-    [[nodiscard]] ExpressionNode* getRightExpression() const;
+    [[nodiscard]] ExpressionNode *getRightExpression() const;
 
-    void accept(NodeVisitor& visitor) final;
+    void accept(NodeVisitor &visitor) final;
 
     void print(std::ostream &stream) const final;
 
@@ -99,18 +100,19 @@ public:
 class LiteralNode : public ExpressionNode {
 
 private:
-    BasicTypeNode *type_;
+    TypeKind kind_;
 
 public:
-    explicit LiteralNode(const NodeType nodeType, const FilePos &pos, BasicTypeNode *type) :
-            ExpressionNode(nodeType, pos), type_(type) { };
+    explicit LiteralNode(const NodeType nodeType, const FilePos &pos, TypeKind kind) :
+            ExpressionNode(nodeType, pos), kind_(kind) {};
     ~LiteralNode() override = default;
 
-    void accept(NodeVisitor& visitor) override = 0;
+    [[nodiscard]] TypeKind kind() const;
+
+    void accept(NodeVisitor &visitor) override = 0;
 
     [[nodiscard]] bool isConstant() const final;
-    [[nodiscard]] BasicTypeNode* getType() const final;
-    [[nodiscard]] virtual int getPrecedence() const final;
+    [[nodiscard]] int getPrecedence() const final;
 
 };
 
@@ -122,12 +124,12 @@ private:
 
 public:
     explicit BooleanLiteralNode(const FilePos &pos, bool value) :
-            LiteralNode(NodeType::boolean, pos, BasicTypeNode::BOOLEAN), value_(value) { };
+            LiteralNode(NodeType::boolean, pos, TypeKind::BOOLEAN), value_(value) {};
     ~BooleanLiteralNode() final = default;
 
     [[nodiscard]] bool getValue() const;
 
-    void accept(NodeVisitor& visitor) final;
+    void accept(NodeVisitor &visitor) final;
 
     void print(std::ostream &stream) const final;
 
@@ -141,12 +143,12 @@ private:
 
 public:
     explicit IntegerLiteralNode(const FilePos &pos, int value) :
-            LiteralNode(NodeType::integer, pos, BasicTypeNode::INTEGER), value_(value) { };
+            LiteralNode(NodeType::integer, pos, TypeKind::INTEGER), value_(value) {};
     ~IntegerLiteralNode() final = default;
 
     [[nodiscard]] int getValue() const;
 
-    void accept(NodeVisitor& visitor) final;
+    void accept(NodeVisitor &visitor) final;
 
     void print(std::ostream &stream) const final;
 
@@ -160,12 +162,12 @@ private:
 
 public:
     explicit StringLiteralNode(const FilePos &pos, std::string value) :
-            LiteralNode(NodeType::string, pos, BasicTypeNode::STRING), value_(std::move(value)) { };
+            LiteralNode(NodeType::string, pos, TypeKind::STRING), value_(std::move(value)) {};
     ~StringLiteralNode() final = default;
 
     [[nodiscard]] std::string getValue() const;
 
-    void accept(NodeVisitor& visitor) final;
+    void accept(NodeVisitor &visitor) final;
 
     void print(std::ostream &stream) const final;
 

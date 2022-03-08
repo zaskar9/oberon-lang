@@ -31,20 +31,19 @@ class ValueReferenceNode : public ExpressionNode, public NodeReference {
 private:
     std::unique_ptr<Identifier> ident_;
     DeclarationNode *node_;
-    TypeNode *type_;
     std::vector<std::unique_ptr<ExpressionNode>> selectors_;
     std::vector<NodeType> types_;
 
 public:
     explicit ValueReferenceNode(const NodeType nodeType, const FilePos &pos, std::unique_ptr<Identifier> ident) :
             ExpressionNode(nodeType, pos), NodeReference(),
-            ident_(std::move(ident)), node_(), type_(), selectors_(), types_() { };
+            ident_(std::move(ident)), node_(), selectors_(), types_() { };
     explicit ValueReferenceNode(const FilePos &pos, std::unique_ptr<Identifier> ident) :
             ValueReferenceNode(NodeType::value_reference, pos, std::move(ident)) { };
     explicit ValueReferenceNode(const FilePos &pos, DeclarationNode *node) :
-            ExpressionNode(NodeType::value_reference, pos), NodeReference(),
+            ExpressionNode(NodeType::value_reference, pos, node->getType()), NodeReference(),
             ident_(std::make_unique<Identifier>(node->getIdentifier())),
-            node_(node), type_(node->getType()), selectors_(), types_() { };
+            node_(node), selectors_(), types_() { };
     ~ValueReferenceNode() override = default;
 
     [[nodiscard]] Identifier* getIdentifier() const;
@@ -61,9 +60,6 @@ public:
     [[nodiscard]] size_t getSelectorCount() const;
 
     [[nodiscard]] bool isConstant() const override;
-
-    void setType(TypeNode *type);
-    [[nodiscard]] TypeNode* getType() const override;
 
     [[nodiscard]] int getPrecedence() const final;
 
@@ -82,7 +78,7 @@ private:
 
 public:
     explicit TypeReferenceNode(const FilePos &pos, std::unique_ptr<Identifier> ident) :
-            TypeNode(NodeType::type_reference, pos, ident.get(), 0),
+            TypeNode(NodeType::type_reference, pos, ident.get(), TypeKind::NOTYPE, 0),
             NodeReference(), ident_(std::move(ident)), node_() { };
     ~TypeReferenceNode() final = default;
 
@@ -90,6 +86,7 @@ public:
     void resolve(TypeNode *node);
     [[nodiscard]] TypeNode* dereference() const final;
 
+    [[nodiscard]] TypeKind kind() const final;
     [[nodiscard]] unsigned int getSize() const final;
 
     void accept(NodeVisitor& visitor) final;

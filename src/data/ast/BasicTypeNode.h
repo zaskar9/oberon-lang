@@ -14,11 +14,11 @@
 class BasicTypeNode final : public TypeNode {
 
 private:
-    std::unique_ptr<const Identifier> ident_;
+    std::unique_ptr<Identifier> ident_;
 
 public:
-    explicit BasicTypeNode(std::unique_ptr<Identifier> ident, unsigned int size) :
-            TypeNode(NodeType::basic_type, EMPTY_POS, ident.get(), size), ident_(std::move(ident)) { };
+    explicit BasicTypeNode(std::unique_ptr<Identifier> ident, TypeKind kind, unsigned int size) :
+            TypeNode(NodeType::basic_type, EMPTY_POS, ident.get(), kind, size), ident_(std::move(ident)) { };
     ~BasicTypeNode() final = default;
 
     void operator=(BasicTypeNode const&) = delete;
@@ -26,16 +26,6 @@ public:
     void accept(NodeVisitor& visitor) final;
 
     void print(std::ostream &stream) const final;
-
-    static BasicTypeNode *BOOLEAN;
-    static BasicTypeNode *CHAR;
-    static BasicTypeNode *BYTE;
-    static BasicTypeNode *INTEGER;
-    static BasicTypeNode *LONGINT;
-    static BasicTypeNode *REAL;
-    static BasicTypeNode *LONGREAL;
-    static BasicTypeNode *STRING;
-    static BasicTypeNode *UNDEF;
 
 };
 

@@ -19,7 +19,7 @@ Scanner::Scanner(const boost::filesystem::path &path, Logger *logger) :
     init();
     file_.open(filename_, std::ios::in);
     if (!file_.is_open()) {
-        logger_->error(PROJECT_NAME, "cannot open file: " + filename_ + ".");
+        logger_->error(PROJECT_NAME, "cannot openNamespace file: " + filename_ + ".");
         exit(1);
     }
     read();

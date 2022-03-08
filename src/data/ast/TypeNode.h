@@ -12,26 +12,34 @@
 #include "Node.h"
 #include "Identifier.h"
 
+enum class TypeKind {
+    BYTE = 1, BOOLEAN = 2, CHAR = 3, INTEGER = 4, REAL = 5, SET = 6,
+    POINTER = 7, NILTYPE = 8, NOTYPE = 9, PROCEURE = 10,
+    STRING = 11, ARRAY = 12, RECORD = 13
+};
+
 class TypeNode : public Node {
 
 private:
-    const Identifier* ident_;
+    Identifier *ident_;
+    TypeKind kind_;
     unsigned int size_;
     const bool anon_;
 
 public:
-    explicit TypeNode(NodeType nodeType, const FilePos &pos, const Identifier* ident, unsigned int size) :
-            Node(nodeType, pos), ident_(ident), size_(size), anon_(ident == nullptr) { };
+    explicit TypeNode(NodeType nodeType, const FilePos &pos, Identifier *ident, TypeKind kind, unsigned int size) :
+            Node(nodeType, pos), ident_(ident), kind_(kind), size_(size), anon_(ident == nullptr) {};
     ~TypeNode() override = default;
 
-    [[nodiscard]] const Identifier * getIdentifier() const;
+    [[nodiscard]] Identifier *getIdentifier() const;
 
+    [[nodiscard]] virtual TypeKind kind() const;
     void setSize(unsigned int size);
     [[nodiscard]] virtual unsigned int getSize() const;
 
     [[nodiscard]] bool isAnonymous() const;
 
-    void accept(NodeVisitor& visitor) override = 0;
+    void accept(NodeVisitor &visitor) override = 0;
 
 };
 

@@ -6,8 +6,12 @@
 
 #include "TypeNode.h"
 
-const Identifier * TypeNode::getIdentifier() const {
+Identifier *TypeNode::getIdentifier() const {
     return ident_;
+}
+
+TypeKind TypeNode::kind() const {
+    return kind_;
 }
 
 void TypeNode::setSize(unsigned int size) {

@@ -17,8 +17,8 @@ private:
     std::unique_ptr<StatementSequenceNode> statements_;
 
 public:
-    explicit LoopNode(NodeType type, const FilePos &pos) : StatementNode(type, pos),
-            statements_(std::make_unique<StatementSequenceNode>(pos)) { };
+    explicit LoopNode(NodeType nodeType, const FilePos &pos) :
+            StatementNode(nodeType, pos), statements_(std::make_unique<StatementSequenceNode>(pos)) { };
     explicit LoopNode(const FilePos &pos) : LoopNode(NodeType::loop, pos) { };
     ~LoopNode() override = default;
 
@@ -36,10 +36,10 @@ private:
     std::unique_ptr<ExpressionNode> condition_;
 
 public:
-    explicit ConditionalLoopNode(NodeType type, const FilePos &pos, std::unique_ptr<ExpressionNode> condition) :
-            LoopNode(type, pos), condition_(std::move(condition)) { };
-    explicit ConditionalLoopNode(NodeType type, const FilePos &pos) :
-            ConditionalLoopNode(type, pos, nullptr) { };
+    explicit ConditionalLoopNode(NodeType nodeType, const FilePos &pos, std::unique_ptr<ExpressionNode> condition) :
+            LoopNode(nodeType, pos), condition_(std::move(condition)) { };
+    explicit ConditionalLoopNode(NodeType nodeType, const FilePos &pos) :
+            ConditionalLoopNode(nodeType, pos, nullptr) { };
     ~ConditionalLoopNode() override;
 
     void setCondition(std::unique_ptr<ExpressionNode> condition);

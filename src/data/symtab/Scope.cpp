@@ -6,18 +6,21 @@
 
 #include "Scope.h"
 
-Scope::Scope(std::unique_ptr<Scope> parent) : symbols_(), parent_(std::move(parent)) {
+Scope *Scope::getParent() {
+    return parent_;
 }
 
-std::unique_ptr<Scope> Scope::getParent() {
-    return std::move(parent_);
+Scope *Scope::addChild(std::unique_ptr<Scope> child) {
+    auto result = child.get();
+    children_.push_back(std::move(child));
+    return result;
 }
 
 void Scope::insert(const std::string &name, Node *symbol) {
     symbols_.insert(std::make_pair(name, symbol));
 }
 
-Node* Scope::lookup(const std::string &name, bool local) const {
+Node *Scope::lookup(const std::string &name, bool local) const {
     auto itr = symbols_.find(name);
     if (itr != symbols_.end()) {
         return itr->second;

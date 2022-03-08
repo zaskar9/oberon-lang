@@ -7,7 +7,17 @@
 #include <set>
 #include "SemanticAnalysis.h"
 
-void SemanticAnalysis::run(Logger *logger, Node* node) {
+SemanticAnalysis::SemanticAnalysis(SymbolTable *symtab)
+        : Analysis(), NodeVisitor(), symtab_(symtab), logger_(), parent_() {
+    tBoolean = dynamic_cast<TypeNode *>(symtab_->lookup(SymbolTable::BOOLEAN));
+    tByte = dynamic_cast<TypeNode *>(symtab_->lookup(SymbolTable::BYTE));
+    tChar = dynamic_cast<TypeNode *>(symtab_->lookup(SymbolTable::CHAR));
+    tInteger = dynamic_cast<TypeNode *>(symtab_->lookup(SymbolTable::INTEGER));
+    tReal = dynamic_cast<TypeNode *>(symtab_->lookup(SymbolTable::REAL));
+    tString = dynamic_cast<TypeNode *>(symtab_->lookup(SymbolTable::STRING));
+}
+
+void SemanticAnalysis::run(Logger *logger, Node *node) {
     logger_ = logger;
     node->accept(*this);
 }
@@ -33,10 +43,10 @@ void SemanticAnalysis::block(BlockNode &node) {
 
 void SemanticAnalysis::call(ProcedureNodeReference &node) {
     if (!node.isResolved()) {
-        auto symbol = symtab_->lookup(node.getIdentifier()->name());
+        auto symbol = symtab_->lookup(node.getIdentifier());
         if (symbol) {
             if (symbol->getNodeType() == NodeType::procedure) {
-                node.resolve(dynamic_cast<ProcedureNode*>(symbol));
+                node.resolve(dynamic_cast<ProcedureNode *>(symbol));
             } else {
                 logger_->error(node.pos(), to_string(*node.getIdentifier()) + " is not a procedure or function.");
             }
@@ -81,17 +91,20 @@ void SemanticAnalysis::call(ProcedureNodeReference &node) {
 }
 
 void SemanticAnalysis::visit(ModuleNode &node) {
-    assertUnique(node.getIdentifier()->name(), node);
+    symtab_->openNamespace(node.getIdentifier()->name());
+    assertUnique(node.getIdentifier(), node);
     node.setLevel(symtab_->getLevel());
-    symtab_->enterScope();
+    symtab_->openScope();
     block(node);
-    symtab_->leaveScope();
+    symtab_->closeScope();
 }
 
-void SemanticAnalysis::visit([[maybe_unused]] ImportNode &node) { }
+void SemanticAnalysis::visit([[maybe_unused]] ImportNode &node) {
+    // TODO check duplicate imports
+}
 
 void SemanticAnalysis::visit(ConstantDeclarationNode &node) {
-    assertUnique(node.getIdentifier()->name(), node);
+    assertUnique(node.getIdentifier(), node);
     node.setLevel(symtab_->getLevel());
     checkExport(node);
     auto expr = node.getValue();
@@ -114,7 +127,7 @@ void SemanticAnalysis::visit(ConstantDeclarationNode &node) {
 }
 
 void SemanticAnalysis::visit(TypeDeclarationNode &node) {
-    assertUnique(node.getIdentifier()->name(), node);
+    assertUnique(node.getIdentifier(), node);
     node.setLevel(symtab_->getLevel());
     checkExport(node);
     auto type = node.getType();
@@ -127,15 +140,15 @@ void SemanticAnalysis::visit(TypeDeclarationNode &node) {
 }
 
 void SemanticAnalysis::visit(TypeReferenceNode &node) {
-    auto sym = symtab_->lookup(node.getIdentifier()->name());
+    auto sym = symtab_->lookup(node.getIdentifier());
     if (sym == nullptr) {
         logger_->error(node.pos(), "undefined type: " + to_string(*node.getIdentifier()) + ".");
     } else if (sym->getNodeType() == NodeType::array_type ||
                sym->getNodeType() == NodeType::basic_type ||
                sym->getNodeType() == NodeType::record_type) {
-        node.resolve(dynamic_cast<TypeNode*>(sym));
+        node.resolve(dynamic_cast<TypeNode *>(sym));
     } else if (sym->getNodeType() == NodeType::type_declaration) {
-        auto type = dynamic_cast<TypeDeclarationNode*>(sym);
+        auto type = dynamic_cast<TypeDeclarationNode *>(sym);
         node.resolve(type->getType());
     } else {
         logger_->error(node.pos(), to_string(*node.getIdentifier()) + " is not a type.");
@@ -144,7 +157,7 @@ void SemanticAnalysis::visit(TypeReferenceNode &node) {
 
 
 void SemanticAnalysis::visit(VariableDeclarationNode &node) {
-    assertUnique(node.getIdentifier()->name(), node);
+    assertUnique(node.getIdentifier(), node);
     node.setLevel(symtab_->getLevel());
     checkExport(node);
     auto type = node.getType();
@@ -157,10 +170,10 @@ void SemanticAnalysis::visit(VariableDeclarationNode &node) {
 }
 
 void SemanticAnalysis::visit(ProcedureNode &node) {
-    assertUnique(node.getIdentifier()->name(), node);
+    assertUnique(node.getIdentifier(), node);
     node.setLevel(symtab_->getLevel());
     checkExport(node);
-    symtab_->enterScope();
+    symtab_->openScope();
     for (size_t i = 0; i < node.getParameterCount(); i++) {
         node.getParameter(i)->accept(*this);
     }
@@ -170,11 +183,11 @@ void SemanticAnalysis::visit(ProcedureNode &node) {
         node.setReturnType(resolveType(type));
     }
     block(node);
-    symtab_->leaveScope();
+    symtab_->closeScope();
 }
 
 void SemanticAnalysis::visit(ParameterNode &node) {
-    assertUnique(node.getIdentifier()->name(), node);
+    assertUnique(node.getIdentifier(), node);
     node.setLevel(symtab_->getLevel());
     auto type = node.getType();
     if (type) {
@@ -197,7 +210,7 @@ void SemanticAnalysis::visit(FieldNode &node) {
 
 void SemanticAnalysis::visit(ValueReferenceNode &node) {
     auto ident = node.getIdentifier();
-    auto sym = symtab_->lookup(ident->name());
+    auto sym = symtab_->lookup(ident);
     if (!sym && ident->isQualified()) {
         sym = symtab_->lookup(ident->qualifier());
         auto pos = node.pos();
@@ -210,7 +223,7 @@ void SemanticAnalysis::visit(ValueReferenceNode &node) {
             sym->getNodeType() == NodeType::parameter ||
             sym->getNodeType() == NodeType::variable ||
             sym->getNodeType() == NodeType::procedure) {
-            auto decl = dynamic_cast<DeclarationNode*>(sym);
+            auto decl = dynamic_cast<DeclarationNode *>(sym);
             node.resolve(decl);
             auto type = decl->getType();
             if (type == nullptr) {
@@ -224,9 +237,9 @@ void SemanticAnalysis::visit(ValueReferenceNode &node) {
             for (size_t i = 0; i < node.getSelectorCount(); i++) {
                 auto sel = node.getSelector(i);
                 if (type->getNodeType() == NodeType::array_type) {
-                    auto array_t = dynamic_cast<ArrayTypeNode*>(type);
+                    auto array_t = dynamic_cast<ArrayTypeNode *>(type);
                     sel->accept(*this);
-                    if (sel->getType() != BasicTypeNode::INTEGER) {
+                    if (sel->getType()->kind() != TypeKind::INTEGER) {
                         logger_->error(sel->pos(), "integer expression expected.");
                     }
                     if (sel->isConstant()) {
@@ -237,16 +250,17 @@ void SemanticAnalysis::visit(ValueReferenceNode &node) {
                     }
                     type = array_t->getMemberType();
                 } else if (type->getNodeType() == NodeType::record_type) {
-                    auto record_t = dynamic_cast<RecordTypeNode*>(type);
+                    auto record_t = dynamic_cast<RecordTypeNode *>(type);
                     if (sel->getNodeType() == NodeType::value_reference) {
-                        auto ref = dynamic_cast<ValueReferenceNode*>(sel);
+                        auto ref = dynamic_cast<ValueReferenceNode *>(sel);
                         auto field = record_t->getField(ref->getIdentifier()->name());
                         if (field) {
                             type = field->getType();
                             ref->resolve(field);
                             ref->setType(type);
                         } else {
-                            logger_->error(ref->pos(), "unknown record field: " + to_string(*ref->getIdentifier()) + ".");
+                            logger_->error(ref->pos(),
+                                           "unknown record field: " + to_string(*ref->getIdentifier()) + ".");
                         }
                     } else {
                         logger_->error(sel->pos(), "identifier expected.");
@@ -265,17 +279,16 @@ void SemanticAnalysis::visit(ValueReferenceNode &node) {
 }
 
 
-
-void SemanticAnalysis::visit([[maybe_unused]] BooleanLiteralNode &node) {
-
+void SemanticAnalysis::visit(BooleanLiteralNode &node) {
+    node.setType(this->tBoolean);
 }
 
-void SemanticAnalysis::visit([[maybe_unused]] IntegerLiteralNode &node) {
-
+void SemanticAnalysis::visit(IntegerLiteralNode &node) {
+    node.setType(this->tInteger);
 }
 
-void SemanticAnalysis::visit([[maybe_unused]] StringLiteralNode &node) {
-
+void SemanticAnalysis::visit(StringLiteralNode &node) {
+    node.setType(this->tString);
 }
 
 void SemanticAnalysis::visit(FunctionCallNode &node) {
@@ -292,6 +305,7 @@ void SemanticAnalysis::visit(UnaryExpressionNode &node) {
                 node.setExpression(std::move(value));
             }
         }
+        node.setType(node.getExpression()->getType());
     } else {
         logger_->error(node.pos(), "undefined expression.");
     }
@@ -301,20 +315,41 @@ void SemanticAnalysis::visit(BinaryExpressionNode &node) {
     auto lhs = node.getLeftExpression();
     if (lhs) {
         lhs->accept(*this);
-        if (lhs->isConstant()) {
-            node.setLeftExpression(fold(lhs));
-        }
     } else {
         logger_->error(node.pos(), "undefined left-hand side in expression.");
     }
     auto rhs = node.getRightExpression();
     if (rhs) {
         rhs->accept(*this);
+    } else {
+        logger_->error(node.pos(), "undefined right-hand side in expression.");
+    }
+    if (lhs && rhs) {
+        // Type inference
+        auto lhsType = lhs->getType();
+        auto rhsType = rhs->getType();
+        auto op = node.getOperator();
+        if (lhsType == rhsType) {
+            if (op == OperatorType::EQ
+                || op == OperatorType::NEQ
+                || op == OperatorType::LT
+                || op == OperatorType::LEQ
+                || op == OperatorType::GT
+                || op == OperatorType::GEQ) {
+                node.setType(this->tBoolean);
+            } else {
+                node.setType(lhsType);
+            }
+        } else {
+            logger_->error(node.pos(), "incompatible types.");
+        }
+        // Folding
+        if (lhs->isConstant()) {
+            node.setLeftExpression(fold(lhs));
+        }
         if (rhs->isConstant()) {
             node.setRightExpression(fold(rhs));
         }
-    } else {
-        logger_->error(node.pos(), "undefined right-hand side in expression.");
     }
 }
 
@@ -323,7 +358,7 @@ void SemanticAnalysis::visit(ArrayTypeNode &node) {
     if (expr) {
         expr->accept(*this);
         if (expr->isConstant()) {
-            if (expr->getType() == BasicTypeNode::INTEGER) {
+            if (expr->getType()->kind() == TypeKind::INTEGER) {
                 auto dim = foldNumber(expr);
                 if (dim > 0) {
                     node.setDimension((unsigned int) dim);
@@ -417,7 +452,7 @@ void SemanticAnalysis::visit(AssignmentNode &node) {
         if (rvalue->isConstant()) {
             node.setRvalue(fold(rvalue));
         }
-    } else  {
+    } else {
         logger_->error(node.pos(), "undefined right-hand side in assignment.");
     }
 }
@@ -426,7 +461,7 @@ void SemanticAnalysis::visit(IfThenElseNode &node) {
     auto condition = node.getCondition();
     if (condition) {
         condition->accept(*this);
-        if (condition->getType() != BasicTypeNode::BOOLEAN) {
+        if (condition->getType()->kind() != TypeKind::BOOLEAN) {
             logger_->error(condition->pos(), "Boolean expression expected.");
         }
     } else {
@@ -447,7 +482,7 @@ void SemanticAnalysis::visit(ElseIfNode &node) {
     auto condition = node.getCondition();
     if (condition) {
         condition->accept(*this);
-        if (condition->getType() != BasicTypeNode::BOOLEAN) {
+        if (condition->getType()->kind() != TypeKind::BOOLEAN) {
             logger_->error(condition->pos(), "Boolean expression expected.");
         }
     } else {
@@ -468,7 +503,7 @@ void SemanticAnalysis::visit(WhileLoopNode &node) {
     auto condition = node.getCondition();
     if (condition) {
         condition->accept(*this);
-        if (condition->getType() != BasicTypeNode::BOOLEAN) {
+        if (condition->getType()->kind() != TypeKind::BOOLEAN) {
             logger_->error(condition->pos(), "Boolean expression expected.");
         }
     } else {
@@ -481,7 +516,7 @@ void SemanticAnalysis::visit(RepeatLoopNode &node) {
     auto condition = node.getCondition();
     if (condition) {
         condition->accept(*this);
-        if (condition->getType() != BasicTypeNode::BOOLEAN) {
+        if (condition->getType()->kind() != TypeKind::BOOLEAN) {
             logger_->error(condition->pos(), "Boolean expression expected.");
         }
     } else {
@@ -495,12 +530,12 @@ void SemanticAnalysis::visit(ForLoopNode &node) {
     if (counter) {
         counter->accept(*this);
         if (counter->getNodeType() == NodeType::value_reference) {
-            auto ref = dynamic_cast<ValueReferenceNode*>(counter);
+            auto ref = dynamic_cast<ValueReferenceNode *>(counter);
             auto var = ref->dereference();
             if (var->getNodeType() != NodeType::variable) {
                 logger_->error(var->pos(), "variable expected.");
             }
-            if (var->getType() != BasicTypeNode::INTEGER) {
+            if (var->getType()->kind() != TypeKind::INTEGER) {
                 logger_->error(var->pos(), "integer variable expected.");
             }
         } else {
@@ -512,7 +547,7 @@ void SemanticAnalysis::visit(ForLoopNode &node) {
     auto low = node.getLow();
     if (low) {
         low->accept(*this);
-        if (low->getType() != BasicTypeNode::INTEGER) {
+        if (low->getType()->kind() != TypeKind::INTEGER) {
             logger_->error(low->pos(), "integer expression expected.");
         }
         if (low->isConstant()) {
@@ -524,7 +559,7 @@ void SemanticAnalysis::visit(ForLoopNode &node) {
     auto high = node.getHigh();
     if (high) {
         high->accept(*this);
-        if (high->getType() != BasicTypeNode::INTEGER) {
+        if (high->getType()->kind() != TypeKind::INTEGER) {
             logger_->error(high->pos(), "integer expression expected.");
         }
         if (high->isConstant()) {
@@ -536,7 +571,7 @@ void SemanticAnalysis::visit(ForLoopNode &node) {
     auto expr = node.getStep();
     if (expr) {
         expr->accept(*this);
-        if (expr->getType() == BasicTypeNode::INTEGER && expr->isConstant()) {
+        if (expr->getType()->kind() == TypeKind::INTEGER && expr->isConstant()) {
             auto step = foldNumber(expr);
             if (step == 0) {
                 logger_->error(expr->pos(), "step value cannot be zero.");
@@ -575,11 +610,14 @@ void SemanticAnalysis::visit(ReturnNode &node) {
     }
 }
 
-void SemanticAnalysis::assertUnique(const std::string &name, Node &node) {
-    if (symtab_->isDuplicate(name)) {
-        logger_->error(node.pos(), "duplicate definition: " + name + ".");
+void SemanticAnalysis::assertUnique(Identifier *ident, Node &node) {
+    if (ident->isQualified()) {
+        logger_->error(ident->pos(), "cannot use qualified identifier here.");
     }
-    symtab_->insert(name, &node);
+    if (symtab_->isDuplicate(ident->name())) {
+        logger_->error(ident->pos(), "duplicate definition: " + ident->name() + ".");
+    }
+    symtab_->insert(ident->name(), &node);
 }
 
 bool SemanticAnalysis::assertCompatible(const FilePos &pos, TypeNode *expected, TypeNode *actual) {
@@ -603,38 +641,49 @@ void SemanticAnalysis::checkExport(DeclarationNode &node) {
 
 std::unique_ptr<LiteralNode> SemanticAnalysis::fold(const ExpressionNode *expr) const {
     auto type = expr->getType();
-    if (type == BasicTypeNode::INTEGER) {
-        return std::make_unique<IntegerLiteralNode>(expr->pos(), foldNumber(expr));
-    } else if (type == BasicTypeNode::BOOLEAN) {
-        return std::make_unique<BooleanLiteralNode>(expr->pos(), foldBoolean(expr));
-    } else if (type == BasicTypeNode::STRING) {
-        return std::make_unique<StringLiteralNode>(expr->pos(), foldString(expr));
-    } else {
-        logger_->error(expr->pos(), "incompatible types.");
-        return nullptr;
+    std::unique_ptr<LiteralNode> res;
+    if (type->kind() == TypeKind::INTEGER) {
+        res = std::make_unique<IntegerLiteralNode>(expr->pos(), foldNumber(expr));
+    } else if (type->kind() == TypeKind::BOOLEAN) {
+        res = std::make_unique<BooleanLiteralNode>(expr->pos(), foldBoolean(expr));
+    } else if (type->kind() == TypeKind::STRING) {
+        res = std::make_unique<StringLiteralNode>(expr->pos(), foldString(expr));
     }
+    if (res) {
+        res->setType(type);
+        return res;
+    }
+    logger_->error(expr->pos(), "incompatible types.");
+    return nullptr;
 }
 
 int SemanticAnalysis::foldNumber(const ExpressionNode *expr) const {
     if (expr->getNodeType() == NodeType::unary_expression) {
-        auto unExpr = dynamic_cast<const UnaryExpressionNode*>(expr);
+        auto unExpr = dynamic_cast<const UnaryExpressionNode *>(expr);
         int value = foldNumber(unExpr->getExpression());
         switch (unExpr->getOperator()) {
-            case OperatorType::NEG: return -1 * value;
-            case OperatorType::PLUS: return value;
+            case OperatorType::NEG:
+                return -1 * value;
+            case OperatorType::PLUS:
+                return value;
             default:
                 logger_->error(unExpr->pos(), "incompatible operator.");
         }
     } else if (expr->getNodeType() == NodeType::binary_expression) {
-        auto binExpr = dynamic_cast<const BinaryExpressionNode*>(expr);
+        auto binExpr = dynamic_cast<const BinaryExpressionNode *>(expr);
         int lValue = foldNumber(binExpr->getLeftExpression());
         int rValue = foldNumber(binExpr->getRightExpression());
         switch (binExpr->getOperator()) {
-            case OperatorType::PLUS:  return lValue + rValue;
-            case OperatorType::MINUS: return lValue - rValue;
-            case OperatorType::TIMES: return lValue * rValue;
-            case OperatorType::DIV:   return lValue / rValue;
-            case OperatorType::MOD:   return lValue % rValue;
+            case OperatorType::PLUS:
+                return lValue + rValue;
+            case OperatorType::MINUS:
+                return lValue - rValue;
+            case OperatorType::TIMES:
+                return lValue * rValue;
+            case OperatorType::DIV:
+                return lValue / rValue;
+            case OperatorType::MOD:
+                return lValue % rValue;
             default:
                 logger_->error(binExpr->pos(), "incompatible operator.");
         }
@@ -642,9 +691,9 @@ int SemanticAnalysis::foldNumber(const ExpressionNode *expr) const {
         auto numConst = dynamic_cast<const IntegerLiteralNode *>(expr);
         return numConst->getValue();
     } else if (expr->getNodeType() == NodeType::value_reference) {
-        auto ref = dynamic_cast<const ValueReferenceNode*>(expr);
+        auto ref = dynamic_cast<const ValueReferenceNode *>(expr);
         if (ref->isConstant()) {
-            auto constant = dynamic_cast<const ConstantDeclarationNode*>(ref->dereference());
+            auto constant = dynamic_cast<const ConstantDeclarationNode *>(ref->dereference());
             return foldNumber(constant->getValue());
         }
     } else {
@@ -655,47 +704,58 @@ int SemanticAnalysis::foldNumber(const ExpressionNode *expr) const {
 
 bool SemanticAnalysis::foldBoolean(const ExpressionNode *expr) const {
     if (expr->getNodeType() == NodeType::unary_expression) {
-        auto unExpr = dynamic_cast<const UnaryExpressionNode*>(expr);
+        auto unExpr = dynamic_cast<const UnaryExpressionNode *>(expr);
         bool value = foldBoolean(unExpr->getExpression());
         switch (unExpr->getOperator()) {
-            case OperatorType::NOT: return !value;
+            case OperatorType::NOT:
+                return !value;
             default:
                 logger_->error(unExpr->pos(), "incompatible operator.");
         }
     } else if (expr->getNodeType() == NodeType::binary_expression) {
-        auto binExpr = dynamic_cast<const BinaryExpressionNode*>(expr);
+        auto binExpr = dynamic_cast<const BinaryExpressionNode *>(expr);
         OperatorType op = binExpr->getOperator();
         auto lhs = binExpr->getLeftExpression();
         auto rhs = binExpr->getRightExpression();
         auto type = lhs->getType();
-        if (type == BasicTypeNode::BOOLEAN) {
+        if (type->kind() == TypeKind::BOOLEAN) {
             bool lValue = foldBoolean(binExpr->getLeftExpression());
             bool rValue = foldBoolean(binExpr->getRightExpression());
             switch (op) {
-                case OperatorType::AND: return lValue && rValue;
-                case OperatorType::OR:  return lValue || rValue;
+                case OperatorType::AND:
+                    return lValue && rValue;
+                case OperatorType::OR:
+                    return lValue || rValue;
                 default:
                     logger_->error(binExpr->pos(), "incompatible operator.");
             }
-        } else if (type == BasicTypeNode::INTEGER) {
+        } else if (type->kind() == TypeKind::INTEGER) {
             int lValue = foldNumber(lhs);
             int rValue = foldNumber(rhs);
             switch (op) {
-                case OperatorType::EQ:  return lValue == rValue;
-                case OperatorType::NEQ: return lValue != rValue;
-                case OperatorType::LT:  return lValue < rValue;
-                case OperatorType::LEQ: return lValue <= rValue;
-                case OperatorType::GT:  return lValue > rValue;
-                case OperatorType::GEQ: return lValue >= rValue;
+                case OperatorType::EQ:
+                    return lValue == rValue;
+                case OperatorType::NEQ:
+                    return lValue != rValue;
+                case OperatorType::LT:
+                    return lValue < rValue;
+                case OperatorType::LEQ:
+                    return lValue <= rValue;
+                case OperatorType::GT:
+                    return lValue > rValue;
+                case OperatorType::GEQ:
+                    return lValue >= rValue;
                 default:
                     logger_->error(binExpr->pos(), "incompatible operator.");
             }
-        } else if (type == BasicTypeNode::STRING) {
+        } else if (type->kind() == TypeKind::STRING) {
             std::string lValue = foldString(lhs);
             std::string rValue = foldString(rhs);
             switch (op) {
-                case OperatorType::EQ:  return lValue == rValue;
-                case OperatorType::NEQ: return lValue != rValue;
+                case OperatorType::EQ:
+                    return lValue == rValue;
+                case OperatorType::NEQ:
+                    return lValue != rValue;
                 default:
                     logger_->error(binExpr->pos(), "incompatible operator.");
             }
@@ -703,12 +763,12 @@ bool SemanticAnalysis::foldBoolean(const ExpressionNode *expr) const {
             logger_->error(expr->pos(), "incompatible expression.");
         }
     } else if (expr->getNodeType() == NodeType::boolean) {
-        auto boolConst = dynamic_cast<const BooleanLiteralNode*>(expr);
+        auto boolConst = dynamic_cast<const BooleanLiteralNode *>(expr);
         return boolConst->getValue();
     } else if (expr->getNodeType() == NodeType::value_reference) {
-        auto ref = dynamic_cast<const ValueReferenceNode*>(expr);
+        auto ref = dynamic_cast<const ValueReferenceNode *>(expr);
         if (ref->isConstant()) {
-            auto constant = dynamic_cast<const ConstantDeclarationNode*>(ref->dereference());
+            auto constant = dynamic_cast<const ConstantDeclarationNode *>(ref->dereference());
             return foldBoolean(constant->getValue());
         }
     } else {
@@ -719,7 +779,7 @@ bool SemanticAnalysis::foldBoolean(const ExpressionNode *expr) const {
 
 std::string SemanticAnalysis::foldString(const ExpressionNode *expr) const {
     if (expr->getNodeType() == NodeType::binary_expression) {
-        auto binExpr = dynamic_cast<const BinaryExpressionNode*>(expr);
+        auto binExpr = dynamic_cast<const BinaryExpressionNode *>(expr);
         std::string lValue = foldString(binExpr->getLeftExpression());
         std::string rValue = foldString(binExpr->getRightExpression());
         switch (binExpr->getOperator()) {
@@ -732,20 +792,22 @@ std::string SemanticAnalysis::foldString(const ExpressionNode *expr) const {
         auto stringConst = dynamic_cast<const StringLiteralNode *>(expr);
         return stringConst->getValue();
     } else if (expr->getNodeType() == NodeType::value_reference) {
-        auto ref = dynamic_cast<const ValueReferenceNode*>(expr);
+        auto ref = dynamic_cast<const ValueReferenceNode *>(expr);
         if (ref->isConstant()) {
-            auto constant = dynamic_cast<const ConstantDeclarationNode*>(ref->dereference());
+            auto constant = dynamic_cast<const ConstantDeclarationNode *>(ref->dereference());
             return foldString(constant->getValue());
         }
     } else {
-        logger_->error(expr->pos(), "incompatible expression (string)." );
+        logger_->error(expr->pos(), "incompatible expression (string).");
     }
     return "";
 }
 
-TypeNode* SemanticAnalysis::resolveType(TypeNode *type) {
+TypeNode *SemanticAnalysis::resolveType(TypeNode *type) {
     if (type == nullptr) {
-        return BasicTypeNode::UNDEF;
+        // TODO throw exception
+        std::cerr << "Cannot resolve null type." << std::endl;
+        exit(1);
     }
     if (type->getNodeType() == NodeType::type_reference) {
         auto ref = dynamic_cast<TypeReferenceNode *>(type);

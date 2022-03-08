@@ -22,7 +22,7 @@ bool ValueReferenceNode::isResolved() const {
 
 void ValueReferenceNode::resolve(DeclarationNode *node) {
     node_ = node;
-    type_ = node->getType();
+    this->setType(node->getType());
 }
 
 DeclarationNode* ValueReferenceNode::dereference() const {
@@ -63,14 +63,6 @@ bool ValueReferenceNode::isConstant() const {
     }
 }
 
-void ValueReferenceNode::setType(TypeNode *type) {
-    type_ = type;
-}
-
-TypeNode* ValueReferenceNode::getType() const {
-    return type_;
-}
-
 int ValueReferenceNode::getPrecedence() const {
     return 4;
 }
@@ -95,6 +87,13 @@ void TypeReferenceNode::resolve(TypeNode *node) {
 
 TypeNode * TypeReferenceNode::dereference() const {
     return node_;
+}
+
+TypeKind TypeReferenceNode::kind() const {
+    if (node_) {
+        return node_->kind();
+    }
+    return TypeNode::kind();
 }
 
 unsigned int TypeReferenceNode::getSize() const {

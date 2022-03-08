@@ -42,7 +42,7 @@ void LLVMIRBuilder::visit(ModuleNode &node) {
         node.getProcedure(i)->accept(*this);
     }
     // generate code for main
-    auto main = module_->getOrInsertFunction("main", getLLVMType(BasicTypeNode::INTEGER));
+    auto main = module_->getOrInsertFunction("main", builder_.getInt32Ty());
     function_ = cast<Function>(main.getCallee());
     auto entry = BasicBlock::Create(builder_.getContext(), "entry", function_);
     builder_.SetInsertPoint(entry);
@@ -70,7 +70,7 @@ void LLVMIRBuilder::visit(ProcedureNode &node) {
         builder_.SetInsertPoint(entry);
         for (size_t i = 0; i < node.getVariableCount(); i++) {
             auto var = node.getVariable(i);
-            auto value = builder_.CreateAlloca(getLLVMType(var->getType()), 0, var->getIdentifier()->name());
+            auto value = builder_.CreateAlloca(getLLVMType(var->getType()), nullptr, var->getIdentifier()->name());
             values_[var] = value;
         }
         level_ = node.getLevel() + 1;
@@ -80,7 +80,7 @@ void LLVMIRBuilder::visit(ProcedureNode &node) {
         }
         auto block = builder_.GetInsertBlock();
         if (block->getTerminator() == nullptr) {
-            if (node.getReturnType() != nullptr && block->size() > 0) {
+            if (node.getReturnType() != nullptr && !block->empty()) {
                 logger_->error(node.pos(), "function \"" + to_string(node.getIdentifier()) + "\" has no return statement.");
             } else {
                 builder_.CreateUnreachable();
@@ -516,11 +516,11 @@ Type* LLVMIRBuilder::getLLVMType(TypeNode *type, bool isPtr) {
         }
         result = struct_t;
     } else if (type->getNodeType() == NodeType::basic_type) {
-        if (type == BasicTypeNode::BOOLEAN) {
+        if (type->kind() == TypeKind::BOOLEAN) {
             result = builder_.getInt1Ty();
-        } else if (type == BasicTypeNode::INTEGER) {
+        } else if (type->kind() == TypeKind::INTEGER) {
             result = builder_.getInt32Ty();
-        } else if (type == BasicTypeNode::STRING) {
+        } else if (type->kind() == TypeKind::STRING) {
             result = builder_.getInt8PtrTy();
         }
     }
@@ -568,7 +568,7 @@ void LLVMIRBuilder::call(ProcedureNodeReference &node) {
     std::string name = node.dereference()->getIdentifier()->name();
     size_t fp_cnt = node.dereference()->getParameterCount();
     for (size_t i = 0; i < node.getParameterCount(); i++) {
-        setRefMode(!(i < fp_cnt) || !node.dereference()->getParameter(i)->isVar());
+        setRefMode(i >= fp_cnt || !node.dereference()->getParameter(i)->isVar());
         node.getParameter(i)->accept(*this);
         params.push_back(value_);
         restoreRefMode();

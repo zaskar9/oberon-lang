@@ -224,7 +224,7 @@ void Parser::type_declarations(BlockNode *block) {
 
 // TODO type = qualident | array_type | record_type | pointer_type | procedure_type.
 // type = ( qualident | array_type | record_type ) .
-TypeNode* Parser::type(BlockNode *block, const Identifier* identifier) {
+TypeNode* Parser::type(BlockNode *block, Identifier* identifier) {
     logger_->debug({}, "type");
     auto token = scanner_->peek();
     if (token->type() == TokenType::const_ident) {
@@ -253,7 +253,7 @@ TypeNode* Parser::type(BlockNode *block, const Identifier* identifier) {
 
 // TODO array_type = "ARRAY" expression { "," expression } "OF" type .
 // array_type = "ARRAY" expression "OF" type .
-ArrayTypeNode* Parser::array_type(BlockNode *block, const Identifier* identifier) {
+ArrayTypeNode* Parser::array_type(BlockNode *block, Identifier* identifier) {
     logger_->debug({}, "array_type");
     FilePos pos = scanner_->next()->start(); // skip ARRAY keyword and get its position
     auto expr = expression();
@@ -268,7 +268,7 @@ ArrayTypeNode* Parser::array_type(BlockNode *block, const Identifier* identifier
 
 // TODO record_type = "RECORD" [ "(" qualident ")" ] [ field_list { ";" field_list } ] END.
 // record_type = "RECORD" field_list { ";" field_list } "END" .
-RecordTypeNode* Parser::record_type(BlockNode *block, const Identifier* identifier) {
+RecordTypeNode* Parser::record_type(BlockNode *block, Identifier* identifier) {
     logger_->debug({}, "record_type");
     FilePos pos = scanner_->next()->start(); // skip RECORD keyword and get its position
     auto node = new RecordTypeNode(pos, identifier);
