@@ -13,7 +13,7 @@
 #include <ostream>
 #include <string>
 #include <utility>
-#include "../../util/Logger.h"
+#include "../../global.h"
 
 enum class NodeType : char {
     ident,

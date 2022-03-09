@@ -42,5 +42,9 @@
 *.bc
 *.ll
 
+# Oberon
+*.smb
+*.sym
+
 # macOS
 *.DS_Store

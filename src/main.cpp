@@ -7,9 +7,9 @@
 #include <iostream>
 #include <boost/filesystem.hpp>
 #include <boost/program_options.hpp>
-#include <llvm/IR/Module.h>
 #include <config.h>
-#include "llvm/LLVMCompiler.h"
+#include "logging/Logger.h"
+#include "compiler/Compiler.h"
 
 namespace fs = boost::filesystem;
 namespace po = boost::program_options;
@@ -17,7 +17,7 @@ namespace po = boost::program_options;
 int main(const int argc, const char *argv[]) {
     auto logger = std::make_unique<Logger>(LogLevel::INFO, &std::cout);
     logger->setLevel(LogLevel::INFO);
-    auto compiler = std::make_unique<LLVMCompiler>(logger.get());
+    auto compiler = std::make_unique<Compiler>(logger.get());
     auto visible = po::options_description("OPTIONS");
     visible.add_options()
             ("help,h", "Display available visible.")
@@ -50,22 +50,23 @@ int main(const int argc, const char *argv[]) {
         return 1;
     } else if (vm.count("version")) {
         std::cout << PROJECT_NAME << " version " << PROJECT_VERSION << std::endl;
-        std::cout << "Target: " << compiler->getTargetMachine()->getTargetTriple().str() << std::endl;
+        std::cout << "Target: " << compiler->getBackendDescription() << std::endl;
         return 1;
     } else if (vm.count("inputs")) {
         if (vm.count("-O")) {
             int level = vm["-O"].as<int>();
             switch (level) {
                 case 0:
+                    compiler->setOptimizationLevel(OptimizationLevel::O1);
                     break;
                 case 1:
-                    compiler->setOptimizationLevel(PassBuilder::OptimizationLevel::O1);
+                    compiler->setOptimizationLevel(OptimizationLevel::O1);
                     break;
                 case 2:
-                    compiler->setOptimizationLevel(PassBuilder::OptimizationLevel::O2);
+                    compiler->setOptimizationLevel(OptimizationLevel::O2);
                     break;
                 case 3:
-                    compiler->setOptimizationLevel(PassBuilder::OptimizationLevel::O3);
+                    compiler->setOptimizationLevel(OptimizationLevel::O3);
                     break;
                 default:
                     logger->error(PROJECT_NAME, "unsupported optimization level: " + to_string(level) + ".");

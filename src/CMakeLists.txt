@@ -3,9 +3,8 @@ set(OBERON_LANG "oberon-lang")
 set(GRAMMAR_TOOL "grammar-tool")
 
 
-set(UTIL_SOURCES
-        util/Logger.cpp util/Logger.h
-        util/CompilationStatus.cpp util/CompilationStatus.h)
+set(LOGGING_SOURCES
+        logging/Logger.cpp logging/Logger.h)
 
 set(SCANNER_SOURCES
         scanner/Scanner.cpp scanner/Scanner.h
@@ -14,7 +13,7 @@ set(SCANNER_SOURCES
         scanner/IdentToken.cpp scanner/IdentToken.h
         scanner/UndefinedToken.cpp scanner/UndefinedToken.h)
 
-set(PARSER_SOURCES
+set(DATA_SOURCES
         data/ast/Identifier.cpp data/ast/Identifier.h
         data/ast/NodeVisitor.cpp data/ast/NodeVisitor.h
         data/ast/Node.cpp data/ast/Node.h
@@ -34,9 +33,14 @@ set(PARSER_SOURCES
         data/ast/LoopNode.cpp data/ast/LoopNode.h
         data/ast/StatementSequenceNode.cpp data/ast/StatementSequenceNode.h
         data/ast/ImportNode.cpp data/ast/ImportNode.h
-        data/ast/NodePrettyPrinter.cpp data/ast/NodePrettyPrinter.h
+        data/ast/NodePrettyPrinter.cpp data/ast/NodePrettyPrinter.h)
+
+set(SYMTAB_SOURCES
         data/symtab/SymbolTable.cpp data/symtab/SymbolTable.h
         data/symtab/Scope.cpp data/symtab/Scope.h
+        data/symtab/SymbolExporter.cpp data/symtab/SymbolExporter.h)
+
+set(PARSER_SOURCES
         parser/Parser.cpp parser/Parser.h)
 
 set(ANALYZER_SOURCES
@@ -46,9 +50,22 @@ set(ANALYZER_SOURCES
 
 set(CODEGEN_SOURCES
         llvm/LLVMIRBuilder.cpp llvm/LLVMIRBuilder.h
-        llvm/LLVMCompiler.cpp llvm/LLVMCompiler.h)
+        llvm/LLVMCodeGen.cpp llvm/LLVMCodeGen.h)
 
-set(ALL_SOURCES global.h ${UTIL_SOURCES} ${SCANNER_SOURCES} ${PARSER_SOURCES} ${ANALYZER_SOURCES} ${CODEGEN_SOURCES})
+set(COMPILER_SOURCES
+        compiler/CompilationStatus.cpp compiler/CompilationStatus.h
+        compiler/Compiler.cpp compiler/Compiler.h)
+
+set(ALL_SOURCES
+        global.h
+        ${LOGGING_SOURCES}
+        ${SCANNER_SOURCES}
+        ${DATA_SOURCES}
+        ${PARSER_SOURCES}
+        ${SYMTAB_SOURCES}
+        ${ANALYZER_SOURCES}
+        ${CODEGEN_SOURCES}
+        ${COMPILER_SOURCES})
 
 add_executable(${OBERON_LANG} main.cpp ${ALL_SOURCES})
 
@@ -73,7 +90,7 @@ set(GRAMMAR_SOURCES
         grammar/Validator.cpp grammar/Validator.h
         grammar/Loader.cpp grammar/Loader.h)
 
-add_executable(${GRAMMAR_TOOL} grammar/main.cpp ${GRAMMAR_SOURCES} ${SCANNER_SOURCES} ${UTIL_SOURCES})
+add_executable(${GRAMMAR_TOOL} grammar/main.cpp ${GRAMMAR_SOURCES} ${SCANNER_SOURCES} ${LOGGING_SOURCES})
 
 find_package(Boost REQUIRED COMPONENTS filesystem program_options)
 if (Boost_FOUND)

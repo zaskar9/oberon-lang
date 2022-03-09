@@ -25,5 +25,13 @@ static std::string to_string(T obj) {
     return stream.str();
 }
 
+enum class OutputFileType {
+    AssemblyFile, BitCodeFile, LLVMIRFile, ObjectFile
+};
+
+enum class OptimizationLevel {
+    O0, O1, O2, O3
+};
+
 
 #endif //OBERON_LLVM_GLOBAL_H

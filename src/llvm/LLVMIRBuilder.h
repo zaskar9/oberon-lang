@@ -13,6 +13,7 @@
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
 #include "../data/ast/NodeVisitor.h"
+#include "../logging/Logger.h"
 
 using namespace llvm;
 

@@ -9,7 +9,7 @@
 
 
 #include <ostream>
-#include "../util/Logger.h"
+#include "../logging/Logger.h"
 
 enum class TokenType : char {
     eof, undef,

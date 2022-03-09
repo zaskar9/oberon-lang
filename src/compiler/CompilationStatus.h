@@ -10,7 +10,7 @@
 
 #include <vector>
 #include "../global.h"
-#include "Logger.h"
+#include "../logging/Logger.h"
 
 struct Message {
     FilePos pos;

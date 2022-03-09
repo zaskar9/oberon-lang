@@ -17,7 +17,7 @@
 #include <boost/filesystem.hpp>
 #include "Token.h"
 #include "LiteralToken.h"
-#include "../util/Logger.h"
+#include "../logging/Logger.h"
 
 class Scanner {
 

@@ -12,7 +12,7 @@
 #include <vector>
 #include <set>
 #include "../scanner/Scanner.h"
-#include "../util/Logger.h"
+#include "../logging/Logger.h"
 #include "../data/ast/Node.h"
 #include "../data/ast/ExpressionNode.h"
 #include "../data/ast/TypeNode.h"
