@@ -11,7 +11,7 @@ UNAME_S := $(shell uname)
 .PRECIOUS: %.s %.ll
 
 clean:
-	@rm -f *.s *.ll *.o *.bc
+	@rm -f *.s *.ll *.o *.bc *.smb *.sym
 ifeq ($(UNAME_S), Darwin)
 	@find . -type f -perm +111 -delete
 endif

@@ -226,7 +226,7 @@ void SemanticAnalysis::visit(ValueReferenceNode &node) {
             auto decl = dynamic_cast<DeclarationNode *>(sym);
             node.resolve(decl);
             auto type = decl->getType();
-            if (type == nullptr) {
+            if (!type) {
                 if (sym->getNodeType() == NodeType::procedure) {
                     logger_->error(node.pos(), "function expected.");
                     return;
@@ -239,7 +239,8 @@ void SemanticAnalysis::visit(ValueReferenceNode &node) {
                 if (type->getNodeType() == NodeType::array_type) {
                     auto array_t = dynamic_cast<ArrayTypeNode *>(type);
                     sel->accept(*this);
-                    if (sel->getType()->kind() != TypeKind::INTEGER) {
+                    auto sel_type = sel->getType();
+                    if (sel_type && sel_type->kind() != TypeKind::INTEGER) {
                         logger_->error(sel->pos(), "integer expression expected.");
                     }
                     if (sel->isConstant()) {
@@ -358,7 +359,8 @@ void SemanticAnalysis::visit(ArrayTypeNode &node) {
     if (expr) {
         expr->accept(*this);
         if (expr->isConstant()) {
-            if (expr->getType()->kind() == TypeKind::INTEGER) {
+            auto type = expr->getType();
+            if (type && type->kind() == TypeKind::INTEGER) {
                 auto dim = foldNumber(expr);
                 if (dim > 0) {
                     node.setDimension((unsigned int) dim);
@@ -461,7 +463,8 @@ void SemanticAnalysis::visit(IfThenElseNode &node) {
     auto condition = node.getCondition();
     if (condition) {
         condition->accept(*this);
-        if (condition->getType()->kind() != TypeKind::BOOLEAN) {
+        auto type = condition->getType();
+        if (type && type->kind() != TypeKind::BOOLEAN) {
             logger_->error(condition->pos(), "Boolean expression expected.");
         }
     } else {
@@ -482,7 +485,8 @@ void SemanticAnalysis::visit(ElseIfNode &node) {
     auto condition = node.getCondition();
     if (condition) {
         condition->accept(*this);
-        if (condition->getType()->kind() != TypeKind::BOOLEAN) {
+        auto type = condition->getType();
+        if (type && type->kind() != TypeKind::BOOLEAN) {
             logger_->error(condition->pos(), "Boolean expression expected.");
         }
     } else {
@@ -503,7 +507,8 @@ void SemanticAnalysis::visit(WhileLoopNode &node) {
     auto condition = node.getCondition();
     if (condition) {
         condition->accept(*this);
-        if (condition->getType()->kind() != TypeKind::BOOLEAN) {
+        auto type = condition->getType();
+        if (type && type->kind() != TypeKind::BOOLEAN) {
             logger_->error(condition->pos(), "Boolean expression expected.");
         }
     } else {
@@ -516,7 +521,8 @@ void SemanticAnalysis::visit(RepeatLoopNode &node) {
     auto condition = node.getCondition();
     if (condition) {
         condition->accept(*this);
-        if (condition->getType()->kind() != TypeKind::BOOLEAN) {
+        auto type = condition->getType();
+        if (type && type->kind() != TypeKind::BOOLEAN) {
             logger_->error(condition->pos(), "Boolean expression expected.");
         }
     } else {
@@ -535,7 +541,8 @@ void SemanticAnalysis::visit(ForLoopNode &node) {
             if (var->getNodeType() != NodeType::variable) {
                 logger_->error(var->pos(), "variable expected.");
             }
-            if (var->getType()->kind() != TypeKind::INTEGER) {
+            auto type = var->getType();
+            if (type && type->kind() != TypeKind::INTEGER) {
                 logger_->error(var->pos(), "integer variable expected.");
             }
         } else {
@@ -547,7 +554,8 @@ void SemanticAnalysis::visit(ForLoopNode &node) {
     auto low = node.getLow();
     if (low) {
         low->accept(*this);
-        if (low->getType()->kind() != TypeKind::INTEGER) {
+        auto type = low->getType();
+        if (type && type->kind() != TypeKind::INTEGER) {
             logger_->error(low->pos(), "integer expression expected.");
         }
         if (low->isConstant()) {
@@ -559,7 +567,8 @@ void SemanticAnalysis::visit(ForLoopNode &node) {
     auto high = node.getHigh();
     if (high) {
         high->accept(*this);
-        if (high->getType()->kind() != TypeKind::INTEGER) {
+        auto type = high->getType();
+        if (type && type->kind() != TypeKind::INTEGER) {
             logger_->error(high->pos(), "integer expression expected.");
         }
         if (high->isConstant()) {
@@ -571,7 +580,8 @@ void SemanticAnalysis::visit(ForLoopNode &node) {
     auto expr = node.getStep();
     if (expr) {
         expr->accept(*this);
-        if (expr->getType()->kind() == TypeKind::INTEGER && expr->isConstant()) {
+        auto type = expr->getType();
+        if (type && type->kind() == TypeKind::INTEGER && expr->isConstant()) {
             auto step = foldNumber(expr);
             if (step == 0) {
                 logger_->error(expr->pos(), "step value cannot be zero.");
@@ -641,19 +651,23 @@ void SemanticAnalysis::checkExport(DeclarationNode &node) {
 
 std::unique_ptr<LiteralNode> SemanticAnalysis::fold(const ExpressionNode *expr) const {
     auto type = expr->getType();
-    std::unique_ptr<LiteralNode> res;
-    if (type->kind() == TypeKind::INTEGER) {
-        res = std::make_unique<IntegerLiteralNode>(expr->pos(), foldNumber(expr));
-    } else if (type->kind() == TypeKind::BOOLEAN) {
-        res = std::make_unique<BooleanLiteralNode>(expr->pos(), foldBoolean(expr));
-    } else if (type->kind() == TypeKind::STRING) {
-        res = std::make_unique<StringLiteralNode>(expr->pos(), foldString(expr));
+    if (type) {
+        std::unique_ptr<LiteralNode> res;
+        if (type->kind() == TypeKind::INTEGER) {
+            res = std::make_unique<IntegerLiteralNode>(expr->pos(), foldNumber(expr));
+        } else if (type->kind() == TypeKind::BOOLEAN) {
+            res = std::make_unique<BooleanLiteralNode>(expr->pos(), foldBoolean(expr));
+        } else if (type->kind() == TypeKind::STRING) {
+            res = std::make_unique<StringLiteralNode>(expr->pos(), foldString(expr));
+        }
+        if (res) {
+            res->setType(type);
+            return res;
+        }
+        logger_->error(expr->pos(), "incompatible types.");
+    } else {
+        logger_->error(expr->pos(), "undefined type.");
     }
-    if (res) {
-        res->setType(type);
-        return res;
-    }
-    logger_->error(expr->pos(), "incompatible types.");
     return nullptr;
 }
 
@@ -805,9 +819,7 @@ std::string SemanticAnalysis::foldString(const ExpressionNode *expr) const {
 
 TypeNode *SemanticAnalysis::resolveType(TypeNode *type) {
     if (type == nullptr) {
-        // TODO throw exception
-        std::cerr << "Cannot resolve null type." << std::endl;
-        exit(1);
+        return type;
     }
     if (type->getNodeType() == NodeType::type_reference) {
         auto ref = dynamic_cast<TypeReferenceNode *>(type);
