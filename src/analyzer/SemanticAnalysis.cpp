@@ -400,7 +400,7 @@ void SemanticAnalysis::visit(RecordTypeNode &node) {
         for (size_t i = 0; i < node.getFieldCount(); i++) {
             auto field = node.getField(i);
             if (field->getIdentifier()->isExported()) {
-                if (symtab_->getLevel() > 1) {
+                if (symtab_->getLevel() != SymbolTable::MODULE_LEVEL) {
                     logger_->error(field->pos(), "only top-level declarations can be exported.");
                 } else if (!node.getIdentifier()->isExported()) {
                     logger_->error(field->pos(), "cannot export fields of non-exported record type.");
@@ -644,7 +644,7 @@ bool SemanticAnalysis::assertCompatible(const FilePos &pos, TypeNode *expected, 
 }
 
 void SemanticAnalysis::checkExport(DeclarationNode &node) {
-    if (node.getLevel() > 1 && node.getIdentifier()->isExported()) {
+    if (node.getLevel() != SymbolTable::MODULE_LEVEL && node.getIdentifier()->isExported()) {
         logger_->error(node.getIdentifier()->pos(), "only top-level declarations can be exported.");
     }
 }

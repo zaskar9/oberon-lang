@@ -5,6 +5,7 @@
  */
 
 #include "LambdaLifter.h"
+#include "data/symtab/SymbolTable.h"
 
 const std::string LambdaLifter::THIS_ = "_this";
 const std::string LambdaLifter::SUPER_ = "_super";
@@ -92,7 +93,7 @@ void LambdaLifter::visit(ProcedureNode &node) {
                     node.getStatements()->addStatement(std::make_unique<AssignmentNode>(EMPTY_POS, std::move(lhs), std::move(rhs)));
                 }
             }
-            if (level_ > 1) /* neither root, nor leaf procedure */ {
+            if (level_ > SymbolTable::MODULE_LEVEL) /* neither root, nor leaf procedure */ {
                 auto param = node.getParameter(SUPER_);
                 if (param) {
                     auto lhs = std::make_unique<ValueReferenceNode>(EMPTY_POS, param);
@@ -111,14 +112,14 @@ void LambdaLifter::visit(ProcedureNode &node) {
         }
         // TODO remove unnecessary local variables
         // node.removeVariables(1, node.getVariableCount());
-    } else if (level_ > 1) /* leaf procedure */ {
+    } else if (level_ > SymbolTable::MODULE_LEVEL) /* leaf procedure */ {
         if ((env_ = node.getParameter(SUPER_))) {
             for (size_t i = 0; i < node.getStatements()->getStatementCount(); i++) {
                 node.getStatements()->getStatement(i)->accept(*this);
             }
         }
     }
-    if (level_ > 1) {
+    if (level_ > SymbolTable::MODULE_LEVEL) {
         level_ = module_->getLevel() + 1;
         node.setLevel(level_);
         level_++;
@@ -157,7 +158,7 @@ void LambdaLifter::visit([[maybe_unused]] TypeReferenceNode &node) { }
 
 void LambdaLifter::visit(ValueReferenceNode &node) {
     auto decl = node.dereference();
-    if (decl->getLevel() == 1 ||
+    if (decl->getLevel() == SymbolTable::MODULE_LEVEL ||
         (env_->getIdentifier()->name() == SUPER_ && env_->getLevel() == decl->getLevel())) {
         // global variable or local variable in leaf procedure
         return;

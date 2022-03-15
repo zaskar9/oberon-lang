@@ -15,16 +15,19 @@
 #include "../ast/TypeNode.h"
 #include "../../logging/Logger.h"
 
+/**
+ * The symbol table manages the different lexical scopes of the compiled module as well as the scopes of the imported
+ * modules. For each scope, the symbol table maps names to nodes of the abstract syntax tree.
+ */
 class SymbolTable {
 
 private:
-    unsigned int level_;
     std::unordered_map<std::string, std::unique_ptr<Scope>> scopes_;
     Scope *scope_;
     std::vector<std::unique_ptr<Node>> builtins;
     std::unique_ptr<Scope> universe_;
 
-    Node* basicType(std::string name, TypeKind kind, unsigned int size);
+    Node *basicType(const std::string &name, TypeKind kind, unsigned int size);
 
 
 public:
@@ -32,18 +35,21 @@ public:
     ~SymbolTable();
 
     void insert(const std::string &name, Node *node);
-    [[nodiscard]] Node* lookup(const std::string &name) const;
-    [[nodiscard]] Node* lookup(const std::string &qualifier, const std::string &name) const;
-    [[nodiscard]] Node* lookup(Identifier *ident) const;
+    [[nodiscard]] Node *lookup(const std::string &name) const;
+    [[nodiscard]] Node *lookup(const std::string &qualifier, const std::string &name) const;
+    [[nodiscard]] Node *lookup(Identifier *ident) const;
 
     [[nodiscard]] bool isDuplicate(const std::string &name) const;
 
-    void openNamespace(const std::string &module);
+    Scope *openNamespace(const std::string &module);
 
     void openScope();
     void closeScope();
 
     [[nodiscard]] unsigned int getLevel() const;
+
+    static const unsigned int GLOBAL_LEVEL;
+    static const unsigned int MODULE_LEVEL;
 
     static const std::string BOOLEAN;
     static const std::string BYTE;

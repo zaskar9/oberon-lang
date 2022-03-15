@@ -11,24 +11,30 @@
 #include <memory>
 #include <unordered_map>
 #include <vector>
-#include "../ast/Node.h"
+#include "../ast/DeclarationNode.h"
 
 class Scope {
 
 private:
+    const unsigned int level_;
     std::unordered_map<std::string, Node *> symbols_;
-    std::vector<std::unique_ptr<Scope>> children_;
+    std::unique_ptr<Scope> child_;
     Scope *parent_;
 
 public:
-    explicit Scope(Scope *parent) : symbols_(), children_(), parent_(parent) {};
+    explicit Scope(unsigned int level, Scope *parent) : level_(level), symbols_(), child_(), parent_(parent) {};
     ~Scope() = default;
 
-    [[nodiscard]] Scope *getParent();
-    Scope *addChild(std::unique_ptr<Scope> child);
+    [[nodiscard]] unsigned int getLevel() const;
+
+    [[nodiscard]] Scope *getParent() const;
+    void setChild(std::unique_ptr<Scope> child);
+    [[nodiscard]] Scope *getChild() const;
 
     void insert(const std::string &name, Node *symbol);
     [[nodiscard]] Node *lookup(const std::string &name, bool local) const;
+
+    void getExportedSymbols(std::vector<DeclarationNode*> &exports) const;
 
 };
 

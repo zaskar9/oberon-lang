@@ -6,7 +6,9 @@
 
 #include <iostream>
 #include "SymbolTable.h"
-#include "../ast/BasicTypeNode.h"
+
+const unsigned int SymbolTable::GLOBAL_LEVEL = 0;
+const unsigned int SymbolTable::MODULE_LEVEL = 1;
 
 const std::string SymbolTable::BOOLEAN = "BOOLEAN";
 const std::string SymbolTable::BYTE = "BYTE";
@@ -17,8 +19,8 @@ const std::string SymbolTable::REAL = "REAL";
 const std::string SymbolTable::LONGREAL = "LONGREAL";
 const std::string SymbolTable::STRING = "STRING";
 
-SymbolTable::SymbolTable() : level_(), scopes_(), scope_(), builtins() {
-    universe_ = std::make_unique<Scope>(nullptr);
+SymbolTable::SymbolTable() : scopes_(), scope_(), builtins() {
+    universe_ = std::make_unique<Scope>(GLOBAL_LEVEL, nullptr);
     basicType(SymbolTable::BOOLEAN, TypeKind::BOOLEAN, 1);
     basicType(SymbolTable::BYTE, TypeKind::BYTE, 1);
     basicType(SymbolTable::CHAR, TypeKind::CHAR, 1);
@@ -31,7 +33,7 @@ SymbolTable::SymbolTable() : level_(), scopes_(), scope_(), builtins() {
 
 SymbolTable::~SymbolTable() = default;
 
-Node *SymbolTable::basicType(std::string name, TypeKind kind, unsigned int size) {
+Node *SymbolTable::basicType(const std::string &name, TypeKind kind, unsigned int size) {
     auto type = std::make_unique<BasicTypeNode>(std::make_unique<Identifier>(name), kind, size);
     auto ptr = type.get();
     universe_->insert(name, ptr);
@@ -71,28 +73,27 @@ bool SymbolTable::isDuplicate(const std::string &name) const {
     return scope_->lookup(name, true) != nullptr;
 }
 
-void SymbolTable::openNamespace(const std::string &module) {
+Scope *SymbolTable::openNamespace(const std::string &module) {
     auto itr = scopes_.find(module);
     if (itr != scopes_.end()) {
         scope_ = itr->second.get();
     } else {
-        auto scope = std::make_unique<Scope>(nullptr);
+        auto scope = std::make_unique<Scope>(GLOBAL_LEVEL, nullptr);
         scope_ = scope.get();
         scopes_[module] = std::move(scope);
     }
-    level_ = 0;
+    return scope_;
 }
 
 void SymbolTable::openScope() {
-    level_++;
-    auto child = std::make_unique<Scope>(scope_);
-    scope_ = scope_->addChild(std::move(child));
+    auto child = std::make_unique<Scope>(scope_->getLevel() + 1, scope_);
+    scope_->setChild(std::move(child));
+    scope_ = scope_->getChild();
 }
 
 void SymbolTable::closeScope() {
-    if (level_ > 0) {
+    if (scope_->getLevel() > GLOBAL_LEVEL) {
         scope_ = scope_->getParent();
-        level_--;
     } else {
         // TODO throw exception
         std::cerr << "Illegal symbol table state: cannot leave current scope." << std::endl;
@@ -101,5 +102,5 @@ void SymbolTable::closeScope() {
 }
 
 unsigned int SymbolTable::getLevel() const {
-    return level_;
+    return scope_->getLevel();
 }
