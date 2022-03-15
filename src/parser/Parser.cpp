@@ -16,6 +16,7 @@ std::unique_ptr<ModuleNode> Parser::parse() {
     return module();
 }
 
+// ident = letter { letter | digit }.
 std::unique_ptr<Identifier> Parser::ident() {
     if (assertToken(scanner_->peek(), TokenType::const_ident)) {
         token_ = scanner_->next();
@@ -162,6 +163,10 @@ void Parser::import(ModuleNode *module) {
     }
 }
 
+// TODO declaration_sequence = [ CONST { const_declaration ";" } ]
+// TODO                        [ TYPE { type_declaration ";" } ]
+// TODO                        [ VAR { variable_declaration ";" } ]
+// TODO                        { procedure_declaration ";" } .
 // declarations = [ const_declarations ] [ type_declarations ] [ var_declarations ] { procedure_declaration } .
 void Parser::declarations(BlockNode *block) {
     logger_->debug({}, "declarations");
@@ -179,6 +184,8 @@ void Parser::declarations(BlockNode *block) {
     }
 }
 
+// TODO const_declaration = identdef "=" const_expression .
+// TODO const_expression = expression .
 // const_declarations = "CONST" { identdef "=" expression ";" } .
 void Parser::const_declarations(BlockNode *block) {
     logger_->debug({}, "const_declarations");

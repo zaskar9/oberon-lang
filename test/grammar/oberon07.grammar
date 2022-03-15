@@ -3,22 +3,22 @@
    Niklaus Wirth, 3.5.2016
 *)
 
-letter = "A"|"B"|...|"Z"|"a"|"b"|...|"z".
-digit = "0"|"1"|"2"|"3"|"4"|"5"|"6"|"7"|"8"|"9".
-hexDigit = digit|"A"|"B"|"C"|"D"|"E"|"F".
+letter = "A"|"B"|...|"Z"|"a"|"b"|...|"z" .
+digit = "0"|"1"|"2"|"3"|"4"|"5"|"6"|"7"|"8"|"9" .
+hex_digit = digit|"A"|"B"|"C"|"D"|"E"|"F" .
 
-ident = letter {letter | digit}.
-qualident = [ident "."] ident.
-identdef = ident ["*"].
+ident = letter { letter | digit } .
+qualident = [ ident "." ] ident .
+identdef = ident [ "*" ] .
 
-integer = digit {digit} | digit {hexDigit} "H".
-real = digit {digit} "." {digit} [ScaleFactor].
-ScaleFactor = "E" ["+" | "-"] digit {digit}.
-number = integer | real.
-string = """ {character} """ | digit {hexDigit} "X".
+integer = digit { digit } | digit { hex_digit } "H" .
+real = digit { digit } "." { digit } [ scale_factor ] .
+scale_factor = "E" [ "+" | "-" ] digit { digit } .
+number = integer | real .
+string = """ { character } """ | digit { hex_digit } "X" .
 
-ConstDeclaration = identdef "=" ConstExpression.
-ConstExpression = expression.
+const_declaration = identdef "=" const_expression .
+const_expression = expression .
 
 TypeDeclaration = identdef "=" type.
 type = qualident | ArrayType | RecordType | PointerType | ProcedureType.
@@ -65,7 +65,7 @@ ForStatement = FOR ident ":=" expression TO expression [BY ConstExpression] DO S
 ProcedureDeclaration = ProcedureHeading ";" ProcedureBody ident.
 ProcedureHeading = PROCEDURE identdef [FormalParameters].
 ProcedureBody = DeclarationSequence [BEGIN StatementSequence] [RETURN expression] END.
-DeclarationSequence = [CONST {ConstDeclaration ";"}] [TYPE {TypeDeclaration ";"}] [VAR {VariableDeclaration ";"}] {ProcedureDeclaration ";"}.
+declaration_sequence = [CONST {const_declaration ";"}] [TYPE { type_declaration ";"}] [VAR {variable_declaration ";"}] { procedure_declaration ";"}.
 FormalParameters = "(" [FPSection {";" FPSection}] ")" [":" qualident].
 FPSection = [VAR] ident {"," ident} ":" FormalType.
 FormalType = {ARRAY OF} qualident.

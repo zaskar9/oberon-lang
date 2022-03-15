@@ -68,6 +68,7 @@ set(ALL_SOURCES
         ${COMPILER_SOURCES})
 
 add_executable(${OBERON_LANG} main.cpp ${ALL_SOURCES})
+target_include_directories(${OBERON_LANG} PUBLIC .)
 
 find_package(Boost REQUIRED COMPONENTS filesystem program_options)
 if (Boost_FOUND)

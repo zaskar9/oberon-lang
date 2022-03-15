@@ -48,3 +48,7 @@
 
 # macOS
 *.DS_Store
+
+# Doxygen output directories
+/docs/html/
+/docs/latex/
