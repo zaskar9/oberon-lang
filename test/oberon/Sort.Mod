@@ -1,6 +1,6 @@
 (* Oberon implementations of various sorting algorithms. *)
 MODULE Sort;
-IMPORT Out, Random;
+IMPORT Oberon, Out, Random;
 
 (* Length of the array to be sorted. *)
 CONST Dim* = 3 * 0AH;
@@ -11,9 +11,6 @@ TYPE Vector* = ARRAY Dim OF INTEGER;
 
 (* Array to be sorted. *)
 VAR list*: Vector;
-
-(* Import `rand` function from C <stdlib.h> library. *)
-(* PROCEDURE rand(): INTEGER; EXTERN; *)
 
 (* Initializes the array. *)
 PROCEDURE Init(VAR a: Vector);
@@ -175,6 +172,8 @@ END MergeSort;
 
 (* -------------------------------------------------- Main Program ------------------------------------------------ *)
 BEGIN
+    Out.String("--- Start"); Out.Ln;
+    Out.String("--- Current Time: "); Out.Int(Oberon.TimeMillis()); Out.Ln;
     Random.Randomize;
     Out.String("--- Bubble Sort"); Out.Ln;
     Init(list);

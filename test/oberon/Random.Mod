@@ -13,7 +13,7 @@ BEGIN
 END Int;
 
 PROCEDURE Randomize*();
-VAR val: LONGINT;
+VAR time: LONGINT;
 BEGIN
     srand(Oberon.Time())
 END Randomize;

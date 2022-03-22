@@ -12,10 +12,10 @@
 #include "Node.h"
 #include "Identifier.h"
 
-enum class TypeKind {
-    BYTE = 1, BOOLEAN = 2, CHAR = 3, INTEGER = 4, REAL = 5, SET = 6,
-    POINTER = 7, NILTYPE = 8, NOTYPE = 9, PROCEURE = 10,
-    STRING = 11, ARRAY = 12, RECORD = 13
+enum class TypeKind : char {
+    BYTE = 1, BOOLEAN = 2, CHAR = 3, INTEGER = 4, LONGINT = 5, REAL = 6, LONGREAL = 7,
+    SET = 8, POINTER = 9, NILTYPE = 10, NOTYPE = 11, PROCEURE = 12,
+    STRING = 13, ARRAY = 14, RECORD = 15
 };
 
 class TypeNode : public Node {

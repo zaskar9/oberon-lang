@@ -29,9 +29,11 @@ SymbolTable::SymbolTable() : scopes_(), scope_(), predefines_(), references_() {
     universe_->insert(SymbolTable::CHAR, type);
     type = basicType(SymbolTable::INTEGER, TypeKind::INTEGER, 4);
     universe_->insert(SymbolTable::INTEGER, type);
+    type = basicType(SymbolTable::LONGINT, TypeKind::LONGINT, 8);
     universe_->insert(SymbolTable::LONGINT, type);
     type = basicType(SymbolTable::REAL, TypeKind::REAL, 4);
     universe_->insert(SymbolTable::REAL, type);
+    type = basicType(SymbolTable::LONGREAL, TypeKind::LONGREAL, 8);
     universe_->insert(SymbolTable::LONGREAL, type);
     type = basicType(SymbolTable::STRING, TypeKind::STRING, 8);
     universe_->insert(SymbolTable::STRING, type);

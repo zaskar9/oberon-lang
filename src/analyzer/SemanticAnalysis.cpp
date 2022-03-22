@@ -659,6 +659,14 @@ bool SemanticAnalysis::assertCompatible(const FilePos &pos, TypeNode *expected, 
     if (expected == actual) {
         return true;
     } else if (expected && actual) {
+        if (expected->kind() == actual->kind()) {
+            if (expected->getSize() < actual->getSize()) {
+                logger_->error(pos, "type mismatch: casting " + to_string(*actual->getIdentifier()) +
+                                    " down to " + to_string(*expected->getIdentifier()) + " loses data.");
+                return false;
+            }
+            return true;
+        }
         logger_->error(pos, "type mismatch: expected " + to_string(*expected->getIdentifier()) +
                             ", found " + to_string(*actual->getIdentifier()) + ".");
         return false;
