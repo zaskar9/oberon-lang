@@ -36,6 +36,14 @@ size_t RecordTypeNode::getFieldCount() {
     return fields_.size();
 }
 
+void RecordTypeNode::setBaseType(RecordTypeNode *base) {
+    base_ = base;
+}
+
+RecordTypeNode *RecordTypeNode::getBaseType() const {
+    return base_;
+}
+
 void RecordTypeNode::accept(NodeVisitor &visitor) {
     visitor.visit(*this);
 }

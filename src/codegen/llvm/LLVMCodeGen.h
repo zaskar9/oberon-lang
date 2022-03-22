@@ -12,14 +12,16 @@
 #include <llvm/Passes/PassBuilder.h>
 #include <llvm/Target/TargetMachine.h>
 #include "LLVMIRBuilder.h"
-#include "../analyzer/Analyzer.h"
-#include "../logging/Logger.h"
+#include "analyzer/Analyzer.h"
+#include "codegen/CodeGen.h"
+#include "logging/Logger.h"
 
 
-class LLVMCodeGen {
+class LLVMCodeGen final : public CodeGen {
 
 private:
     Logger *logger_;
+    OutputFileType type_;
     LLVMContext ctx_;
     llvm::PassBuilder pb_;
     llvm::PassBuilder::OptimizationLevel lvl_;
@@ -31,10 +33,11 @@ public:
     explicit LLVMCodeGen(Logger *logger);
     ~LLVMCodeGen() = default;
 
-    TargetMachine* getTargetMachine();
-    void setOptimizationLevel(OptimizationLevel level);
+    std::string getDescription() final;
+    void setFileType(OutputFileType type) final;
+    void setOptimizationLevel(OptimizationLevel level) final;
 
-    void generate(Node *ast, boost::filesystem::path path, OutputFileType type);
+    void generate(Node *ast, boost::filesystem::path path) final;
 
 };
 

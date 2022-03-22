@@ -8,41 +8,48 @@
 #include "ProcedureNode.h"
 #include "NodeVisitor.h"
 
-void ProcedureNode::addParameter(std::unique_ptr<ParameterNode> parameter) {
-    parameters_.push_back(std::move(parameter));
+ProcedureNode::ProcedureNode(const FilePos &pos, std::unique_ptr<Identifier> ident) :
+        DeclarationNode(NodeType::procedure, pos, std::move(ident), nullptr), BlockNode(pos),
+        extern_(false) {
+    proctype_ = std::make_unique<ProcedureTypeNode>(pos);
+    this->setType(proctype_.get());
+    extern_ = false;
 }
 
-ParameterNode *ProcedureNode::getParameter(const std::string &name) {
-    auto result = std::find_if(parameters_.begin(), parameters_.end(),
-                               [&](std::unique_ptr<ParameterNode> &param) { return param->getIdentifier()->name() == name; });
-    if (result != parameters_.end()) {
-        return (*result).get();
-    }
-    return nullptr;
+ProcedureTypeNode *ProcedureNode::proctype() const {
+    return dynamic_cast<ProcedureTypeNode*>(this->getType());
 }
 
-ParameterNode *ProcedureNode::getParameter(const size_t num) const {
-    return parameters_[num].get();
+void ProcedureNode::addFormalParameter(std::unique_ptr<ParameterNode> parameter) {
+    return proctype()->addParameter(std::move(parameter));
 }
 
-size_t ProcedureNode::getParameterCount() const {
-    return parameters_.size();
+ParameterNode *ProcedureNode::addFormalParameter(const std::string &name) {
+    return proctype()->getParameter(name);
+}
+
+ParameterNode *ProcedureNode::getFormalParameter(size_t num) const {
+    return proctype()->getParameter(num);
+}
+
+size_t ProcedureNode::getFormalParameterCount() const {
+    return proctype()->getParameterCount();
 }
 
 void ProcedureNode::setVarArgs(bool value) {
-    varargs_ = value;
+    proctype()->setVarArgs(value);
 }
 
 bool ProcedureNode::hasVarArgs() const {
-    return varargs_;
+    return proctype()->hasVarArgs();
 }
 
 void ProcedureNode::setReturnType(TypeNode *type) {
-    setType(type);
+    proctype()->setReturnType(type);
 }
 
 TypeNode *ProcedureNode::getReturnType() const {
-    return getType();
+    return proctype()->getReturnType();
 }
 
 void ProcedureNode::setExtern(bool value) {

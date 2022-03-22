@@ -17,16 +17,16 @@ void LambdaLifter::run(Logger *logger, Node *node) {
 }
 
 void LambdaLifter::call(ProcedureNodeReference &node) {
-    for (size_t i = 0; i < node.getParameterCount(); i++) {
-        node.getParameter(i)->accept(*this);
+    for (size_t i = 0; i < node.getActualParameterCount(); i++) {
+        node.getActualParameter(i)->accept(*this);
     }
     auto proc = node.dereference();
-    if (proc->getParameterCount() > node.getParameterCount()) {
+    if (proc->getFormalParameterCount() > node.getActualParameterCount()) {
         auto param = std::make_unique<ValueReferenceNode>(EMPTY_POS, env_);
         if (proc->getLevel() != env_->getLevel()) {
-            envFieldResolver(param.get(), SUPER_, proc->getParameter(node.getParameterCount())->getType());
+            envFieldResolver(param.get(), SUPER_, proc->getFormalParameter(node.getActualParameterCount())->getType());
         }
-        node.addParameter(std::move(param));
+        node.addActualParameter(std::move(param));
     }
 }
 
@@ -42,11 +42,11 @@ void LambdaLifter::visit(ProcedureNode &node) {
     level_ = node.getLevel();
     bool is_super = node.getProcedureCount();
     if (is_super) /* super procedure */ {
-        if (node.getParameterCount() > 0 || node.getVariableCount() > 0) {
+        if (node.getFormalParameterCount() > 0 || node.getVariableCount() > 0) {
             auto identifier = std::make_unique<Identifier>("_T" + node.getIdentifier()->name());
             auto record_t = std::make_unique<RecordTypeNode>(EMPTY_POS, identifier.get());
-            for (size_t i = 0; i < node.getParameterCount(); i++) {
-                auto param = node.getParameter(i);
+            for (size_t i = 0; i < node.getFormalParameterCount(); i++) {
+                auto param = node.getFormalParameter(i);
                 record_t->addField(std::make_unique<FieldNode>(EMPTY_POS, std::make_unique<Identifier>(param->getIdentifier()->name()), param->getType()));
             }
             for (size_t i = 0; i < node.getVariableCount(); i++) {
@@ -62,15 +62,15 @@ void LambdaLifter::visit(ProcedureNode &node) {
                 auto proc = node.getProcedure(i);
                 auto param = std::make_unique<ParameterNode>(EMPTY_POS, std::make_unique<Identifier>(SUPER_), type, true);
                 param->setLevel(proc->getLevel() + 1);
-                proc->addParameter(std::move(param));
+                proc->addFormalParameter(std::move(param));
             }
             // create local variable to manage for the procedure's environment (this)
             auto var = std::make_unique<VariableDeclarationNode>(EMPTY_POS, std::make_unique<Identifier>(THIS_), type);
             var->setLevel(level_ + 1);
             env_ = var.get();
             // initialize the procedure's environment (this)
-            for (size_t i = 0; i < node.getParameterCount(); i++) {
-                auto param = node.getParameter(i);
+            for (size_t i = 0; i < node.getFormalParameterCount(); i++) {
+                auto param = node.getFormalParameter(i);
                 auto lhs = std::make_unique<ValueReferenceNode>(EMPTY_POS, env_);
                 lhs->addSelector(NodeType::record_type,
                                  std::make_unique<ValueReferenceNode>(EMPTY_POS, type->getField(param->getIdentifier()->name())));
@@ -79,12 +79,12 @@ void LambdaLifter::visit(ProcedureNode &node) {
             }
             node.insertVariable(0, std::move(var));
             // alter the statement's of the procedure to use the procedure's environment (this)
-            for (size_t i = node.getParameterCount(); i < node.getStatements()->getStatementCount(); i++) {
+            for (size_t i = node.getFormalParameterCount(); i < node.getStatements()->getStatementCount(); i++) {
                 node.getStatements()->getStatement(i)->accept(*this);
             }
             // append statements to write values of var-parameters back from procedure's environment (this)
-            for (size_t i = 0; i < node.getParameterCount(); i++ ){
-                auto param = node.getParameter(i);
+            for (size_t i = 0; i < node.getFormalParameterCount(); i++ ){
+                auto param = node.getFormalParameter(i);
                 if (param->isVar()) {
                     auto lhs = std::make_unique<ValueReferenceNode>(EMPTY_POS, param);
                     auto rhs = std::make_unique<ValueReferenceNode>(EMPTY_POS, env_);
@@ -94,7 +94,7 @@ void LambdaLifter::visit(ProcedureNode &node) {
                 }
             }
             if (level_ > SymbolTable::MODULE_LEVEL) /* neither root, nor leaf procedure */ {
-                auto param = node.getParameter(SUPER_);
+                auto param = node.addFormalParameter(SUPER_);
                 if (param) {
                     auto lhs = std::make_unique<ValueReferenceNode>(EMPTY_POS, param);
                     auto rhs = std::make_unique<ValueReferenceNode>(EMPTY_POS, env_);
@@ -113,7 +113,7 @@ void LambdaLifter::visit(ProcedureNode &node) {
         // TODO remove unnecessary local variables
         // node.removeVariables(1, node.getVariableCount());
     } else if (level_ > SymbolTable::MODULE_LEVEL) /* leaf procedure */ {
-        if ((env_ = node.getParameter(SUPER_))) {
+        if ((env_ = node.addFormalParameter(SUPER_))) {
             for (size_t i = 0; i < node.getStatements()->getStatementCount(); i++) {
                 node.getStatements()->getStatement(i)->accept(*this);
             }
@@ -123,8 +123,8 @@ void LambdaLifter::visit(ProcedureNode &node) {
         level_ = module_->getLevel() + 1;
         node.setLevel(level_);
         level_++;
-        for (size_t i = 0; i < node.getParameterCount(); i++) {
-            node.getParameter(i)->accept(*this);
+        for (size_t i = 0; i < node.getFormalParameterCount(); i++) {
+            node.getFormalParameter(i)->accept(*this);
         }
         for (size_t i = 0; i < node.getConstantCount(); i++) {
             node.getConstant(i)->accept(*this);
@@ -200,6 +200,8 @@ void LambdaLifter::visit(TypeDeclarationNode &node) {
 void LambdaLifter::visit([[maybe_unused]] ArrayTypeNode &node) { }
 
 void LambdaLifter::visit([[maybe_unused]] BasicTypeNode &node) { }
+
+void LambdaLifter::visit([[maybe_unused]] ProcedureTypeNode &node) { }
 
 void LambdaLifter::visit([[maybe_unused]] RecordTypeNode &node) { }
 

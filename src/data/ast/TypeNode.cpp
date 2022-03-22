@@ -25,3 +25,11 @@ unsigned int TypeNode::getSize() const {
 bool TypeNode::isAnonymous() const {
     return anon_;
 }
+
+void TypeNode::setRef(int ref) {
+    ref_ = ref;
+}
+
+int TypeNode::getRef() const {
+    return ref_;
+}

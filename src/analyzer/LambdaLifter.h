@@ -32,6 +32,7 @@ private:
     void visit(ConstantDeclarationNode &node) override;
     void visit(FieldNode &node) override;
     void visit(ParameterNode &node) override;
+    void visit(TypeDeclarationNode &node) override;
     void visit(VariableDeclarationNode &node) override;
 
     void visit(TypeReferenceNode &node) override;
@@ -44,9 +45,9 @@ private:
     void visit(UnaryExpressionNode &node) override;
     void visit(BinaryExpressionNode &node) override;
 
-    void visit(TypeDeclarationNode &node) override;
     void visit(ArrayTypeNode &node) override;
     void visit(BasicTypeNode &node) override;
+    void visit(ProcedureTypeNode &node) override;
     void visit(RecordTypeNode &node) override;
 
     void visit(StatementSequenceNode &node) override;

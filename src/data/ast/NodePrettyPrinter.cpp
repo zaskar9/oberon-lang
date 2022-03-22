@@ -68,9 +68,9 @@ void NodePrettyPrinter::block(BlockNode& node, bool isGlobal) {
 
 void NodePrettyPrinter::call(ProcedureNodeReference &node) {
     stream_ << *node.getIdentifier() << "(";
-    for (size_t i = 0; i < node.getParameterCount(); i++) {
-        node.getParameter(i)->accept(*this);
-        if (i + 1 < node.getParameterCount()) {
+    for (size_t i = 0; i < node.getActualParameterCount(); i++) {
+        node.getActualParameter(i)->accept(*this);
+        if (i + 1 < node.getActualParameterCount()) {
             stream_ << ", ";
         }
     }
@@ -89,11 +89,13 @@ void NodePrettyPrinter::visit(ModuleNode& node) {
     }
     block(node, true);
     stream_ << std::endl;
-    indent();
-    stream_ << "BEGIN" << std::endl;
-    indent_ += TAB_WIDTH;
-    node.getStatements()->accept(*this);
-    indent_ -= TAB_WIDTH;
+    if (node.getStatements()->getStatementCount() > 0) {
+        indent();
+        stream_ << "BEGIN" << std::endl;
+        indent_ += TAB_WIDTH;
+        node.getStatements()->accept(*this);
+        indent_ -= TAB_WIDTH;
+    }
     indent();
     stream_ << "END " << *node.getIdentifier() << '.' << std::endl;
 }
@@ -101,9 +103,9 @@ void NodePrettyPrinter::visit(ModuleNode& node) {
 void NodePrettyPrinter::visit(ProcedureNode& node) {
     indent();
     stream_ << "PROCEDURE " << *node.getIdentifier() << "(*" << node.getLevel() << "*)(";
-    for (size_t i = 0; i < node.getParameterCount(); i++) {
-        node.getParameter(i)->accept(*this);
-        if (i + 1 < node.getParameterCount()) {
+    for (size_t i = 0; i < node.getFormalParameterCount(); i++) {
+        node.getFormalParameter(i)->accept(*this);
+        if (i + 1 < node.getFormalParameterCount()) {
             stream_ << "; ";
         }
     }
@@ -121,11 +123,13 @@ void NodePrettyPrinter::visit(ProcedureNode& node) {
     } else {
         stream_ << std::endl;
         block(node, false);
-        indent();
-        stream_ << "BEGIN" << std::endl;
-        indent_ += TAB_WIDTH;
-        node.getStatements()->accept(*this);
-        indent_ -= TAB_WIDTH;
+        if (node.getStatements()->getStatementCount() > 0) {
+            indent();
+            stream_ << "BEGIN" << std::endl;
+            indent_ += TAB_WIDTH;
+            node.getStatements()->accept(*this);
+            indent_ -= TAB_WIDTH;
+        }
         indent();
         stream_ << "END " << *node.getIdentifier() << ';' << std::endl;
     }
@@ -135,7 +139,7 @@ void NodePrettyPrinter::visit(ImportNode &node) {
     if (node.getAlias()) {
         stream_ << *node.getAlias() << " := ";
     }
-    stream_ << *node.getModule()->getIdentifier() << "; ";
+    stream_ << *node.getModule() << "; ";
 }
 
 void NodePrettyPrinter::visit(ValueReferenceNode &node) {
@@ -235,6 +239,10 @@ void NodePrettyPrinter::visit(ArrayTypeNode &node) {
 
 void NodePrettyPrinter::visit(BasicTypeNode &node) {
     stream_ << *node.getIdentifier();
+}
+
+void NodePrettyPrinter::visit([[maybe_unused]] ProcedureTypeNode &node) {
+    // For the time being, handled by visit(ProcedureNode).
 }
 
 void NodePrettyPrinter::visit(RecordTypeNode &node) {

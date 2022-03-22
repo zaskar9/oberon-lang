@@ -1,6 +1,6 @@
 (* Oberon implementations of various sorting algorithms. *)
 MODULE Sort;
-IMPORT StdIO, Random := RandomNumbers;
+IMPORT Out, Random;
 
 (* Length of the array to be sorted. *)
 CONST Dim* = 3 * 0AH;
@@ -12,36 +12,15 @@ TYPE Vector* = ARRAY Dim OF INTEGER;
 (* Array to be sorted. *)
 VAR list*: Vector;
 
-(* Import `printf` function from C <stdio.h> library. *)
-PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
-
 (* Import `rand` function from C <stdlib.h> library. *)
-PROCEDURE rand(): INTEGER; EXTERN;
-
-(* Writes a string value to standard out. *)
-PROCEDURE Write*(str: STRING);
-BEGIN
-    printf(str)
-END Write;
-
-(* Writes a newline to standard out. *)
-PROCEDURE WriteLn*;
-BEGIN
-    printf("\n")
-END WriteLn;
-
-(* Writes an integer value to standard out. *)
-PROCEDURE WriteInt*(val: INTEGER);
-BEGIN
-    printf("%d", val)
-END WriteInt;
+(* PROCEDURE rand(): INTEGER; EXTERN; *)
 
 (* Initializes the array. *)
 PROCEDURE Init(VAR a: Vector);
 VAR i: INTEGER;
 BEGIN
     FOR i := 0 TO Dim -1 BY 1 DO
-        a[i] := rand() MOD MaxVal
+        a[i] := Random.Int(MaxVal)
     END
 END Init;
 
@@ -49,15 +28,15 @@ END Init;
 PROCEDURE Print(VAR a: Vector);
 VAR i: INTEGER;
 BEGIN
-    Write("[");
+    Out.String("[");
     i := 0;
     WHILE i < Dim DO
-        WriteInt(a[i]);
-        IF i + 1 < Dim THEN Write(", ") END;
+        Out.Int(a[i]);
+        IF i + 1 < Dim THEN Out.String(", ") END;
         i := i + 1
     END;
-    Write("]");
-    WriteLn
+    Out.String("]");
+    Out.Ln
 END Print;
 
 (* Swaps the two values passed as var-parameters. *)
@@ -196,27 +175,28 @@ END MergeSort;
 
 (* -------------------------------------------------- Main Program ------------------------------------------------ *)
 BEGIN
-    Write("--- Bubble Sort"); WriteLn;
+    Random.Randomize;
+    Out.String("--- Bubble Sort"); Out.Ln;
     Init(list);
     Print(list);
     BubbleSort(list);
     Print(list);
-    Write("--- Insertion Sort"); WriteLn;
+    Out.String("--- Insertion Sort"); Out.Ln;
     Init(list);
     Print(list);
     InsertionSort(list);
     Print(list);
-    Write("--- Selection Sort"); WriteLn;
+    Out.String("--- Selection Sort"); Out.Ln;
     Init(list);
     Print(list);
     SelectionSort(list);
     Print(list);
-    Write("--- Merge Sort"); WriteLn;
+    Out.String("--- Merge Sort"); Out.Ln;
     Init(list);
     Print(list);
     MergeSort(list);
     Print(list);
-    Write("--- Quick Sort"); WriteLn;
+    Out.String("--- Quick Sort"); Out.Ln;
     Init(list);
     Print(list);
     QuickSort(list);

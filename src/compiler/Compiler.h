@@ -7,26 +7,21 @@
 
 
 #include <boost/filesystem.hpp>
-#include "../logging/Logger.h"
-#include "../llvm/LLVMCodeGen.h"
-#include "../data/symtab/SymbolExporter.h"
+#include "codegen/CodeGen.h"
+#include "data/symtab/SymbolExporter.h"
+#include "logging/Logger.h"
 
 class Compiler {
 
 private:
     Logger *logger_;
-    OutputFileType type_;
-    std::unique_ptr<LLVMCodeGen> codegen_;
-    std::unique_ptr<SymbolExporter> exporter_;
+    CodeGen *codegen_;
 
 public:
-    explicit Compiler(Logger *logger);
+    explicit Compiler(Logger *logger, CodeGen *codegen) : logger_(logger), codegen_(codegen) {};
     ~Compiler() = default;
 
-    void compile(boost::filesystem::path path);
-    void setCodeGenFileType(OutputFileType type);
-    void setOptimizationLevel(OptimizationLevel level);
-    std::string getBackendDescription();
+    void compile(boost::filesystem::path file);
 
 };
 

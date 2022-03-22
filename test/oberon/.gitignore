@@ -1,7 +1,5 @@
-/CodeGen
-/oberon0c
 *.asm
 *.ll
 *.s
-/Sort
-/ShortCircuit
+*.smb
+*.sym

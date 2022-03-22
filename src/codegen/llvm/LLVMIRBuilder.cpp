@@ -16,6 +16,7 @@ void LLVMIRBuilder::build(Node *node) {
 }
 
 void LLVMIRBuilder::visit(ModuleNode &node) {
+    module_->setModuleIdentifier(node.getIdentifier()->name());
     // allocate global variables
     for (size_t i = 0; i < node.getVariableCount(); i++) {
         auto variable = node.getVariable(i);
@@ -25,30 +26,28 @@ void LLVMIRBuilder::visit(ModuleNode &node) {
         value->setAlignment(getLLVMAlign(variable->getType()));
         values_[variable] = value;
     }
+    // generate external procedure signatures
+    for (size_t i = 0; i < node.getExternalProcedureCount(); i++) {
+        proc(*node.getExternalProcedure(i));
+    }
     // generate procedure signatures
     for (size_t i = 0; i < node.getProcedureCount(); i++) {
-        std::vector<Type*> params;
-        auto proc = node.getProcedure(i);
-        for (size_t j = 0; j < proc->getParameterCount(); j++) {
-            auto param = proc->getParameter(j);
-            params.push_back(getLLVMType(param->getType(), param->isVar()));
-        }
-        auto type = FunctionType::get(getLLVMType(proc->getReturnType()), params, proc->hasVarArgs());
-        auto callee = module_->getOrInsertFunction(proc->getIdentifier()->name(), type);
-        functions_[proc] = cast<Function>(callee.getCallee());
+        proc(*node.getProcedure(i));
     }
     // generate code for procedures
     for (size_t i = 0; i < node.getProcedureCount(); i++) {
         node.getProcedure(i)->accept(*this);
     }
-    // generate code for main
-    auto main = module_->getOrInsertFunction("main", builder_.getInt32Ty());
-    function_ = cast<Function>(main.getCallee());
-    auto entry = BasicBlock::Create(builder_.getContext(), "entry", function_);
-    builder_.SetInsertPoint(entry);
-    level_ = node.getLevel() + 1;
-    node.getStatements()->accept(*this);
-    builder_.CreateRet(builder_.getInt32(0));
+    if (node.getStatements()->getStatementCount() > 0) {
+        // generate code for main
+        auto main = module_->getOrInsertFunction("main", builder_.getInt32Ty());
+        function_ = cast<Function>(main.getCallee());
+        auto entry = BasicBlock::Create(builder_.getContext(), "entry", function_);
+        builder_.SetInsertPoint(entry);
+        level_ = node.getLevel() + 1;
+        node.getStatements()->accept(*this);
+        builder_.CreateRet(builder_.getInt32(0));
+    }
     // verify the module
     llvm::verifyModule(*module_, &errs());
 }
@@ -60,9 +59,9 @@ void LLVMIRBuilder::visit(ProcedureNode &node) {
     if (!node.isExtern()) {
         function_ = functions_[&node];
         Function::arg_iterator args = function_->arg_begin();
-        for (size_t i = 0; i < node.getParameterCount(); i++) {
+        for (size_t i = 0; i < node.getFormalParameterCount(); i++) {
             auto arg = args++;
-            auto param = node.getParameter(i);
+            auto param = node.getFormalParameter(i);
             arg->setName(param->getIdentifier()->name());
             values_[param] = arg;
         }
@@ -330,6 +329,10 @@ void LLVMIRBuilder::visit([[maybe_unused]] BasicTypeNode &node) {
     // Node does not need code generation.
 }
 
+void LLVMIRBuilder::visit([[maybe_unused]] ProcedureTypeNode &node) {
+    // Node does not need code generation.
+}
+
 void LLVMIRBuilder::visit([[maybe_unused]] RecordTypeNode &node) {
     // Node does not need code generation.
 }
@@ -495,6 +498,48 @@ void LLVMIRBuilder::visit(ReturnNode& node) {
     value_ = builder_.CreateRet(value_);
 }
 
+void LLVMIRBuilder::call(ProcedureNodeReference &node) {
+    std::vector<Value*> params;
+    // caution: formal parameters on referenced node, actual parameters on reference node
+    size_t fp_cnt = node.dereference()->getFormalParameterCount();
+    for (size_t i = 0; i < node.getActualParameterCount(); i++) {
+        setRefMode(i >= fp_cnt || !node.dereference()->getFormalParameter(i)->isVar());
+        node.getActualParameter(i)->accept(*this);
+        params.push_back(value_);
+        restoreRefMode();
+    }
+    auto ident = node.dereference()->getIdentifier();
+    auto name = qualifiedName(ident, node.dereference()->isExtern());
+    auto proc = module_->getFunction(name);
+    if (proc) {
+        value_ = builder_.CreateCall(proc, params);
+    } else {
+        logger_->error(node.pos(), "Undefined procedure: " + to_string(*ident) + ".");
+    }
+}
+
+void LLVMIRBuilder::proc(ProcedureNode &node) {
+    std::vector<Type*> params;
+    for (size_t j = 0; j < node.getFormalParameterCount(); j++) {
+        auto param = node.getFormalParameter(j);
+        params.push_back(getLLVMType(param->getType(), param->isVar()));
+    }
+    auto type = FunctionType::get(getLLVMType(node.getReturnType()), params, node.hasVarArgs());
+    auto name = qualifiedName(node.getIdentifier(), node.isExtern());
+    auto callee = module_->getOrInsertFunction(name, type);
+    functions_[&node] = cast<Function>(callee.getCallee());
+}
+
+std::string LLVMIRBuilder::qualifiedName(Identifier *ident, bool external) const {
+    if (ident->isQualified()) {
+        return ident->qualifier() + "_" + ident->name();
+    }
+    if (external) {
+        return ident->name();
+    }
+    return module_->getModuleIdentifier() + "_" + ident->name();
+}
+
 Type* LLVMIRBuilder::getLLVMType(TypeNode *type, bool isPtr) {
     Type* result = nullptr;
     if (type == nullptr) {
@@ -560,25 +605,6 @@ MaybeAlign LLVMIRBuilder::getLLVMAlign(TypeNode *type, bool isPtr) {
         return MaybeAlign(layout.getPrefTypeAlignment(getLLVMType(type, isPtr)));
     }
     return MaybeAlign();
-
-}
-
-void LLVMIRBuilder::call(ProcedureNodeReference &node) {
-    std::vector<Value*> params;
-    std::string name = node.dereference()->getIdentifier()->name();
-    size_t fp_cnt = node.dereference()->getParameterCount();
-    for (size_t i = 0; i < node.getParameterCount(); i++) {
-        setRefMode(i >= fp_cnt || !node.dereference()->getParameter(i)->isVar());
-        node.getParameter(i)->accept(*this);
-        params.push_back(value_);
-        restoreRefMode();
-    }
-    auto proc = module_->getFunction(name);
-    if (proc) {
-        value_ = builder_.CreateCall(proc, params);
-    } else {
-        logger_->error(node.pos(), "Undefined procedure: " + name + ".");
-    }
 }
 
 void LLVMIRBuilder::setRefMode(bool deref) {

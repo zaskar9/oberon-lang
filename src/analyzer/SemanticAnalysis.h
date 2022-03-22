@@ -9,16 +9,21 @@
 
 
 #include "Analyzer.h"
-#include "../data/ast/NodeVisitor.h"
-#include "../data/symtab/SymbolTable.h"
+#include "data/ast/NodeVisitor.h"
+#include "data/symtab/SymbolTable.h"
+#include "data/symtab/SymbolImporter.h"
+#include "data/symtab/SymbolExporter.h"
 
 class SemanticAnalysis final : public Analysis, private NodeVisitor {
 
 private:
-    SymbolTable *symtab_;
+    SymbolTable *symbols_;
     Logger *logger_;
+    ModuleNode *module_;
     BlockNode *parent_;
-    TypeNode *tBoolean, *tByte, *tChar, *tInteger, *tReal, *tString;
+    SymbolImporter *importer_;
+    SymbolExporter *exporter_;
+    TypeNode *tBoolean_, *tByte_, *tChar_, *tInteger_, *tReal_, *tString_;
 
     void block(BlockNode &node);
     void call(ProcedureNodeReference &node);
@@ -31,6 +36,7 @@ private:
     void visit(ConstantDeclarationNode &node) override;
     void visit(FieldNode &node) override;
     void visit(ParameterNode &node) override;
+    void visit(TypeDeclarationNode &node) override;
     void visit(VariableDeclarationNode &node) override;
 
     void visit(TypeReferenceNode &node) override;
@@ -43,9 +49,9 @@ private:
     void visit(UnaryExpressionNode &node) override;
     void visit(BinaryExpressionNode &node) override;
 
-    void visit(TypeDeclarationNode &node) override;
     void visit(ArrayTypeNode &node) override;
     void visit(BasicTypeNode &node) override;
+    void visit(ProcedureTypeNode &node) override;
     void visit(RecordTypeNode &node) override;
 
     void visit(StatementSequenceNode &node) override;
@@ -71,7 +77,7 @@ private:
     TypeNode *resolveType(TypeNode *type);
 
 public:
-    explicit SemanticAnalysis(SymbolTable *symtab);
+    explicit SemanticAnalysis(SymbolTable *symbols, SymbolImporter *importer, SymbolExporter *exporter);
     ~SemanticAnalysis() override = default;
 
     void run(Logger *logger, Node *node) override;

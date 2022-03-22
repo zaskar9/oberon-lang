@@ -6,27 +6,34 @@
 #define OBERON_LANG_SYMBOLEXPORTER_H
 
 
-#include <fstream>
 #include <boost/filesystem.hpp>
+#include "logging/Logger.h"
 #include "SymbolTable.h"
-#include "../../logging/Logger.h"
-
-#define VERSION_KEY 1
+#include "SymbolFile.h"
+#include "data/ast/ArrayTypeNode.h"
+#include "data/ast/ProcedureTypeNode.h"
+#include "data/ast/RecordTypeNode.h"
 
 class SymbolExporter {
 
 private:
-    [[maybe_unused]] Logger *logger_;
-    std::ofstream file_;
+    Logger *logger_;
+    boost::filesystem::path path_;
+    int ref_;
 
-    void writeChar(std::ofstream &file, char val);
-    void writeInt(std::ofstream &file, int val);
-    void writeString(std::ofstream &file, const std::string &val);
+    void writeDeclaration(SymbolFile *file, DeclarationNode *decl);
+    void writeType(SymbolFile *file, TypeNode *type);
+    void writeArrayType(SymbolFile *file, ArrayTypeNode *type);
+    void writeProcedureType(SymbolFile *file, ProcedureTypeNode *type);
+    void writeRecordType(SymbolFile *file, RecordTypeNode *type);
+    void writeParameter(SymbolFile *file, ParameterNode *param);
 
 public:
-    explicit SymbolExporter(Logger *logger) : logger_(logger), file_() { };
+    explicit SymbolExporter(Logger *logger, boost::filesystem::path &path) :
+            logger_(logger), path_(std::move(path)), ref_() {};
+    ~SymbolExporter() = default;
 
-    void write(const std::string &module, SymbolTable *symbols, const boost::filesystem::path& path);
+    void write(const std::string &module, SymbolTable *symbols);
 
 };
 

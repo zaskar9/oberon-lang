@@ -21,6 +21,7 @@ set(DATA_SOURCES
         data/ast/TypeNode.cpp data/ast/TypeNode.h
         data/ast/ArrayTypeNode.cpp data/ast/ArrayTypeNode.h
         data/ast/BasicTypeNode.cpp data/ast/BasicTypeNode.h
+        data/ast/ProcedureTypeNode.cpp data/ast/ProcedureTypeNode.h
         data/ast/RecordTypeNode.cpp data/ast/RecordTypeNode.h
         data/ast/BlockNode.cpp data/ast/BlockNode.h
         data/ast/ModuleNode.cpp data/ast/ModuleNode.h
@@ -38,7 +39,9 @@ set(DATA_SOURCES
 set(SYMTAB_SOURCES
         data/symtab/SymbolTable.cpp data/symtab/SymbolTable.h
         data/symtab/Scope.cpp data/symtab/Scope.h
-        data/symtab/SymbolExporter.cpp data/symtab/SymbolExporter.h)
+        data/symtab/SymbolFile.cpp data/symtab/SymbolFile.h
+        data/symtab/SymbolExporter.cpp data/symtab/SymbolExporter.h
+        data/symtab/SymbolImporter.cpp data/symtab/SymbolImporter.h)
 
 set(PARSER_SOURCES
         parser/Parser.cpp parser/Parser.h)
@@ -49,8 +52,9 @@ set(ANALYZER_SOURCES
         analyzer/LambdaLifter.cpp analyzer/LambdaLifter.h)
 
 set(CODEGEN_SOURCES
-        llvm/LLVMIRBuilder.cpp llvm/LLVMIRBuilder.h
-        llvm/LLVMCodeGen.cpp llvm/LLVMCodeGen.h)
+        codegen/CodeGen.h
+        codegen/llvm/LLVMIRBuilder.cpp codegen/llvm/LLVMIRBuilder.h
+        codegen/llvm/LLVMCodeGen.cpp codegen/llvm/LLVMCodeGen.h codegen/CodeGen.cpp)
 
 set(COMPILER_SOURCES
         compiler/CompilationStatus.cpp compiler/CompilationStatus.h
@@ -89,7 +93,7 @@ endif()
 set(GRAMMAR_SOURCES     
         grammar/Grammar.cpp grammar/Grammar.h
         grammar/Validator.cpp grammar/Validator.h
-        grammar/Loader.cpp grammar/Loader.h)
+        grammar/Loader.cpp grammar/Loader.h codegen/CodeGen.h)
 
 add_executable(${GRAMMAR_TOOL} grammar/main.cpp ${GRAMMAR_SOURCES} ${SCANNER_SOURCES} ${LOGGING_SOURCES})
 

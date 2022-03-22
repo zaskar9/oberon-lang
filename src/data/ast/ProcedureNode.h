@@ -12,28 +12,28 @@
 #include <vector>
 #include "BlockNode.h"
 #include "DeclarationNode.h"
+#include "ProcedureTypeNode.h"
 
 class ProcedureNode final : public DeclarationNode, public BlockNode {
 
 private:
-    std::vector<std::unique_ptr<ParameterNode>> parameters_;
-    bool varargs_;
+    std::unique_ptr<ProcedureTypeNode> proctype_;
     bool extern_;
 
+    ProcedureTypeNode *proctype() const;
+
 public:
-    explicit ProcedureNode(const FilePos &pos, std::unique_ptr<Identifier> ident) :
-            DeclarationNode(NodeType::procedure, pos, std::move(ident), nullptr), BlockNode(pos),
-            parameters_(), varargs_(false), extern_(false) {};
+    explicit ProcedureNode(const FilePos &pos, std::unique_ptr<Identifier> ident);
     ~ProcedureNode() override = default;
 
     [[nodiscard]] NodeType getNodeType() const override {
         return DeclarationNode::getNodeType();
     }
 
-    void addParameter(std::unique_ptr<ParameterNode> parameter);
-    [[nodiscard]] ParameterNode *getParameter(const std::string &name);
-    [[nodiscard]] ParameterNode *getParameter(size_t num) const;
-    [[nodiscard]] size_t getParameterCount() const;
+    void addFormalParameter(std::unique_ptr<ParameterNode> parameter);
+    [[nodiscard]] ParameterNode *addFormalParameter(const std::string &name);
+    [[nodiscard]] ParameterNode *getFormalParameter(size_t num) const;
+    [[nodiscard]] size_t getFormalParameterCount() const;
 
     void setVarArgs(bool value);
     [[nodiscard]] bool hasVarArgs() const;

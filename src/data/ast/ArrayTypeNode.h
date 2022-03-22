@@ -21,20 +21,20 @@ private:
     TypeNode *memberType_;
 
 public:
-    explicit ArrayTypeNode(const FilePos &pos, Identifier* ident, std::unique_ptr<ExpressionNode> expr, TypeNode* memberType) :
+    explicit ArrayTypeNode(const FilePos &pos, Identifier *ident, std::unique_ptr<ExpressionNode> expr, TypeNode *memberType) :
             TypeNode(NodeType::array_type, pos, ident, TypeKind::ARRAY, 0),
-            expr_(std::move(expr)), dim_(0), memberType_(memberType) { };
+            expr_(std::move(expr)), dim_(0), memberType_(memberType) {};
     ~ArrayTypeNode() final = default;
 
-    [[nodiscard]] ExpressionNode * getExpression() const;
+    [[nodiscard]] ExpressionNode *getExpression() const;
 
     void setDimension(unsigned int dim);
     [[nodiscard]] unsigned int getDimension() const;
 
     void setMemberType(TypeNode *memberType);
-    [[nodiscard]] TypeNode * getMemberType() const;
+    [[nodiscard]] TypeNode *getMemberType() const;
 
-    void accept(NodeVisitor& visitor) final;
+    void accept(NodeVisitor &visitor) final;
 
     void print(std::ostream &stream) const final;
 

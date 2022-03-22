@@ -8,8 +8,9 @@
 #include <boost/filesystem.hpp>
 #include <boost/program_options.hpp>
 #include <config.h>
-#include "logging/Logger.h"
+#include "codegen/llvm/LLVMCodeGen.h"
 #include "compiler/Compiler.h"
+#include "logging/Logger.h"
 
 namespace fs = boost::filesystem;
 namespace po = boost::program_options;
@@ -17,7 +18,8 @@ namespace po = boost::program_options;
 int main(const int argc, const char *argv[]) {
     auto logger = std::make_unique<Logger>(LogLevel::INFO, &std::cout);
     logger->setLevel(LogLevel::INFO);
-    auto compiler = std::make_unique<Compiler>(logger.get());
+    auto codegen = std::make_unique<LLVMCodeGen>(logger.get());
+    auto compiler = std::make_unique<Compiler>(logger.get(), codegen.get());
     auto visible = po::options_description("OPTIONS");
     visible.add_options()
             ("help,h", "Display available visible.")
@@ -50,23 +52,23 @@ int main(const int argc, const char *argv[]) {
         return 1;
     } else if (vm.count("version")) {
         std::cout << PROJECT_NAME << " version " << PROJECT_VERSION << std::endl;
-        std::cout << "Target: " << compiler->getBackendDescription() << std::endl;
+        std::cout << "Target: " << codegen->getDescription() << std::endl;
         return 1;
     } else if (vm.count("inputs")) {
         if (vm.count("-O")) {
             int level = vm["-O"].as<int>();
             switch (level) {
                 case 0:
-                    compiler->setOptimizationLevel(OptimizationLevel::O1);
+                    codegen->setOptimizationLevel(OptimizationLevel::O0);
                     break;
                 case 1:
-                    compiler->setOptimizationLevel(OptimizationLevel::O1);
+                    codegen->setOptimizationLevel(OptimizationLevel::O1);
                     break;
                 case 2:
-                    compiler->setOptimizationLevel(OptimizationLevel::O2);
+                    codegen->setOptimizationLevel(OptimizationLevel::O2);
                     break;
                 case 3:
-                    compiler->setOptimizationLevel(OptimizationLevel::O3);
+                    codegen->setOptimizationLevel(OptimizationLevel::O3);
                     break;
                 default:
                     logger->error(PROJECT_NAME, "unsupported optimization level: " + to_string(level) + ".");
@@ -76,13 +78,13 @@ int main(const int argc, const char *argv[]) {
         if (vm.count("filetype")) {
             auto type = vm["filetype"].as<std::string>();
             if (type == "asm") {
-                compiler->setCodeGenFileType(OutputFileType::AssemblyFile);
+                codegen->setFileType(OutputFileType::AssemblyFile);
             } else if (type == "bc") {
-                compiler->setCodeGenFileType(OutputFileType::BitCodeFile);
+                codegen->setFileType(OutputFileType::BitCodeFile);
             } else if (type == "ll") {
-                compiler->setCodeGenFileType(OutputFileType::LLVMIRFile);
+                codegen->setFileType(OutputFileType::LLVMIRFile);
             } else if (type == "obj") {
-                compiler->setCodeGenFileType(OutputFileType::ObjectFile);
+                codegen->setFileType(OutputFileType::ObjectFile);
             } else {
                 logger->error(PROJECT_NAME, "unsupported output file type: " + type + ".");
                 return 1;

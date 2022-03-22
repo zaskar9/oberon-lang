@@ -9,7 +9,7 @@
 
 NodeReference::~NodeReference() = default;
 
-Identifier * ValueReferenceNode::getIdentifier() const {
+Identifier *ValueReferenceNode::getIdentifier() const {
     if (isResolved()) {
         return dereference()->getIdentifier();
     }
@@ -25,7 +25,7 @@ void ValueReferenceNode::resolve(DeclarationNode *node) {
     this->setType(node->getType());
 }
 
-DeclarationNode* ValueReferenceNode::dereference() const {
+DeclarationNode *ValueReferenceNode::dereference() const {
     return node_;
 }
 
@@ -43,7 +43,7 @@ void ValueReferenceNode::setSelector(size_t num, std::unique_ptr<ExpressionNode>
     selectors_[num] = std::move(selector);
 }
 
-ExpressionNode* ValueReferenceNode::getSelector(size_t num) const {
+ExpressionNode *ValueReferenceNode::getSelector(size_t num) const {
     return selectors_[num].get();
 }
 
@@ -68,7 +68,7 @@ int ValueReferenceNode::getPrecedence() const {
 }
 
 
-void ValueReferenceNode::accept(NodeVisitor& visitor) {
+void ValueReferenceNode::accept(NodeVisitor &visitor) {
     visitor.visit(*this);
 }
 
@@ -85,7 +85,7 @@ void TypeReferenceNode::resolve(TypeNode *node) {
     node_ = node;
 }
 
-TypeNode * TypeReferenceNode::dereference() const {
+TypeNode *TypeReferenceNode::dereference() const {
     return node_;
 }
 
@@ -103,7 +103,7 @@ unsigned int TypeReferenceNode::getSize() const {
     return TypeNode::getSize();
 }
 
-void TypeReferenceNode::accept(NodeVisitor& visitor) {
+void TypeReferenceNode::accept(NodeVisitor &visitor) {
     visitor.visit(*this);
 }
 
@@ -120,23 +120,23 @@ void ProcedureNodeReference::resolve(ProcedureNode *procedure) {
     procedure_ = procedure;
 }
 
-ProcedureNode * ProcedureNodeReference::dereference() const {
+ProcedureNode *ProcedureNodeReference::dereference() const {
     return procedure_;
 }
 
-void ProcedureNodeReference::addParameter(std::unique_ptr<ExpressionNode> parameter) {
+void ProcedureNodeReference::addActualParameter(std::unique_ptr<ExpressionNode> parameter) {
     parameters_.push_back(std::move(parameter));
 }
 
-void ProcedureNodeReference::setParameter(size_t num, std::unique_ptr<ExpressionNode> parameter) {
+void ProcedureNodeReference::setActualParameter(size_t num, std::unique_ptr<ExpressionNode> parameter) {
     parameters_[num] = std::move(parameter);
 }
 
-ExpressionNode * ProcedureNodeReference::getParameter(size_t num) const {
+ExpressionNode *ProcedureNodeReference::getActualParameter(size_t num) const {
     return parameters_.at(num).get();
 }
 
-size_t ProcedureNodeReference::getParameterCount() const {
+size_t ProcedureNodeReference::getActualParameterCount() const {
     return parameters_.size();
 }
 
@@ -144,8 +144,11 @@ bool FunctionCallNode::isConstant() const {
     return false;
 }
 
-TypeNode * FunctionCallNode::getType() const {
-    return this->dereference()->getReturnType();
+TypeNode *FunctionCallNode::getType() const {
+    if (ProcedureNodeReference::isResolved()) {
+        return this->dereference()->getReturnType();
+    }
+    return nullptr;
 }
 
 void FunctionCallNode::accept(NodeVisitor &visitor) {
@@ -157,7 +160,7 @@ void FunctionCallNode::print(std::ostream &stream) const {
 }
 
 
-Identifier * ProcedureCallNode::getIdentifier() const {
+Identifier *ProcedureCallNode::getIdentifier() const {
     if (isResolved()) {
         return dereference()->getIdentifier();
     }

@@ -7,7 +7,7 @@
 #include "ArrayTypeNode.h"
 #include "NodeVisitor.h"
 
-ExpressionNode * ArrayTypeNode::getExpression() const {
+ExpressionNode *ArrayTypeNode::getExpression() const {
     return expr_.get();
 }
 
@@ -23,11 +23,11 @@ void ArrayTypeNode::setMemberType(TypeNode *memberType) {
     memberType_ = memberType;
 }
 
-TypeNode * ArrayTypeNode::getMemberType() const {
+TypeNode *ArrayTypeNode::getMemberType() const {
     return memberType_;
 }
 
-void ArrayTypeNode::accept(NodeVisitor& visitor) {
+void ArrayTypeNode::accept(NodeVisitor &visitor) {
     visitor.visit(*this);
 }
 

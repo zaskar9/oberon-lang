@@ -25,10 +25,11 @@ private:
     TypeKind kind_;
     unsigned int size_;
     const bool anon_;
+    int ref_; // used for import and export
 
 public:
-    explicit TypeNode(NodeType nodeType, const FilePos &pos, Identifier *ident, TypeKind kind, unsigned int size) :
-            Node(nodeType, pos), ident_(ident), kind_(kind), size_(size), anon_(ident == nullptr) {};
+    explicit TypeNode(NodeType nodeType, const FilePos &pos, Identifier *ident, TypeKind kind, unsigned int size, int ref = 0) :
+            Node(nodeType, pos), ident_(ident), kind_(kind), size_(size), anon_(ident == nullptr), ref_(ref) {};
     ~TypeNode() override = default;
 
     [[nodiscard]] Identifier *getIdentifier() const;
@@ -38,6 +39,9 @@ public:
     [[nodiscard]] virtual unsigned int getSize() const;
 
     [[nodiscard]] bool isAnonymous() const;
+
+    void setRef(int ref);
+    [[nodiscard]] int getRef() const;
 
     void accept(NodeVisitor &visitor) override = 0;
 

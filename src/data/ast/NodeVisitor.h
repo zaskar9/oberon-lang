@@ -20,9 +20,6 @@
 class NodeVisitor {
 
 public:
-    explicit NodeVisitor() = default;
-    virtual ~NodeVisitor() noexcept;
-
     virtual void visit(ModuleNode &node) = 0;
     virtual void visit(ProcedureNode &node) = 0;
 
@@ -46,6 +43,7 @@ public:
 
     virtual void visit(ArrayTypeNode &node) = 0;
     virtual void visit(BasicTypeNode &node) = 0;
+    virtual void visit(ProcedureTypeNode &node) = 0;
     virtual void visit(RecordTypeNode &node) = 0;
 
     virtual void visit(StatementSequenceNode &node) = 0;
@@ -58,6 +56,8 @@ public:
     virtual void visit(RepeatLoopNode &node) = 0;
     virtual void visit(ForLoopNode &node) = 0;
     virtual void visit(ReturnNode &node) = 0;
+
+    virtual ~NodeVisitor() noexcept;
 
 };
 

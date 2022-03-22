@@ -12,8 +12,8 @@
 #include <llvm/IR/DataLayout.h>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
-#include "../data/ast/NodeVisitor.h"
-#include "../logging/Logger.h"
+#include "data/ast/NodeVisitor.h"
+#include "logging/Logger.h"
 
 using namespace llvm;
 
@@ -34,11 +34,14 @@ private:
     Type* getLLVMType(TypeNode *type, bool isPtr = false);
     MaybeAlign getLLVMAlign(TypeNode *type, bool isPtr = false);
 
-    void call(ProcedureNodeReference &node);
+    std::string qualifiedName(Identifier *ident, bool external) const;
 
     void setRefMode(bool deref);
     void restoreRefMode();
     bool deref() const;
+
+    void call(ProcedureNodeReference &node);
+    void proc(ProcedureNode &node);
 
     void visit(ModuleNode &node) override;
     void visit(ProcedureNode &node) override;
@@ -63,6 +66,7 @@ private:
     void visit(TypeDeclarationNode &node) override;
     void visit(ArrayTypeNode &node) override;
     void visit(BasicTypeNode &node) override;
+    void visit(ProcedureTypeNode &node) override;
     void visit(RecordTypeNode &node) override;
 
     void visit(StatementSequenceNode &node) override;

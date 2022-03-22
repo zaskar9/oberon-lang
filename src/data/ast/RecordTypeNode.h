@@ -17,10 +17,11 @@ class RecordTypeNode final : public TypeNode {
 
 private:
     std::vector<std::unique_ptr<FieldNode>> fields_;
+    RecordTypeNode *base_;
 
 public:
-    explicit RecordTypeNode(const FilePos &pos, Identifier* ident) :
-            TypeNode(NodeType::record_type, pos, ident, TypeKind::RECORD, 0), fields_() {};
+    explicit RecordTypeNode(const FilePos &pos, Identifier *ident) :
+            TypeNode(NodeType::record_type, pos, ident, TypeKind::RECORD, 0), fields_(), base_() {};
     ~RecordTypeNode() final = default;
 
     [[nodiscard]] unsigned int getSize() const final;
@@ -29,6 +30,9 @@ public:
     [[nodiscard]] FieldNode *getField(const std::string &name) const;
     [[nodiscard]] FieldNode *getField(size_t num) const;
     [[nodiscard]] size_t getFieldCount();
+
+    void setBaseType(RecordTypeNode *base);
+    [[nodiscard]] RecordTypeNode *getBaseType() const;
 
     void accept(NodeVisitor &visitor) final;
     void print(std::ostream &stream) const final;

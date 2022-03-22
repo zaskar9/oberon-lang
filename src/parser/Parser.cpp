@@ -155,10 +155,10 @@ void Parser::import(ModuleNode *module) {
             scanner_->next(); // skip := operator
             if (assertToken(scanner_->peek(), TokenType::const_ident)) {
                 auto name = ident();
-                module->addImport(std::make_unique<ImportNode>(token->start(), std::move(identifier), std::move(name)));
+                module->addImport(std::make_unique<ImportNode>(identifier->pos(), std::move(identifier), std::move(name)));
             }
         } else {
-            module->addImport(std::make_unique<ImportNode>(token->start(), nullptr, std::move(identifier)));
+            module->addImport(std::make_unique<ImportNode>(identifier->pos(), nullptr, std::move(identifier)));
         }
     }
 }
@@ -465,7 +465,7 @@ void Parser::fp_section(ProcedureNode *proc) {
         }
         auto node = type(proc);
         for (auto &&ident : idents) {
-            proc->addParameter(std::make_unique<ParameterNode>(token->start(), std::move(ident), node, var));
+            proc->addFormalParameter(std::make_unique<ParameterNode>(token->start(), std::move(ident), node, var));
         }
     }
     // [<;>, <)>]
@@ -698,10 +698,10 @@ void Parser::actual_parameters(ProcedureNodeReference *call) {
         token_ = scanner_->next();
         return;
     }
-    call->addParameter(expression());
+    call->addActualParameter(expression());
     while (scanner_->peek()->type() == TokenType::comma) {
         token_ = scanner_->next(); // skip comma
-        call->addParameter(expression());
+        call->addActualParameter(expression());
     }
     token_ = scanner_->next();
     if (token_->type() != TokenType::rparen) {
@@ -805,7 +805,7 @@ std::unique_ptr<ExpressionNode> Parser::factor() {
     auto token = scanner_->peek();
     if (token->type() == TokenType::const_ident) {
         FilePos pos = token->start();
-        auto identifier = ident();
+        auto identifier = qualident();
         token = scanner_->peek();
         std::unique_ptr<ValueReferenceNode> ref;
         if (token->type() == TokenType::lparen) {

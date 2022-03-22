@@ -1,7 +1,8 @@
-O0C = ../../cmake-build-debug/src/oberon-lang
-GXX = clang
+O7C = ../../cmake-build-debug/src/oberon-lang
+CXX = clang
 OPT = opt
 LLC = llc
+LIB = ./lib
 
 OPTFLAGS = -O3
 
@@ -11,19 +12,27 @@ UNAME_S := $(shell uname)
 .PRECIOUS: %.s %.ll
 
 clean:
-	@rm -f *.s *.ll *.o *.bc *.smb *.sym
+	@rm -f *.s *.ll *.o *.bc # *.smb *.sym
 ifeq ($(UNAME_S), Darwin)
-	@find . -type f -perm +111 -delete
+	@find . -depth 1 -type f -perm +111 -delete
 endif
 ifeq ($(UNAME_S), Linux)
 	@find . -type f -executable -delete
 endif
 
-% : %.s
-	@$(GXX) $< -o $@
+% : %.o
+	@$(CXX) $< -o $@ -L$(LIB) -loberon
 
-%.s : %.ll
-	@$(OPT) $(OPTFLAGS) -S $< | $(LLC) $(OPTFLAGS) -o $@
+%.o : %.Mod
+	@$(O7C) $(OPTFLAGS) $<
+#	@$(CXX) -c $<
+
+%.s : %.Mod
+	@$(O7C) --filetype=asm $<
 
 %.ll : %.Mod
-	@$(O0C) --filetype=ll $<
+	@$(O7C) --filetype=ll $<
+
+liboberon : Oberon.o Out.o Random.o
+	@$(CXX) -dynamiclib -o $(LIB)/liboberon.dylib Oberon.o Out.o Random.o
+	@$(CXX) -shared -o $(LIB)/liboberon.so Oberon.o Out.o Random.o

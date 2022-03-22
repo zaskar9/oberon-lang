@@ -15,7 +15,8 @@
 #include <llvm/Support/raw_ostream.h>
 #include <config.h>
 
-LLVMCodeGen::LLVMCodeGen(Logger *logger) : logger_(logger), ctx_(), pb_(), lvl_(llvm::PassBuilder::OptimizationLevel::O0) {
+LLVMCodeGen::LLVMCodeGen(Logger *logger)
+        : logger_(logger), type_(OutputFileType::ObjectFile), ctx_(), pb_(), lvl_(llvm::PassBuilder::OptimizationLevel::O0) {
     // Initialize LLVM
     llvm::InitializeAllTargetInfos();
     llvm::InitializeAllTargets();
@@ -32,15 +33,19 @@ LLVMCodeGen::LLVMCodeGen(Logger *logger) : logger_(logger), ctx_(), pb_(), lvl_(
     } else {
         // Set up target machine to match host
         std::string cpu = "generic";
-        std::string features = "";
+        std::string features;
         TargetOptions opt;
         auto model = Optional<Reloc::Model>();
         tm_ = tm->createTargetMachine(triple, cpu, features, opt, model);
     }
 }
 
-TargetMachine * LLVMCodeGen::getTargetMachine() {
-    return tm_;
+std::string LLVMCodeGen::getDescription() {
+    return tm_->getTargetTriple().str();
+}
+
+void LLVMCodeGen::setFileType(OutputFileType type) {
+    type_ = type;
 }
 
 void LLVMCodeGen::setOptimizationLevel(OptimizationLevel level) {
@@ -59,17 +64,17 @@ void LLVMCodeGen::setOptimizationLevel(OptimizationLevel level) {
     }
 }
 
-void LLVMCodeGen::generate(Node *ast, boost::filesystem::path path, OutputFileType type) {
+void LLVMCodeGen::generate(Node *ast, boost::filesystem::path path) {
     // Set up the LLVM module
     logger_->debug(PROJECT_NAME, "generating LLVM code...");
     auto name = path.filename().string();
-    auto module = std::make_unique<Module>(name, ctx_);
+    auto module = std::make_unique<Module>(path.filename().string(), ctx_);
+    module->setSourceFileName(path.string());
     module->setDataLayout(tm_->createDataLayout());
     module->setTargetTriple(tm_->getTargetTriple().getTriple());
     // Generate LLVM intermediate representation
     auto builder = std::make_unique<LLVMIRBuilder>(logger_, ctx_, module.get());
     builder->build(ast);
-    module->setSourceFileName(name);
     if (lvl_ != llvm::PassBuilder::OptimizationLevel::O0) {
         logger_->debug(PROJECT_NAME, "optimizing...");
         // Create basic analyses
@@ -89,7 +94,7 @@ void LLVMCodeGen::generate(Node *ast, boost::filesystem::path path, OutputFileTy
     }
     if (module) {
         logger_->debug(PROJECT_NAME, "emitting code...");
-        emit(module.get(), path, type);
+        emit(module.get(), path, type_);
     } else {
         logger_->error(path.string(), "code generation failed.");
     }
