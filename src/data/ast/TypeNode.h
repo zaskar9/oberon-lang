@@ -13,9 +13,11 @@
 #include "Identifier.h"
 
 enum class TypeKind : char {
-    BYTE = 1, BOOLEAN = 2, CHAR = 3, INTEGER = 4, LONGINT = 5, REAL = 6, LONGREAL = 7,
-    SET = 8, POINTER = 9, NILTYPE = 10, NOTYPE = 11, PROCEURE = 12,
-    STRING = 13, ARRAY = 14, RECORD = 15
+    NOTYPE = 1, NILTYPE = 2,
+    ARRAY = 3, POINTER = 4, PROCEDURE = 5, RECORD = 6, SET = 7,
+    BOOLEAN = 8,
+    BYTE = 9, CHAR = 10, INTEGER = 11, LONGINT = 12, REAL = 13, LONGREAL = 14,
+    STRING = 15
 };
 
 class TypeNode : public Node {

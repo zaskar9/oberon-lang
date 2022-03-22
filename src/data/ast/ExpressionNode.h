@@ -26,16 +26,22 @@ class ExpressionNode : public Node {
 
 private:
     TypeNode *type_;
+    TypeNode *cast_;
 
 public:
-    explicit ExpressionNode(const NodeType nodeType, const FilePos &pos) : ExpressionNode(nodeType, pos, nullptr) { };
-    explicit ExpressionNode(const NodeType nodeType, const FilePos &pos, TypeNode *type) : Node(nodeType, pos), type_(type) { };
+    explicit ExpressionNode(const NodeType nodeType, const FilePos &pos, TypeNode *type = nullptr,
+                            TypeNode *cast = nullptr) :
+            Node(nodeType, pos), type_(type), cast_(cast) { };
     ~ExpressionNode() override;
 
     [[nodiscard]] virtual bool isConstant() const = 0;
     void setType(TypeNode *type);
     [[nodiscard]] virtual TypeNode *getType() const;
     [[nodiscard]] virtual int getPrecedence() const = 0;
+
+    void setCast(TypeNode *cast);
+    [[nodiscard]] TypeNode *getCast() const;
+    [[nodiscard]] bool needsCast() const;
 
     void accept(NodeVisitor &visitor) override = 0;
 
@@ -103,8 +109,9 @@ private:
     TypeKind kind_;
 
 public:
-    explicit LiteralNode(const NodeType nodeType, const FilePos &pos, TypeKind kind) :
-            ExpressionNode(nodeType, pos), kind_(kind) {};
+    explicit LiteralNode(const NodeType nodeType, const FilePos &pos, TypeKind kind, TypeNode *type = nullptr,
+                         TypeNode *cast = nullptr) :
+            ExpressionNode(nodeType, pos, type, cast), kind_(kind) {};
     ~LiteralNode() override = default;
 
     [[nodiscard]] TypeKind kind() const;
@@ -123,8 +130,8 @@ private:
     bool value_;
 
 public:
-    explicit BooleanLiteralNode(const FilePos &pos, bool value) :
-            LiteralNode(NodeType::boolean, pos, TypeKind::BOOLEAN), value_(value) {};
+    explicit BooleanLiteralNode(const FilePos &pos, bool value, TypeNode *type = nullptr, TypeNode *cast = nullptr) :
+            LiteralNode(NodeType::boolean, pos, TypeKind::BOOLEAN, type, cast), value_(value) {};
     ~BooleanLiteralNode() final = default;
 
     [[nodiscard]] bool getValue() const;
@@ -142,8 +149,8 @@ private:
     int value_;
 
 public:
-    explicit IntegerLiteralNode(const FilePos &pos, int value) :
-            LiteralNode(NodeType::integer, pos, TypeKind::INTEGER), value_(value) {};
+    explicit IntegerLiteralNode(const FilePos &pos, int value, TypeNode *type = nullptr, TypeNode *cast = nullptr) :
+            LiteralNode(NodeType::integer, pos, TypeKind::INTEGER, type, cast), value_(value) {};
     ~IntegerLiteralNode() final = default;
 
     [[nodiscard]] int getValue() const;
@@ -161,8 +168,8 @@ private:
     std::string value_;
 
 public:
-    explicit StringLiteralNode(const FilePos &pos, std::string value) :
-            LiteralNode(NodeType::string, pos, TypeKind::STRING), value_(std::move(value)) {};
+    explicit StringLiteralNode(const FilePos &pos, std::string value, TypeNode *type = nullptr, TypeNode *cast = nullptr) :
+            LiteralNode(NodeType::string, pos, TypeKind::STRING, type, cast), value_(std::move(value)) {};
     ~StringLiteralNode() final = default;
 
     [[nodiscard]] std::string getValue() const;

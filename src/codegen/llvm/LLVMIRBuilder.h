@@ -40,6 +40,8 @@ private:
     void restoreRefMode();
     bool deref() const;
 
+    void cast(ExpressionNode &node);
+
     void call(ProcedureNodeReference &node);
     void proc(ProcedureNode &node);
 

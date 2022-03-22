@@ -19,7 +19,7 @@ private:
 
 public:
     explicit ProcedureTypeNode(const FilePos &pos) :
-            TypeNode(NodeType::procedure_type, pos, nullptr, TypeKind::PROCEURE, 0),
+            TypeNode(NodeType::procedure_type, pos, nullptr, TypeKind::PROCEDURE, 0),
             parameters_(), varargs_(false), type_(nullptr) {};
     ~ProcedureTypeNode() override = default;
 

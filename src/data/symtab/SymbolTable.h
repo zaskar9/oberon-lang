@@ -25,7 +25,7 @@ private:
     std::unordered_map<std::string, std::unique_ptr<Scope>> scopes_;
     Scope *scope_;
     std::vector<std::unique_ptr<Node>> predefines_;
-    std::vector<TypeNode*> references_; // used for import and export
+    std::unordered_map<char, TypeNode*> references_; // used for import and export
     std::unique_ptr<Scope> universe_;
 
     Node *basicType(const std::string &name, TypeKind kind, unsigned int size);
@@ -36,8 +36,8 @@ public:
 
     void import(const std::string &module, const std::string &name, DeclarationNode *node);
 
-    void setRef(size_t ref, TypeNode *type);
-    TypeNode *getRef(size_t ref) const;
+    void setRef(char ref, TypeNode *type);
+    TypeNode *getRef(char ref) const;
 
     void insert(const std::string &name, Node *node);
 

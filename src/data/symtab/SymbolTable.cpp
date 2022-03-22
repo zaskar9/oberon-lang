@@ -21,6 +21,8 @@ const std::string SymbolTable::STRING = "STRING";
 
 SymbolTable::SymbolTable() : scopes_(), scope_(), predefines_(), references_() {
     universe_ = std::make_unique<Scope>(GLOBAL_LEVEL, nullptr);
+    basicType("_", TypeKind::NOTYPE, 4);
+    basicType("NILTYPE", TypeKind::NILTYPE, 4);
     auto type = basicType(SymbolTable::BOOLEAN, TypeKind::BOOLEAN, 1);
     universe_->insert(SymbolTable::BOOLEAN, type);
     type = basicType(SymbolTable::BYTE, TypeKind::BYTE, 1);
@@ -37,8 +39,6 @@ SymbolTable::SymbolTable() : scopes_(), scope_(), predefines_(), references_() {
     universe_->insert(SymbolTable::LONGREAL, type);
     type = basicType(SymbolTable::STRING, TypeKind::STRING, 8);
     universe_->insert(SymbolTable::STRING, type);
-    basicType("", TypeKind::NOTYPE, 4);
-    basicType("NILTYPE", TypeKind::NILTYPE, 4);
 }
 
 SymbolTable::~SymbolTable() = default;
@@ -47,7 +47,7 @@ Node *SymbolTable::basicType(const std::string &name, TypeKind kind, unsigned in
     auto type = std::make_unique<BasicTypeNode>(std::make_unique<Identifier>(name), kind, size);
     auto ptr = type.get();
     predefines_.push_back(std::move(type));
-    setRef((size_t) kind, ptr);
+    setRef((char) kind, ptr);
     return ptr;
 }
 
@@ -63,15 +63,16 @@ void SymbolTable::import(const std::string &module, const std::string &name, Dec
     }
 }
 
-void SymbolTable::setRef(size_t ref, TypeNode *type) {
-    if (references_.size() < ref) {
-        references_.resize(ref + 1);
-    }
+void SymbolTable::setRef(char ref, TypeNode *type) {
     references_[ref] = type;
 }
 
-TypeNode *SymbolTable::getRef(size_t ref) const {
-    return references_.at(ref);
+TypeNode *SymbolTable::getRef(char ref) const {
+    auto it = references_.find(ref);
+    if (it != references_.end()) {
+        return it->second;
+    }
+    return nullptr;
 }
 
 void SymbolTable::insert(const std::string &name, Node *node) {

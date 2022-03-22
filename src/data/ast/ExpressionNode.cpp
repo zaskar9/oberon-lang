@@ -68,6 +68,19 @@ TypeNode *ExpressionNode::getType() const {
     return type_;
 }
 
+void ExpressionNode::setCast(TypeNode *cast) {
+    cast_ = cast;
+}
+
+TypeNode *ExpressionNode::getCast() const {
+    return cast_;
+}
+
+bool ExpressionNode::needsCast() const {
+    return cast_ && cast_ != getType();
+}
+
+
 bool UnaryExpressionNode::isConstant() const {
     return expr_->isConstant();
 }

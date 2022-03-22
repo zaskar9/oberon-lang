@@ -21,4 +21,9 @@ BEGIN
     printf("%d", val)
 END Int;
 
+PROCEDURE Long*(val: LONGINT);
+BEGIN
+    printf("%ld", val)
+END Long;
+
 END Out.

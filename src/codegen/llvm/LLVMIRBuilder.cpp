@@ -186,6 +186,7 @@ void LLVMIRBuilder::visit(BooleanLiteralNode &node) {
 
 void LLVMIRBuilder::visit(IntegerLiteralNode &node) {
     value_ = ConstantInt::getSigned(builder_.getInt32Ty(), node.getValue());
+    cast(node);
 }
 
 void LLVMIRBuilder::visit(StringLiteralNode &node) {
@@ -498,6 +499,25 @@ void LLVMIRBuilder::visit(ReturnNode& node) {
     value_ = builder_.CreateRet(value_);
 }
 
+void LLVMIRBuilder::cast(ExpressionNode &node) {
+    if (node.needsCast()) {
+        auto dest = node.getCast();
+        switch (dest->kind()) {
+            case TypeKind::BYTE:
+            case TypeKind::CHAR:
+            case TypeKind::INTEGER:
+            case TypeKind::LONGINT:
+                value_ = builder_.CreateIntCast(value_, getLLVMType(dest), true);
+                break;
+            case TypeKind::REAL:
+            case TypeKind::LONGREAL:
+                value_ = builder_.CreateFPCast(value_, getLLVMType(dest));
+            default:
+                logger_->error(node.pos(), "Cannot cast to " + to_string(*dest->getIdentifier()) + ".");
+        }
+    }
+}
+
 void LLVMIRBuilder::call(ProcedureNodeReference &node) {
     std::vector<Value*> params;
     // caution: formal parameters on referenced node, actual parameters on reference node
@@ -565,6 +585,8 @@ Type* LLVMIRBuilder::getLLVMType(TypeNode *type, bool isPtr) {
             result = builder_.getInt1Ty();
         } else if (type->kind() == TypeKind::INTEGER) {
             result = builder_.getInt32Ty();
+        } else if (type->kind() == TypeKind::LONGINT) {
+            result = builder_.getInt64Ty();
         } else if (type->kind() == TypeKind::STRING) {
             result = builder_.getInt8PtrTy();
         }

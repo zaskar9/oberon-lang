@@ -85,10 +85,15 @@ void SemanticAnalysis::call(ProcedureNodeReference &node) {
                         }
                     }
                 }
+                // Casting
+                if (parameter->getType() != expr->getType()) {
+                    expr->setCast(parameter->getType());
+                }
             } else if (!proc->hasVarArgs()) {
                 logger_->error(expr->pos(), "more actual than formal parameters.");
                 break;
             }
+            // Folding
             if (expr->isConstant()) {
                 node.setActualParameter(cnt, fold(expr));
             }
@@ -351,11 +356,12 @@ void SemanticAnalysis::visit(BinaryExpressionNode &node) {
         logger_->error(node.pos(), "undefined right-hand side in expression.");
     }
     if (lhs && rhs) {
+        auto op = node.getOperator();
         // Type inference
         auto lhsType = lhs->getType();
         auto rhsType = rhs->getType();
-        auto op = node.getOperator();
-        if (lhsType == rhsType) {
+        auto common = commonType(lhsType, rhsType);
+        if (common) {
             if (op == OperatorType::EQ
                 || op == OperatorType::NEQ
                 || op == OperatorType::LT
@@ -364,7 +370,7 @@ void SemanticAnalysis::visit(BinaryExpressionNode &node) {
                 || op == OperatorType::GEQ) {
                 node.setType(this->tBoolean_);
             } else {
-                node.setType(lhsType);
+                node.setType(common);
             }
         } else {
             logger_->error(node.pos(), "incompatible types.");
@@ -375,6 +381,15 @@ void SemanticAnalysis::visit(BinaryExpressionNode &node) {
         }
         if (rhs->isConstant()) {
             node.setRightExpression(fold(rhs));
+        }
+        // Casting
+        if (common) {
+            if (node.getLeftExpression()->getType() != common) {
+                node.getLeftExpression()->setCast(common);
+            }
+            if (node.getRightExpression()->getType() != common) {
+                node.getRightExpression()->setCast(common);
+            }
         }
     }
 }
@@ -659,16 +674,20 @@ bool SemanticAnalysis::assertCompatible(const FilePos &pos, TypeNode *expected, 
     if (expected == actual) {
         return true;
     } else if (expected && actual) {
-        if (expected->kind() == actual->kind()) {
+        auto expectedId = expected->getIdentifier();
+        auto actualId = actual->getIdentifier();
+        if (expectedId->name() == actualId->name() && expectedId->qualifier() == actualId->qualifier()) {
+            return true;
+        } else if (isInteger(expected) && isInteger(actual)) {
             if (expected->getSize() < actual->getSize()) {
-                logger_->error(pos, "type mismatch: casting " + to_string(*actual->getIdentifier()) +
-                                    " down to " + to_string(*expected->getIdentifier()) + " loses data.");
+                logger_->error(pos, "type mismatch: casting " + to_string(*actualId) +
+                                    " down to " + to_string(*expectedId) + " loses data.");
                 return false;
             }
             return true;
         }
-        logger_->error(pos, "type mismatch: expected " + to_string(*expected->getIdentifier()) +
-                            ", found " + to_string(*actual->getIdentifier()) + ".");
+        logger_->error(pos, "type mismatch: expected " + to_string(*expectedId) +
+                            ", found " + to_string(*actualId) + ".");
         return false;
     } else {
         logger_->error(pos, "type mismatch.");
@@ -685,17 +704,13 @@ void SemanticAnalysis::checkExport(DeclarationNode &node) {
 std::unique_ptr<LiteralNode> SemanticAnalysis::fold(const ExpressionNode *expr) const {
     auto type = expr->getType();
     if (type) {
-        std::unique_ptr<LiteralNode> res;
+        auto cast = expr->getCast();
         if (type->kind() == TypeKind::INTEGER) {
-            res = std::make_unique<IntegerLiteralNode>(expr->pos(), foldNumber(expr));
+            return std::make_unique<IntegerLiteralNode>(expr->pos(), foldNumber(expr), type, cast);
         } else if (type->kind() == TypeKind::BOOLEAN) {
-            res = std::make_unique<BooleanLiteralNode>(expr->pos(), foldBoolean(expr));
+            return std::make_unique<BooleanLiteralNode>(expr->pos(), foldBoolean(expr), type, cast);
         } else if (type->kind() == TypeKind::STRING) {
-            res = std::make_unique<StringLiteralNode>(expr->pos(), foldString(expr));
-        }
-        if (res) {
-            res->setType(type);
-            return res;
+            return std::make_unique<StringLiteralNode>(expr->pos(), foldString(expr), type, cast);
         }
         logger_->error(expr->pos(), "incompatible types.");
     } else {
@@ -848,6 +863,46 @@ std::string SemanticAnalysis::foldString(const ExpressionNode *expr) const {
         logger_->error(expr->pos(), "incompatible expression (string).");
     }
     return "";
+}
+
+bool SemanticAnalysis::isNumeric(TypeNode *type) const {
+    switch (type->kind()) {
+        case TypeKind::BYTE:
+        case TypeKind::CHAR:
+        case TypeKind::INTEGER:
+        case TypeKind::LONGINT:
+        case TypeKind::REAL:
+        case TypeKind::LONGREAL:
+            return true;
+        default:
+            return false;
+    }
+}
+
+bool SemanticAnalysis::isInteger(TypeNode *type) const {
+    switch (type->kind()) {
+        case TypeKind::BYTE:
+        case TypeKind::CHAR:
+        case TypeKind::INTEGER:
+        case TypeKind::LONGINT:
+            return true;
+        default:
+            return false;
+    }
+}
+
+TypeNode *SemanticAnalysis::commonType(TypeNode *lhsType, TypeNode *rhsType) const {
+    if (lhsType == rhsType) {
+        return lhsType;
+    } else if (lhsType->getIdentifier()->name() == rhsType->getIdentifier()->name() &&
+               lhsType->getIdentifier()->qualifier() == rhsType->getIdentifier()->qualifier()) {
+        return lhsType;
+    } else if (isNumeric(lhsType) && isNumeric(rhsType)) {
+        if (isInteger(lhsType) && isInteger(rhsType)) {
+            return lhsType->getSize() > rhsType->getSize() ? lhsType : rhsType;
+        }
+    }
+    return nullptr;
 }
 
 TypeNode *SemanticAnalysis::resolveType(TypeNode *type) {

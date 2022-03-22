@@ -74,6 +74,11 @@ private:
     bool foldBoolean(const ExpressionNode *expr) const;
     std::string foldString(const ExpressionNode *expr) const;
 
+    bool isNumeric(TypeNode *type) const;
+    bool isInteger(TypeNode *type) const;
+
+    TypeNode *commonType(TypeNode *lhsType, TypeNode *rhsType) const;
+
     TypeNode *resolveType(TypeNode *type);
 
 public:

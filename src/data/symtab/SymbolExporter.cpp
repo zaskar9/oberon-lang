@@ -69,7 +69,7 @@ void SymbolExporter::writeType(SymbolFile *file, TypeNode *type) {
             // TODO export pointer type
             logger_->error(type->pos(), "export of pointer type kind not yet supported.");
             break;
-        case TypeKind::PROCEURE:
+        case TypeKind::PROCEDURE:
             writeProcedureType(file, dynamic_cast<ProcedureTypeNode*>(type));
             break;
         case TypeKind::RECORD:

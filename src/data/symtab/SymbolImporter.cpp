@@ -83,7 +83,7 @@ TypeNode *SymbolImporter::readType(SymbolFile *file) {
         return readArrayType(file);
     } else if (kind == TypeKind::POINTER) {
         // TODO import pointer type
-    } else if (kind == TypeKind::PROCEURE) {
+    } else if (kind == TypeKind::PROCEDURE) {
         return readProcedureType(file);
     } else if (kind == TypeKind::RECORD) {
         return readRecordType(file);

@@ -3,7 +3,7 @@ MODULE Sort;
 IMPORT Oberon, Out, Random;
 
 (* Length of the array to be sorted. *)
-CONST Dim* = 3 * 0AH;
+CONST Dim* = 5 * 0AH;
       MaxVal = 10 * Dim;
 
 (* Array to be sorted. *)
@@ -11,6 +11,7 @@ TYPE Vector* = ARRAY Dim OF INTEGER;
 
 (* Array to be sorted. *)
 VAR list*: Vector;
+    start: LONGINT;
 
 (* Initializes the array. *)
 PROCEDURE Init(VAR a: Vector);
@@ -29,7 +30,7 @@ BEGIN
     i := 0;
     WHILE i < Dim DO
         Out.Int(a[i]);
-        IF i + 1 < Dim THEN Out.String(", ") END;
+        IF i + 1 < Dim THEN Out.String(",") END;
         i := i + 1
     END;
     Out.String("]");
@@ -172,8 +173,7 @@ END MergeSort;
 
 (* -------------------------------------------------- Main Program ------------------------------------------------ *)
 BEGIN
-    Out.String("--- Start"); Out.Ln;
-    Out.String("--- Current Time: "); Out.Int(Oberon.TimeMillis()); Out.Ln;
+    start := Oberon.TimeMicros();
     Random.Randomize;
     Out.String("--- Bubble Sort"); Out.Ln;
     Init(list);
@@ -199,5 +199,6 @@ BEGIN
     Init(list);
     Print(list);
     QuickSort(list);
-    Print(list)
+    Print(list);
+    Out.String("--- Elapsed Time: "); Out.Long(Oberon.TimeMicros() - start); Out.String(" μs."); Out.Ln
 END Sort.
