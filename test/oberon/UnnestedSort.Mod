@@ -1,9 +1,9 @@
 MODULE UnnestedSort(*0*);
 
-   CONST Dim(*1*) = 30;
-         MaxVal(*1*) = 300;
+   CONST Dim(*1*) = 50;
+         MaxVal(*1*) = 10 * Dim;
 
-   TYPE Vector(*1*) = ARRAY 30 OF INTEGER;
+   TYPE Vector(*1*) = ARRAY Dim OF INTEGER;
         TQuickSort(*1*) = RECORD a: Vector END;
         TMergeSort(*1*) = RECORD a: Vector END;
 
@@ -31,8 +31,8 @@ MODULE UnnestedSort(*0*);
    PROCEDURE Init(*1*)(VAR a(*2*): Vector);
       VAR i(*2*): INTEGER;
    BEGIN
-      FOR i := 0 TO 29 BY 1 DO
-         a[i] := rand() MOD 300
+      FOR i := 0 TO Dim - 1 BY 1 DO
+         a[i] := rand() MOD MaxVal
       END
    END Init;
 
@@ -41,10 +41,10 @@ MODULE UnnestedSort(*0*);
    BEGIN
       Write("[");
       i := 0;
-      WHILE i < 30 DO
+      WHILE i < Dim DO
          WriteInt(a[i]);
-         IF i + 1 < 30 THEN
-            Write(", ")
+         IF i + 1 < Dim THEN
+            Write(",")
          END;
          i := i + 1
       END;
@@ -75,7 +75,7 @@ MODULE UnnestedSort(*0*);
           j(*2*): INTEGER;
    BEGIN
       i := 1;
-      WHILE i < 30 DO
+      WHILE i < Dim DO
          j := i;
          WHILE (j > 0) & (a[j - 1] > a[j]) DO
             Swap(a[j], a[j - 1]);
@@ -91,10 +91,10 @@ MODULE UnnestedSort(*0*);
           min(*2*): INTEGER;
    BEGIN
       i := 0;
-      WHILE i < 29 DO
+      WHILE i < Dim - 1 DO
          min := i;
          j := i + 1;
-         WHILE j < 30 DO
+         WHILE j < Dim DO
             IF a[j] < a[min] THEN
                min := j
             END;
@@ -112,8 +112,8 @@ MODULE UnnestedSort(*0*);
           j(*2*): INTEGER;
    BEGIN
       i := 0;
-      WHILE i < 30 DO
-         j := 29;
+      WHILE i < Dim DO
+         j := Dim - 1;
          WHILE j > i DO
             IF a[j - 1] > a[j] THEN
                Swap(a[j - 1], a[j])
@@ -159,7 +159,7 @@ MODULE UnnestedSort(*0*);
           i(*2*): INTEGER;
           j(*2*): INTEGER;
           k(*2*): INTEGER;
-          tmp(*2*): ARRAY 30 OF INTEGER;
+          tmp(*2*): ARRAY Dim OF INTEGER;
    BEGIN
       IF l < r THEN
          m := (l + r) DIV 2;
@@ -197,7 +197,7 @@ MODULE UnnestedSort(*0*);
       VAR this(*2*): TQuickSort;
    BEGIN
       this.a := a;
-      QSort(this.a, 0, 29, this);
+      QSort(this.a, 0, Dim - 1, this);
       a := this.a
    END QuickSort;
 
@@ -205,7 +205,7 @@ MODULE UnnestedSort(*0*);
       VAR this(*2*): TMergeSort;
    BEGIN
       this.a := a;
-      MSort(this.a, 0, 29, this);
+      MSort(this.a, 0, Dim - 1, this);
       a := this.a
    END MergeSort;
 

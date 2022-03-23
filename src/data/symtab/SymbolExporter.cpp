@@ -5,7 +5,7 @@
 #include "SymbolExporter.h"
 
 void SymbolExporter::write(const std::string &name, SymbolTable *symbols) {
-    ref_ = ((int) TypeKind::RECORD) + 1;
+    ref_ = ((int) TypeKind::STRING) + 1;
     auto fp = (path_ / name).replace_extension(".smb");
     auto file = std::make_unique<SymbolFile>();
     file->open(fp.string(), std::ios::out);

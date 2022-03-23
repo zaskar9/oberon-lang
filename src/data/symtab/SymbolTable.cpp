@@ -64,15 +64,16 @@ void SymbolTable::import(const std::string &module, const std::string &name, Dec
 }
 
 void SymbolTable::setRef(char ref, TypeNode *type) {
-    references_[ref] = type;
+    size_t idx = (size_t) ref;
+    if (references_.size() <= idx) {
+        references_.resize(idx + 1);
+    }
+    references_[idx] = type;
 }
 
 TypeNode *SymbolTable::getRef(char ref) const {
-    auto it = references_.find(ref);
-    if (it != references_.end()) {
-        return it->second;
-    }
-    return nullptr;
+    size_t idx = (size_t) ref;
+    return references_[idx];
 }
 
 void SymbolTable::insert(const std::string &name, Node *node) {

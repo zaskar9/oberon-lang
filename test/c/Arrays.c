@@ -6,7 +6,10 @@
 #include <stdio.h>
 #include <time.h>
 
-const int SIZE = 10;
+const int SIZE = 5000;
+const int MAXVAL = 10 * SIZE;
+
+int a[5000];
 
 void print(int value[]) {
     for (int i = 0; i < SIZE; i++) {
@@ -21,7 +24,7 @@ void destroy(int value[]) {
 }
 
 int main(int argc, const char* argv[]) {
-    int a[10];
+    // int a[SIZE];
     srand(time(NULL));
     for (int i = 0; i < SIZE; i++) {
         a[i] = rand() % 100 + 1;
