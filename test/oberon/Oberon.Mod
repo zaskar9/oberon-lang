@@ -1,8 +1,14 @@
 MODULE Oberon;
 
-CONST TIME_UTC = 1;
+CONST TIME_UTC* = 1;
 
-TYPE TimeSpec = RECORD secs, nsecs : LONGINT END;
+TYPE TTime* = LONGINT;
+     TimeSpec* = RECORD
+                    secs*: TTime;
+                    nsecs*: LONGINT
+                END;
+
+VAR ts*: TimeSpec;
 
 (* Import `printf` function from C <stdio.h> library. *)
 PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;

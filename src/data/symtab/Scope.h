@@ -17,12 +17,14 @@ class Scope {
 
 private:
     const unsigned int level_;
-    std::unordered_map<std::string, Node *> symbols_;
+    std::vector<Node *> symbols_;
+    std::unordered_map<std::string, size_t> indices_;
     std::unique_ptr<Scope> child_;
     Scope *parent_;
 
 public:
-    explicit Scope(unsigned int level, Scope *parent) : level_(level), symbols_(), child_(), parent_(parent) {};
+    explicit Scope(unsigned int level, Scope *parent) :
+            level_(level), symbols_(), indices_(), child_(), parent_(parent) {};
     ~Scope() = default;
 
     [[nodiscard]] unsigned int getLevel() const;

@@ -19,6 +19,11 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED OFF)
 set(CMAKE_CXX_EXTENSIONS ON)
 
+# define DEBUG
+if (CMAKE_BUILD_TYPE MATCHES Debug)
+    add_definitions(-D_DEBUG)
+endif()
+
 # add the cmake folder of the project for extension modules
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 

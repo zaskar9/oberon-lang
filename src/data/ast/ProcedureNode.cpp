@@ -11,7 +11,7 @@
 ProcedureNode::ProcedureNode(const FilePos &pos, std::unique_ptr<Identifier> ident) :
         DeclarationNode(NodeType::procedure, pos, std::move(ident), nullptr), BlockNode(pos),
         extern_(false) {
-    proctype_ = std::make_unique<ProcedureTypeNode>(pos);
+    proctype_ = std::make_unique<ProcedureTypeNode>(pos, ident.get());
     this->setType(proctype_.get());
     extern_ = false;
 }
@@ -21,19 +21,19 @@ ProcedureTypeNode *ProcedureNode::proctype() const {
 }
 
 void ProcedureNode::addFormalParameter(std::unique_ptr<ParameterNode> parameter) {
-    return proctype()->addParameter(std::move(parameter));
+    return proctype()->addFormalParameter(std::move(parameter));
 }
 
 ParameterNode *ProcedureNode::addFormalParameter(const std::string &name) {
-    return proctype()->getParameter(name);
+    return proctype()->getFormalParameter(name);
 }
 
 ParameterNode *ProcedureNode::getFormalParameter(size_t num) const {
-    return proctype()->getParameter(num);
+    return proctype()->getFormalParameter(num);
 }
 
 size_t ProcedureNode::getFormalParameterCount() const {
-    return proctype()->getParameterCount();
+    return proctype()->getFormalParameterCount();
 }
 
 void ProcedureNode::setVarArgs(bool value) {

@@ -3,7 +3,7 @@ MODULE Sort;
 IMPORT Oberon, Out, Random;
 
 (* Length of the array to be sorted. *)
-CONST Dim* = 100 * 0AH;
+CONST Dim* = 5 * 0AH;
       MaxVal = 10 * Dim;
 
 (* Array to be sorted. *)

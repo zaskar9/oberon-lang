@@ -14,11 +14,11 @@ struct my_timespec {
 static long time_millis(void) {
     struct my_timespec ts;
     timespec_get((struct timespec*) &ts, TIME_UTC);
-    printf("[%ld][%ld]\n", ts.secs, ts.nsecs);
     return (long)ts.secs * 1000 + ts.nsecs / 1000000;
 }
 
 int main(int argc, const char* argv[]) {
     printf("%lu\n", time_millis());
+    printf("%ld\n", sizeof(time_t));
     exit(0);
 }

@@ -8,6 +8,7 @@
 #include "parser/Parser.h"
 #include "analyzer/SemanticAnalysis.h"
 #include "analyzer/LambdaLifter.h"
+#include "data/ast/NodePrettyPrinter.h"
 
 void Compiler::compile(boost::filesystem::path file) {
     // Scan and parse the input file
@@ -29,8 +30,10 @@ void Compiler::compile(boost::filesystem::path file) {
         analyzer->add(std::make_unique<LambdaLifter>());
         analyzer->run(ast.get());
         if (logger_->getErrorCount() == errors) {
-            // auto printer = std::make_unique<NodePrettyPrinter>(std::cout);
-            // printer->print(ast.get());
+#ifdef _DEBUG
+            auto printer = std::make_unique<NodePrettyPrinter>(std::cout);
+            printer->print(ast.get());
+#endif
             codegen_->generate(ast.get(), fp.string());
         }
     }

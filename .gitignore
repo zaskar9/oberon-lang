@@ -29,6 +29,7 @@
 
 # CMake
 /cmake-build-debug/
+/cmake-build-release/
 /CMakeFiles/
 
 # Visual Studio

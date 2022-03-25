@@ -9,12 +9,13 @@ void SymbolExporter::write(const std::string &name, SymbolTable *symbols) {
     auto fp = (path_ / name).replace_extension(".smb");
     auto file = std::make_unique<SymbolFile>();
     file->open(fp.string(), std::ios::out);
-
     // write symbol file header
     file->writeLong(0); // placeholder, inserted at the end
     file->writeString(name + ".Mod");
     file->writeChar(SymbolFile::VERSION);
-
+#ifdef _DEBUG
+    std::cout << std::endl;
+#endif
     // open the modules global scope
     auto scope = symbols->getNamespace(name);
     // navigate from global scope to module scope
@@ -22,28 +23,66 @@ void SymbolExporter::write(const std::string &name, SymbolTable *symbols) {
     // get exported symbols from the module scope
     std::vector<DeclarationNode *> exports;
     scope->getExportedSymbols(exports);
-
     // write out exported symbols to file
     for (auto decl: exports) {
         writeDeclaration(file.get(), decl);
+#ifdef _DEBUG
+        std::cout << std::endl;
+#endif
     }
+    // write out terminator
     file->writeChar(0);
+#ifdef _DEBUG
+    std::cout << std::endl;
+#endif
+    // flush and close file
     file->flush();
     file->close();
 }
 
 void SymbolExporter::writeDeclaration(SymbolFile *file, DeclarationNode *decl) {
-    // write out node type
-    file->writeChar((char) decl->getNodeType());
+    // write out declaration node type
+    auto nodeType = decl->getNodeType();
+    file->writeChar((char) nodeType);
     // write out name
     file->writeString(decl->getIdentifier()->name());
     // write out type
     writeType(file, decl->getType());
+    if (nodeType == NodeType::type_declaration) {
+        // TODO check if this is the base type of a previously declared pointer type
+    } else if (nodeType == NodeType::constant) {
+        auto kind = decl->getType()->kind();
+        if (kind == TypeKind::PROCEDURE) {
+            // TODO write out export number ("exno" in Wirth's code)
+            file->writeInt(-1);
+        } else {
+            auto con = dynamic_cast<ConstantDeclarationNode*>(decl);
+            switch (kind) {
+                case TypeKind::STRING:
+                    file->writeString(dynamic_cast<StringLiteralNode*>(con->getValue())->getValue());
+                    break;
+                case TypeKind::INTEGER:
+                    file->writeInt(dynamic_cast<IntegerLiteralNode*>(con->getValue())->getValue());
+                    break;
+                case TypeKind::LONGINT:
+                    // TODO introduce literal for long values
+                    file->writeLong(dynamic_cast<IntegerLiteralNode*>(con->getValue())->getValue());
+                    break;
+                case TypeKind::REAL:
+                case TypeKind::LONGREAL:
+                default:
+                    logger_->error(file->path(), "Cannot export constant " + to_string(decl->getIdentifier()) + ".");
+            }
+        }
+    } else if (nodeType == NodeType::variable) {
+        // TODO write out export number ("exno" in Wirth's code)
+        file->writeInt(-1);
+    }
 }
 
 void SymbolExporter::writeType(SymbolFile *file, TypeNode *type) {
     if (!type) {
-        file->writeChar(-((char) TypeKind::NILTYPE));
+        file->writeChar(-((char) TypeKind::NOTYPE));
         return;
     }
     if (type->getRef() > 0) {
@@ -79,32 +118,35 @@ void SymbolExporter::writeType(SymbolFile *file, TypeNode *type) {
             // noting to be done
             break;
     }
+    // TODO re-exports
 }
 
 void SymbolExporter::writeArrayType(SymbolFile *file, ArrayTypeNode *type) {
+    // write out member type
     writeType(file, type->getMemberType());
+    // write out dimension
     file->writeInt((int) type->getDimension());
+    // write out size
     file->writeInt((int) type->getSize());
 }
 
 void SymbolExporter::writeProcedureType(SymbolFile *file, ProcedureTypeNode *type) {
     writeType(file, type->getReturnType());
-    for (size_t i = 0; i < type->getParameterCount(); i++) {
-        writeParameter(file, type->getParameter(i));
+    for (size_t i = 0; i < type->getFormalParameterCount(); i++) {
+        writeParameter(file, type->getFormalParameter(i));
     }
     file->writeChar(0);
 }
 
 void SymbolExporter::writeRecordType(SymbolFile *file, RecordTypeNode *type) {
-    // for extended records write their base type (or TypeKind::NOTYPE) first
+    // for extended records, write their base type (or TypeKind::NOTYPE) first
     writeType(file, type->getBaseType());
     // write out export number
     if (type->isAnonymous()) {
         file->writeChar(0);
     } else {
-        // TODO output "exno"
-        // in Wirth's approach exports of record and procedure types are numbered
-        file->writeChar(-1);
+        // TODO write out export number ("exno" in Wirth's code)
+        file->writeInt(-1);
     }
     // write out the number of fields in this record
     file->writeInt(type->getFieldCount());
@@ -114,8 +156,10 @@ void SymbolExporter::writeRecordType(SymbolFile *file, RecordTypeNode *type) {
     for (size_t i = 0; i < type->getFieldCount(); i++) {
         auto field = type->getField(i);
         if (field->getIdentifier()->isExported()) {
+            // write out field node type
+            file->writeChar((char) field->getNodeType());
             // write out field number
-            file->writeInt(i);
+            file->writeInt(i + 1);
             // write out field name
             file->writeString(field->getIdentifier()->name());
             // write out field type
@@ -127,6 +171,8 @@ void SymbolExporter::writeRecordType(SymbolFile *file, RecordTypeNode *type) {
             // TODO find hidden pointers
         }
     }
+    // write out terminator
+    file->writeChar(0);
 }
 
 void SymbolExporter::writeParameter(SymbolFile *file, ParameterNode *param) {

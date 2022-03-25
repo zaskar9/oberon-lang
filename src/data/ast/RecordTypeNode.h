@@ -20,6 +20,7 @@ private:
     RecordTypeNode *base_;
 
 public:
+    explicit RecordTypeNode() : RecordTypeNode(EMPTY_POS, nullptr) {};
     explicit RecordTypeNode(const FilePos &pos, Identifier *ident) :
             TypeNode(NodeType::record_type, pos, ident, TypeKind::RECORD, 0), fields_(), base_() {};
     ~RecordTypeNode() final = default;

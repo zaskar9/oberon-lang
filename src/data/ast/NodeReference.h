@@ -75,7 +75,8 @@ public:
 class TypeReferenceNode final : public TypeNode, public NodeReference {
 
 private:
-    std::unique_ptr<Identifier> ident_;
+    // the following member is required for memory management
+    [[maybe_unused]] std::unique_ptr<Identifier> ident_;
     TypeNode *node_;
 
 public:

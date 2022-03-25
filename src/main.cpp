@@ -17,7 +17,9 @@ namespace po = boost::program_options;
 
 int main(const int argc, const char *argv[]) {
     auto logger = std::make_unique<Logger>(LogLevel::INFO, &std::cout);
-    logger->setLevel(LogLevel::INFO);
+#ifdef _DEBUG
+    logger->setLevel(LogLevel::DEBUG);
+#endif
     auto codegen = std::make_unique<LLVMCodeGen>(logger.get());
     auto compiler = std::make_unique<Compiler>(logger.get(), codegen.get());
     auto visible = po::options_description("OPTIONS");

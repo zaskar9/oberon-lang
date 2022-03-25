@@ -5,11 +5,11 @@
 #include "ProcedureTypeNode.h"
 #include "NodeVisitor.h"
 
-void ProcedureTypeNode::addParameter(std::unique_ptr<ParameterNode> parameter) {
+void ProcedureTypeNode::addFormalParameter(std::unique_ptr<ParameterNode> parameter) {
     parameters_.push_back(std::move(parameter));
 }
 
-ParameterNode *ProcedureTypeNode::getParameter(const std::string &name) {
+ParameterNode *ProcedureTypeNode::getFormalParameter(const std::string &name) {
     auto result = std::find_if(parameters_.begin(), parameters_.end(),
                                [&](std::unique_ptr<ParameterNode> &param) { return param->getIdentifier()->name() == name; });
     if (result != parameters_.end()) {
@@ -18,11 +18,11 @@ ParameterNode *ProcedureTypeNode::getParameter(const std::string &name) {
     return nullptr;
 }
 
-ParameterNode *ProcedureTypeNode::getParameter(const size_t num) const {
+ParameterNode *ProcedureTypeNode::getFormalParameter(size_t num) const {
     return parameters_[num].get();
 }
 
-size_t ProcedureTypeNode::getParameterCount() const {
+size_t ProcedureTypeNode::getFormalParameterCount() const {
     return parameters_.size();
 }
 

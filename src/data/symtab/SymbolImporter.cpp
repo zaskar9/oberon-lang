@@ -28,6 +28,9 @@ std::unique_ptr<ModuleNode> SymbolImporter::read(const std::string &alias, const
         logger_->error(fp.string(), "Wrong symbol file version.");
         return nullptr;
     }
+#ifdef _DEBUG
+    std::cout << std::endl;
+#endif
 
     // create namespace for module
     symbols_ = symbols;
@@ -38,34 +41,74 @@ std::unique_ptr<ModuleNode> SymbolImporter::read(const std::string &alias, const
     while (ch != 0 && !file->eof()) {
         auto nodeType = (NodeType) ch;
         readDeclaration(file.get(), nodeType);
+#ifdef _DEBUG
+        std::cout << std::endl;
+#endif
+        // check for terminator
         ch = file->readChar();
     }
-
+#ifdef _DEBUG
+    std::cout << std::endl;
+#endif
     file->flush();
     file->close();
 
-    // auto printer = std::make_unique<NodePrettyPrinter>(std::cout);
-    // printer->print(module_.get());
+#ifdef _DEBUG
+    auto printer = std::make_unique<NodePrettyPrinter>(std::cout);
+    printer->print(module_.get());
+#endif
 
     return std::move(module_);
 }
 
 void SymbolImporter::readDeclaration(SymbolFile *file, NodeType nodeType) {
     auto name = file->readString();
+    auto ident = std::make_unique<Identifier>(module_->getIdentifier()->name(), name);
+    auto type = readType(file);
     if (nodeType == NodeType::constant) {
-        // TODO constant declaration
+        auto kind = type->kind();
+        if (kind == TypeKind::PROCEDURE) {
+            // read in export number
+            [[maybe_unused]] auto exno = file->readInt();
+        } else {
+            std::unique_ptr<ExpressionNode> expr;
+            switch (kind) {
+                case TypeKind::STRING:
+                    expr = std::make_unique<StringLiteralNode>(EMPTY_POS, file->readString(), type);
+                    break;
+                case TypeKind::INTEGER:
+                    expr = std::make_unique<IntegerLiteralNode>(EMPTY_POS, file->readInt(), type);
+                    break;
+                case TypeKind::LONGINT:
+                    expr = std::make_unique<IntegerLiteralNode>(EMPTY_POS, (int) file->readLong(), type);
+                    break;
+                case TypeKind::REAL:
+                case TypeKind::LONGREAL:
+                default:
+                    logger_->error(file->path(), "Cannot import constant " + name + ".");
+            }
+            if (expr) {
+                auto decl = std::make_unique<ConstantDeclarationNode>(EMPTY_POS, std::move(ident), std::move(expr));
+                symbols_->import(module_->getAlias(), name, decl.get());
+                module_->addConstant(std::move(decl));
+            }
+        }
     } else if (nodeType == NodeType::type_declaration) {
-        // TODO type declaration
+        auto decl = std::make_unique<TypeDeclarationNode>(EMPTY_POS, std::move(ident), type);
+        symbols_->import(module_->getAlias(), name, decl.get());
+        module_->addTypeDeclaration(std::move(decl));
     } else if (nodeType == NodeType::variable) {
-        // TODO variable declaration
+        // read in export number
+        [[maybe_unused]] auto exno = file->readInt();
+        auto decl = std::make_unique<VariableDeclarationNode>(EMPTY_POS, std::move(ident), type);
+        symbols_->import(module_->getAlias(), name, decl.get());
+        module_->addVariable(std::move(decl));
     } else if (nodeType == NodeType::procedure) {
-        auto type = readType(file);
-        auto ident = std::make_unique<Identifier>(module_->getIdentifier()->name(), name);
-        auto proc = std::make_unique<ProcedureNode>(EMPTY_POS, std::move(ident));
-        proc->setType(type);
-        proc->setExtern(true);
-        symbols_->import(module_->getAlias(), name, proc.get());
-        module_->addProcedure(std::move(proc));
+        auto decl = std::make_unique<ProcedureNode>(EMPTY_POS, std::move(ident));
+        decl->setType(type);
+        decl->setExtern(true);
+        symbols_->import(module_->getAlias(), name, decl.get());
+        module_->addProcedure(std::move(decl));
     }
 }
 
@@ -73,46 +116,89 @@ TypeNode *SymbolImporter::readType(SymbolFile *file) {
     auto ref = file->readChar();
     if (ref < 0) {
         ref *= -1;
-        if (ref == (char) TypeKind::NILTYPE) {
+        if (ref == (char) TypeKind::NOTYPE) {
             return nullptr;
         }
         return symbols_->getRef((size_t) ref);
     }
+    TypeNode *type = nullptr;
     auto kind = (TypeKind) file->readChar();
     if (kind == TypeKind::ARRAY) {
-        return readArrayType(file);
+        type = readArrayType(file);
     } else if (kind == TypeKind::POINTER) {
         // TODO import pointer type
+        logger_->error(file->path(), "export of pointer type kind not yet supported.");
     } else if (kind == TypeKind::PROCEDURE) {
-        return readProcedureType(file);
+        type = readProcedureType(file);
     } else if (kind == TypeKind::RECORD) {
-        return readRecordType(file);
+        type = readRecordType(file);
     }
-    return nullptr;
+    if (type) {
+        symbols_->setRef((size_t) ref, type);
+    }
+    return type;
 }
 
-TypeNode *SymbolImporter::readArrayType([[maybe_unused]] SymbolFile *file) {
-    return nullptr;
+TypeNode *SymbolImporter::readArrayType(SymbolFile *file) {
+    auto tmp = std::make_unique<ArrayTypeNode>();
+    auto res = tmp.get();
+    module_->registerType(std::move(tmp));
+    // read in member res
+    res->setMemberType(readType(file));
+    // read in dimension
+    res->setDimension((unsigned) file->readInt());
+    // read in size
+    res->setSize((unsigned) file->readInt());
+    return res;
 }
 
 TypeNode *SymbolImporter::readProcedureType(SymbolFile *file) {
-    auto tmp = std::make_unique<ProcedureTypeNode>(EMPTY_POS);
-    auto type = tmp.get();
+    auto tmp = std::make_unique<ProcedureTypeNode>();
+    auto res = tmp.get();
     module_->registerType(std::move(tmp));
-    auto res = readType(file);
-    type->setReturnType(res);
+    // read in return res
+    res->setReturnType(readType(file));
+    // read in parameters
     auto ch = file->readChar();
     while (ch != 0) {
         auto var = file->readChar();
         auto ptype = readType(file);
         auto param = std::make_unique<ParameterNode>(EMPTY_POS, std::make_unique<Identifier>("_"), ptype, (var == 0));
         param->setLevel(SymbolTable::MODULE_LEVEL);
-        type->addParameter(std::move(param));
+        res->addFormalParameter(std::move(param));
+        // check for terminator
         ch = file->readChar();
     }
-    return type;
+    return res;
 }
 
-TypeNode *SymbolImporter::readRecordType([[maybe_unused]] SymbolFile *file) {
-    return nullptr;
+TypeNode *SymbolImporter::readRecordType(SymbolFile *file) {
+    auto tmp = std::make_unique<RecordTypeNode>();
+    auto res = tmp.get();
+    module_->registerType(std::move(tmp));
+    // for extended records, read in base res of record res (or TypeKind::NOTYPE)
+    res->setBaseType(dynamic_cast<RecordTypeNode*>(readType(file)));
+    // read in export number
+    [[maybe_unused]] auto exno = file->readInt();
+    // read in the number of fields in this record
+    [[maybe_unused]] auto fld_cnt = file->readInt();
+    // read in the size of the res, i.e., sum of the sizes of the res of all fields
+    res->setSize((unsigned) file->readInt());
+    // read in fields
+    auto ch = file->readChar();
+    while (ch != 0) {
+        // read in field number
+        [[maybe_unused]] auto num = file->readInt();
+        // read in field name
+        auto name = file->readString();
+        // read in field res
+        auto type = readType(file);
+        // read in field offset
+        [[maybe_unused]] auto offset = file->readInt();
+        auto field = std::make_unique<FieldNode>(EMPTY_POS, std::make_unique<Identifier>(name), type);
+        res->addField(std::move(field));
+        // check for terminator
+        ch = file->readChar();
+    }
+    return res;
 }

@@ -12,24 +12,26 @@ class SymbolFile {
 
 private:
     std::fstream file_;
+    std::string path_;
 
 public:
-    explicit SymbolFile() : file_() {};
+    explicit SymbolFile() : file_(), path_() {};
     ~SymbolFile() = default;
 
     void open(const std::string &path, std::ios::openmode mode);
+    [[nodiscard]] std::string path() const;
 
-    char readChar();
-    int readInt();
-    long readLong();
-    std::string readString();
+    [[nodiscard]] char readChar();
+    [[nodiscard]] int readInt();
+    [[nodiscard]] long readLong();
+    [[nodiscard]] std::string readString();
 
     void writeChar(char val);
     void writeInt(int val);
     void writeLong(long val);
     void writeString(const std::string &val);
 
-    bool eof();
+    [[nodiscard]] bool eof();
     void flush();
     void close();
 

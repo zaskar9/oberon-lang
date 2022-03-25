@@ -18,15 +18,16 @@ private:
     TypeNode *type_;
 
 public:
-    explicit ProcedureTypeNode(const FilePos &pos) :
-            TypeNode(NodeType::procedure_type, pos, nullptr, TypeKind::PROCEDURE, 0),
+    explicit ProcedureTypeNode() : ProcedureTypeNode(EMPTY_POS, nullptr) {};
+    explicit ProcedureTypeNode(const FilePos &pos, Identifier *ident) :
+            TypeNode(NodeType::procedure_type, pos, ident, TypeKind::PROCEDURE, 0),
             parameters_(), varargs_(false), type_(nullptr) {};
     ~ProcedureTypeNode() override = default;
 
-    void addParameter(std::unique_ptr<ParameterNode> parameter);
-    [[nodiscard]] ParameterNode *getParameter(const std::string &name);
-    [[nodiscard]] ParameterNode *getParameter(size_t num) const;
-    [[nodiscard]] size_t getParameterCount() const;
+    void addFormalParameter(std::unique_ptr<ParameterNode> parameter);
+    [[nodiscard]] ParameterNode *getFormalParameter(const std::string &name);
+    [[nodiscard]] ParameterNode *getFormalParameter(size_t num) const;
+    [[nodiscard]] size_t getFormalParameterCount() const;
 
     void setVarArgs(bool value);
     [[nodiscard]] bool hasVarArgs() const;
