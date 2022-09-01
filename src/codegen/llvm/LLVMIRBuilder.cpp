@@ -512,6 +512,7 @@ void LLVMIRBuilder::cast(ExpressionNode &node) {
             case TypeKind::REAL:
             case TypeKind::LONGREAL:
                 value_ = builder_.CreateFPCast(value_, getLLVMType(dest));
+                break;
             default:
                 logger_->error(node.pos(), "Cannot cast to " + to_string(*dest->getIdentifier()) + ".");
         }

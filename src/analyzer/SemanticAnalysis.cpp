@@ -244,7 +244,7 @@ void SemanticAnalysis::visit(ValueReferenceNode &node) {
     if (!sym && ident->isQualified()) {
         sym = symbols_->lookup(ident->qualifier());
         auto pos = node.pos();
-        pos.charNo += ident->qualifier().size() + 1;
+        pos.charNo += ((int) ident->qualifier().size()) + 1;
         node.insertSelector(0, NodeType::record_type,
                             std::make_unique<ValueReferenceNode>(pos,std::make_unique<Identifier>(pos, ident->name())));
     }

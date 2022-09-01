@@ -152,7 +152,7 @@ void SymbolExporter::writeRecordType(SymbolFile *file, RecordTypeNode *type) {
     file->writeInt(type->getFieldCount());
     // write out the size of the type, i.e., sum of the sizes of the type of all fields
     file->writeInt((int) type->getSize());
-    auto offset = 0;
+    auto offset = 0u;
     for (size_t i = 0; i < type->getFieldCount(); i++) {
         auto field = type->getField(i);
         if (field->getIdentifier()->isExported()) {
@@ -165,7 +165,7 @@ void SymbolExporter::writeRecordType(SymbolFile *file, RecordTypeNode *type) {
             // write out field type
             writeType(file, field->getType());
             // write out field offset
-            file->writeInt(offset);
+            file->writeInt((int) offset);
             offset += field->getType()->getSize();
         } else {
             // TODO find hidden pointers
