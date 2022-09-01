@@ -24,7 +24,7 @@ private:
     OutputFileType type_;
     LLVMContext ctx_;
     llvm::PassBuilder pb_;
-    llvm::PassBuilder::OptimizationLevel lvl_;
+    llvm::OptimizationLevel lvl_;
     llvm::TargetMachine *tm_;
 
     void emit(Module *module, boost::filesystem::path path, OutputFileType type);
@@ -35,7 +35,7 @@ public:
 
     std::string getDescription() final;
     void setFileType(OutputFileType type) final;
-    void setOptimizationLevel(OptimizationLevel level) final;
+    void setOptimizationLevel(::OptimizationLevel level) final;
 
     void generate(Node *ast, boost::filesystem::path path) final;
 

@@ -7,16 +7,16 @@
 #include "LLVMCodeGen.h"
 #include <llvm/Bitcode/BitcodeWriter.h>
 #include <llvm/IR/LegacyPassManager.h>
+#include <llvm/MC/TargetRegistry.h>
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/Support/FileSystem.h>
 #include <llvm/Support/Host.h>
-#include <llvm/Support/TargetRegistry.h>
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Support/raw_ostream.h>
 #include <config.h>
 
 LLVMCodeGen::LLVMCodeGen(Logger *logger)
-        : logger_(logger), type_(OutputFileType::ObjectFile), ctx_(), pb_(), lvl_(llvm::PassBuilder::OptimizationLevel::O0) {
+        : logger_(logger), type_(OutputFileType::ObjectFile), ctx_(), pb_(), lvl_(llvm::OptimizationLevel::O0) {
     // Initialize LLVM
     llvm::InitializeAllTargetInfos();
     llvm::InitializeAllTargets();
@@ -48,19 +48,19 @@ void LLVMCodeGen::setFileType(OutputFileType type) {
     type_ = type;
 }
 
-void LLVMCodeGen::setOptimizationLevel(OptimizationLevel level) {
+void LLVMCodeGen::setOptimizationLevel(::OptimizationLevel level) {
     switch (level) {
-        case OptimizationLevel::O1:
-            lvl_ = PassBuilder::OptimizationLevel::O1;
+        case ::OptimizationLevel::O1:
+            lvl_ = llvm::OptimizationLevel::O1;
             break;
-        case OptimizationLevel::O2:
-            lvl_ = PassBuilder::OptimizationLevel::O2;
+        case ::OptimizationLevel::O2:
+            lvl_ = llvm::OptimizationLevel::O2;
             break;
-        case OptimizationLevel::O3:
-            lvl_ = PassBuilder::OptimizationLevel::O3;
+        case ::OptimizationLevel::O3:
+            lvl_ = llvm::OptimizationLevel::O3;
             break;
         default:
-            lvl_ = PassBuilder::OptimizationLevel::O0;
+            lvl_ = llvm::OptimizationLevel::O0;
     }
 }
 
@@ -75,7 +75,7 @@ void LLVMCodeGen::generate(Node *ast, boost::filesystem::path path) {
     // Generate LLVM intermediate representation
     auto builder = std::make_unique<LLVMIRBuilder>(logger_, ctx_, module.get());
     builder->build(ast);
-    if (lvl_ != llvm::PassBuilder::OptimizationLevel::O0) {
+    if (lvl_ != llvm::OptimizationLevel::O0) {
         logger_->debug(PROJECT_NAME, "optimizing...");
         // Create basic analyses
         llvm::LoopAnalysisManager lam;

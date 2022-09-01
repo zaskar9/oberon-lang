@@ -1,4 +1,4 @@
-O7C = ../../cmake-build-debug/src/oberon-lang
+O7C = ../../cmake-build-release/src/oberon-lang
 CXX = clang
 OPT = opt
 LLC = llc

@@ -16,7 +16,7 @@ public:
     virtual ~CodeGen() noexcept;
 
     virtual void setFileType(OutputFileType type) = 0;
-    virtual void setOptimizationLevel(OptimizationLevel level) = 0;
+    virtual void setOptimizationLevel(::OptimizationLevel level) = 0;
     virtual std::string getDescription() = 0;
 
     virtual void generate(Node *ast, boost::filesystem::path path) = 0;

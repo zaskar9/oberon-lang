@@ -8,6 +8,7 @@
 #define OBERON0C_LLVMCODEGEN_H
 
 
+#include <map>
 #include <stack>
 #include <llvm/IR/DataLayout.h>
 #include <llvm/IR/IRBuilder.h>
