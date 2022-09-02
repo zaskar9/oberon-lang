@@ -4,6 +4,7 @@
 
 #include "ProcedureTypeNode.h"
 #include "NodeVisitor.h"
+#include <algorithm>
 
 void ProcedureTypeNode::addFormalParameter(std::unique_ptr<ParameterNode> parameter) {
     parameters_.push_back(std::move(parameter));
