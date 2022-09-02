@@ -8,7 +8,7 @@
 #include "ProcedureNode.h"
 
 BlockNode::BlockNode(const FilePos &pos) : types_(), constants_(), type_declarations_(), variables_(), procedures_(),
-        statements_(std::make_unique<StatementSequenceNode>(pos)) { };
+        statements_(std::make_unique<StatementSequenceNode>(pos)) { }
 
 BlockNode::~BlockNode() = default;
 

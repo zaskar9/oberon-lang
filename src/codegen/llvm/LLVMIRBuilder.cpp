@@ -41,7 +41,7 @@ void LLVMIRBuilder::visit(ModuleNode &node) {
     if (node.getStatements()->getStatementCount() > 0) {
         // generate code for main
         auto main = module_->getOrInsertFunction("main", builder_.getInt32Ty());
-        function_ = cast<Function>(main.getCallee());
+        function_ = ::cast<Function>(main.getCallee());
         auto entry = BasicBlock::Create(builder_.getContext(), "entry", function_);
         builder_.SetInsertPoint(entry);
         level_ = node.getLevel() + 1;
@@ -548,7 +548,7 @@ void LLVMIRBuilder::proc(ProcedureNode &node) {
     auto type = FunctionType::get(getLLVMType(node.getReturnType()), params, node.hasVarArgs());
     auto name = qualifiedName(node.getIdentifier(), node.isExtern());
     auto callee = module_->getOrInsertFunction(name, type);
-    functions_[&node] = cast<Function>(callee.getCallee());
+    functions_[&node] = ::cast<Function>(callee.getCallee());
 }
 
 std::string LLVMIRBuilder::qualifiedName(Identifier *ident, bool external) const {
