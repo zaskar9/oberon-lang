@@ -12,14 +12,14 @@
 #include <iostream>
 #include "../global.h"
 
-enum class LogLevel : unsigned int { DEBUG = 1, INFO = 2, WARNING = 3, ERROR = 4 };
+enum class LogLevel : unsigned int { DEBUG = 1, INFO = 2, WARNING = 3, ERROR = 4, QUIET = 5 };
 
 class Logger {
 
 private:
     LogLevel level_;
     std::ostream *out_, *err_;
-    int debugs_, infos_, warnings_, errors_;
+    int counts_[(unsigned int) LogLevel::QUIET];
 
     void log(LogLevel level, const std::string &fileName, int lineNo, int charNo, const std::string &msg);
     void log(LogLevel level, const std::string &fileName, const std::string &msg);
@@ -29,7 +29,7 @@ public:
     explicit Logger() : Logger(LogLevel::ERROR, &std::cout, &std::cerr) { };
     explicit Logger(LogLevel level, std::ostream *out) : Logger(level, out, out) { };
     explicit Logger(LogLevel level, std::ostream *out, std::ostream *err) :
-            level_(level), out_(out), err_(err), debugs_(0), infos_(0), warnings_(0), errors_(0) { };
+            level_(level), out_(out), err_(err), counts_() { };
     ~Logger() = default;
 
     void error(const FilePos &pos, const std::string &msg);

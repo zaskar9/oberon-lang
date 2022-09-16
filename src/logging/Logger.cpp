@@ -9,6 +9,7 @@
 
 void Logger::log(const LogLevel level, const std::string &fileName, int lineNo, int charNo,
                  const std::string &msg) {
+    counts_[(unsigned int) level]++;
     if (level >= level_) {
         std::ostream *out = (level == LogLevel::ERROR) ? err_ : out_;
         if (!fileName.empty()) {
@@ -23,10 +24,10 @@ void Logger::log(const LogLevel level, const std::string &fileName, int lineNo, 
         }
         *out << "[" ;
         switch (level) {
-            case LogLevel::DEBUG:   *out << "debug";   debugs_++;   break;
-            case LogLevel::INFO:    *out << "info";    infos_++;    break;
-            case LogLevel::WARNING: *out << "warning"; warnings_++; break;
-            case LogLevel::ERROR:   *out << "error";   errors_++;   break;
+            case LogLevel::DEBUG:   *out << "debug";   break;
+            case LogLevel::INFO:    *out << "info";    break;
+            case LogLevel::WARNING: *out << "warning"; break;
+            case LogLevel::ERROR:   *out << "error";   break;
             default: break; // do nothing
         }
         *out << "] " << msg << std::endl;
@@ -62,19 +63,19 @@ void Logger::debug(const std::string &fileName, const std::string &msg) {
 }
 
 int Logger::getDebugCount() const {
-    return debugs_;
+    return counts_[(unsigned int) LogLevel::DEBUG];
 }
 
 int Logger::getInfoCount() const {
-    return infos_;
+    return counts_[(unsigned int) LogLevel::INFO];
 }
 
 int Logger::getWarningCount() const {
-    return warnings_;
+    return counts_[(unsigned int) LogLevel::WARNING];
 }
 
 int Logger::getErrorCount() const {
-    return errors_;
+    return counts_[(unsigned int) LogLevel::ERROR];
 }
 
 void Logger::setLevel(LogLevel level) {

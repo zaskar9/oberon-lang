@@ -5,10 +5,12 @@
  */
 
 #include <iostream>
+#include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/program_options.hpp>
 #include <config.h>
 #include "codegen/llvm/LLVMCodeGen.h"
+#include "compiler/CompilerFlags.h"
 #include "compiler/Compiler.h"
 #include "logging/Logger.h"
 
@@ -20,14 +22,18 @@ int main(const int argc, const char *argv[]) {
 #ifdef _DEBUG
     logger->setLevel(LogLevel::DEBUG);
 #endif
+    // TODO move CodeGen into Compiler by moving corresponding flags to CompilerFlags
     auto codegen = std::make_unique<LLVMCodeGen>(logger.get());
+    auto flags = std::make_unique<CompilerFlags>();
     auto compiler = std::make_unique<Compiler>(logger.get(), codegen.get());
     auto visible = po::options_description("OPTIONS");
     visible.add_options()
             ("help,h", "Display available visible.")
             ("version,v", "Print version information.")
             ("filetype", po::value<std::string>()->value_name("<type>"), "Specify type of output file. [asm, bc, obj, ll]")
-            (",O", po::value<int>()->value_name("<level>"), "Optimization level. [O0, O1, O2, O3]");
+            (",O", po::value<int>()->value_name("<level>"), "Optimization level. [O0, O1, O2, O3]")
+            ("quiet,q", "Suppress all compiler outputs.")
+            (",I", po::value<std::string>()->value_name("<directories>"), "Include directories for symbol files.");
     auto hidden = po::options_description("HIDDEN");
     hidden.add_options()
             ("inputs", po::value<std::vector<std::string>>());
@@ -57,6 +63,18 @@ int main(const int argc, const char *argv[]) {
         std::cout << "Target: " << codegen->getDescription() << std::endl;
         return 1;
     } else if (vm.count("inputs")) {
+        if (vm.count("quiet")) {
+            logger->setLevel(LogLevel::QUIET);
+        }
+        if (vm.count("-I")) {
+            auto param = vm["-I"].as<std::string>();
+            std::vector<std::string> includes;
+            boost::algorithm::split(includes, param, boost::is_any_of(";"));
+            for (auto include: includes) {
+                flags->addInclude(include);
+                logger->debug(PROJECT_NAME, "adding include directory: \"" + include + "\".");
+            }
+        }
         if (vm.count("-O")) {
             int level = vm["-O"].as<int>();
             switch (level) {

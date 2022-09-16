@@ -24,7 +24,7 @@ void Compiler::compile(boost::filesystem::path file) {
         logger_->debug(PROJECT_NAME, "analyzing...");
         auto analyzer = std::make_unique<Analyzer>(logger_);
         auto path = fp.parent_path();
-        auto importer = std::make_unique<SymbolImporter>(logger_, path);
+        auto importer = std::make_unique<SymbolImporter>(logger_, flags_, path);
         auto exporter = std::make_unique<SymbolExporter>(logger_, path);
         analyzer->add(std::make_unique<SemanticAnalysis>(symbols.get(), importer.get(), exporter.get()));
         analyzer->add(std::make_unique<LambdaLifter>());

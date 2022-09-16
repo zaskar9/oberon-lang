@@ -57,6 +57,7 @@ set(CODEGEN_SOURCES
         codegen/llvm/LLVMCodeGen.cpp codegen/llvm/LLVMCodeGen.h codegen/CodeGen.cpp)
 
 set(COMPILER_SOURCES
+        compiler/CompilerFlags.cpp compiler/CompilerFlags.h
         compiler/CompilationStatus.cpp compiler/CompilationStatus.h
         compiler/Compiler.cpp compiler/Compiler.h)
 

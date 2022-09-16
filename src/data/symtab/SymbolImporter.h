@@ -8,6 +8,7 @@
 
 #include <boost/filesystem.hpp>
 #include "logging/Logger.h"
+#include "compiler/CompilerFlags.h"
 #include "data/ast/ModuleNode.h"
 #include "data/ast/TypeNode.h"
 #include "SymbolTable.h"
@@ -17,6 +18,7 @@ class SymbolImporter {
 
 private:
     Logger *logger_;
+    CompilerFlags *flags_;
     boost::filesystem::path path_;
     std::vector<TypeNode*> types_;
     SymbolTable *symbols_;
@@ -30,8 +32,8 @@ private:
     TypeNode *readParameter(SymbolFile *file);
 
 public:
-    explicit SymbolImporter(Logger *logger, boost::filesystem::path &path) :
-            logger_(logger), path_(std::move(path)), types_(), symbols_(), module_() {};
+    explicit SymbolImporter(Logger *logger, CompilerFlags *flags, boost::filesystem::path &path) :
+            logger_(logger), flags_(flags), path_(std::move(path)), types_(), symbols_(), module_() {};
     ~SymbolImporter() = default;
 
     std::unique_ptr<ModuleNode> read(const std::string &module, SymbolTable *symbols);

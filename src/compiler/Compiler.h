@@ -10,15 +10,17 @@
 #include "codegen/CodeGen.h"
 #include "data/symtab/SymbolExporter.h"
 #include "logging/Logger.h"
+#include "CompilerFlags.h"
 
 class Compiler {
 
 private:
     Logger *logger_;
+    CompilerFlags *flags_;
     CodeGen *codegen_;
 
 public:
-    explicit Compiler(Logger *logger, CodeGen *codegen) : logger_(logger), codegen_(codegen) {};
+    explicit Compiler(Logger *logger, CompilerFlags *flags, CodeGen *codegen) : logger_(logger), flags_(flags), codegen_(codegen) {};
     ~Compiler() = default;
 
     void compile(boost::filesystem::path file);
