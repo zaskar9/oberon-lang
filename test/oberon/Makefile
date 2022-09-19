@@ -1,28 +1,30 @@
-O7C = ..\..\out\build\x64-Release\src\oberon-lang.exe
-LINK = link.exe
-LIB = lib.exe
-LDIR = .\lib
+O7C = ../../cmake-build-release/src/oberon-lang
+LNK = clang
+LIB = ./lib
+INC = ./include
 
-OPTFLAGS = -O3
+UNAME_S := $(shell uname)
 
-.PRECIOUS: .s .ll
-.SUFFIXES: .ll .s .Mod
+.PHONY: clean
+.PRECIOUS: %.s %.ll
 
 clean:
-	@del /q *.ilk *.pdb *.obj *.exe *.s *.ll *.bc
+	@rm -f *.s *.o *.ll *.bc *.smb
+ifeq ($(UNAME_S), Darwin)
+	@find . -depth 1 -type f -perm +111 -delete
+endif
+ifeq ($(UNAME_S), Linux)
+	@find . -type f -executable -delete
+endif
 
-.Mod.s:
+% : %.o
+	@$(LNK) $< -o $@ -L$(LIB) -loberon -rpath @executable_path/lib
+
+%.o : %.Mod
+	@$(O7C) -q -O3 -I$(INC) $<
+
+%.s : %.Mod
 	@$(O7C) --filetype=asm $<
 
-.Mod.ll:
+%.ll : %.Mod
 	@$(O7C) --filetype=ll $<
-
-.Mod.obj:
-	@$(O7C) $(OPTFLAGS) $<
-
-.Mod.exe:
-	@$(MAKE) $*.obj
-	@$(LINK) /nologo $*.obj /incremental:no /machine:x64 /subsystem:console ./lib/liboberon.lib msvcrt.lib legacy_stdio_definitions.lib 
-
-liboberon: Oberon.obj Out.obj Random.obj
-	@$(LIB) /nologo /machine:x64 /out:$(LDIR)\liboberon.lib Oberon.obj Out.obj Random.obj

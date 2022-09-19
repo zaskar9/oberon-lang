@@ -4,6 +4,16 @@
 
 #include "CompilerFlags.h"
 
-void CompilerFlags::addInclude(std::string include) {
-    includes_.push_back(include);
+void CompilerFlags::addIncludeDirectory(fs::path directory) {
+    includes_.push_back(directory);
+}
+
+std::optional<fs::path> CompilerFlags::findInclude(fs::path name) {
+    for (auto directory : includes_) {
+        auto path = directory / name;
+        if (fs::exists(path)) {
+            return std::optional<fs::path>(path);
+        }
+    }
+    return std::nullopt;
 }

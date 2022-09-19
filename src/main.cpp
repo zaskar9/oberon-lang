@@ -25,7 +25,7 @@ int main(const int argc, const char *argv[]) {
     // TODO move CodeGen into Compiler by moving corresponding flags to CompilerFlags
     auto codegen = std::make_unique<LLVMCodeGen>(logger.get());
     auto flags = std::make_unique<CompilerFlags>();
-    auto compiler = std::make_unique<Compiler>(logger.get(), codegen.get());
+    auto compiler = std::make_unique<Compiler>(logger.get(), flags.get(), codegen.get());
     auto visible = po::options_description("OPTIONS");
     visible.add_options()
             ("help,h", "Display available visible.")
@@ -71,7 +71,7 @@ int main(const int argc, const char *argv[]) {
             std::vector<std::string> includes;
             boost::algorithm::split(includes, param, boost::is_any_of(";"));
             for (auto include: includes) {
-                flags->addInclude(include);
+                flags->addIncludeDirectory(include);
                 logger->debug(PROJECT_NAME, "adding include directory: \"" + include + "\".");
             }
         }

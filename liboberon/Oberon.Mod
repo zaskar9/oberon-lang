@@ -10,9 +10,6 @@ TYPE TTime* = LONGINT;
 
 VAR ts*: TimeSpec;
 
-(* Import `printf` function from C <stdio.h> library. *)
-PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
-
 (* Import `time` function from C <time.h> library. *)
 PROCEDURE time(t: LONGINT): LONGINT; EXTERN;
 
