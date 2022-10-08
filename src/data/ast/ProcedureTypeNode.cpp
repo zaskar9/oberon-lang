@@ -47,7 +47,11 @@ void ProcedureTypeNode::accept(NodeVisitor &visitor) {
     visitor.visit(*this);
 }
 
-void ProcedureTypeNode::print(std::ostream &stream) const {
-    stream << "PROCEDURE " << getIdentifier() << ";";
+void ProcedureTypeNode::print(std::ostream &out) const {
+    if (this->isAnonymous()) {
+        out << "PROCEDURE " << *this->getIdentifier() << ";";
+    } else {
+        out << *this->getIdentifier();
+    }
 }
 

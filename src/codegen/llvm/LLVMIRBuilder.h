@@ -35,11 +35,13 @@ private:
     Type* getLLVMType(TypeNode *type, bool isPtr = false);
     MaybeAlign getLLVMAlign(TypeNode *type, bool isPtr = false);
 
-    std::string qualifiedName(Identifier *ident, bool external) const;
+    std::string qualifiedName(Ident *ident, bool external) const;
 
     void setRefMode(bool deref);
     void restoreRefMode();
     bool deref() const;
+
+    Value *callBuiltIn(std::string name, std::vector<Value *> &params);
 
     void cast(ExpressionNode &node);
 
@@ -62,6 +64,8 @@ private:
     void visit(BooleanLiteralNode &node) override;
     void visit(IntegerLiteralNode &node) override;
     void visit(StringLiteralNode &node) override;
+    void visit(NilLiteralNode &node) override;
+
     void visit(FunctionCallNode &node) override;
     void visit(UnaryExpressionNode &node) override;
     void visit(BinaryExpressionNode &node) override;
@@ -71,6 +75,7 @@ private:
     void visit(BasicTypeNode &node) override;
     void visit(ProcedureTypeNode &node) override;
     void visit(RecordTypeNode &node) override;
+    void visit(PointerTypeNode &node) override;
 
     void visit(StatementSequenceNode &node) override;
     void visit(AssignmentNode &node) override;

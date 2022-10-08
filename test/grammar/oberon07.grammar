@@ -65,7 +65,7 @@ ForStatement = FOR ident ":=" expression TO expression [BY ConstExpression] DO S
 ProcedureDeclaration = ProcedureHeading ";" ProcedureBody ident.
 ProcedureHeading = PROCEDURE identdef [FormalParameters].
 ProcedureBody = DeclarationSequence [BEGIN StatementSequence] [RETURN expression] END.
-declaration_sequence = [CONST {const_declaration ";"}] [TYPE { type_declaration ";"}] [VAR {variable_declaration ";"}] { procedure_declaration ";"}.
+DeclarationSequence = [CONST {const_declaration ";"}] [TYPE { type_declaration ";"}] [VAR {variable_declaration ";"}] { procedure_declaration ";"}.
 FormalParameters = "(" [FPSection {";" FPSection}] ")" [":" qualident].
 FPSection = [VAR] ident {"," ident} ":" FormalType.
 FormalType = {ARRAY OF} qualident.

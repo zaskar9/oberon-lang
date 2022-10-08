@@ -45,6 +45,8 @@ private:
     void visit(BooleanLiteralNode &node) override;
     void visit(IntegerLiteralNode &node) override;
     void visit(StringLiteralNode &node) override;
+    void visit(NilLiteralNode &node) override;
+
     void visit(FunctionCallNode &node) override;
     void visit(UnaryExpressionNode &node) override;
     void visit(BinaryExpressionNode &node) override;
@@ -53,6 +55,7 @@ private:
     void visit(BasicTypeNode &node) override;
     void visit(ProcedureTypeNode &node) override;
     void visit(RecordTypeNode &node) override;
+    void visit(PointerTypeNode &node) override;
 
     void visit(StatementSequenceNode &node) override;
     void visit(AssignmentNode &node) override;
@@ -65,8 +68,9 @@ private:
     void visit(ForLoopNode &node) override;
     void visit(ReturnNode &node) override;
 
-    void assertUnique(Identifier *ident, Node &node);
-    bool assertCompatible(const FilePos &pos, TypeNode *expected, TypeNode *actual);
+    bool assertEqual(Ident *aIdent, Ident *bIdent) const;
+    void assertUnique(Ident *ident, Node &node);
+    bool assertCompatible(const FilePos &pos, TypeNode *expected, TypeNode *actual, bool isPtr = false);
     void checkExport(DeclarationNode &node);
 
     std::unique_ptr<LiteralNode> fold(const ExpressionNode *expr) const;
@@ -74,11 +78,13 @@ private:
     bool foldBoolean(const ExpressionNode *expr) const;
     std::string foldString(const ExpressionNode *expr) const;
 
+    std::string format(const TypeNode *type, bool isPtr = false) const;
+
     bool isNumeric(TypeNode *type) const;
     bool isInteger(TypeNode *type) const;
+    bool isPointer(TypeNode *type) const;
 
     TypeNode *commonType(TypeNode *lhsType, TypeNode *rhsType) const;
-
     TypeNode *resolveType(TypeNode *type);
 
 public:

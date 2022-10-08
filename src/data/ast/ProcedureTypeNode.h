@@ -19,7 +19,7 @@ private:
 
 public:
     explicit ProcedureTypeNode() : ProcedureTypeNode(EMPTY_POS, nullptr) {};
-    explicit ProcedureTypeNode(const FilePos &pos, Identifier *ident) :
+    explicit ProcedureTypeNode(const FilePos &pos, Ident *ident) :
             TypeNode(NodeType::procedure_type, pos, ident, TypeKind::PROCEDURE, 0),
             parameters_(), varargs_(false), type_(nullptr) {};
     ~ProcedureTypeNode() override = default;
@@ -37,7 +37,7 @@ public:
 
     void accept(NodeVisitor &visitor) final;
 
-    void print(std::ostream &stream) const final;
+    void print(std::ostream &out) const final;
 
 };
 

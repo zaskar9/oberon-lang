@@ -10,10 +10,10 @@
 
 #include <utility>
 #include "Node.h"
-#include "Identifier.h"
+#include "Ident.h"
 
 enum class TypeKind : char {
-    NOTYPE = 1, NILTYPE = 2,
+    ANYTYPE = 0, NOTYPE = 1, NILTYPE = 2,
     ARRAY = 3, POINTER = 4, PROCEDURE = 5, RECORD = 6, SET = 7,
     BOOLEAN = 8,
     BYTE = 9, CHAR = 10, INTEGER = 11, LONGINT = 12, REAL = 13, LONGREAL = 14,
@@ -23,18 +23,18 @@ enum class TypeKind : char {
 class TypeNode : public Node {
 
 private:
-    Identifier *ident_;
+    Ident *ident_;
     TypeKind kind_;
     unsigned int size_;
     const bool anon_;
     int ref_; // used for import and export
 
 public:
-    explicit TypeNode(NodeType nodeType, const FilePos &pos, Identifier *ident, TypeKind kind, unsigned int size, int ref = 0) :
+    explicit TypeNode(NodeType nodeType, const FilePos &pos, Ident *ident, TypeKind kind, unsigned int size, int ref = 0) :
             Node(nodeType, pos), ident_(ident), kind_(kind), size_(size), anon_(ident == nullptr), ref_(ref) {};
     ~TypeNode() override = default;
 
-    [[nodiscard]] Identifier *getIdentifier() const;
+    [[nodiscard]] Ident *getIdentifier() const;
 
     [[nodiscard]] virtual TypeKind kind() const;
     void setSize(unsigned int size);

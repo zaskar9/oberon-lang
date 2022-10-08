@@ -1,71 +1,57 @@
-(* Supported subset of the grammar of the Oberon programming language, 2020-03-14 *)
-
-ident = "ident_literal" .
+(*
+   Supported subset of the grammar of the Oberon programming language
+   Michael Grossniklaus <michael.grossniklaus@uni-konstanz.de>
+   Last update 2022-09-29
+*)
 
 integer = "integer_literal" .
-
 string = "string_literal" .
 
-ident_list = ident { "," ident } .
+ident = "ident_literal" .
+qualident = [ ident "." ] ident .
+identdef = ident [ "*" ] .
 
-module* = "MODULE" ident ";" declarations [ "BEGIN" statement_sequence ] "END" ident "." .
-
-declarations = [ const_declarations ] [ type_declarations ] [ var_declarations ] { procedure_declaration } .
-
-const_declarations = "CONST" { ident "=" expression ";" } .
+const_declarations = "CONST" { identdef "=" expression ";" } .
 
 type_declarations =  "TYPE" { ident "=" type ";" } .
-
-type = ident | array_type | record_type .
-
+type = qualident | array_type | record_type | pointer_type .
 array_type = "ARRAY" expression "OF" type .
-
 record_type = "RECORD" field_list { ";" field_list } "END" .
-
 field_list = ident_list ":" type .
+ident_list = identdef { "," identdef } .
+pointer_type = "POINTER" "TO" type .
 
-var_declarations =  "VAR" { ident_list ":" type ";" } .
-
-procedure_declaration = procedure_heading ";" ( procedure_body ident | "EXTERN" ) ";" .
-
-procedure_heading = "PROCEDURE" ident [ formal_parameters ] [ ":" type ] .
-
-procedure_body = declarations [ "BEGIN" statement_sequence ] "END" .
-
-formal_parameters = "(" [ fp_section { ";" fp_section } ] ")".
-
-fp_section = ( [ "VAR" ] ident_list ":" type | "..." ) .
-
-statement_sequence = statement { ";" statement } .
-
-statement = ( assignment | procedure_call | if_statement | case_statement |
-              while_statement | repeat_statement | for_statement | loop_statement |
-              with_statement | "EXIT" | "RETURN" [ expression ] ) .
-
-assignment = ident { selector } ":=" expression .
-
-selector = "." ident | "[" expression "]" .
-
-procedure_call = ident [ actual_parameters ] .
-
-actual_parameters = "(" [ expression { "," expression } ] ")" .
-
-if_statement = "IF" expression "THEN" statement_sequence
-               { "ELSIF" expression "THEN" statement_sequence }
-               [ "ELSE" statement_sequence ] "END" .
-
-loop_statement = "LOOP" statement_sequence "END" .
-
-while_statement = "WHILE" expression "DO" statement_sequence "END" .
-
-repeat_statement = "REPEAT" statement_sequence "UNTIL" expression .
-
-for_statement = "FOR" ident ":=" expression "TO" expression [ "BY" expression ] "DO" statement_sequence "END" .
+var_declarations = "VAR" { ident_list ":" type ";" } .
 
 expression = simple_expression [ ( "=" | "#" | "<" | "<=" | ">" | ">=" ) simple_expression ] .
-
 simple_expression = [ "+" | "-" ] term { ( "+" | "-" | "OR" ) term } .
-
 term = factor { ( "*" | "DIV" | "MOD" | "&" ) factor } .
+factor = designator [ actual_parameters ] | integer | string | "TRUE" | "FALSE" | "(" expression ")" | "~" factor .
+designator = qualident { selector } .
+selector = "." ident | "[" expression "]" | "^" .
+actual_parameters = "(" [ expression { "," expression } ] ")" .
 
-factor = ident [ actual_parameters ] { selector } | integer | string | "TRUE" | "FALSE" | "(" expression ")" | "~" factor .
+statement = ( assignment | procedure_call | if_statement | case_statement
+              while_statement | repeat_statement | for_statement | loop_statement
+              with_statement | "EXIT" | "RETURN" [ expression ] ) .
+assignment = designator ":=" expression .
+procedure_call = designator [ actual_parameters ] .
+statement_sequence = statement { ";" statement } .
+if_statement = "IF" expression "THEN" statement_sequence 
+               { "ELSIF" expression "THEN" statement_sequence } 
+               [ "ELSE" statement_sequence ] "END" .
+loop_statement = "LOOP" statement_sequence "END" .
+while_statement = "WHILE" expression "DO" statement_sequence "END" .
+repeat_statement = "REPEAT" statement_sequence "UNTIL" expression .
+for_statement = "FOR" ident ":=" expression "TO" expression [ "BY" const_expression ] "DO" statement_sequence "END" .
+
+procedure_declaration = procedure_heading ";" ( procedure_body ident | "EXTERN" ) ";" .
+procedure_heading = "PROCEDURE" identdef [ formal_parameters ] [ ":" type ] .
+pprocedure_body = declarations [ "BEGIN" statement_sequence ] "END" .
+declarations = [ const_declarations ] [ type_declarations ] [ var_declarations ] { procedure_declaration } .
+formal_parameters = "(" [ fp_section { ";" fp_section } ] ")" .
+fp_section = ( [ "VAR" ] ident { "," ident } ":" type | "..." ) .
+
+module = "MODULE" ident ";" [ import_list ] declarations [ "BEGIN" statement_sequence ] "END" ident "." .
+import_list = IMPORT import {"," import} ";" .
+import = ident [":=" ident] .

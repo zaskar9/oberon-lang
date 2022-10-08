@@ -7,21 +7,21 @@
 
 
 #include "Node.h"
-#include "Identifier.h"
+#include "Ident.h"
 
 class ImportNode : public Node {
 
 private:
-    std::unique_ptr<Identifier> alias_;
-    std::unique_ptr<Identifier> module_;
+    std::unique_ptr<Ident> alias_;
+    std::unique_ptr<Ident> module_;
 
 public:
-    explicit ImportNode(const FilePos &pos, std::unique_ptr<Identifier> alias, std::unique_ptr<Identifier> module) :
+    explicit ImportNode(const FilePos &pos, std::unique_ptr<Ident> alias, std::unique_ptr<Ident> module) :
             Node(NodeType::import, pos), alias_(std::move(alias)), module_(std::move(module)) {};
     ~ImportNode() override = default;
 
-    [[nodiscard]] Identifier* getAlias() const;
-    [[nodiscard]] Identifier* getModule() const;
+    [[nodiscard]] Ident* getAlias() const;
+    [[nodiscard]] Ident* getModule() const;
 
     void accept(NodeVisitor& visitor) override;
 

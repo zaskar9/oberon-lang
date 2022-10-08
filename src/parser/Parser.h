@@ -11,20 +11,21 @@
 #include <memory>
 #include <vector>
 #include <set>
-#include "../scanner/Scanner.h"
-#include "../logging/Logger.h"
-#include "../data/ast/Node.h"
-#include "../data/ast/ExpressionNode.h"
-#include "../data/ast/TypeNode.h"
-#include "../data/ast/ArrayTypeNode.h"
-#include "../data/ast/RecordTypeNode.h"
-#include "../data/ast/ProcedureNode.h"
-#include "../data/ast/ModuleNode.h"
-#include "../data/ast/StatementNode.h"
-#include "../data/ast/StatementSequenceNode.h"
-#include "../data/ast/NodeReference.h"
-#include "../data/symtab/SymbolTable.h"
-#include "../data/ast/Identifier.h"
+#include "scanner/Scanner.h"
+#include "logging/Logger.h"
+#include "data/ast/Node.h"
+#include "data/ast/Ident.h"
+#include "data/ast/ExpressionNode.h"
+#include "data/ast/TypeNode.h"
+#include "data/ast/ArrayTypeNode.h"
+#include "data/ast/RecordTypeNode.h"
+#include "data/ast/ProcedureNode.h"
+#include "data/ast/PointerTypeNode.h"
+#include "data/ast/ModuleNode.h"
+#include "data/ast/StatementNode.h"
+#include "data/ast/StatementSequenceNode.h"
+#include "data/ast/NodeReference.h"
+#include "data/symtab/SymbolTable.h"
 
 class Parser {
 
@@ -33,10 +34,12 @@ private:
     Logger *logger_;
     std::unique_ptr<const Token> token_;
 
-    std::unique_ptr<Identifier> ident();
-    std::unique_ptr<Identifier> qualident();
-    std::unique_ptr<Identifier> identdef();
-    void ident_list(std::vector<std::unique_ptr<Identifier>> &idents);
+    std::unique_ptr<Ident> ident();
+    std::unique_ptr<QualIdent> qualident();
+    void designator(std::vector<std::unique_ptr<Selector>> &selectors);
+    std::unique_ptr<Selector> selector();
+    std::unique_ptr<IdentDef> identdef();
+    void ident_list(std::vector<std::unique_ptr<Ident>> &idents);
 
     std::unique_ptr<ModuleNode> module();
     void import_list(ModuleNode *module);
@@ -50,10 +53,11 @@ private:
     std::unique_ptr<ExpressionNode> simple_expression();
     std::unique_ptr<ExpressionNode> term();
     std::unique_ptr<ExpressionNode> factor();
-    TypeNode* type(BlockNode *block, Identifier* identifier = nullptr);
-    ArrayTypeNode* array_type(BlockNode *block, Identifier* identifier = nullptr);
-    RecordTypeNode* record_type(BlockNode *block, Identifier* identifier = nullptr);
+    TypeNode* type(BlockNode *block, Ident* identifier = nullptr);
+    ArrayTypeNode* array_type(BlockNode *block, Ident* identifier = nullptr);
+    RecordTypeNode* record_type(BlockNode *block, Ident* identifier = nullptr);
     void field_list(BlockNode *block, RecordTypeNode *record);
+    PointerTypeNode* pointer_type(BlockNode *block, Ident* identifier = nullptr);
     std::unique_ptr<ProcedureNode> procedure_heading();
     void procedure_body(ProcedureNode *proc);
     void formal_parameters(ProcedureNode *proc);
@@ -68,9 +72,9 @@ private:
     std::unique_ptr<StatementNode> repeat_statement();
     std::unique_ptr<StatementNode> for_statement();
     void actual_parameters(ProcedureNodeReference *call);
-    void selector(ValueReferenceNode *ref);
 
     bool assertToken(const Token *token, TokenType expected);
+    void moveSelectors(std::vector<std::unique_ptr<Selector>> &selectors, Designator *designator);
 
     void resync(std::set<TokenType> types);
 

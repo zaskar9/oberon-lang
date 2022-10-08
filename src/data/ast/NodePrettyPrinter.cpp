@@ -67,7 +67,7 @@ void NodePrettyPrinter::block(BlockNode& node, bool isGlobal) {
 }
 
 void NodePrettyPrinter::call(ProcedureNodeReference &node) {
-    stream_ << *node.getIdentifier() << "(";
+    stream_ << *node.ident() << "(";
     for (size_t i = 0; i < node.getActualParameterCount(); i++) {
         node.getActualParameter(i)->accept(*this);
         if (i + 1 < node.getActualParameterCount()) {
@@ -143,21 +143,21 @@ void NodePrettyPrinter::visit(ImportNode &node) {
 }
 
 void NodePrettyPrinter::visit(ValueReferenceNode &node) {
-    stream_ << *node.getIdentifier();
+    stream_ << *node.ident();
     for (size_t i = 0; i < node.getSelectorCount(); i++) {
-        auto type = node.getSelectorType(i);
+        auto selector = node.getSelector(i);
+        auto type = selector->getType();
         if (type == NodeType::array_type) {
             stream_ << "[";
-            auto selector = node.getSelector(i);
-            selector->accept(*this);
+            dynamic_cast<ArraySelector *>(selector)->getExpression()->accept(*this);
             stream_ << "]";
         } else if (type == NodeType::record_type) {
             stream_ << ".";
-            auto selector = node.getSelector(i);
-            selector->accept(*this);
+            dynamic_cast<RecordSelector *>(selector)->getField()->accept(*this);
+        } else if (type == NodeType::pointer_type) {
+            stream_ << "^";
         }
     }
-    // stream_ << "(*" << node.getType()->getIdentifier() << "*)";
 }
 
 void NodePrettyPrinter::visit(TypeReferenceNode &node) {
@@ -204,6 +204,10 @@ void NodePrettyPrinter::visit(IntegerLiteralNode &node) {
 
 void NodePrettyPrinter::visit(StringLiteralNode &node) {
     stream_ << "\"" << Scanner::escape(node.getValue()) << "\"";
+}
+
+void NodePrettyPrinter::visit([[maybe_unused]] NilLiteralNode &node) {
+    stream_ << "NIL";
 }
 
 void NodePrettyPrinter::visit(FunctionCallNode &node) {
@@ -258,6 +262,16 @@ void NodePrettyPrinter::visit(RecordTypeNode &node) {
             }
         }
         stream_ << "END";
+    } else {
+        stream_ << *node.getIdentifier();
+    }
+}
+
+void NodePrettyPrinter::visit(PointerTypeNode &node) {
+    if (node.isAnonymous() || isDecl_) {
+        isDecl_ = false;
+        stream_ << "POINTER TO ";
+        node.getBase()->accept(*this);
     } else {
         stream_ << *node.getIdentifier();
     }

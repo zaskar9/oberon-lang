@@ -91,7 +91,7 @@ int main(const int argc, const char *argv[]) {
                     codegen->setOptimizationLevel(::OptimizationLevel::O3);
                     break;
                 default:
-                    logger->error(PROJECT_NAME, "unsupported optimization level: " + to_string(level) + ".");
+                    logger->error(PROJECT_NAME, "unsupported optimization level: " + std::to_string(level) + ".");
                     return 1;
             }
         }

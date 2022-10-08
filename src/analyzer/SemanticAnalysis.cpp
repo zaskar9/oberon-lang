@@ -44,20 +44,20 @@ void SemanticAnalysis::block(BlockNode &node) {
 
 void SemanticAnalysis::call(ProcedureNodeReference &node) {
     if (!node.isResolved()) {
-        auto symbol = symbols_->lookup(node.getIdentifier());
+        auto symbol = symbols_->lookup(node.ident());
         if (symbol) {
             if (symbol->getNodeType() == NodeType::procedure) {
                 auto proc = dynamic_cast<ProcedureNode *>(symbol);
                 node.resolve(proc);
-                if (node.getIdentifier()->isQualified() && proc->isExtern()) {
+                if (node.ident()->isQualified() && proc->isExtern()) {
                     // a fully-qualified external reference needs to added to module for code generation
                     module_->addExternalProcedure(proc);
                 }
             } else {
-                logger_->error(node.pos(), to_string(*node.getIdentifier()) + " is not a procedure or function.");
+                logger_->error(node.pos(), to_string(*node.ident()) + " is not a procedure or function.");
             }
         } else {
-            logger_->error(node.pos(), "undeclared identifier: " + to_string(*node.getIdentifier()) + ".");
+            logger_->error(node.pos(), "undeclared identifier: " + to_string(*node.ident()) + ".");
         }
     }
     if (node.isResolved()) {
@@ -239,14 +239,15 @@ void SemanticAnalysis::visit(FieldNode &node) {
 }
 
 void SemanticAnalysis::visit(ValueReferenceNode &node) {
-    auto ident = node.getIdentifier();
+    auto ident = node.ident();
     auto sym = symbols_->lookup(ident);
     if (!sym && ident->isQualified()) {
-        sym = symbols_->lookup(ident->qualifier());
-        auto pos = node.pos();
-        pos.charNo += ((int) ident->qualifier().size()) + 1;
-        node.insertSelector(0, NodeType::record_type,
-                            std::make_unique<ValueReferenceNode>(pos,std::make_unique<Identifier>(pos, ident->name())));
+        // addresses the fact that 'ident.ident' is ambiguous: 'qual.ident' vs. 'ident.field'.
+        auto qual = dynamic_cast<QualIdent *>(ident);
+        sym = symbols_->lookup(qual->qualifier());
+        if (sym) {
+            node.unqualify();
+        }
     }
     if (sym) {
         if (sym->getNodeType() == NodeType::constant ||
@@ -261,51 +262,66 @@ void SemanticAnalysis::visit(ValueReferenceNode &node) {
                     logger_->error(node.pos(), "function expected.");
                     return;
                 }
-                logger_->error(node.pos(), "type undefined for " + to_string(*node.getIdentifier()) + ".");
+                logger_->error(node.pos(), "type undefined for " + to_string(*node.ident()) + ".");
                 return;
             }
-            for (size_t i = 0; i < node.getSelectorCount(); i++) {
-                auto sel = node.getSelector(i);
+            size_t pos = 0;
+            size_t last = node.getSelectorCount();
+            while (pos < last) {
+                auto sel = node.getSelector(pos);
+                if (type->getNodeType() != sel->getType()) {
+                    // check if implicit pointer dereferencing is required
+                    if (type->getNodeType() == NodeType::pointer_type &&
+                                (sel->getType() == NodeType::array_type || sel->getType() == NodeType::record_type)) {
+                        auto caret = std::make_unique<CaretSelector>(EMPTY_POS);
+                        sel = caret.get();
+                        node.insertSelector(pos, std::move(caret));
+                        last++;
+                    } else {
+                        logger_->error(sel->pos(), "selector type mismatch.");
+                    }
+                }
                 if (type->getNodeType() == NodeType::array_type) {
                     auto array_t = dynamic_cast<ArrayTypeNode *>(type);
-                    sel->accept(*this);
-                    auto sel_type = sel->getType();
+                    auto expr = dynamic_cast<ArraySelector*>(sel)->getExpression();
+                    expr->accept(*this);
+                    auto sel_type = expr->getType();
                     if (sel_type && sel_type->kind() != TypeKind::INTEGER) {
                         logger_->error(sel->pos(), "integer expression expected.");
                     }
-                    if (sel->isConstant()) {
-                        auto value = fold(sel);
+                    if (expr->isConstant()) {
+                        auto value = fold(expr);
                         if (value) {
-                            node.setSelector(i, std::move(value));
+                            node.setSelector(pos, std::make_unique<ArraySelector>(std::move(value)));
                         }
                     }
                     type = array_t->getMemberType();
                 } else if (type->getNodeType() == NodeType::record_type) {
                     auto record_t = dynamic_cast<RecordTypeNode *>(type);
-                    if (sel->getNodeType() == NodeType::value_reference) {
-                        auto ref = dynamic_cast<ValueReferenceNode *>(sel);
-                        auto field = record_t->getField(ref->getIdentifier()->name());
-                        if (field) {
-                            type = field->getType();
-                            ref->resolve(field);
-                            ref->setType(type);
-                        } else {
-                            logger_->error(ref->pos(),
-                                           "unknown record field: " + to_string(*ref->getIdentifier()) + ".");
-                        }
+                    auto ref = dynamic_cast<RecordSelector *>(sel)->getField();
+                    auto field = record_t->getField(ref->ident()->name());
+                    if (field) {
+                        type = field->getType();
+                        ref->resolve(field);
+                        ref->setType(type);
                     } else {
-                        logger_->error(sel->pos(), "identifier expected.");
+                        logger_->error(ref->pos(),
+                                       "unknown record field: " + to_string(*ref->ident()) + ".");
                     }
+                } else if (type->getNodeType() == NodeType::pointer_type) {
+                    auto pointer_t = dynamic_cast<PointerTypeNode *>(type);
+                    type = pointer_t->getBase();
                 } else {
                     logger_->error(sel->pos(), "unexpected selector.");
                 }
+                pos++;
             }
             node.setType(resolveType(type));
         } else {
             logger_->error(node.pos(), "constant, parameter, variable, function call expected.");
         }
     } else {
-        logger_->error(node.pos(), "undefined identifier: " + to_string(*node.getIdentifier()) + ".");
+        logger_->error(node.pos(), "undefined identifier: " + to_string(*node.ident()) + ".");
     }
 }
 
@@ -320,6 +336,10 @@ void SemanticAnalysis::visit(IntegerLiteralNode &node) {
 
 void SemanticAnalysis::visit(StringLiteralNode &node) {
     node.setType(this->tString_);
+}
+
+void SemanticAnalysis::visit(NilLiteralNode &node) {
+    node.setType(symbols_->getNilType());
 }
 
 void SemanticAnalysis::visit(FunctionCallNode &node) {
@@ -373,13 +393,14 @@ void SemanticAnalysis::visit(BinaryExpressionNode &node) {
                 node.setType(common);
             }
         } else {
-            logger_->error(node.pos(), "incompatible types.");
+            logger_->error(node.pos(), "incompatible types (" + lhsType->getIdentifier()->name() + ", " +
+                                       rhsType->getIdentifier()->name() + ")");
         }
         // Folding
-        if (lhs->isConstant()) {
+        if (lhs->isConstant() && !lhs->isLiteral()) {
             node.setLeftExpression(fold(lhs));
         }
-        if (rhs->isConstant()) {
+        if (rhs->isConstant() && !rhs->isLiteral()) {
             node.setRightExpression(fold(rhs));
         }
         // Casting
@@ -421,7 +442,7 @@ void SemanticAnalysis::visit(ArrayTypeNode &node) {
         type->accept(*this);
         node.setMemberType(resolveType(type));
     } else {
-        logger_->error(node.pos(), "undefined type");
+        logger_->error(node.pos(), "undefined type.");
     }
     if (type && type->getSize() > 0 && node.getDimension() > 0) {
         node.setSize(node.getDimension() * type->getSize());
@@ -453,6 +474,16 @@ void SemanticAnalysis::visit(RecordTypeNode &node) {
         }
     } else {
         logger_->error(node.pos(), "records needs at least one field.");
+    }
+}
+
+void SemanticAnalysis::visit(PointerTypeNode &node) {
+    auto type = node.getBase();
+    if (type) {
+        type->accept(*this);
+        node.setBase(resolveType(type));
+    } else {
+        logger_->error(node.pos(), "undefined type.");
     }
 }
 
@@ -491,7 +522,12 @@ void SemanticAnalysis::visit(AssignmentNode &node) {
         if (lvalue) {
             assertCompatible(lvalue->pos(), lvalue->getType(), rvalue->getType());
         }
-        if (rvalue->isConstant()) {
+        // cast NIL to expected type
+        if (rvalue->getType()->kind() == TypeKind::NILTYPE) {
+            rvalue->setCast(lvalue->getType());
+        }
+        // fold constant expressions, if they are not literals
+        if (rvalue->isConstant() && !rvalue->isLiteral()) {
             node.setRvalue(fold(rvalue));
         }
     } else {
@@ -586,7 +622,7 @@ void SemanticAnalysis::visit(ForLoopNode &node) {
                 logger_->error(var->pos(), "integer variable expected.");
             }
         } else {
-            logger_->error(counter->pos(), to_string(*counter->getIdentifier()) + " cannot be used as a loop counter.");
+            logger_->error(counter->pos(), to_string(*counter->ident()) + " cannot be used as a loop counter.");
         }
     } else {
         logger_->error(node.pos(), "undefined counter variable in for-loop.");
@@ -660,7 +696,24 @@ void SemanticAnalysis::visit(ReturnNode &node) {
     }
 }
 
-void SemanticAnalysis::assertUnique(Identifier *ident, Node &node) {
+bool SemanticAnalysis::assertEqual(Ident *aIdent, Ident *bIdent) const {
+    if (aIdent == nullptr || bIdent == nullptr) {
+        return false;
+    }
+    if (aIdent->name() == bIdent->name()) {
+        if (aIdent->isQualified() == bIdent->isQualified()) {
+            if (aIdent->isQualified()) {
+                return dynamic_cast<QualIdent *>(aIdent)->qualifier() ==
+                       dynamic_cast<QualIdent *>(bIdent)->qualifier();
+            }
+            return true;
+        }
+        return false;
+    }
+    return false;
+}
+
+void SemanticAnalysis::assertUnique(Ident *ident, Node &node) {
     if (ident->isQualified()) {
         logger_->error(ident->pos(), "cannot use qualified identifier here.");
     }
@@ -670,13 +723,16 @@ void SemanticAnalysis::assertUnique(Identifier *ident, Node &node) {
     symbols_->insert(ident->name(), &node);
 }
 
-bool SemanticAnalysis::assertCompatible(const FilePos &pos, TypeNode *expected, TypeNode *actual) {
+bool SemanticAnalysis::assertCompatible(const FilePos &pos, TypeNode *expected, TypeNode *actual, bool isPtr) {
     if (expected == actual) {
         return true;
     } else if (expected && actual) {
+        if (expected->kind() == TypeKind::ANYTYPE || expected->kind() == TypeKind::ANYTYPE) {
+            return true;
+        }
         auto expectedId = expected->getIdentifier();
         auto actualId = actual->getIdentifier();
-        if (expectedId->name() == actualId->name() && expectedId->qualifier() == actualId->qualifier()) {
+        if (assertEqual(expectedId, actualId)) {
             return true;
         } else if (isInteger(expected) && isInteger(actual)) {
             if (expected->getSize() < actual->getSize()) {
@@ -685,9 +741,18 @@ bool SemanticAnalysis::assertCompatible(const FilePos &pos, TypeNode *expected, 
                 return false;
             }
             return true;
+        } else if (isPointer(expected)) {
+            if (isPointer(actual)) {
+                auto exp_ptr = dynamic_cast<PointerTypeNode *>(expected);
+                auto act_ptr = dynamic_cast<PointerTypeNode *>(actual);
+                return assertCompatible(pos, exp_ptr->getBase(), act_ptr->getBase(), true);
+            } else if (actual->kind() == TypeKind::NILTYPE) {
+                return true;
+            }
         }
-        logger_->error(pos, "type mismatch: expected " + to_string(*expectedId) +
-                            ", found " + to_string(*actualId) + ".");
+        // error logging
+        logger_->error(pos, "type mismatch: expected " + format(expected, isPtr) +
+                            ", found " + format(actual, isPtr) + ".");
         return false;
     } else {
         logger_->error(pos, "type mismatch.");
@@ -865,6 +930,18 @@ std::string SemanticAnalysis::foldString(const ExpressionNode *expr) const {
     return "";
 }
 
+std::string SemanticAnalysis::format(const TypeNode *type, bool isPtr) const {
+    auto name = isPtr ? std::string("POINTER TO ") : std::string();
+    if (type->getIdentifier()) {
+        name += to_string(*type->getIdentifier());
+    } else {
+        std::stringstream stream;
+        stream << *type;
+        name += stream.str();
+    }
+    return name;
+}
+
 bool SemanticAnalysis::isNumeric(TypeNode *type) const {
     switch (type->kind()) {
         case TypeKind::BYTE:
@@ -891,16 +968,23 @@ bool SemanticAnalysis::isInteger(TypeNode *type) const {
     }
 }
 
+bool SemanticAnalysis::isPointer(TypeNode *type) const {
+    return type->kind() == TypeKind::POINTER;
+}
+
 TypeNode *SemanticAnalysis::commonType(TypeNode *lhsType, TypeNode *rhsType) const {
     if (lhsType == rhsType) {
         return lhsType;
-    } else if (lhsType->getIdentifier()->name() == rhsType->getIdentifier()->name() &&
-               lhsType->getIdentifier()->qualifier() == rhsType->getIdentifier()->qualifier()) {
+    } else if (assertEqual(lhsType->getIdentifier(), rhsType->getIdentifier())) {
         return lhsType;
     } else if (isNumeric(lhsType) && isNumeric(rhsType)) {
         if (isInteger(lhsType) && isInteger(rhsType)) {
             return lhsType->getSize() > rhsType->getSize() ? lhsType : rhsType;
         }
+    } else if (lhsType->kind() == TypeKind::NILTYPE) {
+        return rhsType;
+    } else if (rhsType->kind() == TypeKind::NILTYPE) {
+        return lhsType;
     }
     return nullptr;
 }

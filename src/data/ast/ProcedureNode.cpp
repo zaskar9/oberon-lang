@@ -8,7 +8,7 @@
 #include "ProcedureNode.h"
 #include "NodeVisitor.h"
 
-ProcedureNode::ProcedureNode(const FilePos &pos, std::unique_ptr<Identifier> ident) :
+ProcedureNode::ProcedureNode(const FilePos &pos, std::unique_ptr<Ident> ident) :
         DeclarationNode(NodeType::procedure, pos, std::move(ident), nullptr), BlockNode(pos),
         extern_(false) {
     proctype_ = std::make_unique<ProcedureTypeNode>(pos, ident.get());
@@ -24,7 +24,7 @@ void ProcedureNode::addFormalParameter(std::unique_ptr<ParameterNode> parameter)
     return proctype()->addFormalParameter(std::move(parameter));
 }
 
-ParameterNode *ProcedureNode::addFormalParameter(const std::string &name) {
+ParameterNode *ProcedureNode::getFormalParameter(const std::string &name) {
     return proctype()->getFormalParameter(name);
 }
 

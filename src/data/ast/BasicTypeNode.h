@@ -14,10 +14,10 @@
 class BasicTypeNode final : public TypeNode {
 
 private:
-    std::unique_ptr<Identifier> ident_;
+    std::unique_ptr<Ident> ident_;
 
 public:
-    explicit BasicTypeNode(std::unique_ptr<Identifier> ident, TypeKind kind, unsigned int size) :
+    explicit BasicTypeNode(std::unique_ptr<Ident> ident, TypeKind kind, unsigned int size) :
             TypeNode(NodeType::basic_type, EMPTY_POS, ident.get(), kind, size, (int) kind), ident_(std::move(ident)) { };
     ~BasicTypeNode() final = default;
 

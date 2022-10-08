@@ -14,7 +14,8 @@ set(SCANNER_SOURCES
         scanner/UndefinedToken.cpp scanner/UndefinedToken.h)
 
 set(DATA_SOURCES
-        data/ast/Identifier.cpp data/ast/Identifier.h
+        data/ast/Ident.cpp data/ast/Ident.h
+        data/ast/Selector.cpp data/ast/Selector.h
         data/ast/NodeVisitor.cpp data/ast/NodeVisitor.h
         data/ast/Node.cpp data/ast/Node.h
         data/ast/ExpressionNode.cpp data/ast/ExpressionNode.h
@@ -34,7 +35,7 @@ set(DATA_SOURCES
         data/ast/LoopNode.cpp data/ast/LoopNode.h
         data/ast/StatementSequenceNode.cpp data/ast/StatementSequenceNode.h
         data/ast/ImportNode.cpp data/ast/ImportNode.h
-        data/ast/NodePrettyPrinter.cpp data/ast/NodePrettyPrinter.h)
+        data/ast/NodePrettyPrinter.cpp data/ast/NodePrettyPrinter.h data/ast/PointerTypeNode.cpp data/ast/PointerTypeNode.h)
 
 set(SYMTAB_SOURCES
         data/symtab/SymbolTable.cpp data/symtab/SymbolTable.h
@@ -70,7 +71,7 @@ set(ALL_SOURCES
         ${SYMTAB_SOURCES}
         ${ANALYZER_SOURCES}
         ${CODEGEN_SOURCES}
-        ${COMPILER_SOURCES})
+        ${COMPILER_SOURCES} data/ast/PointerTypeNode.cpp data/ast/PointerTypeNode.h)
 
 add_executable(${OBERON_LANG} main.cpp ${ALL_SOURCES})
 target_include_directories(${OBERON_LANG} PUBLIC .)

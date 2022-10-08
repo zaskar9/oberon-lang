@@ -7,10 +7,10 @@
 #include "DeclarationNode.h"
 #include "NodeVisitor.h"
 
-void DeclarationNode::setIdentifier(std::unique_ptr<Identifier> name) {
+void DeclarationNode::setIdentifier(std::unique_ptr<Ident> name) {
     ident_ = std::move(name);
 }
-Identifier* DeclarationNode::getIdentifier() const {
+Ident* DeclarationNode::getIdentifier() const {
     return ident_.get();
 }
 
@@ -23,11 +23,7 @@ TypeNode* DeclarationNode::getType() const {
 }
 
 void DeclarationNode::print(std::ostream &stream) const {
-    stream << this->getIdentifier()->name();
-    if (this->getIdentifier()->isExported()) {
-        stream << "*";
-    }
-    stream << ": " << this->getType();
+    stream << *getIdentifier() << ": " << *getType();
 }
 
 void DeclarationNode::setLevel(unsigned int level) {
@@ -52,7 +48,7 @@ void ConstantDeclarationNode::accept(NodeVisitor& visitor) {
 }
 
 void ConstantDeclarationNode::print(std::ostream &stream) const {
-    stream << "CONST " << getIdentifier() << " = " << *value_ << ";";
+    stream << "CONST " << *getIdentifier() << " = " << *value_ << ";";
 }
 
 
@@ -61,7 +57,7 @@ void TypeDeclarationNode::accept(NodeVisitor& visitor) {
 }
 
 void TypeDeclarationNode::print(std::ostream& stream) const {
-    stream << "TYPE " << getIdentifier() << " = " << *getType() << ";";
+    stream << "TYPE " << *getIdentifier() << " = " << *getType() << ";";
 }
 
 
@@ -84,5 +80,5 @@ void ParameterNode::accept(NodeVisitor& visitor) {
 }
 
 void ParameterNode::print(std::ostream &stream) const {
-    stream << (var_ ? "VAR " : "") << getIdentifier() << ": " << *getType();
+    stream << (var_ ? "VAR " : "") << *getIdentifier() << ": " << *getType();
 }

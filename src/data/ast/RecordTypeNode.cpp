@@ -48,6 +48,10 @@ void RecordTypeNode::accept(NodeVisitor &visitor) {
     visitor.visit(*this);
 }
 
-void RecordTypeNode::print(std::ostream &stream) const {
-    stream << "RECORD ";
+void RecordTypeNode::print(std::ostream &out) const {
+    if (this->isAnonymous()) {
+        out << "RECORD...";
+    } else {
+        out << *this->getIdentifier();
+    }
 }

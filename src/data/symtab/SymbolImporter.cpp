@@ -43,7 +43,7 @@ std::unique_ptr<ModuleNode> SymbolImporter::read(const std::string &alias, const
     // create namespace for module
     symbols_ = symbols;
     symbols_->createNamespace(alias);
-    module_ = std::make_unique<ModuleNode>(EMPTY_POS, std::make_unique<Identifier>(module));
+    module_ = std::make_unique<ModuleNode>(EMPTY_POS, std::make_unique<Ident>(module));
     module_->setAlias(alias);
     auto ch = file->readChar();
     while (ch != 0 && !file->eof()) {
@@ -71,7 +71,7 @@ std::unique_ptr<ModuleNode> SymbolImporter::read(const std::string &alias, const
 
 void SymbolImporter::readDeclaration(SymbolFile *file, NodeType nodeType) {
     auto name = file->readString();
-    auto ident = std::make_unique<Identifier>(module_->getIdentifier()->name(), name);
+    auto ident = std::make_unique<QualIdent>(module_->getIdentifier()->name(), name);
     auto type = readType(file);
     if (nodeType == NodeType::constant) {
         auto kind = type->kind();
@@ -171,7 +171,7 @@ TypeNode *SymbolImporter::readProcedureType(SymbolFile *file) {
     while (ch != 0) {
         auto var = file->readChar();
         auto ptype = readType(file);
-        auto param = std::make_unique<ParameterNode>(EMPTY_POS, std::make_unique<Identifier>("_"), ptype, (var == 0));
+        auto param = std::make_unique<ParameterNode>(EMPTY_POS, std::make_unique<Ident>("_"), ptype, (var == 0));
         param->setLevel(SymbolTable::MODULE_LEVEL);
         res->addFormalParameter(std::move(param));
         // check for terminator
@@ -203,7 +203,7 @@ TypeNode *SymbolImporter::readRecordType(SymbolFile *file) {
         auto type = readType(file);
         // read in field offset
         [[maybe_unused]] auto offset = file->readInt();
-        auto field = std::make_unique<FieldNode>(EMPTY_POS, std::make_unique<Identifier>(name), type);
+        auto field = std::make_unique<FieldNode>(EMPTY_POS, std::make_unique<Ident>(name), type);
         res->addField(std::move(field));
         // check for terminator
         ch = file->readChar();

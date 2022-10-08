@@ -7,13 +7,44 @@
 #include "NodeReference.h"
 #include "NodeVisitor.h"
 
+
 NodeReference::~NodeReference() = default;
 
-Identifier *ValueReferenceNode::getIdentifier() const {
-    if (isResolved()) {
-        return dereference()->getIdentifier();
-    }
+Designator::~Designator() = default;
+
+Ident *Designator::ident() const {
     return ident_.get();
+}
+
+void Designator::addSelector(std::unique_ptr<Selector> selector) {
+    selectors_.push_back(std::move(selector));
+}
+
+void Designator::insertSelector(size_t num, std::unique_ptr<Selector> selector) {
+    selectors_.insert(selectors_.begin() + (long) num, std::move(selector));
+}
+
+void Designator::setSelector(size_t num, std::unique_ptr<Selector> selector) {
+    selectors_[num] = std::move(selector);
+}
+
+Selector *Designator::getSelector(size_t num) const {
+    return selectors_[num].get();
+}
+
+size_t Designator::getSelectorCount() const {
+    return selectors_.size();
+}
+
+void Designator::unqualify() {
+    if (ident_->isQualified()) {
+        auto qual = dynamic_cast<QualIdent *>(ident_.get());
+        auto pos = ident_->pos();
+        pos.charNo += ((int) qual->qualifier().size()) + 1;
+        auto field = std::make_unique<ValueReferenceNode>(pos, std::make_unique<Ident>(pos, qual->name()));
+        this->insertSelector(0, std::make_unique<RecordSelector>(std::move(field)));
+        ident_ = std::make_unique<Ident>(qual->qualifier());
+    }
 }
 
 bool ValueReferenceNode::isResolved() const {
@@ -27,32 +58,6 @@ void ValueReferenceNode::resolve(DeclarationNode *node) {
 
 DeclarationNode *ValueReferenceNode::dereference() const {
     return node_;
-}
-
-void ValueReferenceNode::addSelector(NodeType nodeType, std::unique_ptr<ExpressionNode> selector) {
-    selectors_.push_back(std::move(selector));
-    types_.push_back(nodeType);
-}
-
-void ValueReferenceNode::insertSelector(size_t num, NodeType nodeType, std::unique_ptr<ExpressionNode> selector) {
-    selectors_.insert(selectors_.begin() + (long) num, std::move(selector));
-    types_.insert(types_.begin() + (long) num, nodeType);
-}
-
-void ValueReferenceNode::setSelector(size_t num, std::unique_ptr<ExpressionNode> selector) {
-    selectors_[num] = std::move(selector);
-}
-
-ExpressionNode *ValueReferenceNode::getSelector(size_t num) const {
-    return selectors_[num].get();
-}
-
-NodeType ValueReferenceNode::getSelectorType(size_t num) const {
-    return types_[num];
-}
-
-size_t ValueReferenceNode::getSelectorCount() const {
-    return selectors_.size();
 }
 
 bool ValueReferenceNode::isConstant() const {
@@ -157,14 +162,6 @@ void FunctionCallNode::accept(NodeVisitor &visitor) {
 
 void FunctionCallNode::print(std::ostream &stream) const {
     stream << this->dereference()->getIdentifier() << "()";
-}
-
-
-Identifier *ProcedureCallNode::getIdentifier() const {
-    if (isResolved()) {
-        return dereference()->getIdentifier();
-    }
-    return ident_.get();
 }
 
 void ProcedureCallNode::accept(NodeVisitor &visitor) {

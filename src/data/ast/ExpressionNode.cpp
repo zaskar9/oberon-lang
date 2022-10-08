@@ -155,6 +155,10 @@ bool LiteralNode::isConstant() const {
     return true;
 }
 
+bool LiteralNode::isLiteral() const {
+    return true;
+}
+
 TypeKind LiteralNode::kind() const {
     return kind_;
 }
@@ -199,4 +203,12 @@ void StringLiteralNode::accept(NodeVisitor& visitor) {
 
 void StringLiteralNode::print(std::ostream &stream) const {
     stream << value_;
+}
+
+void NilLiteralNode::accept(NodeVisitor &visitor) {
+    visitor.visit(*this);
+}
+
+void NilLiteralNode::print(std::ostream &stream) const {
+    stream << "NIL";
 }

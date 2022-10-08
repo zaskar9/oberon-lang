@@ -14,6 +14,8 @@
 #include "Scope.h"
 #include "data/ast/TypeNode.h"
 #include "logging/Logger.h"
+#include "data/ast/ProcedureNode.h"
+#include "data/ast/PointerTypeNode.h"
 
 /**
  * The symbol table manages the different lexical scopes of the compiled module as well as the scopes of the imported
@@ -24,11 +26,16 @@ class SymbolTable {
 private:
     std::unordered_map<std::string, std::unique_ptr<Scope>> scopes_;
     Scope *scope_;
+    // all predefines are collected for memory-management purposes
     std::vector<std::unique_ptr<Node>> predefines_;
-    std::vector<TypeNode*> references_; // used for import and export
+    // references for import and export
+    std::vector<TypeNode*> references_;
     std::unique_ptr<Scope> universe_;
+    TypeNode *nilType_;
 
-    Node *basicType(const std::string &name, TypeKind kind, unsigned int size);
+    BasicTypeNode *basicType(const std::string &name, TypeKind kind, unsigned int size);
+    PointerTypeNode *pointerType(TypeNode *base);
+    ProcedureNode *procedure(const std::string &name, std::vector<std::pair<TypeNode*, bool>> params);
 
 public:
     explicit SymbolTable();
@@ -37,15 +44,17 @@ public:
     void import(const std::string &module, const std::string &name, DeclarationNode *node);
 
     void setRef(char ref, TypeNode *type);
-    TypeNode *getRef(char ref) const;
+    [[nodiscard]] TypeNode *getRef(char ref) const;
 
     void insert(const std::string &name, Node *node);
 
     [[nodiscard]] Node *lookup(const std::string &name) const;
     [[nodiscard]] Node *lookup(const std::string &qualifier, const std::string &name) const;
-    [[nodiscard]] Node *lookup(Identifier *ident) const;
+    [[nodiscard]] Node *lookup(Ident *ident) const;
 
     [[nodiscard]] bool isDuplicate(const std::string &name) const;
+
+    [[nodiscard]] TypeNode *getNilType() const;
 
     void createNamespace(const std::string &module, bool activate = false);
     Scope *getNamespace(const std::string &module);
