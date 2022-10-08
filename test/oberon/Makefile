@@ -21,7 +21,7 @@ endif
 	@$(LNK) $< -o $@ -L$(LIB) -loberon -rpath @executable_path/lib
 
 %.o : %.Mod
-	@$(O7C) -q -O3 -I$(INC) $<
+	@$(O7C) -O3 -I$(INC) $<
 
 %.s : %.Mod
 	@$(O7C) --filetype=asm $<

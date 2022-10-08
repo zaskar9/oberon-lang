@@ -32,5 +32,9 @@ void ArrayTypeNode::accept(NodeVisitor &visitor) {
 }
 
 void ArrayTypeNode::print(std::ostream &out) const {
-    out << "ARRAY " << dim_ << " OF " << *memberType_;
+    if (this->isAnonymous()) {
+        out << "ARRAY " << dim_ << " OF " << *memberType_;
+    } else {
+        out << *this->getIdentifier();
+    }
 }

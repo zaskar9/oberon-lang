@@ -1,5 +1,5 @@
 /*
- * Identifier token returned by scanner of the Oberon LLVM compiler.
+ * Ident token returned by scanner of the Oberon LLVM compiler.
  *
  * Created by Michael Grossniklaus on 2/27/18.
  */

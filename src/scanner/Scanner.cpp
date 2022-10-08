@@ -190,6 +190,10 @@ const Token* Scanner::scanToken() {
                     read();
                     token = new Token(TokenType::rbrace, pos);
                     break;
+                case '^':
+                    read();
+                    token = new Token(TokenType::caret, pos);
+                    break;
                 case '|':
                     read();
                     token = new Token(TokenType::pipe, pos);

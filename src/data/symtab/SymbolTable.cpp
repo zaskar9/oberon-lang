@@ -21,8 +21,9 @@ const std::string SymbolTable::STRING = "STRING";
 
 SymbolTable::SymbolTable() : scopes_(), scope_(), predefines_(), references_() {
     universe_ = std::make_unique<Scope>(GLOBAL_LEVEL, nullptr);
-    basicType("_", TypeKind::NOTYPE, 4);
-    basicType("NILTYPE", TypeKind::NILTYPE, 4);
+    auto anyType = basicType("ANYTYPE", TypeKind::ANYTYPE, 0);
+    basicType("NOTYPE", TypeKind::NOTYPE, 0);
+    nilType_ = basicType("NILTYPE", TypeKind::NILTYPE, 8);
     auto type = basicType(SymbolTable::BOOLEAN, TypeKind::BOOLEAN, 1);
     universe_->insert(SymbolTable::BOOLEAN, type);
     type = basicType(SymbolTable::BYTE, TypeKind::BYTE, 1);
@@ -39,15 +40,37 @@ SymbolTable::SymbolTable() : scopes_(), scope_(), predefines_(), references_() {
     universe_->insert(SymbolTable::LONGREAL, type);
     type = basicType(SymbolTable::STRING, TypeKind::STRING, 8);
     universe_->insert(SymbolTable::STRING, type);
+    auto proc = procedure("NEW", { { pointerType(anyType), true } });
+    universe_->insert(proc->getIdentifier()->name(), proc);
 }
 
 SymbolTable::~SymbolTable() = default;
 
-Node *SymbolTable::basicType(const std::string &name, TypeKind kind, unsigned int size) {
-    auto type = std::make_unique<BasicTypeNode>(std::make_unique<Identifier>(name), kind, size);
+BasicTypeNode *SymbolTable::basicType(const std::string &name, TypeKind kind, unsigned int size) {
+    auto type = std::make_unique<BasicTypeNode>(std::make_unique<Ident>(name), kind, size);
     auto ptr = type.get();
     predefines_.push_back(std::move(type));
     setRef((char) kind, ptr);
+    return ptr;
+}
+
+PointerTypeNode *SymbolTable::pointerType(TypeNode *base) {
+    auto type = std::make_unique<PointerTypeNode>(EMPTY_POS, nullptr, base);
+    auto ptr = type.get();
+    predefines_.push_back(std::move(type));
+    setRef((char) TypeKind::POINTER, ptr);
+    return ptr;
+}
+
+ProcedureNode *SymbolTable::procedure(const std::string &name, std::vector<std::pair<TypeNode *, bool>> params) {
+    auto proc = std::make_unique<ProcedureNode>(EMPTY_POS, std::make_unique<Ident>(name));
+    for (auto param : params) {
+        proc->addFormalParameter(
+                std::make_unique<ParameterNode>(EMPTY_POS, std::make_unique<Ident>("_"), param.first,
+                                                param.second));
+    }
+    auto ptr = proc.get();
+    predefines_.push_back(std::move(proc));
     return ptr;
 }
 
@@ -80,8 +103,11 @@ void SymbolTable::insert(const std::string &name, Node *node) {
     scope_->insert(name, node);
 }
 
-Node *SymbolTable::lookup(Identifier *ident) const {
-    return this->lookup(ident->qualifier(), ident->name());
+Node *SymbolTable::lookup(Ident *ident) const {
+    if (ident->isQualified()) {
+        return this->lookup(dynamic_cast<QualIdent*>(ident)->qualifier(), ident->name());
+    }
+    return this->lookup({}, ident->name());
 }
 
 Node *SymbolTable::lookup(const std::string &name) const {
@@ -106,6 +132,10 @@ Node *SymbolTable::lookup(const std::string &qualifier, const std::string &name)
 
 bool SymbolTable::isDuplicate(const std::string &name) const {
     return scope_->lookup(name, true) != nullptr;
+}
+
+TypeNode *SymbolTable::getNilType() const {
+    return nilType_;
 }
 
 void SymbolTable::createNamespace(const std::string &module, bool activate) {

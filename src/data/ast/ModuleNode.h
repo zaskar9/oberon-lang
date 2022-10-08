@@ -23,7 +23,7 @@ private:
     std::string alias_;
 
 public:
-    explicit ModuleNode(const FilePos &pos, std::unique_ptr<Identifier> name) :
+    explicit ModuleNode(const FilePos &pos, std::unique_ptr<Ident> name) :
             DeclarationNode(NodeType::module, pos, std::move(name), nullptr),
             BlockNode(pos), imports_(), modules_(), extprocs_(), alias_() {};
     ~ModuleNode() override = default;

@@ -22,7 +22,9 @@ void LLVMIRBuilder::visit(ModuleNode &node) {
         auto variable = node.getVariable(i);
         auto type = getLLVMType(variable->getType());
         auto value = new GlobalVariable(*module_, type, false,
-                GlobalValue::CommonLinkage, Constant::getNullValue(type), variable->getIdentifier()->name());
+                                        (variable->getIdentifier()->isExported() ? GlobalValue::ExternalLinkage
+                                                                            : GlobalValue::PrivateLinkage),
+                                        Constant::getNullValue(type), variable->getIdentifier()->name());
         value->setAlignment(getLLVMAlign(variable->getType()));
         values_[variable] = value;
     }
@@ -80,7 +82,8 @@ void LLVMIRBuilder::visit(ProcedureNode &node) {
         auto block = builder_.GetInsertBlock();
         if (block->getTerminator() == nullptr) {
             if (node.getReturnType() != nullptr && !block->empty()) {
-                logger_->error(node.pos(), "function \"" + to_string(node.getIdentifier()) + "\" has no return statement.");
+                logger_->error(node.pos(),
+                               "function \"" + to_string(node.getIdentifier()) + "\" has no return statement.");
             } else {
                 builder_.CreateUnreachable();
             }
@@ -105,7 +108,8 @@ void LLVMIRBuilder::visit(ValueReferenceNode &node) {
     }
     auto type = ref->getType();
     if (type->getNodeType() == NodeType::array_type ||
-        type->getNodeType() == NodeType::record_type) {
+        type->getNodeType() == NodeType::record_type ||
+        type->getNodeType() == NodeType::pointer_type) {
         auto selector_t = type;
         auto base = value_;
         if (ref->getNodeType() == NodeType::parameter) {
@@ -117,20 +121,21 @@ void LLVMIRBuilder::visit(ValueReferenceNode &node) {
                 builder_.CreateStore(value_, base);
             }
         }
-        std::vector<Value*> indices;
+        std::vector<Value *> indices;
         indices.push_back(builder_.getInt32(0));
         for (size_t i = 0; i < node.getSelectorCount(); i++) {
+            auto sel = node.getSelector(i);
             if (selector_t->getNodeType() == NodeType::array_type) {
                 // handle array index access
                 setRefMode(true);
-                node.getSelector(i)->accept(*this);
+                dynamic_cast<ArraySelector*>(sel)->getExpression()->accept(*this);
                 indices.push_back(value_);
                 restoreRefMode();
                 selector_t = dynamic_cast<ArrayTypeNode*>(selector_t)->getMemberType();
             } else if (selector_t->getNodeType() == NodeType::record_type) {
                 // handle record field access
-                auto selector = node.getSelector(i);
-                auto decl = dynamic_cast<ValueReferenceNode*>(selector)->dereference();
+                auto field_ref = dynamic_cast<RecordSelector *>(sel)->getField();
+                auto decl = field_ref->dereference();
                 auto field = dynamic_cast<FieldNode*>(decl);
                 auto record_t = dynamic_cast<RecordTypeNode*>(selector_t);
                 for (size_t pos = 0; pos < record_t->getFieldCount(); pos++) {
@@ -139,10 +144,26 @@ void LLVMIRBuilder::visit(ValueReferenceNode &node) {
                         break;
                     }
                 }
-                selector_t = selector->getType();
+                selector_t = field_ref->getType();
+            } else if (selector_t->getNodeType() == NodeType::pointer_type) {
+                // output the GEP up to the pointer
+                if (indices.size() > 1) {
+                    base = builder_.CreateInBoundsGEP(getLLVMType(type), base, indices);
+                    indices.clear();
+                    indices.push_back(builder_.getInt32(0));
+                }
+                // create a load to dereference the pointer
+                base = builder_.CreateLoad(getLLVMType(selector_t), base);
+                selector_t = dynamic_cast<PointerTypeNode *>(selector_t)->getBase();
+                type = selector_t;
             }
         }
-        value_ = builder_.CreateInBoundsGEP(getLLVMType(type), base, indices);
+        // clean up
+        if (indices.size() > 1) {
+            value_ = builder_.CreateInBoundsGEP(getLLVMType(type), base, indices);
+        } else {
+            value_ = base;
+        }
         type = selector_t;
     }
     if (deref()) {
@@ -153,7 +174,8 @@ void LLVMIRBuilder::visit(ValueReferenceNode &node) {
             // load value of parameter that is either passed by reference or is an array or
             // record parameter since getelementptr only computes the address
             if (param->isVar() || param->getType()->getNodeType() == NodeType::array_type ||
-                                  param->getType()->getNodeType() == NodeType::record_type) {
+                                  param->getType()->getNodeType() == NodeType::record_type ||
+                                  param->getType()->getNodeType() == NodeType::pointer_type) {
                 value_ = builder_.CreateLoad(getLLVMType(type), value_);
             }
         }
@@ -192,6 +214,11 @@ void LLVMIRBuilder::visit(IntegerLiteralNode &node) {
 void LLVMIRBuilder::visit(StringLiteralNode &node) {
     std::string val = node.getValue();
     value_ = builder_.CreateGlobalStringPtr(val, ".str");
+}
+
+void LLVMIRBuilder::visit(NilLiteralNode &node) {
+    auto type = getLLVMType(node.getCast(), false);
+    value_ = ConstantPointerNull::get((PointerType*) type);
 }
 
 void LLVMIRBuilder::visit(FunctionCallNode &node) {
@@ -335,6 +362,10 @@ void LLVMIRBuilder::visit([[maybe_unused]] ProcedureTypeNode &node) {
 }
 
 void LLVMIRBuilder::visit([[maybe_unused]] RecordTypeNode &node) {
+    // Node does not need code generation.
+}
+
+void LLVMIRBuilder::visit([[maybe_unused]] PointerTypeNode &node) {
     // Node does not need code generation.
 }
 
@@ -519,6 +550,22 @@ void LLVMIRBuilder::cast(ExpressionNode &node) {
     }
 }
 
+Value *LLVMIRBuilder::callBuiltIn(std::string name, std::vector<Value *> &params) {
+    if (name == "NEW") {
+        auto type = FunctionType::get(builder_.getInt8PtrTy(), {builder_.getInt64Ty()}, false);
+        auto callee = module_->getOrInsertFunction("malloc", type);
+        std::vector<Value *> values;
+        auto pointer_t = (PointerType *) params[0]->getType();
+        auto layout = module_->getDataLayout();
+        auto base = pointer_t->getContainedType(0);
+        values.push_back(ConstantInt::get(builder_.getInt64Ty(), layout.getTypeAllocSize(base->getContainedType(0))));
+        value_ = builder_.CreateCall(callee, values);
+        value_ = builder_.CreateBitCast(value_, base);
+        return builder_.CreateStore(value_, params[0]);
+    }
+    return nullptr;
+}
+
 void LLVMIRBuilder::call(ProcedureNodeReference &node) {
     std::vector<Value*> params;
     // caution: formal parameters on referenced node, actual parameters on reference node
@@ -535,7 +582,10 @@ void LLVMIRBuilder::call(ProcedureNodeReference &node) {
     if (proc) {
         value_ = builder_.CreateCall(proc, params);
     } else {
-        logger_->error(node.pos(), "Undefined procedure: " + to_string(*ident) + ".");
+        value_ = callBuiltIn(ident->name(), params);
+        if (!value_) {
+            logger_->error(node.pos(), "Undefined procedure: " + to_string(*ident) + ".");
+        }
     }
 }
 
@@ -551,9 +601,9 @@ void LLVMIRBuilder::proc(ProcedureNode &node) {
     functions_[&node] = ::cast<Function>(callee.getCallee());
 }
 
-std::string LLVMIRBuilder::qualifiedName(Identifier *ident, bool external) const {
+std::string LLVMIRBuilder::qualifiedName(Ident *ident, bool external) const {
     if (ident->isQualified()) {
-        return ident->qualifier() + "_" + ident->name();
+        return dynamic_cast<QualIdent *>(ident)->qualifier() + "_" + ident->name();
     }
     if (external) {
         return ident->name();
@@ -568,11 +618,11 @@ Type* LLVMIRBuilder::getLLVMType(TypeNode *type, bool isPtr) {
     } else if (types_[type] != nullptr) {
         result = types_[type];
     } else if (type->getNodeType() == NodeType::array_type) {
-        auto array_t = dynamic_cast<ArrayTypeNode*>(type);
+        auto array_t = dynamic_cast<ArrayTypeNode *>(type);
         result = ArrayType::get(getLLVMType(array_t->getMemberType()), array_t->getDimension());
     } else if (type->getNodeType() == NodeType::record_type) {
-        std::vector<Type*> elem_ts;
-        auto record_t = dynamic_cast<RecordTypeNode*>(type);
+        std::vector<Type *> elem_ts;
+        auto record_t = dynamic_cast<RecordTypeNode *>(type);
         for (size_t i = 0; i < record_t->getFieldCount(); i++) {
             elem_ts.push_back(getLLVMType(record_t->getField(i)->getType()));
         }
@@ -581,6 +631,11 @@ Type* LLVMIRBuilder::getLLVMType(TypeNode *type, bool isPtr) {
             struct_t->setName("T_" + record_t->getIdentifier()->name());
         }
         result = struct_t;
+    } else if (type->getNodeType() == NodeType::pointer_type) {
+        auto pointer_t = dynamic_cast<PointerTypeNode *>(type);
+        auto base = getLLVMType(pointer_t->getBase());
+        result = PointerType::get(base, 0);
+
     } else if (type->getNodeType() == NodeType::basic_type) {
         if (type->kind() == TypeKind::BOOLEAN) {
             result = builder_.getInt1Ty();
@@ -613,17 +668,19 @@ MaybeAlign LLVMIRBuilder::getLLVMAlign(TypeNode *type, bool isPtr) {
         auto array_t = dynamic_cast<ArrayTypeNode*>(type);
         return getLLVMAlign(array_t->getMemberType());
     } else if (type->getNodeType() == NodeType::record_type) {
-        auto record_t = dynamic_cast<RecordTypeNode*>(type);
+        auto record_t = dynamic_cast<RecordTypeNode *>(type);
         uint64_t size = 0;
         for (size_t i = 0; i < record_t->getFieldCount(); i++) {
             auto field_t = record_t->getField(i)->getType();
             if (field_t->getNodeType() == NodeType::array_type) {
-                auto array_t = dynamic_cast<ArrayTypeNode*>(field_t);
+                auto array_t = dynamic_cast<ArrayTypeNode *>(field_t);
                 field_t = array_t->getMemberType();
             }
             size = std::max(size, getLLVMAlign(field_t)->value());
         }
         return MaybeAlign(size);
+    } else if (type->getNodeType() == NodeType::pointer_type) {
+        return MaybeAlign(layout.getPointerPrefAlignment());
     } else if (type->getNodeType() == NodeType::basic_type) {
         return MaybeAlign(layout.getPrefTypeAlignment(getLLVMType(type, isPtr)));
     }

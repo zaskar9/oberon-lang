@@ -35,6 +35,9 @@ public:
     ~ExpressionNode() override;
 
     [[nodiscard]] virtual bool isConstant() const = 0;
+    [[nodiscard]] virtual bool isLiteral() const {
+        return false;
+    };
     void setType(TypeNode *type);
     [[nodiscard]] virtual TypeNode *getType() const;
     [[nodiscard]] virtual int getPrecedence() const = 0;
@@ -119,6 +122,7 @@ public:
     void accept(NodeVisitor &visitor) override = 0;
 
     [[nodiscard]] bool isConstant() const final;
+    [[nodiscard]] bool isLiteral() const final;
     [[nodiscard]] int getPrecedence() const final;
 
 };
@@ -178,6 +182,17 @@ public:
 
     void print(std::ostream &stream) const final;
 
+};
+
+class NilLiteralNode final : public LiteralNode {
+
+public:
+    explicit NilLiteralNode(const FilePos &pos) :
+            LiteralNode(NodeType::pointer, pos, TypeKind::POINTER, nullptr, nullptr) {};
+
+    void accept(NodeVisitor &visitor) final;
+
+    void print(std::ostream &stream) const final;
 };
 
 

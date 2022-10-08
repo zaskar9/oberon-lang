@@ -16,6 +16,7 @@
 #include "AssignmentNode.h"
 #include "IfThenElseNode.h"
 #include "LoopNode.h"
+#include "PointerTypeNode.h"
 
 class NodeVisitor {
 
@@ -37,6 +38,8 @@ public:
     virtual void visit(BooleanLiteralNode &node) = 0;
     virtual void visit(IntegerLiteralNode &node) = 0;
     virtual void visit(StringLiteralNode &node) = 0;
+    virtual void visit(NilLiteralNode &node) = 0;
+
     virtual void visit(FunctionCallNode &node) = 0;
     virtual void visit(UnaryExpressionNode &node) = 0;
     virtual void visit(BinaryExpressionNode &node) = 0;
@@ -45,6 +48,7 @@ public:
     virtual void visit(BasicTypeNode &node) = 0;
     virtual void visit(ProcedureTypeNode &node) = 0;
     virtual void visit(RecordTypeNode &node) = 0;
+    virtual void visit(PointerTypeNode &node) = 0;
 
     virtual void visit(StatementSequenceNode &node) = 0;
     virtual void visit(AssignmentNode &node) = 0;

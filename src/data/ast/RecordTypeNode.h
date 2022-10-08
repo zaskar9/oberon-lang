@@ -21,7 +21,7 @@ private:
 
 public:
     explicit RecordTypeNode() : RecordTypeNode(EMPTY_POS, nullptr) {};
-    explicit RecordTypeNode(const FilePos &pos, Identifier *ident) :
+    explicit RecordTypeNode(const FilePos &pos, Ident *ident) :
             TypeNode(NodeType::record_type, pos, ident, TypeKind::RECORD, 0), fields_(), base_() {};
     ~RecordTypeNode() final = default;
 
@@ -36,7 +36,7 @@ public:
     [[nodiscard]] RecordTypeNode *getBaseType() const;
 
     void accept(NodeVisitor &visitor) final;
-    void print(std::ostream &stream) const final;
+    void print(std::ostream &out) const final;
 
 };
 

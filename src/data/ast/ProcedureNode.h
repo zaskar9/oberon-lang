@@ -23,7 +23,7 @@ private:
     ProcedureTypeNode *proctype() const;
 
 public:
-    explicit ProcedureNode(const FilePos &pos, std::unique_ptr<Identifier> ident);
+    explicit ProcedureNode(const FilePos &pos, std::unique_ptr<Ident> ident);
     ~ProcedureNode() override = default;
 
     [[nodiscard]] NodeType getNodeType() const override {
@@ -31,7 +31,7 @@ public:
     }
 
     void addFormalParameter(std::unique_ptr<ParameterNode> parameter);
-    [[nodiscard]] ParameterNode *addFormalParameter(const std::string &name);
+    [[nodiscard]] ParameterNode *getFormalParameter(const std::string &name);
     [[nodiscard]] ParameterNode *getFormalParameter(size_t num) const;
     [[nodiscard]] size_t getFormalParameterCount() const;
 

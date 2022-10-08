@@ -6,7 +6,7 @@
 
 #include "TypeNode.h"
 
-Identifier *TypeNode::getIdentifier() const {
+Ident *TypeNode::getIdentifier() const {
     return ident_;
 }
 

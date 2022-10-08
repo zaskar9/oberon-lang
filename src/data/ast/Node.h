@@ -21,7 +21,7 @@ enum class NodeType : char {
     unary_expression, binary_expression,
     array_type, basic_type, pointer_type, procedure_type, record_type,
     field, parameter, variable, constant, type_declaration,
-    integer, boolean, string,
+    integer, boolean, string, pointer,
     value_reference, type_reference,
     assignment, loop, while_loop, repeat_loop, for_loop, if_then_else, else_if, procedure_call, ret
 };

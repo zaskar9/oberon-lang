@@ -10,6 +10,7 @@ else()
     add_compile_options(-W -Wall -Wextra -Werror -Wpedantic -Wunreachable-code -Wshadow -Woverloaded-virtual -Winvalid-pch -Wcast-align -Wformat=2 -Wformat-nonliteral -Wmissing-declarations -Wmissing-noreturn -Wmissing-format-attribute -Wmissing-include-dirs -Wredundant-decls -Wswitch-default -Wsign-conversion)
     if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         add_compile_options(-Wweak-vtables)
+        # add_link_options(-fuse-ld=lld)
     elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         # using GCC
     endif()
