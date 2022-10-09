@@ -164,7 +164,8 @@ void SemanticAnalysis::visit(ConstantDeclarationNode &node) {
 }
 
 void SemanticAnalysis::visit(TypeDeclarationNode &node) {
-    assertUnique(node.getIdentifier(), node);
+    auto ident = node.getIdentifier();
+    assertUnique(ident, node);
     node.setLevel(symbols_->getLevel());
     checkExport(node);
     auto type = node.getType();
@@ -174,10 +175,10 @@ void SemanticAnalysis::visit(TypeDeclarationNode &node) {
     } else {
         logger_->error(node.pos(), "undefined type");
     }
-    auto it = forwards_.find(node.getIdentifier()->name());
+    auto it = forwards_.find(ident->name());
     if (it != forwards_.end()) {
         auto pointer_t = it->second;
-        logger_->debug({}, "resolving " + to_string(*node.getIdentifier()));
+        logger_->debug({}, "resolving " + to_string(*ident));
         pointer_t->accept(*this);
         forwards_.erase(it);
     }
@@ -497,8 +498,9 @@ void SemanticAnalysis::visit(PointerTypeNode &node) {
         if (type->getNodeType() == NodeType::type_reference) {
             auto sym = symbols_->lookup(type->getIdentifier());
             if (sym == nullptr) {
-                logger_->debug({}, "possible forward type reference: " + to_string(*type->getIdentifier()));
-                forwards_[type->getIdentifier()->name()] = &node;
+                auto ident = type->getIdentifier();
+                forwards_[ident->name()] = &node;
+                logger_->debug({}, "possible forward type reference: " + to_string(*ident));
             } else {
                 type->accept(*this);
                 node.setBase(resolveType(type));
