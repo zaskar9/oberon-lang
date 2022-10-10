@@ -32,8 +32,8 @@ private:
     unsigned int level_;
     Function *function_;
 
-    Type* getLLVMType(TypeNode *type, bool isPtr = false);
-    MaybeAlign getLLVMAlign(TypeNode *type, bool isPtr = false);
+    Type* getLLVMType(TypeNode *type);
+    MaybeAlign getLLVMAlign(TypeNode *type);
 
     std::string qualifiedName(Ident *ident, bool external) const;
 

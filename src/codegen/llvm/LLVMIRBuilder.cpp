@@ -217,7 +217,7 @@ void LLVMIRBuilder::visit(StringLiteralNode &node) {
 }
 
 void LLVMIRBuilder::visit(NilLiteralNode &node) {
-    auto type = getLLVMType(node.getCast(), false);
+    auto type = getLLVMType(node.getCast());
     value_ = ConstantPointerNull::get((PointerType*) type);
 }
 
@@ -593,7 +593,8 @@ void LLVMIRBuilder::proc(ProcedureNode &node) {
     std::vector<Type*> params;
     for (size_t j = 0; j < node.getFormalParameterCount(); j++) {
         auto param = node.getFormalParameter(j);
-        params.push_back(getLLVMType(param->getType(), param->isVar()));
+        auto param_t = getLLVMType(param->getType());
+        params.push_back(param->isVar() ? param_t->getPointerTo() : param_t);
     }
     auto type = FunctionType::get(getLLVMType(node.getReturnType()), params, node.hasVarArgs());
     auto name = qualifiedName(node.getIdentifier(), node.isExtern());
@@ -611,7 +612,7 @@ std::string LLVMIRBuilder::qualifiedName(Ident *ident, bool external) const {
     return module_->getModuleIdentifier() + "_" + ident->name();
 }
 
-Type* LLVMIRBuilder::getLLVMType(TypeNode *type, bool isPtr) {
+Type* LLVMIRBuilder::getLLVMType(TypeNode *type) {
     Type* result = nullptr;
     if (type == nullptr) {
         result = builder_.getVoidTy();
@@ -620,13 +621,17 @@ Type* LLVMIRBuilder::getLLVMType(TypeNode *type, bool isPtr) {
     } else if (type->getNodeType() == NodeType::array_type) {
         auto array_t = dynamic_cast<ArrayTypeNode *>(type);
         result = ArrayType::get(getLLVMType(array_t->getMemberType()), array_t->getDimension());
+        types_[type] = result;
     } else if (type->getNodeType() == NodeType::record_type) {
+        // create an empty struct and add it to the lookup table immediately to support recursive records
+        auto struct_t = StructType::create(builder_.getContext());
+        types_[type] = struct_t;
         std::vector<Type *> elem_ts;
         auto record_t = dynamic_cast<RecordTypeNode *>(type);
         for (size_t i = 0; i < record_t->getFieldCount(); i++) {
             elem_ts.push_back(getLLVMType(record_t->getField(i)->getType()));
         }
-        auto struct_t = StructType::create(elem_ts);
+        struct_t->setBody(elem_ts);
         if (!record_t->isAnonymous()) {
             struct_t->setName("T_" + record_t->getIdentifier()->name());
         }
@@ -635,7 +640,7 @@ Type* LLVMIRBuilder::getLLVMType(TypeNode *type, bool isPtr) {
         auto pointer_t = dynamic_cast<PointerTypeNode *>(type);
         auto base = getLLVMType(pointer_t->getBase());
         result = PointerType::get(base, 0);
-
+        types_[type] = result;
     } else if (type->getNodeType() == NodeType::basic_type) {
         if (type->kind() == TypeKind::BOOLEAN) {
             result = builder_.getInt1Ty();
@@ -646,19 +651,15 @@ Type* LLVMIRBuilder::getLLVMType(TypeNode *type, bool isPtr) {
         } else if (type->kind() == TypeKind::STRING) {
             result = builder_.getInt8PtrTy();
         }
-    }
-    if (result != nullptr) {
         types_[type] = result;
-        if (isPtr) {
-            result = PointerType::get(result, 0);
-        }
-    } else {
+    }
+    if (result == nullptr) {
         logger_->error(type->pos(), "Cannot map type to LLVM intermediate representation.");
     }
     return result;
 }
 
-MaybeAlign LLVMIRBuilder::getLLVMAlign(TypeNode *type, bool isPtr) {
+MaybeAlign LLVMIRBuilder::getLLVMAlign(TypeNode *type) {
     auto layout = module_->getDataLayout();
     if (type->getNodeType() == NodeType::array_type) {
         auto align = layout.getStackAlignment();
@@ -682,7 +683,7 @@ MaybeAlign LLVMIRBuilder::getLLVMAlign(TypeNode *type, bool isPtr) {
     } else if (type->getNodeType() == NodeType::pointer_type) {
         return MaybeAlign(layout.getPointerPrefAlignment());
     } else if (type->getNodeType() == NodeType::basic_type) {
-        return MaybeAlign(layout.getPrefTypeAlignment(getLLVMType(type, isPtr)));
+        return MaybeAlign(layout.getPrefTypeAlignment(getLLVMType(type)));
     }
     return MaybeAlign();
 }
