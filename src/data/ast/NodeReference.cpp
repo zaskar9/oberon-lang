@@ -12,7 +12,7 @@ NodeReference::~NodeReference() = default;
 
 Designator::~Designator() = default;
 
-Ident *Designator::ident() const {
+QualIdent *Designator::ident() const {
     return ident_.get();
 }
 
@@ -41,19 +41,23 @@ void Designator::unqualify() {
         auto qual = dynamic_cast<QualIdent *>(ident_.get());
         auto pos = ident_->pos();
         pos.charNo += ((int) qual->qualifier().size()) + 1;
-        auto field = std::make_unique<ValueReferenceNode>(pos, std::make_unique<Ident>(pos, qual->name()));
-        this->insertSelector(0, std::make_unique<RecordSelector>(std::move(field)));
-        ident_ = std::make_unique<Ident>(qual->qualifier());
+        auto field = std::make_unique<QualIdent>(pos, qual->name());
+        this->insertSelector(0, std::make_unique<RecordField>(field->pos(), std::move(field)));
+        ident_ = std::make_unique<QualIdent>(qual->qualifier());
     }
 }
 
-bool ValueReferenceNode::isResolved() const {
-    return (node_ != nullptr);
+Designator *ValueReferenceNode::designator() const {
+    return designator_.get();
 }
 
 void ValueReferenceNode::resolve(DeclarationNode *node) {
     node_ = node;
     this->setType(node->getType());
+}
+
+bool ValueReferenceNode::isResolved() const {
+    return (node_ != nullptr);
 }
 
 DeclarationNode *ValueReferenceNode::dereference() const {
@@ -162,6 +166,10 @@ void FunctionCallNode::accept(NodeVisitor &visitor) {
 
 void FunctionCallNode::print(std::ostream &stream) const {
     stream << this->dereference()->getIdentifier() << "()";
+}
+
+Designator *ProcedureCallNode::designator() const {
+    return designator_.get();
 }
 
 void ProcedureCallNode::accept(NodeVisitor &visitor) {

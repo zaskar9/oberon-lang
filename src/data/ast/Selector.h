@@ -10,65 +10,90 @@
 #include <string>
 #include <vector>
 #include "Ident.h"
+#include "DeclarationNode.h"
 
 class Selector {
 
 private:
     NodeType type_;
+    FilePos pos_;
 
 public:
-    explicit Selector(NodeType type) : type_(type) {};
+    explicit Selector(NodeType type, const FilePos &pos) : type_(type), pos_(pos) {};
     virtual ~Selector();
 
-    [[nodiscard]] virtual FilePos pos() const = 0;
+    [[nodiscard]] FilePos pos() const;
     [[nodiscard]] NodeType getType() const;
 };
 
 class ExpressionNode;
 
-class ArraySelector final : public Selector {
+class ArrayIndex final : public Selector {
 
 private:
     std::unique_ptr<ExpressionNode> expression_;
 
 public:
-    explicit ArraySelector(std::unique_ptr<ExpressionNode> expression);
-    ~ArraySelector() override;
-
-    [[nodiscard]] FilePos pos() const override;
+    explicit ArrayIndex(const FilePos &pos, std::unique_ptr<ExpressionNode> expression);
+    ~ArrayIndex() override;
 
     [[nodiscard]] ExpressionNode *getExpression() const;
 };
 
 
-class ValueReferenceNode;
-
-class RecordSelector final : public Selector {
+class RecordField final : public Selector {
 
 private:
-    std::unique_ptr<ValueReferenceNode> ident_;
+    std::unique_ptr<Ident> ident_;
+    FieldNode *field_;
 
 public:
-    explicit RecordSelector(std::unique_ptr<ValueReferenceNode> field);
-    ~RecordSelector() override;
+    explicit RecordField(const FilePos &pos, std::unique_ptr<Ident> field);
+    explicit RecordField(const FilePos &pos, FieldNode *field);
+    ~RecordField() override;
 
-    [[nodiscard]] FilePos pos() const override;
-
-    [[nodiscard]] ValueReferenceNode *getField() const;
+    [[nodiscard]] Ident *ident() const;
+    void setField(FieldNode *field);
+    [[nodiscard]] FieldNode *getField() const;
 
 };
 
 
-class CaretSelector final : public Selector {
-
-private:
-    FilePos pos_;
+class Dereference final : public Selector {
 
 public:
-    explicit CaretSelector(const FilePos &pos) : Selector(NodeType::pointer_type), pos_(pos) {};
-    ~CaretSelector() override;
+    explicit Dereference(const FilePos &pos);
+    ~Dereference() override;
 
-    [[nodiscard]] FilePos pos() const override;
+};
+
+
+class Typeguard final : public Selector {
+
+private:
+    std::unique_ptr<QualIdent> ident_;
+
+public:
+    explicit Typeguard(const FilePos &pos, std::unique_ptr<QualIdent> ident);
+    ~Typeguard() override;
+
+    [[nodiscard]] QualIdent* ident() const;
+
+};
+
+class ActualParameters final : public Selector {
+
+private:
+    std::vector<std::unique_ptr<ExpressionNode>> parameters_;
+
+public:
+    explicit ActualParameters(const FilePos &pos);
+    ~ActualParameters() override;
+
+    void addActualParameter(std::unique_ptr<ExpressionNode> parameter);
+    void setActualParameter(size_t num, std::unique_ptr<ExpressionNode> parameter);
+    [[nodiscard]] ExpressionNode *getActualParameter(size_t num) const;
+    [[nodiscard]] size_t getActualParameterCount() const;
 
 };
 

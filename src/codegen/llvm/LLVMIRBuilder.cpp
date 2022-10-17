@@ -128,13 +128,13 @@ void LLVMIRBuilder::visit(ValueReferenceNode &node) {
             if (selector_t->getNodeType() == NodeType::array_type) {
                 // handle array index access
                 setRefMode(true);
-                dynamic_cast<ArraySelector*>(sel)->getExpression()->accept(*this);
+                dynamic_cast<ArrayIndex*>(sel)->getExpression()->accept(*this);
                 indices.push_back(value_);
                 restoreRefMode();
                 selector_t = dynamic_cast<ArrayTypeNode*>(selector_t)->getMemberType();
             } else if (selector_t->getNodeType() == NodeType::record_type) {
                 // handle record field access
-                auto field_ref = dynamic_cast<RecordSelector *>(sel)->getField();
+                auto field_ref = dynamic_cast<RecordField *>(sel)->getField();
                 auto decl = field_ref->dereference();
                 auto field = dynamic_cast<FieldNode*>(decl);
                 auto record_t = dynamic_cast<RecordTypeNode*>(selector_t);

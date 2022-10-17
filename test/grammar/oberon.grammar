@@ -26,16 +26,16 @@ var_declarations = "VAR" { ident_list ":" type ";" } .
 expression = simple_expression [ ( "=" | "#" | "<" | "<=" | ">" | ">=" ) simple_expression ] .
 simple_expression = [ "+" | "-" ] term { ( "+" | "-" | "OR" ) term } .
 term = factor { ( "*" | "DIV" | "MOD" | "&" ) factor } .
-factor = designator [ actual_parameters ] | integer | string | "TRUE" | "FALSE" | "(" expression ")" | "~" factor .
+factor = designator | integer | string | "TRUE" | "FALSE" | "(" expression ")" | "~" factor .
 designator = qualident { selector } .
-selector = "." ident | "[" expression "]" | "^" .
+selector = "." ident | "[" expression "]" | "^" | "(" qualident ")" | actual_parameters .
 actual_parameters = "(" [ expression { "," expression } ] ")" .
 
 statement = ( assignment | procedure_call | if_statement | case_statement
               while_statement | repeat_statement | for_statement | loop_statement
               with_statement | "EXIT" | "RETURN" [ expression ] ) .
 assignment = designator ":=" expression .
-procedure_call = designator [ actual_parameters ] .
+procedure_call = designator .
 statement_sequence = statement { ";" statement } .
 if_statement = "IF" expression "THEN" statement_sequence 
                { "ELSIF" expression "THEN" statement_sequence } 

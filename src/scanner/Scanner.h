@@ -42,7 +42,7 @@ private:
 public:
     explicit Scanner(const boost::filesystem::path& path, Logger *logger);
     ~Scanner();
-    const Token* peek();
+    const Token* peek(bool advance = false);
     std::unique_ptr<const Token> next();
 
     static std::string escape(std::string str);

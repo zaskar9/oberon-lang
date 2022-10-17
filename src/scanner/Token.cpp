@@ -71,6 +71,7 @@ std::ostream& operator<<(std::ostream &stream, const TokenType &type) {
         case TokenType::op_geq: result = ">="; break;
         case TokenType::op_becomes: result = ":="; break;
         case TokenType::kw_module: result = "MODULE"; break;
+        case TokenType::kw_import: result = "IMPORT"; break;
         case TokenType::kw_procedure: result = "PROCEDURE"; break;
         case TokenType::kw_begin: result = "BEGIN"; break;
         case TokenType::kw_end: result = "END"; break;

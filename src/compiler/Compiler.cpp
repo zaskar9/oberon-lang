@@ -18,6 +18,20 @@ void Compiler::compile(boost::filesystem::path file) {
     auto scanner = std::make_unique<Scanner>(fp.string(), logger_);
     auto symbols = std::make_unique<SymbolTable>();
     auto parser = std::make_unique<Parser>(scanner.get(), logger_);
+
+//    for (int i = 0; i < 5; i++) {
+//        std::cout << i << ": " << *scanner->peek() << std::endl;
+//    }
+//    for (int i = 0; i < 5; i++) {
+//        std::cout << i << ": " << *scanner->peek(true) << std::endl;
+//    }
+//    for (int i = 0; i < 5; i++) {
+//        std::cout << i << ": " << *scanner->peek() << std::endl;
+//    }
+//    for (int i = 0; i < 5; i++) {
+//        std::cout << i << ": " << *scanner->next() << std::endl;
+//    }
+
     auto ast = parser->parse();
     if (ast /* && ast->getNodeType() == NodeType::module */) {
         // Run the analyzer
@@ -36,5 +50,6 @@ void Compiler::compile(boost::filesystem::path file) {
 #endif
             codegen_->generate(ast.get(), fp.string());
         }
+
     }
 }

@@ -67,7 +67,7 @@ void NodePrettyPrinter::block(BlockNode& node, bool isGlobal) {
 }
 
 void NodePrettyPrinter::call(ProcedureNodeReference &node) {
-    stream_ << *node.ident() << "(";
+    stream_ << *node.designator()->ident() << "(";
     for (size_t i = 0; i < node.getActualParameterCount(); i++) {
         node.getActualParameter(i)->accept(*this);
         if (i + 1 < node.getActualParameterCount()) {
@@ -143,17 +143,17 @@ void NodePrettyPrinter::visit(ImportNode &node) {
 }
 
 void NodePrettyPrinter::visit(ValueReferenceNode &node) {
-    stream_ << *node.ident();
-    for (size_t i = 0; i < node.getSelectorCount(); i++) {
-        auto selector = node.getSelector(i);
+    stream_ << *node.designator()->ident();
+    for (size_t i = 0; i < node.designator()->getSelectorCount(); i++) {
+        auto selector = node.designator()->getSelector(i);
         auto type = selector->getType();
         if (type == NodeType::array_type) {
             stream_ << "[";
-            dynamic_cast<ArraySelector *>(selector)->getExpression()->accept(*this);
+            dynamic_cast<ArrayIndex *>(selector)->getExpression()->accept(*this);
             stream_ << "]";
         } else if (type == NodeType::record_type) {
             stream_ << ".";
-            dynamic_cast<RecordSelector *>(selector)->getField()->accept(*this);
+            dynamic_cast<RecordField *>(selector)->getField()->accept(*this);
         } else if (type == NodeType::pointer_type) {
             stream_ << "^";
         }

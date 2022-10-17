@@ -19,7 +19,7 @@ Scanner::Scanner(const boost::filesystem::path &path, Logger *logger) :
     init();
     file_.open(filename_, std::ios::in);
     if (!file_.is_open()) {
-        logger_->error(PROJECT_NAME, "cannot openNamespace file: " + filename_ + ".");
+        logger_->error(PROJECT_NAME, "cannot open file: " + filename_ + ".");
         exit(1);
     }
     read();
@@ -52,11 +52,18 @@ void Scanner::init() {
                   { "TRUE", TokenType::boolean_literal}, { "FALSE", TokenType::boolean_literal } };
 }
 
-const Token* Scanner::peek() {
+const Token* Scanner::peek(bool advance) {
     if (tokens_.empty()) {
         tokens_.push(scanToken());
+        return tokens_.back();
     }
-    return tokens_.front();
+    if (advance) {
+        auto token = tokens_.back();
+        tokens_.push(scanToken());
+        return token;
+    } else {
+        return tokens_.front();
+    }
 }
 
 std::unique_ptr<const Token> Scanner::next() {

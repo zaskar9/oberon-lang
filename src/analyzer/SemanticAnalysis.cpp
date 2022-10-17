@@ -57,7 +57,7 @@ void SemanticAnalysis::call(ProcedureNodeReference &node) {
                 logger_->error(node.pos(), to_string(*node.ident()) + " is not a procedure or function.");
             }
         } else {
-            logger_->error(node.pos(), "undeclared identifier: " + to_string(*node.ident()) + ".");
+            logger_->error(node.pos(), "undefined identifier: " + to_string(*node.ident()) + ".");
         }
     }
     if (node.isResolved()) {
@@ -175,7 +175,8 @@ void SemanticAnalysis::visit(TypeReferenceNode &node) {
         logger_->error(node.pos(), "undefined type: " + to_string(*node.getIdentifier()) + ".");
     } else if (sym->getNodeType() == NodeType::array_type ||
                sym->getNodeType() == NodeType::basic_type ||
-               sym->getNodeType() == NodeType::record_type) {
+               sym->getNodeType() == NodeType::record_type ||
+               sym->getNodeType() == NodeType::pointer_type) {
         node.resolve(dynamic_cast<TypeNode *>(sym));
     } else if (sym->getNodeType() == NodeType::type_declaration) {
         auto type = dynamic_cast<TypeDeclarationNode *>(sym);
@@ -270,20 +271,38 @@ void SemanticAnalysis::visit(ValueReferenceNode &node) {
             while (pos < last) {
                 auto sel = node.getSelector(pos);
                 if (type->getNodeType() != sel->getType()) {
-                    // check if implicit pointer dereferencing is required
                     if (type->getNodeType() == NodeType::pointer_type &&
                                 (sel->getType() == NodeType::array_type || sel->getType() == NodeType::record_type)) {
-                        auto caret = std::make_unique<CaretSelector>(EMPTY_POS);
+                        // perform implicit pointer dereferencing
+                        auto caret = std::make_unique<Dereference>(EMPTY_POS);
                         sel = caret.get();
                         node.insertSelector(pos, std::move(caret));
                         last++;
+                    } else if (sel->getType() == NodeType::type_declaration) {
+                        // handle type-guard or clean up parsing ambiguity
+                        auto guard = dynamic_cast<Typeguard *>(sel);
+                        sym = symbols_->lookup(guard->ident());
+                        if (sym) {
+                            if (sym->getNodeType() == NodeType::type_declaration) {
+                                type = dynamic_cast<TypeDeclarationNode *>(sym)->getType();
+                            } else if (sym->getNodeType() == NodeType::basic_type ||
+                                       sym->getNodeType() == NodeType::array_type ||
+                                       sym->getNodeType() == NodeType::record_type ||
+                                       sym->getNodeType() == NodeType::pointer_type) {
+                                type = dynamic_cast<TypeNode*>(sym);
+                            } else {
+                                logger_->error(sel->pos(), "oh, oh, parser has mistaken function call as type-guard.");
+                            }
+                        } else {
+                            logger_->error(node.pos(), "undefined identifier: " + to_string(*guard->ident()) + ".");
+                        }
                     } else {
                         logger_->error(sel->pos(), "selector type mismatch.");
                     }
                 }
-                if (type->getNodeType() == NodeType::array_type) {
+                if (sel->getType() == NodeType::array_type) {
                     auto array_t = dynamic_cast<ArrayTypeNode *>(type);
-                    auto expr = dynamic_cast<ArraySelector*>(sel)->getExpression();
+                    auto expr = dynamic_cast<ArrayIndex*>(sel)->getExpression();
                     expr->accept(*this);
                     auto sel_type = expr->getType();
                     if (sel_type && sel_type->kind() != TypeKind::INTEGER) {
@@ -292,13 +311,13 @@ void SemanticAnalysis::visit(ValueReferenceNode &node) {
                     if (expr->isConstant()) {
                         auto value = fold(expr);
                         if (value) {
-                            node.setSelector(pos, std::make_unique<ArraySelector>(std::move(value)));
+                            node.setSelector(pos, std::make_unique<ArrayIndex>(EMPTY_POS, std::move(value)));
                         }
                     }
                     type = array_t->getMemberType();
-                } else if (type->getNodeType() == NodeType::record_type) {
+                } else if (sel->getType() == NodeType::record_type) {
                     auto record_t = dynamic_cast<RecordTypeNode *>(type);
-                    auto ref = dynamic_cast<RecordSelector *>(sel)->getField();
+                    auto ref = dynamic_cast<RecordField *>(sel)->getField();
                     auto field = record_t->getField(ref->ident()->name());
                     if (field) {
                         type = field->getType();
@@ -308,9 +327,11 @@ void SemanticAnalysis::visit(ValueReferenceNode &node) {
                         logger_->error(ref->pos(),
                                        "unknown record field: " + to_string(*ref->ident()) + ".");
                     }
-                } else if (type->getNodeType() == NodeType::pointer_type) {
+                } else if (sel->getType() == NodeType::pointer_type) {
                     auto pointer_t = dynamic_cast<PointerTypeNode *>(type);
                     type = pointer_t->getBase();
+                } else if (sel->getType() == NodeType::type_declaration) {
+                    // nothing to do here as type-guard is handled above
                 } else {
                     logger_->error(sel->pos(), "unexpected selector.");
                 }
