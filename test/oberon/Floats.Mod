@@ -14,7 +14,7 @@ BEGIN
     int := dummy1(int);
     float := 3.141592654;
     double := float;
-    int := float (INTEGER);
+    int := ENTIER(float);
     Out.Real(float); Out.Ln;
     Out.Int(int); Out.Ln
 END Floats.
