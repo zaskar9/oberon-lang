@@ -67,7 +67,7 @@ void NodePrettyPrinter::block(BlockNode& node, bool isGlobal) {
 }
 
 void NodePrettyPrinter::call(ProcedureNodeReference &node) {
-    stream_ << *node.designator()->ident() << "(";
+    stream_ << *node.ident() << "(";
     for (size_t i = 0; i < node.getActualParameterCount(); i++) {
         node.getActualParameter(i)->accept(*this);
         if (i + 1 < node.getActualParameterCount()) {
@@ -143,9 +143,9 @@ void NodePrettyPrinter::visit(ImportNode &node) {
 }
 
 void NodePrettyPrinter::visit(ValueReferenceNode &node) {
-    stream_ << *node.designator()->ident();
-    for (size_t i = 0; i < node.designator()->getSelectorCount(); i++) {
-        auto selector = node.designator()->getSelector(i);
+    stream_ << *node.ident();
+    for (size_t i = 0; i < node.getSelectorCount(); i++) {
+        auto selector = node.getSelector(i);
         auto type = selector->getType();
         if (type == NodeType::array_type) {
             stream_ << "[";

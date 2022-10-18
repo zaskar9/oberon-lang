@@ -47,10 +47,6 @@ void Designator::unqualify() {
     }
 }
 
-Designator *ValueReferenceNode::designator() const {
-    return designator_.get();
-}
-
 void ValueReferenceNode::resolve(DeclarationNode *node) {
     node_ = node;
     this->setType(node->getType());
@@ -166,10 +162,6 @@ void FunctionCallNode::accept(NodeVisitor &visitor) {
 
 void FunctionCallNode::print(std::ostream &stream) const {
     stream << this->dereference()->getIdentifier() << "()";
-}
-
-Designator *ProcedureCallNode::designator() const {
-    return designator_.get();
 }
 
 void ProcedureCallNode::accept(NodeVisitor &visitor) {

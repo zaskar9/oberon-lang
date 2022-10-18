@@ -747,8 +747,8 @@ std::unique_ptr<StatementNode> Parser::for_statement() {
     logger_->debug({}, "for_statement");
     token_ = scanner_->next(); // skip FOR keyword
     FilePos pos = scanner_->peek()->start();
-    auto identifier = ident();
-    auto counter = std::make_unique<ValueReferenceNode>(pos, std::move(identifier));
+    auto designator = std::make_unique<Designator>(ident());
+    auto counter = std::make_unique<ValueReferenceNode>(pos, std::move(designator));
     token_ = scanner_->next();
     std::unique_ptr<ExpressionNode> low = nullptr;
     if (assertToken(token_.get(), TokenType::op_becomes)) {
@@ -863,26 +863,14 @@ std::unique_ptr<ExpressionNode> Parser::term() {
     return expr;
 }
 
-// factor = designator [ actual_parameters ] | integer | string | "NIL" | "TRUE" | "FALSE" | "(" expression ")" | "~" factor .
+// factor = designator | integer | string | "NIL" | "TRUE" | "FALSE" | "(" expression ")" | "~" factor .
 std::unique_ptr<ExpressionNode> Parser::factor() {
     logger_->debug({}, "factor");
     auto token = scanner_->peek();
     if (token->type() == TokenType::const_ident) {
         FilePos pos = token->start();
-        auto identifier = qualident();
-        std::vector<std::unique_ptr<Selector>> selectors;
-        designator(selectors);
-        token = scanner_->peek();
-        if (token->type() == TokenType::lparen) {
-            auto call = std::make_unique<FunctionCallNode>(pos, std::move(identifier));
-            moveSelectors(selectors, call.get());
-            actual_parameters(call.get());
-            return call;
-        } else {
-            auto value = std::make_unique<ValueReferenceNode>(pos, std::move(identifier));
-            moveSelectors(selectors, value.get());
-            return value;
-        }
+        auto designator = this->designator();
+        return std::make_unique<ValueReferenceNode>(pos, std::move(designator));
     } else if (token->type() == TokenType::integer_literal) {
         auto tmp = scanner_->next();
         auto number = dynamic_cast<const IntegerLiteralToken*>(tmp.get());

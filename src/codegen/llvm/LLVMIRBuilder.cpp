@@ -134,9 +134,7 @@ void LLVMIRBuilder::visit(ValueReferenceNode &node) {
                 selector_t = dynamic_cast<ArrayTypeNode*>(selector_t)->getMemberType();
             } else if (selector_t->getNodeType() == NodeType::record_type) {
                 // handle record field access
-                auto field_ref = dynamic_cast<RecordField *>(sel)->getField();
-                auto decl = field_ref->dereference();
-                auto field = dynamic_cast<FieldNode*>(decl);
+                auto field = dynamic_cast<RecordField *>(sel)->getField();
                 auto record_t = dynamic_cast<RecordTypeNode*>(selector_t);
                 for (size_t pos = 0; pos < record_t->getFieldCount(); pos++) {
                     if (field == record_t->getField(pos)) {
@@ -144,7 +142,7 @@ void LLVMIRBuilder::visit(ValueReferenceNode &node) {
                         break;
                     }
                 }
-                selector_t = field_ref->getType();
+                selector_t = field->getType();
             } else if (selector_t->getNodeType() == NodeType::pointer_type) {
                 // output the GEP up to the pointer
                 if (indices.size() > 1) {

@@ -317,12 +317,11 @@ void SemanticAnalysis::visit(ValueReferenceNode &node) {
                     type = array_t->getMemberType();
                 } else if (sel->getType() == NodeType::record_type) {
                     auto record_t = dynamic_cast<RecordTypeNode *>(type);
-                    auto ref = dynamic_cast<RecordField *>(sel)->getField();
+                    auto ref = dynamic_cast<RecordField *>(sel);
                     auto field = record_t->getField(ref->ident()->name());
                     if (field) {
+                        ref->setField(field);
                         type = field->getType();
-                        ref->resolve(field);
-                        ref->setType(type);
                     } else {
                         logger_->error(ref->pos(),
                                        "unknown record field: " + to_string(*ref->ident()) + ".");
