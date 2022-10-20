@@ -36,8 +36,9 @@ private:
 
     std::unique_ptr<Ident> ident();
     std::unique_ptr<QualIdent> qualident();
-    void designator(std::vector<std::unique_ptr<Selector>> &selectors);
+    std::unique_ptr<Designator> designator();
     std::unique_ptr<Selector> selector();
+    bool maybeTypeguard();
     std::unique_ptr<IdentDef> identdef();
     void ident_list(std::vector<std::unique_ptr<Ident>> &idents);
 
@@ -65,13 +66,12 @@ private:
     void statement_sequence(StatementSequenceNode* statements);
     std::unique_ptr<StatementNode> statement();
     std::unique_ptr<StatementNode> assignment(std::unique_ptr<ValueReferenceNode> lvalue);
-    void procedure_call(ProcedureNodeReference *call);
     std::unique_ptr<StatementNode> if_statement();
     std::unique_ptr<StatementNode> loop_statement();
     std::unique_ptr<StatementNode> while_statement();
     std::unique_ptr<StatementNode> repeat_statement();
     std::unique_ptr<StatementNode> for_statement();
-    void actual_parameters(ProcedureNodeReference *call);
+    void actual_parameters(ActualParameters *params);
 
     bool assertToken(const Token *token, TokenType expected);
     void moveSelectors(std::vector<std::unique_ptr<Selector>> &selectors, Designator *designator);

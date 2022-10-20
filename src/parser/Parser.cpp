@@ -18,7 +18,8 @@ std::unique_ptr<ModuleNode> Parser::parse() {
 
 // ident = letter { letter | digit } .
 std::unique_ptr<Ident> Parser::ident() {
-    if (assertToken(scanner_->peek(), TokenType::const_ident)) {
+    auto token = scanner_->peek();
+    if (assertToken(token, TokenType::const_ident)) {
         token_ = scanner_->next();
         auto ident = dynamic_cast<const IdentToken*>(token_.get());
         logger_->debug({}, to_string(*ident));
@@ -33,7 +34,7 @@ std::unique_ptr<Ident> Parser::ident() {
              TokenType::op_plus, TokenType::op_minus, TokenType::op_times, TokenType::op_and, TokenType::op_becomes,
              TokenType::rbrack, TokenType::lbrack, TokenType::rparen, TokenType::lparen,
              TokenType::semicolon, TokenType::colon, TokenType::comma, TokenType::period });
-    return std::make_unique<Ident>(scanner_->peek()->start(), to_string(TokenType::undef));
+    return std::make_unique<Ident>(token->start(), to_string(TokenType::undef));
 }
 
 // qualident = [ ident "." ] ident .
@@ -61,29 +62,41 @@ std::unique_ptr<IdentDef> Parser::identdef() {
 }
 
 // designator = qualident { selector } .
-void Parser::designator(std::vector<std::unique_ptr<Selector>> &selectors) {
+std::unique_ptr<Designator> Parser::designator() {
+    auto identifier = qualident();
+    auto designator = std::make_unique<Designator>(std::move(identifier));
     auto token = scanner_->peek();
     while (token->type() == TokenType::period ||
            token->type() == TokenType::lbrack ||
-           token->type() == TokenType::caret) {
-        selectors.push_back(selector());
+           token->type() == TokenType::caret ||
+           token->type() == TokenType::lparen) {
+        auto sel = selector();
+        if (sel) {
+            designator->addSelector(std::move(sel));
+        } else {
+            break;
+        }
         token = scanner_->peek();
     }
+    return designator;
 }
 
-// TODO selector = "." ident | "[" exp_list "]" | "^" | "(" qualident ")" .
-// selector = "." ident | "[" expression "]" | "^" .
+// TODO selector = "." ident | "[" exp_list "]" | "^" | "(" qualident ")" | actual_parameters .
+// selector = "." ident | "[" expression "]" | "^" | "(" qualident ")" | actual_parameters .
 std::unique_ptr<Selector> Parser::selector() {
     std::unique_ptr<Selector> sel = nullptr;
     logger_->debug({}, "selector");
-    token_ = scanner_->next();
-    if (token_->type() == TokenType::period) {
-        auto field = std::make_unique<ValueReferenceNode>(token_->start(), ident());
-        sel = std::make_unique<RecordSelector>(std::move(field));
-    } else if (token_->type() == TokenType::lbrack) {
+    auto token = scanner_->peek();
+    if (token->type() == TokenType::period) {
+        token_ = scanner_->next();
+        auto pos = token_->start();
+        sel = std::make_unique<RecordField>(pos, ident());
+    } else if (token->type() == TokenType::lbrack) {
+        auto pos = token->start();
+        token_ = scanner_->next();
         auto expr = expression();
         if (expr) {
-            sel = std::make_unique<ArraySelector>(std::move(expr));
+            sel = std::make_unique<ArrayIndex>(pos, std::move(expr));
         } else {
             logger_->error(token_->start(), "expression expected.");
         }
@@ -91,12 +104,44 @@ std::unique_ptr<Selector> Parser::selector() {
         if (token_->type() != TokenType::rbrack) {
             logger_->error(token_->start(), "] expected, found " + to_string(token_->type()) + ".");
         }
-    } else if (token_->type() == TokenType::caret) {
-        sel = std::make_unique<CaretSelector>(token_->start());
+    } else if (token->type() == TokenType::caret) {
+        token_ = scanner_->next();
+        sel = std::make_unique<Dereference>(token_->start());
+    } else if (token->type() == TokenType::lparen) {
+        if (maybeTypeguard()) {
+            token_ = scanner_->next(); // skip "("
+            auto ident = qualident();
+            sel = std::make_unique<Typeguard>(token_->start(), std::move((ident)));
+            token_ = scanner_->next(); // skip ")"
+        } else {
+            sel = std::make_unique<ActualParameters>(token->start());
+            actual_parameters(dynamic_cast<ActualParameters *>(sel.get()));
+        }
     } else {
         logger_->error(token_->start(), "selector expected.");
     }
     return sel;
+}
+
+bool Parser::maybeTypeguard() {
+    // we need a look-ahead of 5 to check whether we have (ident) or (ident.ident)
+    auto peek = scanner_->peek(true);
+    if (peek->type() == TokenType::lparen) {
+        peek = scanner_->peek(true);
+        if (peek->type() == TokenType::const_ident) {
+            peek = scanner_->peek(true);
+            if (peek->type() == TokenType::rparen) {
+                return true;
+            } else if (peek->type() == TokenType::period) {
+                peek = scanner_->peek(true);
+                if (peek->type() == TokenType::const_ident) {
+                    peek = scanner_->peek(true);
+                    return peek->type() == TokenType::rparen;
+                }
+            }
+        }
+    }
+    return false;
 }
 
 // ident_list = identdef { "," identdef } .
@@ -579,19 +624,12 @@ std::unique_ptr<StatementNode> Parser::statement() {
     auto token = scanner_->peek();
     if (token->type() == TokenType::const_ident) {
         FilePos pos = token->start();
-        auto identifier = qualident();
-        std::vector<std::unique_ptr<Selector>> selectors;
-        designator(selectors);
+        auto designator = this->designator();
         token = scanner_->peek();
         if (token->type() == TokenType::op_becomes) {
-            auto lvalue = std::make_unique<ValueReferenceNode>(pos, std::move(identifier));
-            moveSelectors(selectors, lvalue.get());
-            return assignment(std::move(lvalue));
+            return assignment(std::make_unique<ValueReferenceNode>(pos, std::move(designator)));
         } else {
-            auto call = std::make_unique<ProcedureCallNode>(pos, std::move(identifier));
-            moveSelectors(selectors, call.get());
-            procedure_call(call.get());
-            return call;
+            return std::make_unique<ProcedureCallNode>(pos, std::move(designator));
         }
     } else if (token->type() == TokenType::kw_if) {
         return if_statement();
@@ -622,16 +660,6 @@ std::unique_ptr<StatementNode> Parser::assignment(std::unique_ptr<ValueReference
     // [<;>, <END>, <ELSIF>, <ELSE>, <UNTIL>]
     // resync({ TokenType::semicolon, TokenType::kw_end, TokenType::kw_elsif, TokenType::kw_else, TokenType::kw_until });
     return statement;
-}
-
-// procedure_call = designator [ actual_parameters ].
-void Parser::procedure_call(ProcedureNodeReference *call) {
-    logger_->debug({}, "procedure_call");
-    if (scanner_->peek()->type() == TokenType::lparen) {
-        actual_parameters(call);
-    }
-    // [<;>, <END>, <ELSIF>, <ELSE>, <UNTIL>]
-    // resync({ TokenType::semicolon, TokenType::kw_end, TokenType::kw_elsif, TokenType::kw_else, TokenType::kw_until });
 }
 
 // if_statement = "IF" expression "THEN" statement_sequence { "ELSIF" expression "THEN" statement_sequence } [ "ELSE" statement_sequence ] "END" .
@@ -719,9 +747,10 @@ std::unique_ptr<StatementNode> Parser::repeat_statement() {
 std::unique_ptr<StatementNode> Parser::for_statement() {
     logger_->debug({}, "for_statement");
     token_ = scanner_->next(); // skip FOR keyword
-    FilePos pos = scanner_->peek()->start();
-    auto identifier = ident();
-    auto counter = std::make_unique<ValueReferenceNode>(pos, std::move(identifier));
+    auto pos = token_->start();
+    // FilePos pos = scanner_->peek()->start();
+    auto ident = this->ident();
+    auto counter = std::make_unique<ValueReferenceNode>(ident->pos(), std::make_unique<Designator>(std::move(ident)));
     token_ = scanner_->next();
     std::unique_ptr<ExpressionNode> low = nullptr;
     if (assertToken(token_.get(), TokenType::op_becomes)) {
@@ -752,22 +781,20 @@ std::unique_ptr<StatementNode> Parser::for_statement() {
 }
 
 // actual_parameters = "(" [ expression { "," expression } ] ")" .
-void Parser::actual_parameters(ProcedureNodeReference *call) {
+void Parser::actual_parameters(ActualParameters *params) {
     logger_->debug({}, "actual_parameters");
     token_ = scanner_->next(); // skip left parenthesis
     if (scanner_->peek()->type() == TokenType::rparen) {
         token_ = scanner_->next();
         return;
     }
-    call->addActualParameter(expression());
+    params->addActualParameter(expression());
     while (scanner_->peek()->type() == TokenType::comma) {
         token_ = scanner_->next(); // skip comma
-        call->addActualParameter(expression());
+        params->addActualParameter(expression());
     }
-    token_ = scanner_->next();
-    if (token_->type() != TokenType::rparen) {
-        logger_->error(token_->start(), ") expected, found " + to_string(token_->type()) + ".");
-    }
+    token_ = scanner_->next(); // skip right parenthesis
+    assertToken(token_.get(), TokenType::rparen);
 }
 
 // expression = simple_expression [ ( "=" | "#" | "<" | "<=" | ">" | ">=" ) simple_expression ] .
@@ -821,12 +848,13 @@ std::unique_ptr<ExpressionNode> Parser::simple_expression() {
     return expr;
 }
 
-// term = factor { ( "*" | "DIV" | "MOD" | "&" ) factor } .
+// term = factor { ( "*" | "/" | "DIV" | "MOD" | "&" ) factor } .
 std::unique_ptr<ExpressionNode> Parser::term() {
     logger_->debug({}, "term");
     auto expr = factor();
     TokenType token = scanner_->peek()->type();
     while (token == TokenType::op_times
+           || token == TokenType::op_divide
            || token == TokenType::op_div
            || token == TokenType::op_mod
            || token == TokenType::op_and) {
@@ -838,41 +866,41 @@ std::unique_ptr<ExpressionNode> Parser::term() {
     return expr;
 }
 
-// factor = designator [ actual_parameters ] | integer | string | "NIL" | "TRUE" | "FALSE" | "(" expression ")" | "~" factor .
+// factor = designator | integer | real | string | "NIL" | "TRUE" | "FALSE" | "(" expression ")" | "~" factor .
 std::unique_ptr<ExpressionNode> Parser::factor() {
     logger_->debug({}, "factor");
     auto token = scanner_->peek();
     if (token->type() == TokenType::const_ident) {
         FilePos pos = token->start();
-        auto identifier = qualident();
-        std::vector<std::unique_ptr<Selector>> selectors;
-        designator(selectors);
-        token = scanner_->peek();
-        if (token->type() == TokenType::lparen) {
-            auto call = std::make_unique<FunctionCallNode>(pos, std::move(identifier));
-            moveSelectors(selectors, call.get());
-            actual_parameters(call.get());
-            return call;
-        } else {
-            auto value = std::make_unique<ValueReferenceNode>(pos, std::move(identifier));
-            moveSelectors(selectors, value.get());
-            return value;
-        }
-    } else if (token->type() == TokenType::integer_literal) {
+        auto designator = this->designator();
+        return std::make_unique<ValueReferenceNode>(pos, std::move(designator));
+    } else if (token->type() == TokenType::int_literal) {
         auto tmp = scanner_->next();
-        auto number = dynamic_cast<const IntegerLiteralToken*>(tmp.get());
+        auto number = dynamic_cast<const IntLiteralToken *>(tmp.get());
         return std::make_unique<IntegerLiteralNode>(number->start(), number->value());
+    } else if (token->type() == TokenType::long_literal) {
+        auto tmp = scanner_->next();
+        auto number = dynamic_cast<const LongLiteralToken *>(tmp.get());
+        return std::make_unique<IntegerLiteralNode>(number->start(), number->value());
+    } else if (token->type() == TokenType::float_literal) {
+        auto tmp = scanner_->next();
+        auto number = dynamic_cast<const FloatLiteralToken *>(tmp.get());
+        return std::make_unique<RealLiteralNode>(number->start(), number->value());
+    } else if (token->type() == TokenType::double_literal) {
+        auto tmp = scanner_->next();
+        auto number = dynamic_cast<const DoubleLiteralToken *>(tmp.get());
+        return std::make_unique<RealLiteralNode>(number->start(), number->value());
     } else if (token->type() == TokenType::string_literal) {
         auto tmp = scanner_->next();
         auto string = dynamic_cast<const StringLiteralToken *>(tmp.get());
         return std::make_unique<StringLiteralNode>(string->start(), string->value());
-    } else if (token->type() == TokenType::kw_nil) {
-        auto tmp = scanner_->next();
-        return std::make_unique<NilLiteralNode>(tmp->start());
     } else if (token->type() == TokenType::boolean_literal) {
         auto tmp = scanner_->next();
         auto boolean = dynamic_cast<const BooleanLiteralToken*>(tmp.get());
         return std::make_unique<BooleanLiteralNode>(boolean->start(), boolean->value());
+    } else if (token->type() == TokenType::kw_nil) {
+        auto tmp = scanner_->next();
+        return std::make_unique<NilLiteralNode>(tmp->start());
     } else if (token->type() == TokenType::lparen) {
         scanner_->next();
         auto expr = expression();
@@ -914,21 +942,23 @@ void Parser::resync(std::set<TokenType> types) {
 
 OperatorType token_to_operator(TokenType token) {
     switch(token) {
-        case TokenType::op_eq:    return OperatorType::EQ;
-        case TokenType::op_neq:   return OperatorType::NEQ;
-        case TokenType::op_leq:   return OperatorType::LEQ;
-        case TokenType::op_geq:   return OperatorType::GEQ;
-        case TokenType::op_lt:    return OperatorType::LT;
-        case TokenType::op_gt:    return OperatorType::GT;
-        case TokenType::op_times: return OperatorType::TIMES;
-        case TokenType::op_div:   return OperatorType::DIV;
-        case TokenType::op_mod:   return OperatorType::MOD;
-        case TokenType::op_plus:  return OperatorType::PLUS;
-        case TokenType::op_minus: return OperatorType::MINUS;
-        case TokenType::op_and:   return OperatorType::AND;
-        case TokenType::op_or:    return OperatorType::OR;
-        case TokenType::op_not:   return OperatorType::NOT;
+        case TokenType::op_eq:     return OperatorType::EQ;
+        case TokenType::op_neq:    return OperatorType::NEQ;
+        case TokenType::op_leq:    return OperatorType::LEQ;
+        case TokenType::op_geq:    return OperatorType::GEQ;
+        case TokenType::op_lt:     return OperatorType::LT;
+        case TokenType::op_gt:     return OperatorType::GT;
+        case TokenType::op_times:  return OperatorType::TIMES;
+        case TokenType::op_divide: return OperatorType::DIVIDE;
+        case TokenType::op_div:    return OperatorType::DIV;
+        case TokenType::op_mod:    return OperatorType::MOD;
+        case TokenType::op_plus:   return OperatorType::PLUS;
+        case TokenType::op_minus:  return OperatorType::MINUS;
+        case TokenType::op_and:    return OperatorType::AND;
+        case TokenType::op_or:     return OperatorType::OR;
+        case TokenType::op_not:    return OperatorType::NOT;
         default:
+            std::cerr << "Cannot map token type to operator." << std::endl;
             exit(1);
     }
 }

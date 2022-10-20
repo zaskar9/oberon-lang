@@ -37,10 +37,10 @@ public:
 
     virtual void visit(BooleanLiteralNode &node) = 0;
     virtual void visit(IntegerLiteralNode &node) = 0;
+    virtual void visit(RealLiteralNode &node) = 0;
     virtual void visit(StringLiteralNode &node) = 0;
     virtual void visit(NilLiteralNode &node) = 0;
 
-    virtual void visit(FunctionCallNode &node) = 0;
     virtual void visit(UnaryExpressionNode &node) = 0;
     virtual void visit(BinaryExpressionNode &node) = 0;
 

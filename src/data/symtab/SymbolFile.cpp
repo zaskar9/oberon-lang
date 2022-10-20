@@ -62,6 +62,38 @@ void SymbolFile::writeLong(long val) {
     file_.write(reinterpret_cast<const char*>(&val), sizeof(val));
 }
 
+float SymbolFile::readFloat() {
+    float val;
+    file_.read(reinterpret_cast<char *>(&val), sizeof(val));
+#ifdef _DEBUG
+    std::cout << val << "|";
+#endif
+    return val;
+}
+
+void SymbolFile::writeFloat(float val) {
+#ifdef _DEBUG
+    std::cout << val << "|";
+#endif
+    file_.write(reinterpret_cast<const char*>(&val), sizeof(val));
+}
+
+double SymbolFile::readDouble() {
+    double val;
+    file_.read(reinterpret_cast<char *>(&val), sizeof(val));
+#ifdef _DEBUG
+    std::cout << val << "|";
+#endif
+    return val;
+}
+
+void SymbolFile::writeDouble(double val) {
+#ifdef _DEBUG
+    std::cout << val << "|";
+#endif
+    file_.write(reinterpret_cast<const char*>(&val), sizeof(val));
+}
+
 std::string SymbolFile::readString() {
     unsigned long len;
     file_.read(reinterpret_cast<char *>(&len), sizeof(len));

@@ -143,17 +143,21 @@ void NodePrettyPrinter::visit(ImportNode &node) {
 }
 
 void NodePrettyPrinter::visit(ValueReferenceNode &node) {
+    if (node.getNodeType() == NodeType::procedure_call) {
+        call(node);
+        return;
+    }
     stream_ << *node.ident();
     for (size_t i = 0; i < node.getSelectorCount(); i++) {
         auto selector = node.getSelector(i);
         auto type = selector->getType();
         if (type == NodeType::array_type) {
             stream_ << "[";
-            dynamic_cast<ArraySelector *>(selector)->getExpression()->accept(*this);
+            dynamic_cast<ArrayIndex *>(selector)->getExpression()->accept(*this);
             stream_ << "]";
         } else if (type == NodeType::record_type) {
             stream_ << ".";
-            dynamic_cast<RecordSelector *>(selector)->getField()->accept(*this);
+            dynamic_cast<RecordField *>(selector)->getField()->accept(*this);
         } else if (type == NodeType::pointer_type) {
             stream_ << "^";
         }
@@ -195,23 +199,23 @@ void NodePrettyPrinter::visit(VariableDeclarationNode &node) {
 }
 
 void NodePrettyPrinter::visit(BooleanLiteralNode &node) {
-    stream_ << (node.getValue() ? "TRUE" : "FALSE");
+    stream_ << (node.value() ? "TRUE" : "FALSE");
 }
 
 void NodePrettyPrinter::visit(IntegerLiteralNode &node) {
-    stream_ << node.getValue();
+    stream_ << node.value();
+}
+
+void NodePrettyPrinter::visit(RealLiteralNode &node) {
+    stream_ << node.value();
 }
 
 void NodePrettyPrinter::visit(StringLiteralNode &node) {
-    stream_ << "\"" << Scanner::escape(node.getValue()) << "\"";
+    stream_ << "\"" << Scanner::escape(node.value()) << "\"";
 }
 
 void NodePrettyPrinter::visit([[maybe_unused]] NilLiteralNode &node) {
     stream_ << "NIL";
-}
-
-void NodePrettyPrinter::visit(FunctionCallNode &node) {
-    call(node);
 }
 
 void NodePrettyPrinter::visit(UnaryExpressionNode &node) {

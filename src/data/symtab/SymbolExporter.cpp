@@ -59,19 +59,21 @@ void SymbolExporter::writeDeclaration(SymbolFile *file, DeclarationNode *decl) {
             auto con = dynamic_cast<ConstantDeclarationNode*>(decl);
             switch (kind) {
                 case TypeKind::STRING:
-                    file->writeString(dynamic_cast<StringLiteralNode*>(con->getValue())->getValue());
+                    file->writeString(dynamic_cast<StringLiteralNode*>(con->getValue())->value());
                     break;
                 case TypeKind::INTEGER:
-                    file->writeInt(dynamic_cast<IntegerLiteralNode*>(con->getValue())->getValue());
+                    file->writeInt(dynamic_cast<IntegerLiteralNode*>(con->getValue())->value());
                     break;
                 case TypeKind::LONGINT:
-                    // TODO introduce literal for long values
-                    file->writeLong(dynamic_cast<IntegerLiteralNode*>(con->getValue())->getValue());
+                    file->writeLong(dynamic_cast<IntegerLiteralNode*>(con->getValue())->value());
                     break;
                 case TypeKind::REAL:
+                    file->writeFloat(dynamic_cast<RealLiteralNode*>(con->getValue())->value());
+                    break;
                 case TypeKind::LONGREAL:
+                    file->writeDouble(dynamic_cast<RealLiteralNode*>(con->getValue())->value());
                 default:
-                    logger_->error(file->path(), "Cannot export constant " + to_string(decl->getIdentifier()) + ".");
+                    logger_->error(file->path(), "Cannot export constant " + to_string(*decl->getIdentifier()) + ".");
             }
         }
     } else if (nodeType == NodeType::variable) {

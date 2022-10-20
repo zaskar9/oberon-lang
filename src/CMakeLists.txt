@@ -24,6 +24,7 @@ set(DATA_SOURCES
         data/ast/BasicTypeNode.cpp data/ast/BasicTypeNode.h
         data/ast/ProcedureTypeNode.cpp data/ast/ProcedureTypeNode.h
         data/ast/RecordTypeNode.cpp data/ast/RecordTypeNode.h
+        data/ast/PointerTypeNode.cpp data/ast/PointerTypeNode.h
         data/ast/BlockNode.cpp data/ast/BlockNode.h
         data/ast/ModuleNode.cpp data/ast/ModuleNode.h
         data/ast/ProcedureNode.cpp data/ast/ProcedureNode.h
@@ -35,7 +36,7 @@ set(DATA_SOURCES
         data/ast/LoopNode.cpp data/ast/LoopNode.h
         data/ast/StatementSequenceNode.cpp data/ast/StatementSequenceNode.h
         data/ast/ImportNode.cpp data/ast/ImportNode.h
-        data/ast/NodePrettyPrinter.cpp data/ast/NodePrettyPrinter.h data/ast/PointerTypeNode.cpp data/ast/PointerTypeNode.h)
+        data/ast/NodePrettyPrinter.cpp data/ast/NodePrettyPrinter.h)
 
 set(SYMTAB_SOURCES
         data/symtab/SymbolTable.cpp data/symtab/SymbolTable.h

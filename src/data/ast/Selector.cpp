@@ -8,38 +8,73 @@
 
 Selector::~Selector() = default;
 
+FilePos Selector::pos() const {
+    return pos_;
+}
+
 NodeType Selector::getType() const {
     return type_;
 }
 
-ArraySelector::ArraySelector(std::unique_ptr<ExpressionNode> expression) :
-        Selector(NodeType::array_type), expression_(std::move(expression)) { }
 
-ArraySelector::~ArraySelector() = default;
+ArrayIndex::ArrayIndex(const FilePos &pos, std::unique_ptr<ExpressionNode> expression) :
+        Selector(NodeType::array_type, pos), expression_(std::move(expression)) { }
 
-FilePos ArraySelector::pos() const {
-    return expression_->pos();
-}
+ArrayIndex::~ArrayIndex() = default;
 
-ExpressionNode *ArraySelector::getExpression() const {
+ExpressionNode *ArrayIndex::getExpression() const {
     return expression_.get();
 }
 
-RecordSelector::RecordSelector(std::unique_ptr<ValueReferenceNode> field) :
-        Selector(NodeType::record_type), ident_(std::move(field)) { }
 
-RecordSelector::~RecordSelector() = default;
+RecordField::RecordField(const FilePos &pos, std::unique_ptr<Ident> ident) :
+        Selector(NodeType::record_type, pos), ident_(std::move(ident)), field_() { }
 
-FilePos RecordSelector::pos() const {
-    return ident_->pos();
+RecordField::RecordField(const FilePos &pos, FieldNode *field) :
+        Selector(NodeType::record_type, pos), ident_(), field_(field) { }
+
+RecordField::~RecordField() = default;
+
+Ident *RecordField::ident() const {
+    return ident_ == nullptr ? field_->getIdentifier() : ident_.get();
 }
 
-ValueReferenceNode *RecordSelector::getField() const {
+void RecordField::setField(FieldNode *field) {
+    field_ = field;
+}
+
+FieldNode *RecordField::getField() const {
+    return field_;
+}
+
+
+Dereference::Dereference(const FilePos &pos) :
+        Selector(NodeType::pointer_type, pos) { }
+
+Dereference::~Dereference() = default;
+
+
+Typeguard::Typeguard(const FilePos &pos, std::unique_ptr<QualIdent> ident)  :
+        Selector(NodeType::type_declaration, pos), ident_(std::move(ident)) { }
+
+Typeguard::~Typeguard() = default;
+
+QualIdent *Typeguard::ident() const {
     return ident_.get();
 }
 
-CaretSelector::~CaretSelector() = default;
 
-FilePos CaretSelector::pos() const {
-    return pos_;
+ActualParameters::ActualParameters(const FilePos &pos) :
+        Selector(NodeType::parameter, pos), parameters_() { }
+
+ActualParameters::~ActualParameters() = default;
+
+void ActualParameters::addActualParameter(std::unique_ptr<ExpressionNode> parameter) {
+    parameters_.push_back(std::move(parameter));
+}
+
+void ActualParameters::moveActuralParameters(std::vector<std::unique_ptr<ExpressionNode>> &target) {
+    for (auto& parameter: parameters_) {
+        target.push_back(std::move(parameter));
+    }
 }

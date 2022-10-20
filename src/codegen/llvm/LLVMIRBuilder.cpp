@@ -95,6 +95,10 @@ void LLVMIRBuilder::visit(ProcedureNode &node) {
 void LLVMIRBuilder::visit([[maybe_unused]] ImportNode &node) { }
 
 void LLVMIRBuilder::visit(ValueReferenceNode &node) {
+    if (node.getNodeType() == NodeType::procedure_call) {
+        call(node);
+        return;
+    }
     auto ref = node.dereference();
     auto level = ref->getLevel();
     if (level == 1) /* global level */ {
@@ -128,15 +132,13 @@ void LLVMIRBuilder::visit(ValueReferenceNode &node) {
             if (selector_t->getNodeType() == NodeType::array_type) {
                 // handle array index access
                 setRefMode(true);
-                dynamic_cast<ArraySelector*>(sel)->getExpression()->accept(*this);
+                dynamic_cast<ArrayIndex*>(sel)->getExpression()->accept(*this);
                 indices.push_back(value_);
                 restoreRefMode();
                 selector_t = dynamic_cast<ArrayTypeNode*>(selector_t)->getMemberType();
             } else if (selector_t->getNodeType() == NodeType::record_type) {
                 // handle record field access
-                auto field_ref = dynamic_cast<RecordSelector *>(sel)->getField();
-                auto decl = field_ref->dereference();
-                auto field = dynamic_cast<FieldNode*>(decl);
+                auto field = dynamic_cast<RecordField *>(sel)->getField();
                 auto record_t = dynamic_cast<RecordTypeNode*>(selector_t);
                 for (size_t pos = 0; pos < record_t->getFieldCount(); pos++) {
                     if (field == record_t->getField(pos)) {
@@ -144,7 +146,7 @@ void LLVMIRBuilder::visit(ValueReferenceNode &node) {
                         break;
                     }
                 }
-                selector_t = field_ref->getType();
+                selector_t = field->getType();
             } else if (selector_t->getNodeType() == NodeType::pointer_type) {
                 // output the GEP up to the pointer
                 if (indices.size() > 1) {
@@ -156,6 +158,8 @@ void LLVMIRBuilder::visit(ValueReferenceNode &node) {
                 base = builder_.CreateLoad(getLLVMType(selector_t), base);
                 selector_t = dynamic_cast<PointerTypeNode *>(selector_t)->getBase();
                 type = selector_t;
+            } else {
+                logger_->error(sel->pos(), "Unexpected selector.");
             }
         }
         // clean up
@@ -203,16 +207,29 @@ void LLVMIRBuilder::visit([[maybe_unused]] VariableDeclarationNode &node) {
 }
 
 void LLVMIRBuilder::visit(BooleanLiteralNode &node) {
-    value_ = node.getValue() ? builder_.getTrue() : builder_.getFalse();
+    value_ = node.value() ? builder_.getTrue() : builder_.getFalse();
 }
 
 void LLVMIRBuilder::visit(IntegerLiteralNode &node) {
-    value_ = ConstantInt::getSigned(builder_.getInt32Ty(), node.getValue());
+    if (node.isLong()) {
+        value_ = ConstantInt::getSigned(builder_.getInt64Ty(), node.value());
+    } else {
+        value_ = ConstantInt::getSigned(builder_.getInt32Ty(), (int) node.value());
+    }
+    cast(node);
+}
+
+void LLVMIRBuilder::visit(RealLiteralNode &node) {
+    if (node.isLong()) {
+        value_ = ConstantFP::get(builder_.getDoubleTy(), node.value());
+    } else {
+        value_ = ConstantFP::get(builder_.getFloatTy(), (float) node.value());
+    }
     cast(node);
 }
 
 void LLVMIRBuilder::visit(StringLiteralNode &node) {
-    std::string val = node.getValue();
+    std::string val = node.value();
     value_ = builder_.CreateGlobalStringPtr(val, ".str");
 }
 
@@ -221,18 +238,16 @@ void LLVMIRBuilder::visit(NilLiteralNode &node) {
     value_ = ConstantPointerNull::get((PointerType*) type);
 }
 
-void LLVMIRBuilder::visit(FunctionCallNode &node) {
-    call(node);
-}
-
 void LLVMIRBuilder::visit(UnaryExpressionNode &node) {
+    auto type = node.getType();
     node.getExpression()->accept(*this);
+    cast(*node.getExpression());
     switch (node.getOperator()) {
         case OperatorType::NOT:
             value_ = builder_.CreateNot(value_);
             break;
         case OperatorType::NEG:
-            value_ = builder_.CreateNeg(value_);
+            value_ = type->isReal() ? builder_.CreateFNeg(value_) : builder_.CreateNeg(value_);
             break;
         case OperatorType::AND:
         case OperatorType::OR:
@@ -257,7 +272,9 @@ void LLVMIRBuilder::visit(UnaryExpressionNode &node) {
 }
 
 void LLVMIRBuilder::visit(BinaryExpressionNode &node) {
+    auto type = node.getType();
     node.getLeftExpression()->accept(*this);
+    cast(*node.getLeftExpression());
     auto lhs = value_;
     // Logical operators AND and OR are treated explicitly in order to enable short-circuiting.
     if (node.getOperator() == OperatorType::AND || node.getOperator() == OperatorType::OR) {
@@ -293,16 +310,20 @@ void LLVMIRBuilder::visit(BinaryExpressionNode &node) {
         value_ = phi;
     } else {
         node.getRightExpression()->accept(*this);
+        cast(*node.getRightExpression());
         auto rhs = value_;
         switch (node.getOperator()) {
             case OperatorType::PLUS:
-                value_ = builder_.CreateAdd(lhs, rhs);
+                value_ = type->isReal() ? builder_.CreateFAdd(lhs, rhs) : builder_.CreateAdd(lhs, rhs);
                 break;
             case OperatorType::MINUS:
-                value_ = builder_.CreateSub(lhs, rhs);
+                value_ = type->isReal() ? builder_.CreateFSub(lhs, rhs) : builder_.CreateSub(lhs, rhs);
                 break;
             case OperatorType::TIMES:
-                value_ = builder_.CreateMul(lhs, rhs);
+                value_ = type->isReal() ? builder_.CreateFMul(lhs, rhs) : builder_.CreateMul(lhs, rhs);
+                break;
+            case OperatorType::DIVIDE:
+                value_ = builder_.CreateFDiv(lhs, rhs);
                 break;
             case OperatorType::DIV:
                 value_ = builder_.CreateSDiv(lhs, rhs);
@@ -311,22 +332,22 @@ void LLVMIRBuilder::visit(BinaryExpressionNode &node) {
                 value_ = builder_.CreateSRem(lhs, rhs);
                 break;
             case OperatorType::EQ:
-                value_ = builder_.CreateICmpEQ(lhs, rhs);
+                value_ = type->isReal() ? builder_.CreateFCmpUEQ(lhs, rhs) : builder_.CreateICmpEQ(lhs, rhs);
                 break;
             case OperatorType::NEQ:
-                value_ = builder_.CreateICmpNE(lhs, rhs);
+                value_ = type->isReal() ? builder_.CreateFCmpUNE(lhs, rhs) : builder_.CreateICmpNE(lhs, rhs);
                 break;
             case OperatorType::LT:
-                value_ = builder_.CreateICmpSLT(lhs, rhs);
+                value_ = type->isReal() ? builder_.CreateFCmpULT(lhs, rhs) :builder_.CreateICmpSLT(lhs, rhs);
                 break;
             case OperatorType::GT:
-                value_ = builder_.CreateICmpSGT(lhs, rhs);
+                value_ = type->isReal() ? builder_.CreateFCmpUGT(lhs, rhs) : builder_.CreateICmpSGT(lhs, rhs);
                 break;
             case OperatorType::LEQ:
-                value_ = builder_.CreateICmpSLE(lhs, rhs);
+                value_ = type->isReal() ? builder_.CreateFCmpULE(lhs, rhs) : builder_.CreateICmpSLE(lhs, rhs);
                 break;
             case OperatorType::GEQ:
-                value_ = builder_.CreateICmpSGE(lhs, rhs);
+                value_ = type->isReal() ? builder_.CreateFCmpUGE(lhs, rhs) : builder_.CreateICmpSGE(lhs, rhs);
                 break;
             case OperatorType::AND:
             case OperatorType::OR:
@@ -378,6 +399,7 @@ void LLVMIRBuilder::visit(StatementSequenceNode &node) {
 void LLVMIRBuilder::visit(AssignmentNode &node) {
     setRefMode(true);
     node.getRvalue()->accept(*this);
+    cast(*node.getRvalue());
     Value* rValue = value_;
     restoreRefMode();
     node.getLvalue()->accept(*this);
@@ -488,7 +510,7 @@ void LLVMIRBuilder::visit(ForLoopNode& node) {
     restoreRefMode();
     auto body = BasicBlock::Create(builder_.getContext(), "loop_body", function_);
     auto tail = BasicBlock::Create(builder_.getContext(), "tail", function_);
-    auto step = dynamic_cast<IntegerLiteralNode*>(node.getStep())->getValue();
+    auto step = dynamic_cast<IntegerLiteralNode*>(node.getStep())->value();
     if (step > 0) {
         value_ = builder_.CreateICmpSLE(counter, end);
     } else {
@@ -531,21 +553,27 @@ void LLVMIRBuilder::visit(ReturnNode& node) {
 }
 
 void LLVMIRBuilder::cast(ExpressionNode &node) {
-    if (node.needsCast()) {
-        auto dest = node.getCast();
-        switch (dest->kind()) {
-            case TypeKind::BYTE:
-            case TypeKind::CHAR:
-            case TypeKind::INTEGER:
-            case TypeKind::LONGINT:
-                value_ = builder_.CreateIntCast(value_, getLLVMType(dest), true);
-                break;
-            case TypeKind::REAL:
-            case TypeKind::LONGREAL:
-                value_ = builder_.CreateFPCast(value_, getLLVMType(dest));
-                break;
-            default:
-                logger_->error(node.pos(), "Cannot cast to " + to_string(*dest->getIdentifier()) + ".");
+    auto target = node.getCast();
+    auto source = node.getType();
+    if (target && target != source) {
+        if (source->isInteger()) {
+            if (target->isInteger()) {
+                if (target->getSize() > source->getSize()) {
+                    value_ = builder_.CreateSExt(value_, getLLVMType(target));
+                } else {
+                    value_ = builder_.CreateTrunc(value_, getLLVMType(target));
+                }
+            } else if (target->isReal()) {
+                value_ = builder_.CreateSIToFP(value_, getLLVMType(target));
+            }
+        } else if (source->isReal()) {
+            if (target->isReal()) {
+                if (target->getSize() > source->getSize()) {
+                    value_ = builder_.CreateFPExt(value_, getLLVMType(target));
+                } else {
+                    value_ = builder_.CreateFPTrunc(value_, getLLVMType(target));
+                }
+            }
         }
     }
 }
@@ -569,18 +597,19 @@ Value *LLVMIRBuilder::callBuiltIn(std::string name, std::vector<Value *> &params
 void LLVMIRBuilder::call(ProcedureNodeReference &node) {
     std::vector<Value*> params;
     // caution: formal parameters on referenced node, actual parameters on reference node
-    size_t fp_cnt = node.dereference()->getFormalParameterCount();
+    auto proc = dynamic_cast<ProcedureNode *>(node.dereference());
+    size_t fp_cnt = proc->getFormalParameterCount();
     for (size_t i = 0; i < node.getActualParameterCount(); i++) {
-        setRefMode(i >= fp_cnt || !node.dereference()->getFormalParameter(i)->isVar());
+        setRefMode(i >= fp_cnt || !proc->getFormalParameter(i)->isVar());
         node.getActualParameter(i)->accept(*this);
         params.push_back(value_);
         restoreRefMode();
     }
-    auto ident = node.dereference()->getIdentifier();
-    auto name = qualifiedName(ident, node.dereference()->isExtern());
-    auto proc = module_->getFunction(name);
-    if (proc) {
-        value_ = builder_.CreateCall(proc, params);
+    auto ident = proc->getIdentifier();
+    auto name = qualifiedName(ident, proc->isExtern());
+    auto fun = module_->getFunction(name);
+    if (fun) {
+        value_ = builder_.CreateCall(fun, params);
     } else {
         value_ = callBuiltIn(ident->name(), params);
         if (!value_) {
@@ -648,6 +677,10 @@ Type* LLVMIRBuilder::getLLVMType(TypeNode *type) {
             result = builder_.getInt32Ty();
         } else if (type->kind() == TypeKind::LONGINT) {
             result = builder_.getInt64Ty();
+        } else if (type->kind() == TypeKind::REAL) {
+            result = builder_.getFloatTy();
+        } else if (type->kind() == TypeKind::LONGREAL) {
+            result = builder_.getDoubleTy();
         } else if (type->kind() == TypeKind::STRING) {
             result = builder_.getInt8PtrTy();
         }
@@ -655,6 +688,7 @@ Type* LLVMIRBuilder::getLLVMType(TypeNode *type) {
     }
     if (result == nullptr) {
         logger_->error(type->pos(), "Cannot map type to LLVM intermediate representation.");
+        exit(1);
     }
     return result;
 }

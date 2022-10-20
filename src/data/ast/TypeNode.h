@@ -42,6 +42,15 @@ public:
 
     [[nodiscard]] bool isAnonymous() const;
 
+    [[nodiscard]] bool isArray() const;
+    [[nodiscard]] bool isRecord() const;
+    [[nodiscard]] bool isPointer() const;
+    [[nodiscard]] bool isBoolean() const;
+    [[nodiscard]] bool isNumeric() const;
+    [[nodiscard]] bool isInteger() const;
+    [[nodiscard]] bool isReal() const;
+    [[nodiscard]] bool isString() const;
+
     void setRef(int ref);
     [[nodiscard]] int getRef() const;
 

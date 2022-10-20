@@ -36,5 +36,6 @@ void Compiler::compile(boost::filesystem::path file) {
 #endif
             codegen_->generate(ast.get(), fp.string());
         }
+
     }
 }

@@ -20,7 +20,7 @@ void LambdaLifter::call(ProcedureNodeReference &node) {
     for (size_t i = 0; i < node.getActualParameterCount(); i++) {
         node.getActualParameter(i)->accept(*this);
     }
-    auto proc = node.dereference();
+    auto proc = dynamic_cast<ProcedureNode *>(node.dereference());
     if (proc->getFormalParameterCount() > node.getActualParameterCount()) {
         auto param = std::make_unique<ValueReferenceNode>(EMPTY_POS, env_);
         if (proc->getLevel() != env_->getLevel()) {
@@ -72,8 +72,8 @@ void LambdaLifter::visit(ProcedureNode &node) {
             for (size_t i = 0; i < node.getFormalParameterCount(); i++) {
                 auto param = node.getFormalParameter(i);
                 auto lhs = std::make_unique<ValueReferenceNode>(EMPTY_POS, env_);
-                auto ref = std::make_unique<ValueReferenceNode>(EMPTY_POS, type->getField(param->getIdentifier()->name()));
-                lhs->addSelector(std::make_unique<RecordSelector>(std::move(ref)));
+                auto field = type->getField(param->getIdentifier()->name());
+                lhs->addSelector(std::make_unique<RecordField>(EMPTY_POS, field));
                 auto rhs = std::make_unique<ValueReferenceNode>(EMPTY_POS, param);
                 node.getStatements()->insertStatement(i, std::make_unique<AssignmentNode>(EMPTY_POS, std::move(lhs), std::move(rhs)));
             }
@@ -88,8 +88,8 @@ void LambdaLifter::visit(ProcedureNode &node) {
                 if (param->isVar()) {
                     auto lhs = std::make_unique<ValueReferenceNode>(EMPTY_POS, param);
                     auto rhs = std::make_unique<ValueReferenceNode>(EMPTY_POS, env_);
-                    auto ref = std::make_unique<ValueReferenceNode>(EMPTY_POS, type->getField(param->getIdentifier()->name()));
-                    rhs->addSelector(std::make_unique<RecordSelector>(std::move(ref)));
+                    auto field = type->getField(param->getIdentifier()->name());
+                    rhs->addSelector(std::make_unique<RecordField>(EMPTY_POS, field));
                     node.getStatements()->addStatement(std::make_unique<AssignmentNode>(EMPTY_POS, std::move(lhs), std::move(rhs)));
                 }
             }
@@ -98,8 +98,8 @@ void LambdaLifter::visit(ProcedureNode &node) {
                 if (param) {
                     auto lhs = std::make_unique<ValueReferenceNode>(EMPTY_POS, param);
                     auto rhs = std::make_unique<ValueReferenceNode>(EMPTY_POS, env_);
-                    auto ref = std::make_unique<ValueReferenceNode>(EMPTY_POS, type->getField(SUPER_));
-                    rhs->addSelector(std::make_unique<RecordSelector>(std::move(ref)));
+                    auto field = type->getField(SUPER_);
+                    rhs->addSelector(std::make_unique<RecordField>(EMPTY_POS, field));
                     node.getStatements()->addStatement(std::make_unique<AssignmentNode>(EMPTY_POS, std::move(lhs), std::move(rhs)));
                 }
             }
@@ -157,35 +157,38 @@ void LambdaLifter::visit(VariableDeclarationNode &node) {
 void LambdaLifter::visit([[maybe_unused]] TypeReferenceNode &node) { }
 
 void LambdaLifter::visit(ValueReferenceNode &node) {
+    if (node.getNodeType() == NodeType::procedure_call) {
+        call(node);
+        return;
+    }
     auto decl = node.dereference();
     if (decl->getLevel() == SymbolTable::MODULE_LEVEL ||
         (env_->getIdentifier()->name() == SUPER_ && env_->getLevel() == decl->getLevel())) {
         // global variable or local variable in leaf procedure
         return;
     }
-        for (size_t i = 0; i < node.getSelectorCount(); i++) {
-            auto selector = node.getSelector(i);
-            if (selector->getType() == NodeType::array_type) {
-                dynamic_cast<ArraySelector *>(selector)->getExpression()->accept(*this);
-            }
+    for (size_t i = 0; i < node.getSelectorCount(); i++) {
+        auto selector = node.getSelector(i);
+        if (selector->getType() == NodeType::array_type) {
+            dynamic_cast<ArrayIndex *>(selector)->getExpression()->accept(*this);
         }
+    }
     node.resolve(env_);
     if (!envFieldResolver(&node, decl->getIdentifier()->name(), decl->getType())) {
         std::cerr << "Unable to resolve record field: " << decl->getIdentifier() << "." << std::endl;
     }
 }
 
+
 void LambdaLifter::visit([[maybe_unused]] BooleanLiteralNode &node) { }
 
 void LambdaLifter::visit([[maybe_unused]] IntegerLiteralNode &node) { }
 
+void LambdaLifter::visit([[maybe_unused]] RealLiteralNode &node) { }
+
 void LambdaLifter::visit([[maybe_unused]] StringLiteralNode &node) { }
 
 void LambdaLifter::visit([[maybe_unused]] NilLiteralNode &node) { }
-
-void LambdaLifter::visit(FunctionCallNode &node) {
-    call(node);
-}
 
 void LambdaLifter::visit(UnaryExpressionNode &node) {
     node.getExpression()->accept(*this);
@@ -274,13 +277,13 @@ bool LambdaLifter::envFieldResolver(ValueReferenceNode *var, const std::string &
     while (true) {
         auto field = type->getField(field_name);
         if (field && field->getType() == field_type) {
-            var->insertSelector(num, std::make_unique<RecordSelector>(std::make_unique<ValueReferenceNode>(EMPTY_POS, field)));
+            var->insertSelector(num, std::make_unique<RecordField>(EMPTY_POS, field));
             var->setType(field->getType());
             return true;
         } else {
             field = type->getField(SUPER_);
             if (field) {
-                var->insertSelector(num, std::make_unique<RecordSelector>(std::make_unique<ValueReferenceNode>(EMPTY_POS, field)));
+                var->insertSelector(num, std::make_unique<RecordField>(EMPTY_POS, field));
                 type = dynamic_cast<RecordTypeNode *>(field->getType());
                 num++;
             } else {

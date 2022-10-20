@@ -26,59 +26,6 @@ public:
 
 };
 
-class Selector;
-
-class Designator {
-
-private:
-    std::unique_ptr<Ident> ident_;
-    std::vector<std::unique_ptr<Selector>> selectors_;
-
-public:
-    explicit Designator(std::unique_ptr<Ident> ident) : ident_(std::move(ident)), selectors_() {};
-    virtual ~Designator();
-
-    [[nodiscard]] virtual Ident *ident() const;
-
-    void addSelector(std::unique_ptr<Selector> selector);
-    void insertSelector(size_t num, std::unique_ptr<Selector> selector);
-    void setSelector(size_t num, std::unique_ptr<Selector> selector);
-    [[nodiscard]] Selector *getSelector(size_t num) const;
-    [[nodiscard]] size_t getSelectorCount() const;
-    void unqualify();
-
-};
-
-class ValueReferenceNode : public ExpressionNode, public NodeReference, public Designator {
-
-private:
-    DeclarationNode *node_;
-
-public:
-    explicit ValueReferenceNode(const NodeType nodeType, const FilePos &pos, std::unique_ptr<Ident> ident) :
-            ExpressionNode(nodeType, pos), NodeReference(), Designator(std::move(ident)), node_() {};
-    explicit ValueReferenceNode(const FilePos &pos, std::unique_ptr<Ident> ident) :
-            ValueReferenceNode(NodeType::value_reference, pos, std::move(ident)) {};
-    explicit ValueReferenceNode(const FilePos &pos, DeclarationNode *node) :
-            ExpressionNode(NodeType::value_reference, pos, node->getType()), NodeReference(),
-            Designator(std::make_unique<QualIdent>(node->getIdentifier())),
-            node_(node) {};
-    ~ValueReferenceNode() override = default;
-
-    [[nodiscard]] bool isResolved() const override;
-    void resolve(DeclarationNode *node);
-    [[nodiscard]] DeclarationNode *dereference() const override;
-
-    [[nodiscard]] bool isConstant() const override;
-
-    [[nodiscard]] int getPrecedence() const final;
-
-    void accept(NodeVisitor &visitor) override;
-
-    void print(std::ostream &stream) const override;
-
-};
-
 
 class TypeReferenceNode final : public TypeNode, public NodeReference {
 
@@ -93,93 +40,127 @@ public:
     ~TypeReferenceNode() final = default;
 
     [[nodiscard]] bool isResolved() const final;
-    void resolve(TypeNode *node);
     [[nodiscard]] TypeNode *dereference() const final;
+
+    void resolve(TypeNode *node);
 
     [[nodiscard]] TypeKind kind() const final;
     [[nodiscard]] unsigned int getSize() const final;
 
     void accept(NodeVisitor &visitor) final;
-
     void print(std::ostream &stream) const final;
 
 };
 
 
-class ProcedureNodeReference : public NodeReference {
+class Selector;
+
+class Designator {
 
 private:
-    ProcedureNode *procedure_;
+    std::unique_ptr<QualIdent> ident_;
+    std::vector<std::unique_ptr<Selector>> selectors_;
+
+public:
+    explicit Designator(std::unique_ptr<QualIdent> ident) :
+            ident_(std::move(ident)), selectors_() {};
+    explicit Designator(std::unique_ptr<Ident> ident) :
+            ident_(std::make_unique<QualIdent>(ident.get())), selectors_() {};
+    explicit Designator(std::unique_ptr<Designator> &&designator) :
+            ident_(std::move(designator->ident_)), selectors_(std::move(designator->selectors_)) {};
+    virtual ~Designator();
+
+    [[nodiscard]] QualIdent *ident() const;
+
+    void addSelector(std::unique_ptr<Selector> selector);
+    void insertSelector(size_t num, std::unique_ptr<Selector> selector);
+    void setSelector(size_t num, std::unique_ptr<Selector> selector);
+    void removeSelector(size_t num);
+    [[nodiscard]] Selector *getSelector(size_t num) const;
+    [[nodiscard]] size_t getSelectorCount() const;
+
+    void disqualify();
+
+};
+
+
+class ProcedureNodeReference : public NodeReference, public Designator {
+
+private:
     std::vector<std::unique_ptr<ExpressionNode>> parameters_;
 
 public:
-    explicit ProcedureNodeReference() : procedure_(), parameters_() {};
-    ~ProcedureNodeReference() override = default;
+    explicit ProcedureNodeReference(std::unique_ptr<Designator> designator) :
+            Designator(std::move(designator)),
+            parameters_() {};
+    ~ProcedureNodeReference() override;
 
-    [[nodiscard]] virtual FilePos pos() const = 0;
+    [[nodiscard]] virtual FilePos pos() = 0;
 
-    [[nodiscard]] virtual QualIdent *ident() const = 0;
-
-    [[nodiscard]] bool isResolved() const override;
-    void resolve(ProcedureNode *procedure);
-    [[nodiscard]] ProcedureNode *dereference() const override;
+    virtual void resolve(DeclarationNode *node) = 0;
 
     void addActualParameter(std::unique_ptr<ExpressionNode> parameter);
     void setActualParameter(size_t num, std::unique_ptr<ExpressionNode> parameter);
     [[nodiscard]] ExpressionNode *getActualParameter(size_t num) const;
     [[nodiscard]] size_t getActualParameterCount() const;
 
-};
-
-
-class FunctionCallNode final : public ValueReferenceNode, public ProcedureNodeReference {
-
-public:
-    explicit FunctionCallNode(const FilePos &pos, std::unique_ptr<QualIdent> ident) :
-            ValueReferenceNode(NodeType::procedure_call, pos, std::move(ident)),
-            ProcedureNodeReference() {};
-    ~FunctionCallNode() override = default;
-
-    [[nodiscard]] FilePos pos() const override {
-        return ValueReferenceNode::pos();
-    }
-
-    [[nodiscard]] QualIdent *ident() const override {
-        return dynamic_cast<QualIdent *>(Designator::ident());
-    }
-
-    [[nodiscard]] ProcedureNode *dereference() const override {
-        return ProcedureNodeReference::dereference();
-    }
-
-    [[nodiscard]] bool isConstant() const final;
-    [[nodiscard]] TypeNode *getType() const final;
-
-    void accept(NodeVisitor &visitor) final;
-
-    void print(std::ostream &stream) const final;
+protected:
+    void initActualParameters();
 
 };
 
-class ProcedureCallNode final : public StatementNode, public ProcedureNodeReference, public Designator {
+
+class ValueReferenceNode final : public ExpressionNode, public ProcedureNodeReference {
+
+private:
+    DeclarationNode *node_;
 
 public:
-    ProcedureCallNode(FilePos pos, std::unique_ptr<QualIdent> ident) :
+    explicit ValueReferenceNode(const FilePos &pos, std::unique_ptr<Designator> designator) :
+            ExpressionNode(NodeType::value_reference, pos),
+            ProcedureNodeReference(std::move(designator)),
+            node_() {};
+    explicit ValueReferenceNode(const FilePos &pos, DeclarationNode *node);
+    ~ValueReferenceNode() override = default;
+
+    [[nodiscard]] FilePos pos() override { return ExpressionNode::pos(); };
+
+    void resolve(DeclarationNode *node) override;
+
+    [[nodiscard]] bool isResolved() const override;
+    [[nodiscard]] DeclarationNode *dereference() const override;
+
+    [[nodiscard]] bool isConstant() const override;
+    [[nodiscard]] int getPrecedence() const override;
+    [[nodiscard]] TypeNode* getType() const override;
+
+    void accept(NodeVisitor &visitor) override;
+    void print(std::ostream &stream) const override;
+
+};
+
+
+class ProcedureCallNode final : public StatementNode, public ProcedureNodeReference {
+
+private:
+    ProcedureNode *node_;
+
+public:
+    ProcedureCallNode(FilePos pos, std::unique_ptr<Designator> designator) :
             StatementNode(NodeType::procedure_call, pos),
-            ProcedureNodeReference(), Designator(std::move(ident)) {};
+            ProcedureNodeReference(std::move(designator)),
+            node_() {};
     ~ProcedureCallNode() override = default;
 
-    [[nodiscard]] FilePos pos() const override {
-        return StatementNode::pos();
-    }
+    [[nodiscard]] FilePos pos() override { return StatementNode::pos(); };
 
-    [[nodiscard]] QualIdent *ident() const override {
-        return dynamic_cast<QualIdent *>(Designator::ident());
-    };
+    void resolve(DeclarationNode *node) override;
 
-    void accept(NodeVisitor &visitor) final;
+    [[nodiscard]] bool isResolved() const override;
+    [[nodiscard]] ProcedureNode *dereference() const override;
 
-    void print(std::ostream &stream) const final;
+    void accept(NodeVisitor &visitor) override;
+    void print(std::ostream &stream) const override;
 
 };
 

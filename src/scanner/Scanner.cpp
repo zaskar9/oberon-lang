@@ -19,7 +19,7 @@ Scanner::Scanner(const boost::filesystem::path &path, Logger *logger) :
     init();
     file_.open(filename_, std::ios::in);
     if (!file_.is_open()) {
-        logger_->error(PROJECT_NAME, "cannot openNamespace file: " + filename_ + ".");
+        logger_->error(PROJECT_NAME, "cannot open file: " + filename_ + ".");
         exit(1);
     }
     read();
@@ -52,11 +52,18 @@ void Scanner::init() {
                   { "TRUE", TokenType::boolean_literal}, { "FALSE", TokenType::boolean_literal } };
 }
 
-const Token* Scanner::peek() {
+const Token* Scanner::peek(bool advance) {
     if (tokens_.empty()) {
         tokens_.push(scanToken());
+        return tokens_.back();
     }
-    return tokens_.front();
+    if (advance) {
+        auto token = tokens_.back();
+        tokens_.push(scanToken());
+        return token;
+    } else {
+        return tokens_.front();
+    }
 }
 
 std::unique_ptr<const Token> Scanner::next() {
@@ -95,6 +102,10 @@ const Token* Scanner::scanToken() {
                 case '*':
                     read();
                     token = new Token(TokenType::op_times, pos);
+                    break;
+                case '/':
+                    read();
+                    token = new Token(TokenType::op_divide, pos);
                     break;
                 case '+':
                     read();
@@ -333,9 +344,9 @@ const Token* Scanner::scanNumber() {
             logger_->error(pos, "invalid real literal: " + num + ".");
         }
         if (value >= std::numeric_limits<float>::lowest() && value <= std::numeric_limits<float>::max()) {
-            return new RealLiteralToken(pos, current(), static_cast<float>(value));
+            return new FloatLiteralToken(pos, current(), static_cast<float>(value));
         }
-        return new LongrealLiteralToken(pos, current(), value);
+        return new DoubleLiteralToken(pos, current(), value);
     } else {
         long value;
         try {
@@ -349,9 +360,9 @@ const Token* Scanner::scanNumber() {
             value = 0;
         }
         if (value >= std::numeric_limits<int>::lowest() && value <= std::numeric_limits<int>::max()) {
-            return new IntegerLiteralToken(pos, current(), static_cast<int>(value));
+            return new IntLiteralToken(pos, current(), static_cast<int>(value));
         }
-        return new LongintLiteralToken(pos, current(), value);
+        return new LongLiteralToken(pos, current(), value);
     }
 }
 
