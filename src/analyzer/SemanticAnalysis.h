@@ -8,6 +8,7 @@
 #define OBERON_LLVM_SEMANTICANALYSIS_H
 
 
+#include <map>
 #include "Analyzer.h"
 #include "data/ast/NodeVisitor.h"
 #include "data/symtab/SymbolTable.h"
@@ -23,6 +24,7 @@ private:
     BlockNode *parent_;
     SymbolImporter *importer_;
     SymbolExporter *exporter_;
+    std::map<std::string, PointerTypeNode *> forwards_;
     TypeNode *tBoolean_, *tByte_, *tChar_, *tInteger_, *tReal_, *tLongReal_, *tString_;
 
     void block(BlockNode &node);

@@ -30,7 +30,7 @@ public:
     [[nodiscard]] virtual bool isExported() const { return false; };
 
     virtual void print(std::ostream &stream) const;
-    virtual bool equals(const Ident &other) const;
+    [[nodiscard]] virtual bool equals(const Ident &other) const;
 
     friend std::ostream& operator<<(std::ostream &stream, const Ident &ident);
     friend bool operator==(const Ident &a, const Ident &b);
@@ -79,8 +79,8 @@ public:
 
     [[nodiscard]] std::string qualifier() const;
 
-    virtual void print(std::ostream &stream) const override;
-    virtual bool equals(const Ident &other) const override;
+    void print(std::ostream &stream) const override;
+    bool equals(const Ident &other) const override;
 
 };
 
