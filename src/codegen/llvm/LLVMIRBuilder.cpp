@@ -207,16 +207,29 @@ void LLVMIRBuilder::visit([[maybe_unused]] VariableDeclarationNode &node) {
 }
 
 void LLVMIRBuilder::visit(BooleanLiteralNode &node) {
-    value_ = node.getValue() ? builder_.getTrue() : builder_.getFalse();
+    value_ = node.value() ? builder_.getTrue() : builder_.getFalse();
 }
 
 void LLVMIRBuilder::visit(IntegerLiteralNode &node) {
-    value_ = ConstantInt::getSigned(builder_.getInt32Ty(), node.getValue());
+    if (node.isLong()) {
+        value_ = ConstantInt::getSigned(builder_.getInt64Ty(), node.value());
+    } else {
+        value_ = ConstantInt::getSigned(builder_.getInt32Ty(), (int) node.value());
+    }
+    cast(node);
+}
+
+void LLVMIRBuilder::visit(RealLiteralNode &node) {
+    if (node.isLong()) {
+        value_ = ConstantFP::get(builder_.getDoubleTy(), node.value());
+    } else {
+        value_ = ConstantFP::get(builder_.getFloatTy(), (float) node.value());
+    }
     cast(node);
 }
 
 void LLVMIRBuilder::visit(StringLiteralNode &node) {
-    std::string val = node.getValue();
+    std::string val = node.value();
     value_ = builder_.CreateGlobalStringPtr(val, ".str");
 }
 
@@ -227,6 +240,7 @@ void LLVMIRBuilder::visit(NilLiteralNode &node) {
 
 void LLVMIRBuilder::visit(UnaryExpressionNode &node) {
     node.getExpression()->accept(*this);
+    cast(*node.getExpression());
     switch (node.getOperator()) {
         case OperatorType::NOT:
             value_ = builder_.CreateNot(value_);
@@ -258,6 +272,7 @@ void LLVMIRBuilder::visit(UnaryExpressionNode &node) {
 
 void LLVMIRBuilder::visit(BinaryExpressionNode &node) {
     node.getLeftExpression()->accept(*this);
+    cast(*node.getLeftExpression());
     auto lhs = value_;
     // Logical operators AND and OR are treated explicitly in order to enable short-circuiting.
     if (node.getOperator() == OperatorType::AND || node.getOperator() == OperatorType::OR) {
@@ -293,6 +308,7 @@ void LLVMIRBuilder::visit(BinaryExpressionNode &node) {
         value_ = phi;
     } else {
         node.getRightExpression()->accept(*this);
+        cast(*node.getRightExpression());
         auto rhs = value_;
         switch (node.getOperator()) {
             case OperatorType::PLUS:
@@ -303,6 +319,9 @@ void LLVMIRBuilder::visit(BinaryExpressionNode &node) {
                 break;
             case OperatorType::TIMES:
                 value_ = builder_.CreateMul(lhs, rhs);
+                break;
+            case OperatorType::DIVIDE:
+                value_ = builder_.CreateFDiv(lhs, rhs);
                 break;
             case OperatorType::DIV:
                 value_ = builder_.CreateSDiv(lhs, rhs);
@@ -378,6 +397,7 @@ void LLVMIRBuilder::visit(StatementSequenceNode &node) {
 void LLVMIRBuilder::visit(AssignmentNode &node) {
     setRefMode(true);
     node.getRvalue()->accept(*this);
+    cast(*node.getRvalue());
     Value* rValue = value_;
     restoreRefMode();
     node.getLvalue()->accept(*this);
@@ -488,7 +508,7 @@ void LLVMIRBuilder::visit(ForLoopNode& node) {
     restoreRefMode();
     auto body = BasicBlock::Create(builder_.getContext(), "loop_body", function_);
     auto tail = BasicBlock::Create(builder_.getContext(), "tail", function_);
-    auto step = dynamic_cast<IntegerLiteralNode*>(node.getStep())->getValue();
+    auto step = dynamic_cast<IntegerLiteralNode*>(node.getStep())->value();
     if (step > 0) {
         value_ = builder_.CreateICmpSLE(counter, end);
     } else {
@@ -644,6 +664,10 @@ Type* LLVMIRBuilder::getLLVMType(TypeNode *type, bool isPtr) {
             result = builder_.getInt32Ty();
         } else if (type->kind() == TypeKind::LONGINT) {
             result = builder_.getInt64Ty();
+        } else if (type->kind() == TypeKind::REAL) {
+            result = builder_.getFloatTy();
+        } else if (type->kind() == TypeKind::LONGREAL) {
+            result = builder_.getDoubleTy();
         } else if (type->kind() == TypeKind::STRING) {
             result = builder_.getInt8PtrTy();
         }

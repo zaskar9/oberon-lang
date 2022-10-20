@@ -37,6 +37,7 @@ public:
 
     virtual void visit(BooleanLiteralNode &node) = 0;
     virtual void visit(IntegerLiteralNode &node) = 0;
+    virtual void visit(RealLiteralNode &node) = 0;
     virtual void visit(StringLiteralNode &node) = 0;
     virtual void visit(NilLiteralNode &node) = 0;
 

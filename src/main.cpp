@@ -22,6 +22,9 @@ int main(const int argc, const char *argv[]) {
 #ifdef _DEBUG
     logger->setLevel(LogLevel::DEBUG);
 #endif
+
+    std::cout << std::numeric_limits<float>::max() << std::endl;
+
     // TODO move CodeGen into Compiler by moving corresponding flags to CompilerFlags
     auto codegen = std::make_unique<LLVMCodeGen>(logger.get());
     auto flags = std::make_unique<CompilerFlags>();

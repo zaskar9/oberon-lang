@@ -184,6 +184,8 @@ void LambdaLifter::visit([[maybe_unused]] BooleanLiteralNode &node) { }
 
 void LambdaLifter::visit([[maybe_unused]] IntegerLiteralNode &node) { }
 
+void LambdaLifter::visit([[maybe_unused]] RealLiteralNode &node) { }
+
 void LambdaLifter::visit([[maybe_unused]] StringLiteralNode &node) { }
 
 void LambdaLifter::visit([[maybe_unused]] NilLiteralNode &node) { }

@@ -199,15 +199,19 @@ void NodePrettyPrinter::visit(VariableDeclarationNode &node) {
 }
 
 void NodePrettyPrinter::visit(BooleanLiteralNode &node) {
-    stream_ << (node.getValue() ? "TRUE" : "FALSE");
+    stream_ << (node.value() ? "TRUE" : "FALSE");
 }
 
 void NodePrettyPrinter::visit(IntegerLiteralNode &node) {
-    stream_ << node.getValue();
+    stream_ << node.value();
+}
+
+void NodePrettyPrinter::visit(RealLiteralNode &node) {
+    stream_ << node.value();
 }
 
 void NodePrettyPrinter::visit(StringLiteralNode &node) {
-    stream_ << "\"" << Scanner::escape(node.getValue()) << "\"";
+    stream_ << "\"" << Scanner::escape(node.value()) << "\"";
 }
 
 void NodePrettyPrinter::visit([[maybe_unused]] NilLiteralNode &node) {

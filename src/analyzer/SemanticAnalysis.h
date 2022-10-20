@@ -23,7 +23,7 @@ private:
     BlockNode *parent_;
     SymbolImporter *importer_;
     SymbolExporter *exporter_;
-    TypeNode *tBoolean_, *tByte_, *tChar_, *tInteger_, *tReal_, *tString_;
+    TypeNode *tBoolean_, *tByte_, *tChar_, *tInteger_, *tReal_, *tLongReal_, *tString_;
 
     void block(BlockNode &node);
     void call(ProcedureNodeReference &node);
@@ -44,6 +44,7 @@ private:
 
     void visit(BooleanLiteralNode &node) override;
     void visit(IntegerLiteralNode &node) override;
+    void visit(RealLiteralNode &node) override;
     void visit(StringLiteralNode &node) override;
     void visit(NilLiteralNode &node) override;
 
@@ -73,7 +74,8 @@ private:
     void checkExport(DeclarationNode &node);
 
     std::unique_ptr<LiteralNode> fold(const ExpressionNode *expr) const;
-    int foldNumber(const ExpressionNode *expr) const;
+    long foldInteger(const ExpressionNode *expr) const;
+    double foldReal(const ExpressionNode *expr) const;
     bool foldBoolean(const ExpressionNode *expr) const;
     std::string foldString(const ExpressionNode *expr) const;
 
@@ -81,6 +83,7 @@ private:
 
     bool isNumeric(TypeNode *type) const;
     bool isInteger(TypeNode *type) const;
+    bool isReal(TypeNode *type) const;
     bool isPointer(TypeNode *type) const;
 
     TypeNode *commonType(TypeNode *lhsType, TypeNode *rhsType) const;

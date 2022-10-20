@@ -37,10 +37,10 @@ std::ostream& operator<<(std::ostream &stream, const TokenType &type) {
         case TokenType::boolean_literal: result = "BOOLEAN literal"; break;
         case TokenType::byte_literal: result = "BYTE literal"; break;
         case TokenType::char_literal: result = "CHAR literal"; break;
-        case TokenType::integer_literal: result = "INTEGER literal"; break;
-        case TokenType::longint_literal: result = "LONGINT literal"; break;
-        case TokenType::real_literal: result = "REAL literal"; break;
-        case TokenType::longreal_literal: result = "LONGREAL literal"; break;
+        case TokenType::int_literal: result = "INTEGER literal"; break;
+        case TokenType::long_literal: result = "LONGINT literal"; break;
+        case TokenType::float_literal: result = "REAL literal"; break;
+        case TokenType::double_literal: result = "LONGREAL literal"; break;
         case TokenType::string_literal: result = "STRING literal"; break;
         case TokenType::const_ident: result = "identifier"; break;
         case TokenType::period: result = "."; break;

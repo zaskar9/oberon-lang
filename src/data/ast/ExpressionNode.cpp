@@ -17,6 +17,7 @@ std::ostream& operator<<(std::ostream &stream, const OperatorType &op) {
         case OperatorType::GEQ: result = ">="; break;
         case OperatorType::LEQ: result = "<="; break;
         case OperatorType::TIMES: result = "*"; break;
+        case OperatorType::DIVIDE: result = "/"; break;
         case OperatorType::DIV: result = "DIV"; break;
         case OperatorType::MOD: result = "MOD"; break;
         case OperatorType::PLUS: result = "+"; break;
@@ -45,6 +46,7 @@ int precedence(const OperatorType &op) {
         case OperatorType::OR:
             return 1;
         case OperatorType::TIMES:
+        case OperatorType::DIVIDE:
         case OperatorType::DIV:
         case OperatorType::MOD:
         case OperatorType::AND:
@@ -167,7 +169,7 @@ int LiteralNode::getPrecedence() const {
     return 4;
 }
 
-bool BooleanLiteralNode::getValue() const {
+bool BooleanLiteralNode::value() const {
     return value_;
 }
 
@@ -180,7 +182,11 @@ void BooleanLiteralNode::print(std::ostream &stream) const {
 }
 
 
-int IntegerLiteralNode::getValue() const {
+bool IntegerLiteralNode::isLong() const {
+    return value_ < std::numeric_limits<int>::lowest() || value_ > std::numeric_limits<int>::max();
+}
+
+long IntegerLiteralNode::value() const {
     return value_;
 }
 
@@ -193,7 +199,24 @@ void IntegerLiteralNode::print(std::ostream &stream) const {
 }
 
 
-std::string StringLiteralNode::getValue() const {
+bool RealLiteralNode::isLong() const {
+    return value_ < std::numeric_limits<float>::lowest() || value_ > std::numeric_limits<float>::max();
+}
+
+double RealLiteralNode::value() const {
+    return value_;
+}
+
+void RealLiteralNode::accept(NodeVisitor &visitor) {
+    visitor.visit(*this);
+}
+
+void RealLiteralNode::print(std::ostream &stream) const {
+    stream << value_;
+}
+
+
+std::string StringLiteralNode::value() const {
     return value_;
 }
 

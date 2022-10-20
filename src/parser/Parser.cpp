@@ -833,6 +833,7 @@ std::unique_ptr<ExpressionNode> Parser::simple_expression() {
     } else if (token == TokenType::op_minus) {
         token_ = scanner_->next();
         expr = std::make_unique<UnaryExpressionNode>(token_->start(), OperatorType::NEG, term());
+        std::cout << *expr << std::endl;
     } else {
         expr = term();
     }
@@ -848,12 +849,13 @@ std::unique_ptr<ExpressionNode> Parser::simple_expression() {
     return expr;
 }
 
-// term = factor { ( "*" | "DIV" | "MOD" | "&" ) factor } .
+// term = factor { ( "*" | "/" | "DIV" | "MOD" | "&" ) factor } .
 std::unique_ptr<ExpressionNode> Parser::term() {
     logger_->debug({}, "term");
     auto expr = factor();
     TokenType token = scanner_->peek()->type();
     while (token == TokenType::op_times
+           || token == TokenType::op_divide
            || token == TokenType::op_div
            || token == TokenType::op_mod
            || token == TokenType::op_and) {
@@ -865,7 +867,7 @@ std::unique_ptr<ExpressionNode> Parser::term() {
     return expr;
 }
 
-// factor = designator | integer | string | "NIL" | "TRUE" | "FALSE" | "(" expression ")" | "~" factor .
+// factor = designator | integer | real | string | "NIL" | "TRUE" | "FALSE" | "(" expression ")" | "~" factor .
 std::unique_ptr<ExpressionNode> Parser::factor() {
     logger_->debug({}, "factor");
     auto token = scanner_->peek();
@@ -873,21 +875,33 @@ std::unique_ptr<ExpressionNode> Parser::factor() {
         FilePos pos = token->start();
         auto designator = this->designator();
         return std::make_unique<ValueReferenceNode>(pos, std::move(designator));
-    } else if (token->type() == TokenType::integer_literal) {
+    } else if (token->type() == TokenType::int_literal) {
         auto tmp = scanner_->next();
-        auto number = dynamic_cast<const IntegerLiteralToken*>(tmp.get());
+        auto number = dynamic_cast<const IntLiteralToken *>(tmp.get());
         return std::make_unique<IntegerLiteralNode>(number->start(), number->value());
+    } else if (token->type() == TokenType::long_literal) {
+        auto tmp = scanner_->next();
+        auto number = dynamic_cast<const LongLiteralToken *>(tmp.get());
+        return std::make_unique<IntegerLiteralNode>(number->start(), number->value());
+    } else if (token->type() == TokenType::float_literal) {
+        auto tmp = scanner_->next();
+        auto number = dynamic_cast<const FloatLiteralToken *>(tmp.get());
+        return std::make_unique<RealLiteralNode>(number->start(), number->value());
+    } else if (token->type() == TokenType::double_literal) {
+        auto tmp = scanner_->next();
+        auto number = dynamic_cast<const DoubleLiteralToken *>(tmp.get());
+        return std::make_unique<RealLiteralNode>(number->start(), number->value());
     } else if (token->type() == TokenType::string_literal) {
         auto tmp = scanner_->next();
         auto string = dynamic_cast<const StringLiteralToken *>(tmp.get());
         return std::make_unique<StringLiteralNode>(string->start(), string->value());
-    } else if (token->type() == TokenType::kw_nil) {
-        auto tmp = scanner_->next();
-        return std::make_unique<NilLiteralNode>(tmp->start());
     } else if (token->type() == TokenType::boolean_literal) {
         auto tmp = scanner_->next();
         auto boolean = dynamic_cast<const BooleanLiteralToken*>(tmp.get());
         return std::make_unique<BooleanLiteralNode>(boolean->start(), boolean->value());
+    } else if (token->type() == TokenType::kw_nil) {
+        auto tmp = scanner_->next();
+        return std::make_unique<NilLiteralNode>(tmp->start());
     } else if (token->type() == TokenType::lparen) {
         scanner_->next();
         auto expr = expression();
@@ -929,21 +943,23 @@ void Parser::resync(std::set<TokenType> types) {
 
 OperatorType token_to_operator(TokenType token) {
     switch(token) {
-        case TokenType::op_eq:    return OperatorType::EQ;
-        case TokenType::op_neq:   return OperatorType::NEQ;
-        case TokenType::op_leq:   return OperatorType::LEQ;
-        case TokenType::op_geq:   return OperatorType::GEQ;
-        case TokenType::op_lt:    return OperatorType::LT;
-        case TokenType::op_gt:    return OperatorType::GT;
-        case TokenType::op_times: return OperatorType::TIMES;
-        case TokenType::op_div:   return OperatorType::DIV;
-        case TokenType::op_mod:   return OperatorType::MOD;
-        case TokenType::op_plus:  return OperatorType::PLUS;
-        case TokenType::op_minus: return OperatorType::MINUS;
-        case TokenType::op_and:   return OperatorType::AND;
-        case TokenType::op_or:    return OperatorType::OR;
-        case TokenType::op_not:   return OperatorType::NOT;
+        case TokenType::op_eq:     return OperatorType::EQ;
+        case TokenType::op_neq:    return OperatorType::NEQ;
+        case TokenType::op_leq:    return OperatorType::LEQ;
+        case TokenType::op_geq:    return OperatorType::GEQ;
+        case TokenType::op_lt:     return OperatorType::LT;
+        case TokenType::op_gt:     return OperatorType::GT;
+        case TokenType::op_times:  return OperatorType::TIMES;
+        case TokenType::op_divide: return OperatorType::DIVIDE;
+        case TokenType::op_div:    return OperatorType::DIV;
+        case TokenType::op_mod:    return OperatorType::MOD;
+        case TokenType::op_plus:   return OperatorType::PLUS;
+        case TokenType::op_minus:  return OperatorType::MINUS;
+        case TokenType::op_and:    return OperatorType::AND;
+        case TokenType::op_or:     return OperatorType::OR;
+        case TokenType::op_not:    return OperatorType::NOT;
         default:
+            std::cerr << "Cannot map token type to operator." << std::endl;
             exit(1);
     }
 }

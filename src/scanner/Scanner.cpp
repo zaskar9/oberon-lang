@@ -103,6 +103,10 @@ const Token* Scanner::scanToken() {
                     read();
                     token = new Token(TokenType::op_times, pos);
                     break;
+                case '/':
+                    read();
+                    token = new Token(TokenType::op_divide, pos);
+                    break;
                 case '+':
                     read();
                     token = new Token(TokenType::op_plus, pos);
@@ -340,9 +344,9 @@ const Token* Scanner::scanNumber() {
             logger_->error(pos, "invalid real literal: " + num + ".");
         }
         if (value >= std::numeric_limits<float>::lowest() && value <= std::numeric_limits<float>::max()) {
-            return new RealLiteralToken(pos, current(), static_cast<float>(value));
+            return new FloatLiteralToken(pos, current(), static_cast<float>(value));
         }
-        return new LongrealLiteralToken(pos, current(), value);
+        return new DoubleLiteralToken(pos, current(), value);
     } else {
         long value;
         try {
@@ -356,9 +360,9 @@ const Token* Scanner::scanNumber() {
             value = 0;
         }
         if (value >= std::numeric_limits<int>::lowest() && value <= std::numeric_limits<int>::max()) {
-            return new IntegerLiteralToken(pos, current(), static_cast<int>(value));
+            return new IntLiteralToken(pos, current(), static_cast<int>(value));
         }
-        return new LongintLiteralToken(pos, current(), value);
+        return new LongLiteralToken(pos, current(), value);
     }
 }
 

@@ -15,6 +15,7 @@ SemanticAnalysis::SemanticAnalysis(SymbolTable *symbols, SymbolImporter *importe
     tChar_ = dynamic_cast<TypeNode *>(symbols_->lookup(SymbolTable::CHAR));
     tInteger_ = dynamic_cast<TypeNode *>(symbols_->lookup(SymbolTable::INTEGER));
     tReal_ = dynamic_cast<TypeNode *>(symbols_->lookup(SymbolTable::REAL));
+    tLongReal_ = dynamic_cast<TypeNode *>(symbols_->lookup(SymbolTable::LONGREAL));
     tString_ = dynamic_cast<TypeNode *>(symbols_->lookup(SymbolTable::STRING));
 }
 
@@ -342,6 +343,11 @@ void SemanticAnalysis::visit(IntegerLiteralNode &node) {
     node.setType(this->tInteger_);
 }
 
+void SemanticAnalysis::visit(RealLiteralNode &node) {
+    node.setType(this->tReal_);
+}
+
+
 void SemanticAnalysis::visit(StringLiteralNode &node) {
     node.setType(this->tString_);
 }
@@ -393,6 +399,22 @@ void SemanticAnalysis::visit(BinaryExpressionNode &node) {
                 || op == OperatorType::GT
                 || op == OperatorType::GEQ) {
                 node.setType(this->tBoolean_);
+            } else if (op == OperatorType::DIV) {
+                if (isInteger(lhsType) && isInteger(rhsType)) {
+                    node.setType(common);
+                } else {
+                    logger_->error(node.pos(), "integer division needs integer arguments.");
+                }
+            } else if (op == OperatorType::DIVIDE) {
+                if (isInteger(common)) {
+                    if (common->kind() == TypeKind::LONGINT) {
+                        node.setType(this->tLongReal_);
+                    } else {
+                        node.setType(this->tReal_);
+                    }
+                } else {
+                    node.setType(common);
+                }
             } else {
                 node.setType(common);
             }
@@ -426,7 +448,7 @@ void SemanticAnalysis::visit(ArrayTypeNode &node) {
         if (expr->isConstant()) {
             auto type = expr->getType();
             if (type && type->kind() == TypeKind::INTEGER) {
-                auto dim = foldNumber(expr);
+                auto dim = foldInteger(expr);
                 if (dim > 0) {
                     node.setDimension((unsigned int) dim);
                 } else {
@@ -524,13 +546,17 @@ void SemanticAnalysis::visit(AssignmentNode &node) {
     if (rvalue) {
         rvalue->accept(*this);
         if (lvalue && assertCompatible(lvalue->pos(), lvalue->getType(), rvalue->getType())) {
-            // cast NIL to expected type
+            // Casting NIL to expected type
             if (rvalue->getType()->kind() == TypeKind::NILTYPE) {
                 rvalue->setCast(lvalue->getType());
             }
-            // fold constant expressions, if they are not literals
+            // Folding constant expressions, if they are not literals
             if (rvalue->isConstant() && !rvalue->isLiteral()) {
                 node.setRvalue(fold(rvalue));
+            }
+            // Casting right-hand side to type expected by left-hand side
+            if (lvalue->getType() != rvalue->getType()) {
+                rvalue->setCast(lvalue->getType());
             }
         }
     } else {
@@ -672,7 +698,7 @@ void SemanticAnalysis::visit(ForLoopNode &node) {
         expr->accept(*this);
         auto type = expr->getType();
         if (type && type->kind() == TypeKind::INTEGER && expr->isConstant()) {
-            auto step = foldNumber(expr);
+            auto step = foldInteger(expr);
             if (step == 0) {
                 logger_->error(expr->pos(), "step value cannot be zero.");
             }
@@ -748,10 +774,11 @@ bool SemanticAnalysis::assertCompatible(const FilePos &pos, TypeNode *expected, 
         auto actualId = actual->getIdentifier();
         if (assertEqual(expectedId, actualId)) {
             return true;
-        } else if (isInteger(expected) && isInteger(actual)) {
+        } else if ((isInteger(expected) && isInteger(actual)) ||
+                   (isReal(expected) && isNumeric(actual))) {
             if (expected->getSize() < actual->getSize()) {
-                logger_->error(pos, "type mismatch: casting " + to_string(*actualId) +
-                                    " down to " + to_string(*expectedId) + " loses data.");
+                logger_->error(pos, "type mismatch: converting " + to_string(*actualId) +
+                                    " to " + to_string(*expectedId) + " may lose data.");
                 return false;
             }
             return true;
@@ -784,8 +811,10 @@ std::unique_ptr<LiteralNode> SemanticAnalysis::fold(const ExpressionNode *expr) 
     auto type = expr->getType();
     if (type) {
         auto cast = expr->getCast();
-        if (type->kind() == TypeKind::INTEGER) {
-            return std::make_unique<IntegerLiteralNode>(expr->pos(), foldNumber(expr), type, cast);
+        if (type->kind() == TypeKind::INTEGER || type->kind() == TypeKind::LONGINT) {
+            return std::make_unique<IntegerLiteralNode>(expr->pos(), foldInteger(expr), type, cast);
+        } else if (type->kind() == TypeKind::REAL || type->kind() == TypeKind::LONGREAL) {
+            return std::make_unique<RealLiteralNode>(expr->pos(), foldReal(expr), type, cast);
         } else if (type->kind() == TypeKind::BOOLEAN) {
             return std::make_unique<BooleanLiteralNode>(expr->pos(), foldBoolean(expr), type, cast);
         } else if (type->kind() == TypeKind::STRING) {
@@ -798,22 +827,22 @@ std::unique_ptr<LiteralNode> SemanticAnalysis::fold(const ExpressionNode *expr) 
     return nullptr;
 }
 
-int SemanticAnalysis::foldNumber(const ExpressionNode *expr) const {
+long SemanticAnalysis::foldInteger(const ExpressionNode *expr) const {
     if (expr->getNodeType() == NodeType::unary_expression) {
         auto unExpr = dynamic_cast<const UnaryExpressionNode *>(expr);
-        int value = foldNumber(unExpr->getExpression());
+        auto value = foldInteger(unExpr->getExpression());
         switch (unExpr->getOperator()) {
             case OperatorType::NEG:
-                return -1 * value;
+                return -value;
             case OperatorType::PLUS:
                 return value;
             default:
-                logger_->error(unExpr->pos(), "incompatible operator.");
+                logger_->error(unExpr->pos(), "incompatible unary operator.");
         }
     } else if (expr->getNodeType() == NodeType::binary_expression) {
         auto binExpr = dynamic_cast<const BinaryExpressionNode *>(expr);
-        int lValue = foldNumber(binExpr->getLeftExpression());
-        int rValue = foldNumber(binExpr->getRightExpression());
+        auto lValue = foldInteger(binExpr->getLeftExpression());
+        auto rValue = foldInteger(binExpr->getRightExpression());
         switch (binExpr->getOperator()) {
             case OperatorType::PLUS:
                 return lValue + rValue;
@@ -826,21 +855,65 @@ int SemanticAnalysis::foldNumber(const ExpressionNode *expr) const {
             case OperatorType::MOD:
                 return lValue % rValue;
             default:
-                logger_->error(binExpr->pos(), "incompatible operator.");
+                logger_->error(binExpr->pos(), "incompatible binary operator.");
         }
     } else if (expr->getNodeType() == NodeType::integer) {
-        auto numConst = dynamic_cast<const IntegerLiteralNode *>(expr);
-        return numConst->getValue();
+        auto integer = dynamic_cast<const IntegerLiteralNode *>(expr);
+        return integer->value();
     } else if (expr->getNodeType() == NodeType::value_reference) {
         auto ref = dynamic_cast<const ValueReferenceNode *>(expr);
         if (ref->isConstant()) {
             auto constant = dynamic_cast<const ConstantDeclarationNode *>(ref->dereference());
-            return foldNumber(constant->getValue());
+            return foldInteger(constant->getValue());
         }
     } else {
         logger_->error(expr->pos(), "incompatible expression.");
     }
     return 0;
+}
+
+double SemanticAnalysis::foldReal(const ExpressionNode *expr) const {
+    if (expr->getNodeType() == NodeType::unary_expression) {
+        auto unExpr = dynamic_cast<const UnaryExpressionNode *>(expr);
+        auto value = foldReal(unExpr->getExpression());
+        switch (unExpr->getOperator()) {
+            case OperatorType::NEG:
+                return -value;
+            case OperatorType::PLUS:
+                return value;
+            default:
+                logger_->error(unExpr->pos(), "incompatible unary operator.");
+        }
+
+    } else if (expr->getNodeType() == NodeType::binary_expression) {
+        auto binExpr = dynamic_cast<const BinaryExpressionNode *>(expr);
+        auto lValue = foldReal(binExpr->getLeftExpression());
+        auto rValue = foldReal(binExpr->getRightExpression());
+        switch (binExpr->getOperator()) {
+            case OperatorType::PLUS:
+                return lValue + rValue;
+            case OperatorType::MINUS:
+                return lValue - rValue;
+            case OperatorType::TIMES:
+                return lValue * rValue;
+            case OperatorType::DIV:
+                return lValue / rValue;
+            default:
+                logger_->error(binExpr->pos(), "incompatible binary operator.");
+        }
+    } else if (expr->getNodeType() == NodeType::real) {
+        auto real = dynamic_cast<const RealLiteralNode *>(expr);
+        return real->value();
+    } else if (expr->getNodeType() == NodeType::value_reference) {
+        auto ref = dynamic_cast<const ValueReferenceNode *>(expr);
+        if (ref->isConstant()) {
+            auto constant = dynamic_cast<const ConstantDeclarationNode *>(ref->dereference());
+            return foldReal(constant->getValue());
+        }
+    } else {
+        logger_->error(expr->pos(), "incompatible expression.");
+    }
+    return 0.0;
 }
 
 bool SemanticAnalysis::foldBoolean(const ExpressionNode *expr) const {
@@ -871,8 +944,8 @@ bool SemanticAnalysis::foldBoolean(const ExpressionNode *expr) const {
                     logger_->error(binExpr->pos(), "incompatible operator.");
             }
         } else if (type->kind() == TypeKind::INTEGER) {
-            int lValue = foldNumber(lhs);
-            int rValue = foldNumber(rhs);
+            int lValue = foldInteger(lhs);
+            int rValue = foldInteger(rhs);
             switch (op) {
                 case OperatorType::EQ:
                     return lValue == rValue;
@@ -905,7 +978,7 @@ bool SemanticAnalysis::foldBoolean(const ExpressionNode *expr) const {
         }
     } else if (expr->getNodeType() == NodeType::boolean) {
         auto boolConst = dynamic_cast<const BooleanLiteralNode *>(expr);
-        return boolConst->getValue();
+        return boolConst->value();
     } else if (expr->getNodeType() == NodeType::value_reference) {
         auto ref = dynamic_cast<const ValueReferenceNode *>(expr);
         if (ref->isConstant()) {
@@ -931,7 +1004,7 @@ std::string SemanticAnalysis::foldString(const ExpressionNode *expr) const {
         }
     } else if (expr->getNodeType() == NodeType::string) {
         auto stringConst = dynamic_cast<const StringLiteralNode *>(expr);
-        return stringConst->getValue();
+        return stringConst->value();
     } else if (expr->getNodeType() == NodeType::value_reference) {
         auto ref = dynamic_cast<const ValueReferenceNode *>(expr);
         if (ref->isConstant()) {
@@ -982,6 +1055,16 @@ bool SemanticAnalysis::isInteger(TypeNode *type) const {
     }
 }
 
+bool SemanticAnalysis::isReal(TypeNode *type) const {
+    switch (type->kind()) {
+        case TypeKind::REAL:
+        case TypeKind::LONGREAL:
+            return true;
+        default:
+            return false;
+    }
+}
+
 bool SemanticAnalysis::isPointer(TypeNode *type) const {
     return type->kind() == TypeKind::POINTER;
 }
@@ -992,7 +1075,9 @@ TypeNode *SemanticAnalysis::commonType(TypeNode *lhsType, TypeNode *rhsType) con
     } else if (assertEqual(lhsType->getIdentifier(), rhsType->getIdentifier())) {
         return lhsType;
     } else if (isNumeric(lhsType) && isNumeric(rhsType)) {
-        if (isInteger(lhsType) && isInteger(rhsType)) {
+        if (lhsType->getSize() == rhsType->getSize()) {
+            return isReal(lhsType) ? lhsType : rhsType;
+        } else {
             return lhsType->getSize() > rhsType->getSize() ? lhsType : rhsType;
         }
     } else if (lhsType->kind() == TypeKind::NILTYPE) {

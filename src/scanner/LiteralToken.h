@@ -44,42 +44,42 @@ public:
 };
 
 
-class IntegerLiteralToken final : public LiteralToken<int> {
+class IntLiteralToken final : public LiteralToken<int> {
 
 public:
-    explicit IntegerLiteralToken(const FilePos &start, const FilePos &end, int value) :
-            LiteralToken(TokenType::integer_literal, start, end, value) { };
-    ~IntegerLiteralToken() noexcept override;
+    explicit IntLiteralToken(const FilePos &start, const FilePos &end, int value) :
+            LiteralToken(TokenType::int_literal, start, end, value) { };
+    ~IntLiteralToken() noexcept override;
 
 };
 
 
-class LongintLiteralToken final : public LiteralToken<long> {
+class LongLiteralToken final : public LiteralToken<long> {
 
 public:
-    explicit LongintLiteralToken(const FilePos &start, const FilePos &end, long value) :
-            LiteralToken(TokenType::longint_literal, start, end, value) { };
-    ~LongintLiteralToken() noexcept override;
+    explicit LongLiteralToken(const FilePos &start, const FilePos &end, long value) :
+            LiteralToken(TokenType::long_literal, start, end, value) { };
+    ~LongLiteralToken() noexcept override;
 
 };
 
 
-class RealLiteralToken final : public LiteralToken<float> {
+class FloatLiteralToken final : public LiteralToken<float> {
 
 public:
-    explicit RealLiteralToken(const FilePos &start, const FilePos &end, float value) :
-            LiteralToken(TokenType::real_literal, start, end, value) { };
-    ~RealLiteralToken() noexcept override;
+    explicit FloatLiteralToken(const FilePos &start, const FilePos &end, float value) :
+            LiteralToken(TokenType::float_literal, start, end, value) { };
+    ~FloatLiteralToken() noexcept override;
 
 };
 
 
-class LongrealLiteralToken final : public LiteralToken<double> {
+class DoubleLiteralToken final : public LiteralToken<double> {
 
 public:
-    explicit LongrealLiteralToken(const FilePos &start, const FilePos &end, double value) :
-            LiteralToken(TokenType::longreal_literal, start, end, value) { };
-    ~LongrealLiteralToken() noexcept override;
+    explicit DoubleLiteralToken(const FilePos &start, const FilePos &end, double value) :
+            LiteralToken(TokenType::double_literal, start, end, value) { };
+    ~DoubleLiteralToken() noexcept override;
 
 };
 

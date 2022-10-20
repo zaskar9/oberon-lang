@@ -14,7 +14,7 @@
 
 enum class OperatorType : char {
     EQ, NEQ, LT, GT, GEQ, LEQ,
-    TIMES, DIV, MOD, PLUS, MINUS,
+    TIMES, DIVIDE, DIV, MOD, PLUS, MINUS,
     AND, OR, NOT,
     NEG
 };
@@ -138,10 +138,9 @@ public:
             LiteralNode(NodeType::boolean, pos, TypeKind::BOOLEAN, type, cast), value_(value) {};
     ~BooleanLiteralNode() final = default;
 
-    [[nodiscard]] bool getValue() const;
+    [[nodiscard]] bool value() const;
 
     void accept(NodeVisitor &visitor) final;
-
     void print(std::ostream &stream) const final;
 
 };
@@ -150,17 +149,36 @@ public:
 class IntegerLiteralNode final : public LiteralNode {
 
 private:
-    int value_;
+    long value_;
 
 public:
-    explicit IntegerLiteralNode(const FilePos &pos, int value, TypeNode *type = nullptr, TypeNode *cast = nullptr) :
+    explicit IntegerLiteralNode(const FilePos &pos, long value, TypeNode *type = nullptr, TypeNode *cast = nullptr) :
             LiteralNode(NodeType::integer, pos, TypeKind::INTEGER, type, cast), value_(value) {};
     ~IntegerLiteralNode() final = default;
 
-    [[nodiscard]] int getValue() const;
+    [[nodiscard]] bool isLong() const;
+    [[nodiscard]] long value() const;
 
     void accept(NodeVisitor &visitor) final;
+    void print(std::ostream &stream) const final;
 
+};
+
+
+class RealLiteralNode final : public LiteralNode {
+
+private:
+    double value_;
+
+public:
+    explicit RealLiteralNode(const FilePos &pos, double value, TypeNode *type = nullptr, TypeNode *cast = nullptr) :
+            LiteralNode(NodeType::real, pos, TypeKind::REAL, type, cast), value_(value) {};
+    ~RealLiteralNode() final = default;
+
+    [[nodiscard]] bool isLong() const;
+    [[nodiscard]] double value() const;
+
+    void accept(NodeVisitor &visitor) final;
     void print(std::ostream &stream) const final;
 
 };
@@ -176,10 +194,9 @@ public:
             LiteralNode(NodeType::string, pos, TypeKind::STRING, type, cast), value_(std::move(value)) {};
     ~StringLiteralNode() final = default;
 
-    [[nodiscard]] std::string getValue() const;
+    [[nodiscard]] std::string value() const;
 
     void accept(NodeVisitor &visitor) final;
-
     void print(std::ostream &stream) const final;
 
 };
@@ -191,7 +208,6 @@ public:
             LiteralNode(NodeType::pointer, pos, TypeKind::POINTER, nullptr, nullptr) {};
 
     void accept(NodeVisitor &visitor) final;
-
     void print(std::ostream &stream) const final;
 };
 
