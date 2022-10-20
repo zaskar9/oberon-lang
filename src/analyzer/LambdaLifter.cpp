@@ -20,7 +20,7 @@ void LambdaLifter::call(ProcedureNodeReference &node) {
     for (size_t i = 0; i < node.getActualParameterCount(); i++) {
         node.getActualParameter(i)->accept(*this);
     }
-    auto proc = node.dereference();
+    auto proc = dynamic_cast<ProcedureNode *>(node.dereference());
     if (proc->getFormalParameterCount() > node.getActualParameterCount()) {
         auto param = std::make_unique<ValueReferenceNode>(EMPTY_POS, env_);
         if (proc->getLevel() != env_->getLevel()) {
@@ -157,23 +157,28 @@ void LambdaLifter::visit(VariableDeclarationNode &node) {
 void LambdaLifter::visit([[maybe_unused]] TypeReferenceNode &node) { }
 
 void LambdaLifter::visit(ValueReferenceNode &node) {
+    if (node.getNodeType() == NodeType::procedure_call) {
+        call(node);
+        return;
+    }
     auto decl = node.dereference();
     if (decl->getLevel() == SymbolTable::MODULE_LEVEL ||
         (env_->getIdentifier()->name() == SUPER_ && env_->getLevel() == decl->getLevel())) {
         // global variable or local variable in leaf procedure
         return;
     }
-        for (size_t i = 0; i < node.getSelectorCount(); i++) {
-            auto selector = node.getSelector(i);
-            if (selector->getType() == NodeType::array_type) {
-                dynamic_cast<ArrayIndex *>(selector)->getExpression()->accept(*this);
-            }
+    for (size_t i = 0; i < node.getSelectorCount(); i++) {
+        auto selector = node.getSelector(i);
+        if (selector->getType() == NodeType::array_type) {
+            dynamic_cast<ArrayIndex *>(selector)->getExpression()->accept(*this);
         }
+    }
     node.resolve(env_);
     if (!envFieldResolver(&node, decl->getIdentifier()->name(), decl->getType())) {
         std::cerr << "Unable to resolve record field: " << decl->getIdentifier() << "." << std::endl;
     }
 }
+
 
 void LambdaLifter::visit([[maybe_unused]] BooleanLiteralNode &node) { }
 
@@ -182,10 +187,6 @@ void LambdaLifter::visit([[maybe_unused]] IntegerLiteralNode &node) { }
 void LambdaLifter::visit([[maybe_unused]] StringLiteralNode &node) { }
 
 void LambdaLifter::visit([[maybe_unused]] NilLiteralNode &node) { }
-
-void LambdaLifter::visit(FunctionCallNode &node) {
-    call(node);
-}
 
 void LambdaLifter::visit(UnaryExpressionNode &node) {
     node.getExpression()->accept(*this);

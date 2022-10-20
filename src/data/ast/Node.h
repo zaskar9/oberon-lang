@@ -34,6 +34,9 @@ private:
     NodeType nodeType_;
     FilePos pos_;
 
+protected:
+    void setNodeType(const NodeType nodeType);
+
 public:
     explicit Node(const NodeType nodeType, const FilePos &pos) : nodeType_(nodeType), pos_(pos) { };
     virtual ~Node();

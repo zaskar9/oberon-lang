@@ -43,60 +43,45 @@ void SemanticAnalysis::block(BlockNode &node) {
 }
 
 void SemanticAnalysis::call(ProcedureNodeReference &node) {
-    if (!node.isResolved()) {
-        auto symbol = symbols_->lookup(node.ident());
-        if (symbol) {
-            if (symbol->getNodeType() == NodeType::procedure) {
-                auto proc = dynamic_cast<ProcedureNode *>(symbol);
-                node.resolve(proc);
-                if (node.ident()->isQualified() && proc->isExtern()) {
-                    // a fully-qualified external reference needs to added to module for code generation
-                    module_->addExternalProcedure(proc);
-                }
-            } else {
-                logger_->error(node.pos(), to_string(*node.ident()) + " is not a procedure or function.");
-            }
-        } else {
-            logger_->error(node.pos(), "undefined identifier: " + to_string(*node.ident()) + ".");
-        }
+    auto proc = dynamic_cast<ProcedureNode *>(node.dereference());
+    if (node.ident()->isQualified() && proc->isExtern()) {
+        // a fully-qualified external reference needs to added to module for code generation
+        module_->addExternalProcedure(proc);
     }
-    if (node.isResolved()) {
-        auto proc = node.dereference();
-        if (node.getActualParameterCount() < proc->getFormalParameterCount()) {
-            logger_->error(node.pos(), "fewer actual than formal parameters.");
-        }
-        for (size_t cnt = 0; cnt < node.getActualParameterCount(); cnt++) {
-            auto expr = node.getActualParameter(cnt);
-            expr->accept(*this);
-            if (cnt < proc->getFormalParameterCount()) {
-                auto parameter = proc->getFormalParameter(cnt);
-                if (assertCompatible(expr->pos(), parameter->getType(), expr->getType())) {
-                    if (parameter->isVar()) {
-                        if (expr->getNodeType() == NodeType::value_reference) {
-                            auto reference = dynamic_cast<const ValueReferenceNode *>(expr);
-                            auto value = reference->dereference();
-                            if (value->getNodeType() == NodeType::constant) {
-                                logger_->error(expr->pos(),
-                                               "illegal actual parameter: cannot pass constant by reference.");
-                            }
-                        } else {
+    if (node.getActualParameterCount() < proc->getFormalParameterCount()) {
+        logger_->error(node.pos(), "fewer actual than formal parameters.");
+    }
+    for (size_t cnt = 0; cnt < node.getActualParameterCount(); cnt++) {
+        auto expr = node.getActualParameter(cnt);
+        expr->accept(*this);
+        if (cnt < proc->getFormalParameterCount()) {
+            auto parameter = proc->getFormalParameter(cnt);
+            if (assertCompatible(expr->pos(), parameter->getType(), expr->getType())) {
+                if (parameter->isVar()) {
+                    if (expr->getNodeType() == NodeType::value_reference) {
+                        auto reference = dynamic_cast<const ValueReferenceNode *>(expr);
+                        auto value = reference->dereference();
+                        if (value->getNodeType() == NodeType::constant) {
                             logger_->error(expr->pos(),
-                                           "illegal actual parameter: cannot pass expression by reference.");
+                                           "illegal actual parameter: cannot pass constant by reference.");
                         }
+                    } else {
+                        logger_->error(expr->pos(),
+                                       "illegal actual parameter: cannot pass expression by reference.");
                     }
                 }
-                // Casting
-                if (parameter->getType() != expr->getType()) {
-                    expr->setCast(parameter->getType());
-                }
-            } else if (!proc->hasVarArgs()) {
-                logger_->error(expr->pos(), "more actual than formal parameters.");
-                break;
             }
-            // Folding
-            if (expr->isConstant()) {
-                node.setActualParameter(cnt, fold(expr));
+            // Casting
+            if (parameter->getType() != expr->getType()) {
+                expr->setCast(parameter->getType());
             }
+        } else if (!proc->hasVarArgs()) {
+            logger_->error(expr->pos(), "more actual than formal parameters.");
+            break;
+        }
+        // Folding
+        if (expr->isConstant()) {
+            node.setActualParameter(cnt, fold(expr));
         }
     }
 }
@@ -247,7 +232,7 @@ void SemanticAnalysis::visit(ValueReferenceNode &node) {
         auto qual = dynamic_cast<QualIdent *>(ident);
         sym = symbols_->lookup(qual->qualifier());
         if (sym) {
-            node.unqualify();
+            node.disqualify();
         }
     }
     if (sym) {
@@ -257,10 +242,13 @@ void SemanticAnalysis::visit(ValueReferenceNode &node) {
             sym->getNodeType() == NodeType::procedure) {
             auto decl = dynamic_cast<DeclarationNode *>(sym);
             node.resolve(decl);
+            if (node.getNodeType() == NodeType::procedure_call) {
+                call(node);
+            }
             auto type = decl->getType();
             if (!type) {
                 if (sym->getNodeType() == NodeType::procedure) {
-                    logger_->error(node.pos(), "function expected.");
+                    logger_->error(node.pos(), "function expected, found procedure.");
                     return;
                 }
                 logger_->error(node.pos(), "type undefined for " + to_string(*node.ident()) + ".");
@@ -360,10 +348,6 @@ void SemanticAnalysis::visit(StringLiteralNode &node) {
 
 void SemanticAnalysis::visit(NilLiteralNode &node) {
     node.setType(symbols_->getNilType());
-}
-
-void SemanticAnalysis::visit(FunctionCallNode &node) {
-    call(node);
 }
 
 void SemanticAnalysis::visit(UnaryExpressionNode &node) {
@@ -539,16 +523,15 @@ void SemanticAnalysis::visit(AssignmentNode &node) {
     auto rvalue = node.getRvalue();
     if (rvalue) {
         rvalue->accept(*this);
-        if (lvalue) {
-            assertCompatible(lvalue->pos(), lvalue->getType(), rvalue->getType());
-        }
-        // cast NIL to expected type
-        if (rvalue->getType()->kind() == TypeKind::NILTYPE) {
-            rvalue->setCast(lvalue->getType());
-        }
-        // fold constant expressions, if they are not literals
-        if (rvalue->isConstant() && !rvalue->isLiteral()) {
-            node.setRvalue(fold(rvalue));
+        if (lvalue && assertCompatible(lvalue->pos(), lvalue->getType(), rvalue->getType())) {
+            // cast NIL to expected type
+            if (rvalue->getType()->kind() == TypeKind::NILTYPE) {
+                rvalue->setCast(lvalue->getType());
+            }
+            // fold constant expressions, if they are not literals
+            if (rvalue->isConstant() && !rvalue->isLiteral()) {
+                node.setRvalue(fold(rvalue));
+            }
         }
     } else {
         logger_->error(node.pos(), "undefined right-hand side in assignment.");
@@ -592,7 +575,18 @@ void SemanticAnalysis::visit(ElseIfNode &node) {
 }
 
 void SemanticAnalysis::visit(ProcedureCallNode &node) {
-    call(node);
+    auto symbol = symbols_->lookup(node.ident());
+    if (symbol) {
+        if (symbol->getNodeType() == NodeType::procedure) {
+            auto proc = dynamic_cast<ProcedureNode *>(symbol);
+            node.resolve(proc);
+            call(node);
+        } else {
+            logger_->error(node.pos(), to_string(*node.ident()) + " is not a procedure.");
+        }
+    } else {
+        logger_->error(node.pos(), "undefined identifier: " + to_string(*node.ident()) + ".");
+    }
 }
 
 void SemanticAnalysis::visit(LoopNode &node) {

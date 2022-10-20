@@ -44,7 +44,6 @@ private:
     void visit(StringLiteralNode &node) override;
     void visit(NilLiteralNode &node) override;
 
-    void visit(FunctionCallNode &node) override;
     void visit(UnaryExpressionNode &node) override;
     void visit(BinaryExpressionNode &node) override;
 

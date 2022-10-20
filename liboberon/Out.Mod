@@ -26,4 +26,9 @@ BEGIN
     printf("%ld", val)
 END Long;
 
+PROCEDURE Real*(val: REAL);
+BEGIN
+    printf("%f", val)
+END Real;
+
 END Out.

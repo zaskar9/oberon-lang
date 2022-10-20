@@ -73,14 +73,8 @@ void ActualParameters::addActualParameter(std::unique_ptr<ExpressionNode> parame
     parameters_.push_back(std::move(parameter));
 }
 
-void ActualParameters::setActualParameter(size_t num, std::unique_ptr<ExpressionNode> parameter) {
-    parameters_[num] = std::move(parameter);
-}
-
-ExpressionNode *ActualParameters::getActualParameter(size_t num) const {
-    return parameters_.at(num).get();
-}
-
-size_t ActualParameters::getActualParameterCount() const {
-    return parameters_.size();
+void ActualParameters::moveActuralParameters(std::vector<std::unique_ptr<ExpressionNode>> &target) {
+    for (auto& parameter: parameters_) {
+        target.push_back(std::move(parameter));
+    }
 }

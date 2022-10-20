@@ -92,10 +92,11 @@ std::unique_ptr<Selector> Parser::selector() {
         auto pos = token_->start();
         sel = std::make_unique<RecordField>(pos, ident());
     } else if (token->type() == TokenType::lbrack) {
+        auto pos = token->start();
         token_ = scanner_->next();
         auto expr = expression();
         if (expr) {
-            sel = std::make_unique<ArrayIndex>(token->start(), std::move(expr));
+            sel = std::make_unique<ArrayIndex>(pos, std::move(expr));
         } else {
             logger_->error(token_->start(), "expression expected.");
         }
@@ -746,9 +747,10 @@ std::unique_ptr<StatementNode> Parser::repeat_statement() {
 std::unique_ptr<StatementNode> Parser::for_statement() {
     logger_->debug({}, "for_statement");
     token_ = scanner_->next(); // skip FOR keyword
-    FilePos pos = scanner_->peek()->start();
-    auto designator = std::make_unique<Designator>(ident());
-    auto counter = std::make_unique<ValueReferenceNode>(pos, std::move(designator));
+    auto pos = token_->start();
+    // FilePos pos = scanner_->peek()->start();
+    auto ident = this->ident();
+    auto counter = std::make_unique<ValueReferenceNode>(ident->pos(), std::make_unique<Designator>(std::move(ident)));
     token_ = scanner_->next();
     std::unique_ptr<ExpressionNode> low = nullptr;
     if (assertToken(token_.get(), TokenType::op_becomes)) {

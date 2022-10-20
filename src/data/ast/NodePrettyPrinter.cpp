@@ -143,6 +143,10 @@ void NodePrettyPrinter::visit(ImportNode &node) {
 }
 
 void NodePrettyPrinter::visit(ValueReferenceNode &node) {
+    if (node.getNodeType() == NodeType::procedure_call) {
+        call(node);
+        return;
+    }
     stream_ << *node.ident();
     for (size_t i = 0; i < node.getSelectorCount(); i++) {
         auto selector = node.getSelector(i);
@@ -208,10 +212,6 @@ void NodePrettyPrinter::visit(StringLiteralNode &node) {
 
 void NodePrettyPrinter::visit([[maybe_unused]] NilLiteralNode &node) {
     stream_ << "NIL";
-}
-
-void NodePrettyPrinter::visit(FunctionCallNode &node) {
-    call(node);
 }
 
 void NodePrettyPrinter::visit(UnaryExpressionNode &node) {

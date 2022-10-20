@@ -10,77 +10,6 @@
 
 NodeReference::~NodeReference() = default;
 
-Designator::~Designator() = default;
-
-QualIdent *Designator::ident() const {
-    return ident_.get();
-}
-
-void Designator::addSelector(std::unique_ptr<Selector> selector) {
-    selectors_.push_back(std::move(selector));
-}
-
-void Designator::insertSelector(size_t num, std::unique_ptr<Selector> selector) {
-    selectors_.insert(selectors_.begin() + (long) num, std::move(selector));
-}
-
-void Designator::setSelector(size_t num, std::unique_ptr<Selector> selector) {
-    selectors_[num] = std::move(selector);
-}
-
-Selector *Designator::getSelector(size_t num) const {
-    return selectors_[num].get();
-}
-
-size_t Designator::getSelectorCount() const {
-    return selectors_.size();
-}
-
-void Designator::unqualify() {
-    if (ident_->isQualified()) {
-        auto qual = dynamic_cast<QualIdent *>(ident_.get());
-        auto pos = ident_->pos();
-        pos.charNo += ((int) qual->qualifier().size()) + 1;
-        auto field = std::make_unique<QualIdent>(pos, qual->name());
-        this->insertSelector(0, std::make_unique<RecordField>(field->pos(), std::move(field)));
-        ident_ = std::make_unique<QualIdent>(qual->qualifier());
-    }
-}
-
-void ValueReferenceNode::resolve(DeclarationNode *node) {
-    node_ = node;
-    this->setType(node->getType());
-}
-
-bool ValueReferenceNode::isResolved() const {
-    return (node_ != nullptr);
-}
-
-DeclarationNode *ValueReferenceNode::dereference() const {
-    return node_;
-}
-
-bool ValueReferenceNode::isConstant() const {
-    if (isResolved()) {
-        return dereference()->getNodeType() == NodeType::constant;
-    } else {
-        return false;
-    }
-}
-
-int ValueReferenceNode::getPrecedence() const {
-    return 4;
-}
-
-
-void ValueReferenceNode::accept(NodeVisitor &visitor) {
-    visitor.visit(*this);
-}
-
-void ValueReferenceNode::print(std::ostream &stream) const {
-    stream << *dereference();
-}
-
 
 bool TypeReferenceNode::isResolved() const {
     return (node_ != nullptr);
@@ -117,16 +46,70 @@ void TypeReferenceNode::print(std::ostream &stream) const {
 }
 
 
-bool ProcedureNodeReference::isResolved() const {
-    return (procedure_ != nullptr);
+Designator::~Designator() = default;
+
+QualIdent *Designator::ident() const {
+    return ident_.get();
 }
 
-void ProcedureNodeReference::resolve(ProcedureNode *procedure) {
-    procedure_ = procedure;
+void Designator::addSelector(std::unique_ptr<Selector> selector) {
+    selectors_.push_back(std::move(selector));
 }
 
-ProcedureNode *ProcedureNodeReference::dereference() const {
-    return procedure_;
+void Designator::insertSelector(size_t num, std::unique_ptr<Selector> selector) {
+    selectors_.insert(selectors_.begin() + (long) num, std::move(selector));
+}
+
+void Designator::setSelector(size_t num, std::unique_ptr<Selector> selector) {
+    selectors_[num] = std::move(selector);
+}
+
+Selector *Designator::getSelector(size_t num) const {
+    return selectors_[num].get();
+}
+
+void Designator::removeSelector(size_t num) {
+    selectors_.erase(selectors_.begin() + (long) num);
+}
+
+size_t Designator::getSelectorCount() const {
+    return selectors_.size();
+}
+
+void Designator::disqualify() {
+    if (ident_->isQualified()) {
+        auto qual = dynamic_cast<QualIdent *>(ident_.get());
+        auto pos = ident_->pos();
+        pos.charNo += ((int) qual->qualifier().size()) + 1;
+        auto field = std::make_unique<QualIdent>(pos, qual->name());
+        this->insertSelector(0, std::make_unique<RecordField>(field->pos(), std::move(field)));
+        ident_ = std::make_unique<QualIdent>(qual->qualifier());
+    }
+}
+
+
+ProcedureNodeReference::~ProcedureNodeReference() = default;
+
+void ProcedureNodeReference::initActualParameters() {
+    parameters_.clear();
+    if (this->getSelectorCount() > 0) {
+        auto selector = this->getSelector(0);
+        if (selector->getType() == NodeType::parameter) {
+            auto parameters = dynamic_cast<ActualParameters *>(selector);
+            parameters->moveActuralParameters(parameters_);
+            this->removeSelector(0);
+        } else if (selector->getType() == NodeType::type_declaration) {
+            auto proc = dynamic_cast<ProcedureNode *>(this->dereference());
+            if (proc->getFormalParameterCount() == 1) {
+                auto typeguard = dynamic_cast<Typeguard *>(selector);
+                auto ident = typeguard->ident();
+                auto ref = std::make_unique<ValueReferenceNode>(ident->pos(),
+                                                  std::make_unique<Designator>(std::make_unique<QualIdent>(ident)));
+                parameters_.push_back(std::move(ref));
+                this->removeSelector(0);
+            }
+        }
+    }
 }
 
 void ProcedureNodeReference::addActualParameter(std::unique_ptr<ExpressionNode> parameter) {
@@ -145,23 +128,75 @@ size_t ProcedureNodeReference::getActualParameterCount() const {
     return parameters_.size();
 }
 
-bool FunctionCallNode::isConstant() const {
-    return false;
+
+ValueReferenceNode::ValueReferenceNode(const FilePos &pos, DeclarationNode *node)  :
+        ExpressionNode(NodeType::value_reference, pos),
+        ProcedureNodeReference(std::make_unique<Designator>(std::make_unique<QualIdent>(node->getIdentifier()))),
+        node_() {
+    this->resolve(node);
+}
+void ValueReferenceNode::resolve(DeclarationNode *node) {
+    node_ = node;
+    auto type = node->getType();
+    if (type->getNodeType() == NodeType::procedure ||
+        type->getNodeType() == NodeType::procedure_type) {
+        this->initActualParameters();
+        this->setNodeType(NodeType::procedure_call);
+    }
+    this->setType(type);
 }
 
-TypeNode *FunctionCallNode::getType() const {
-    if (ProcedureNodeReference::isResolved()) {
-        return this->dereference()->getReturnType();
+bool ValueReferenceNode::isResolved() const {
+    return (node_ != nullptr);
+}
+
+DeclarationNode *ValueReferenceNode::dereference() const {
+    return node_;
+}
+
+bool ValueReferenceNode::isConstant() const {
+    if (isResolved()) {
+        return dereference()->getNodeType() == NodeType::constant;
+    } else {
+        return false;
+    }
+}
+
+int ValueReferenceNode::getPrecedence() const {
+    return 4;
+}
+
+TypeNode *ValueReferenceNode::getType() const {
+    if (this->isResolved()) {
+        if (this->getNodeType() == NodeType::procedure_call) {
+            auto proc = dynamic_cast<ProcedureNode *>(this->dereference());
+            return proc->getReturnType();
+        }
+        return ExpressionNode::getType();
     }
     return nullptr;
 }
 
-void FunctionCallNode::accept(NodeVisitor &visitor) {
+void ValueReferenceNode::accept(NodeVisitor &visitor) {
     visitor.visit(*this);
 }
 
-void FunctionCallNode::print(std::ostream &stream) const {
-    stream << this->dereference()->getIdentifier() << "()";
+void ValueReferenceNode::print(std::ostream &stream) const {
+    stream << *dereference();
+}
+
+
+void ProcedureCallNode::resolve(DeclarationNode *node) {
+    node_ = dynamic_cast<ProcedureNode *>(node);
+    this->initActualParameters();
+}
+
+bool ProcedureCallNode::isResolved() const {
+    return (node_ != nullptr);
+}
+
+ProcedureNode *ProcedureCallNode::dereference() const {
+    return node_;
 }
 
 void ProcedureCallNode::accept(NodeVisitor &visitor) {

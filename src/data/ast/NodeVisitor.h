@@ -40,7 +40,6 @@ public:
     virtual void visit(StringLiteralNode &node) = 0;
     virtual void visit(NilLiteralNode &node) = 0;
 
-    virtual void visit(FunctionCallNode &node) = 0;
     virtual void visit(UnaryExpressionNode &node) = 0;
     virtual void visit(BinaryExpressionNode &node) = 0;
 

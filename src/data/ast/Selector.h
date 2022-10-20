@@ -91,10 +91,7 @@ public:
     ~ActualParameters() override;
 
     void addActualParameter(std::unique_ptr<ExpressionNode> parameter);
-    void setActualParameter(size_t num, std::unique_ptr<ExpressionNode> parameter);
-    [[nodiscard]] ExpressionNode *getActualParameter(size_t num) const;
-    [[nodiscard]] size_t getActualParameterCount() const;
-
+    void moveActuralParameters(std::vector<std::unique_ptr<ExpressionNode>> &target);
 };
 
 

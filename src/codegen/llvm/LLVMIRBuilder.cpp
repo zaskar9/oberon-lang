@@ -95,6 +95,10 @@ void LLVMIRBuilder::visit(ProcedureNode &node) {
 void LLVMIRBuilder::visit([[maybe_unused]] ImportNode &node) { }
 
 void LLVMIRBuilder::visit(ValueReferenceNode &node) {
+    if (node.getNodeType() == NodeType::procedure_call) {
+        call(node);
+        return;
+    }
     auto ref = node.dereference();
     auto level = ref->getLevel();
     if (level == 1) /* global level */ {
@@ -154,6 +158,8 @@ void LLVMIRBuilder::visit(ValueReferenceNode &node) {
                 base = builder_.CreateLoad(getLLVMType(selector_t), base);
                 selector_t = dynamic_cast<PointerTypeNode *>(selector_t)->getBase();
                 type = selector_t;
+            } else {
+                logger_->error(sel->pos(), "Unexpected selector.");
             }
         }
         // clean up
@@ -217,10 +223,6 @@ void LLVMIRBuilder::visit(StringLiteralNode &node) {
 void LLVMIRBuilder::visit(NilLiteralNode &node) {
     auto type = getLLVMType(node.getCast(), false);
     value_ = ConstantPointerNull::get((PointerType*) type);
-}
-
-void LLVMIRBuilder::visit(FunctionCallNode &node) {
-    call(node);
 }
 
 void LLVMIRBuilder::visit(UnaryExpressionNode &node) {
@@ -567,18 +569,19 @@ Value *LLVMIRBuilder::callBuiltIn(std::string name, std::vector<Value *> &params
 void LLVMIRBuilder::call(ProcedureNodeReference &node) {
     std::vector<Value*> params;
     // caution: formal parameters on referenced node, actual parameters on reference node
-    size_t fp_cnt = node.dereference()->getFormalParameterCount();
+    auto proc = dynamic_cast<ProcedureNode *>(node.dereference());
+    size_t fp_cnt = proc->getFormalParameterCount();
     for (size_t i = 0; i < node.getActualParameterCount(); i++) {
-        setRefMode(i >= fp_cnt || !node.dereference()->getFormalParameter(i)->isVar());
+        setRefMode(i >= fp_cnt || !proc->getFormalParameter(i)->isVar());
         node.getActualParameter(i)->accept(*this);
         params.push_back(value_);
         restoreRefMode();
     }
-    auto ident = node.dereference()->getIdentifier();
-    auto name = qualifiedName(ident, node.dereference()->isExtern());
-    auto proc = module_->getFunction(name);
-    if (proc) {
-        value_ = builder_.CreateCall(proc, params);
+    auto ident = proc->getIdentifier();
+    auto name = qualifiedName(ident, proc->isExtern());
+    auto fun = module_->getFunction(name);
+    if (fun) {
+        value_ = builder_.CreateCall(fun, params);
     } else {
         value_ = callBuiltIn(ident->name(), params);
         if (!value_) {
@@ -652,6 +655,7 @@ Type* LLVMIRBuilder::getLLVMType(TypeNode *type, bool isPtr) {
         }
     } else {
         logger_->error(type->pos(), "Cannot map type to LLVM intermediate representation.");
+        exit(1);
     }
     return result;
 }
