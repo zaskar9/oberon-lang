@@ -400,13 +400,13 @@ void SemanticAnalysis::visit(BinaryExpressionNode &node) {
                 || op == OperatorType::GEQ) {
                 node.setType(this->tBoolean_);
             } else if (op == OperatorType::DIV) {
-                if (isInteger(lhsType) && isInteger(rhsType)) {
+                if (lhsType->isInteger() && rhsType->isInteger()) {
                     node.setType(common);
                 } else {
                     logger_->error(node.pos(), "integer division needs integer arguments.");
                 }
             } else if (op == OperatorType::DIVIDE) {
-                if (isInteger(common)) {
+                if (common->isInteger()) {
                     if (common->kind() == TypeKind::LONGINT) {
                         node.setType(this->tLongReal_);
                     } else {
@@ -546,6 +546,10 @@ void SemanticAnalysis::visit(AssignmentNode &node) {
     if (rvalue) {
         rvalue->accept(*this);
         if (lvalue && assertCompatible(lvalue->pos(), lvalue->getType(), rvalue->getType())) {
+            // Casting right-hand side to type expected by left-hand side
+            if (lvalue->getType() != rvalue->getType()) {
+                rvalue->setCast(lvalue->getType());
+            }
             // Casting NIL to expected type
             if (rvalue->getType()->kind() == TypeKind::NILTYPE) {
                 rvalue->setCast(lvalue->getType());
@@ -554,10 +558,7 @@ void SemanticAnalysis::visit(AssignmentNode &node) {
             if (rvalue->isConstant() && !rvalue->isLiteral()) {
                 node.setRvalue(fold(rvalue));
             }
-            // Casting right-hand side to type expected by left-hand side
-            if (lvalue->getType() != rvalue->getType()) {
-                rvalue->setCast(lvalue->getType());
-            }
+
         }
     } else {
         logger_->error(node.pos(), "undefined right-hand side in assignment.");
@@ -774,16 +775,16 @@ bool SemanticAnalysis::assertCompatible(const FilePos &pos, TypeNode *expected, 
         auto actualId = actual->getIdentifier();
         if (assertEqual(expectedId, actualId)) {
             return true;
-        } else if ((isInteger(expected) && isInteger(actual)) ||
-                   (isReal(expected) && isNumeric(actual))) {
+        } else if ((expected->isInteger() && actual->isInteger()) ||
+                   (expected->isReal() && actual->isNumeric())) {
             if (expected->getSize() < actual->getSize()) {
                 logger_->error(pos, "type mismatch: converting " + to_string(*actualId) +
                                     " to " + to_string(*expectedId) + " may lose data.");
                 return false;
             }
             return true;
-        } else if (isPointer(expected)) {
-            if (isPointer(actual)) {
+        } else if (expected->isPointer()) {
+            if (actual->isPointer()) {
                 auto exp_ptr = dynamic_cast<PointerTypeNode *>(expected);
                 auto act_ptr = dynamic_cast<PointerTypeNode *>(actual);
                 return assertCompatible(pos, exp_ptr->getBase(), act_ptr->getBase(), true);
@@ -1029,54 +1030,15 @@ std::string SemanticAnalysis::format(const TypeNode *type, bool isPtr) const {
     return name;
 }
 
-bool SemanticAnalysis::isNumeric(TypeNode *type) const {
-    switch (type->kind()) {
-        case TypeKind::BYTE:
-        case TypeKind::CHAR:
-        case TypeKind::INTEGER:
-        case TypeKind::LONGINT:
-        case TypeKind::REAL:
-        case TypeKind::LONGREAL:
-            return true;
-        default:
-            return false;
-    }
-}
-
-bool SemanticAnalysis::isInteger(TypeNode *type) const {
-    switch (type->kind()) {
-        case TypeKind::BYTE:
-        case TypeKind::CHAR:
-        case TypeKind::INTEGER:
-        case TypeKind::LONGINT:
-            return true;
-        default:
-            return false;
-    }
-}
-
-bool SemanticAnalysis::isReal(TypeNode *type) const {
-    switch (type->kind()) {
-        case TypeKind::REAL:
-        case TypeKind::LONGREAL:
-            return true;
-        default:
-            return false;
-    }
-}
-
-bool SemanticAnalysis::isPointer(TypeNode *type) const {
-    return type->kind() == TypeKind::POINTER;
-}
 
 TypeNode *SemanticAnalysis::commonType(TypeNode *lhsType, TypeNode *rhsType) const {
     if (lhsType == rhsType) {
         return lhsType;
     } else if (assertEqual(lhsType->getIdentifier(), rhsType->getIdentifier())) {
         return lhsType;
-    } else if (isNumeric(lhsType) && isNumeric(rhsType)) {
+    } else if (lhsType->isNumeric() && rhsType->isNumeric()) {
         if (lhsType->getSize() == rhsType->getSize()) {
-            return isReal(lhsType) ? lhsType : rhsType;
+            return lhsType->isReal() ? lhsType : rhsType;
         } else {
             return lhsType->getSize() > rhsType->getSize() ? lhsType : rhsType;
         }

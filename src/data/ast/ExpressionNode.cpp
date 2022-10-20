@@ -78,11 +78,6 @@ TypeNode *ExpressionNode::getCast() const {
     return cast_;
 }
 
-bool ExpressionNode::needsCast() const {
-    return cast_ && cast_ != getType();
-}
-
-
 bool UnaryExpressionNode::isConstant() const {
     return expr_->isConstant();
 }

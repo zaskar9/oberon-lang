@@ -52,7 +52,7 @@ private:
 
 public:
     explicit ConstantDeclarationNode(const FilePos &pos, std::unique_ptr<Ident> ident, std::unique_ptr<ExpressionNode> value) :
-            DeclarationNode(NodeType::constant, pos, std::move(ident), nullptr),
+            DeclarationNode(NodeType::constant, pos, std::move(ident), value->getType()),
             value_(std::move(value)) { };
     ~ConstantDeclarationNode() final = default;
 

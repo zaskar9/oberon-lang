@@ -239,6 +239,7 @@ void LLVMIRBuilder::visit(NilLiteralNode &node) {
 }
 
 void LLVMIRBuilder::visit(UnaryExpressionNode &node) {
+    auto type = node.getType();
     node.getExpression()->accept(*this);
     cast(*node.getExpression());
     switch (node.getOperator()) {
@@ -246,7 +247,7 @@ void LLVMIRBuilder::visit(UnaryExpressionNode &node) {
             value_ = builder_.CreateNot(value_);
             break;
         case OperatorType::NEG:
-            value_ = builder_.CreateNeg(value_);
+            value_ = type->isReal() ? builder_.CreateFNeg(value_) : builder_.CreateNeg(value_);
             break;
         case OperatorType::AND:
         case OperatorType::OR:
@@ -271,6 +272,7 @@ void LLVMIRBuilder::visit(UnaryExpressionNode &node) {
 }
 
 void LLVMIRBuilder::visit(BinaryExpressionNode &node) {
+    auto type = node.getType();
     node.getLeftExpression()->accept(*this);
     cast(*node.getLeftExpression());
     auto lhs = value_;
@@ -312,13 +314,13 @@ void LLVMIRBuilder::visit(BinaryExpressionNode &node) {
         auto rhs = value_;
         switch (node.getOperator()) {
             case OperatorType::PLUS:
-                value_ = builder_.CreateAdd(lhs, rhs);
+                value_ = type->isReal() ? builder_.CreateFAdd(lhs, rhs) : builder_.CreateAdd(lhs, rhs);
                 break;
             case OperatorType::MINUS:
-                value_ = builder_.CreateSub(lhs, rhs);
+                value_ = type->isReal() ? builder_.CreateFSub(lhs, rhs) : builder_.CreateSub(lhs, rhs);
                 break;
             case OperatorType::TIMES:
-                value_ = builder_.CreateMul(lhs, rhs);
+                value_ = type->isReal() ? builder_.CreateFMul(lhs, rhs) : builder_.CreateMul(lhs, rhs);
                 break;
             case OperatorType::DIVIDE:
                 value_ = builder_.CreateFDiv(lhs, rhs);
@@ -330,22 +332,22 @@ void LLVMIRBuilder::visit(BinaryExpressionNode &node) {
                 value_ = builder_.CreateSRem(lhs, rhs);
                 break;
             case OperatorType::EQ:
-                value_ = builder_.CreateICmpEQ(lhs, rhs);
+                value_ = type->isReal() ? builder_.CreateFCmpUEQ(lhs, rhs) : builder_.CreateICmpEQ(lhs, rhs);
                 break;
             case OperatorType::NEQ:
-                value_ = builder_.CreateICmpNE(lhs, rhs);
+                value_ = type->isReal() ? builder_.CreateFCmpUNE(lhs, rhs) : builder_.CreateICmpNE(lhs, rhs);
                 break;
             case OperatorType::LT:
-                value_ = builder_.CreateICmpSLT(lhs, rhs);
+                value_ = type->isReal() ? builder_.CreateFCmpULT(lhs, rhs) :builder_.CreateICmpSLT(lhs, rhs);
                 break;
             case OperatorType::GT:
-                value_ = builder_.CreateICmpSGT(lhs, rhs);
+                value_ = type->isReal() ? builder_.CreateFCmpUGT(lhs, rhs) : builder_.CreateICmpSGT(lhs, rhs);
                 break;
             case OperatorType::LEQ:
-                value_ = builder_.CreateICmpSLE(lhs, rhs);
+                value_ = type->isReal() ? builder_.CreateFCmpULE(lhs, rhs) : builder_.CreateICmpSLE(lhs, rhs);
                 break;
             case OperatorType::GEQ:
-                value_ = builder_.CreateICmpSGE(lhs, rhs);
+                value_ = type->isReal() ? builder_.CreateFCmpUGE(lhs, rhs) : builder_.CreateICmpSGE(lhs, rhs);
                 break;
             case OperatorType::AND:
             case OperatorType::OR:
@@ -551,21 +553,27 @@ void LLVMIRBuilder::visit(ReturnNode& node) {
 }
 
 void LLVMIRBuilder::cast(ExpressionNode &node) {
-    if (node.needsCast()) {
-        auto dest = node.getCast();
-        switch (dest->kind()) {
-            case TypeKind::BYTE:
-            case TypeKind::CHAR:
-            case TypeKind::INTEGER:
-            case TypeKind::LONGINT:
-                value_ = builder_.CreateIntCast(value_, getLLVMType(dest), true);
-                break;
-            case TypeKind::REAL:
-            case TypeKind::LONGREAL:
-                value_ = builder_.CreateFPCast(value_, getLLVMType(dest));
-                break;
-            default:
-                logger_->error(node.pos(), "Cannot cast to " + to_string(*dest->getIdentifier()) + ".");
+    auto target = node.getCast();
+    auto source = node.getType();
+    if (target && target != source) {
+        if (source->isInteger()) {
+            if (target->isInteger()) {
+                if (target->getSize() > source->getSize()) {
+                    value_ = builder_.CreateSExt(value_, getLLVMType(target));
+                } else {
+                    value_ = builder_.CreateTrunc(value_, getLLVMType(target));
+                }
+            } else if (target->isReal()) {
+                value_ = builder_.CreateSIToFP(value_, getLLVMType(target));
+            }
+        } else if (source->isReal()) {
+            if (target->isReal()) {
+                if (target->getSize() > source->getSize()) {
+                    value_ = builder_.CreateFPExt(value_, getLLVMType(target));
+                } else {
+                    value_ = builder_.CreateFPTrunc(value_, getLLVMType(target));
+                }
+            }
         }
     }
 }

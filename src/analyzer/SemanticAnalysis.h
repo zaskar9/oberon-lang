@@ -81,11 +81,6 @@ private:
 
     std::string format(const TypeNode *type, bool isPtr = false) const;
 
-    bool isNumeric(TypeNode *type) const;
-    bool isInteger(TypeNode *type) const;
-    bool isReal(TypeNode *type) const;
-    bool isPointer(TypeNode *type) const;
-
     TypeNode *commonType(TypeNode *lhsType, TypeNode *rhsType) const;
     TypeNode *resolveType(TypeNode *type);
 

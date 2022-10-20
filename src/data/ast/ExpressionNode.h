@@ -44,7 +44,6 @@ public:
 
     void setCast(TypeNode *cast);
     [[nodiscard]] TypeNode *getCast() const;
-    [[nodiscard]] bool needsCast() const;
 
     void accept(NodeVisitor &visitor) override = 0;
 

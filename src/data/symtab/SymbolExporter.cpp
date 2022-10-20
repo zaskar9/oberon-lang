@@ -68,9 +68,12 @@ void SymbolExporter::writeDeclaration(SymbolFile *file, DeclarationNode *decl) {
                     file->writeLong(dynamic_cast<IntegerLiteralNode*>(con->getValue())->value());
                     break;
                 case TypeKind::REAL:
+                    file->writeFloat(dynamic_cast<RealLiteralNode*>(con->getValue())->value());
+                    break;
                 case TypeKind::LONGREAL:
+                    file->writeDouble(dynamic_cast<RealLiteralNode*>(con->getValue())->value());
                 default:
-                    logger_->error(file->path(), "Cannot export constant " + to_string(decl->getIdentifier()) + ".");
+                    logger_->error(file->path(), "Cannot export constant " + to_string(*decl->getIdentifier()) + ".");
             }
         }
     } else if (nodeType == NodeType::variable) {

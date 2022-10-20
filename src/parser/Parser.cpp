@@ -833,7 +833,6 @@ std::unique_ptr<ExpressionNode> Parser::simple_expression() {
     } else if (token == TokenType::op_minus) {
         token_ = scanner_->next();
         expr = std::make_unique<UnaryExpressionNode>(token_->start(), OperatorType::NEG, term());
-        std::cout << *expr << std::endl;
     } else {
         expr = term();
     }

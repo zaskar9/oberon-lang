@@ -26,6 +26,39 @@ bool TypeNode::isAnonymous() const {
     return anon_;
 }
 
+bool TypeNode::isArray() const {
+    return kind_ == TypeKind::ARRAY;
+}
+
+bool TypeNode::isRecord() const {
+    return kind_ == TypeKind::RECORD;
+}
+
+bool TypeNode::isPointer() const {
+    return kind_ == TypeKind::POINTER;
+}
+
+bool TypeNode::isBoolean() const {
+    return kind_ == TypeKind::BOOLEAN;
+}
+
+bool TypeNode::isNumeric() const {
+    return this->isInteger() || this->isReal();
+}
+
+bool TypeNode::isInteger() const {
+    return kind_ == TypeKind::BYTE || kind_ == TypeKind::CHAR ||
+           kind_ == TypeKind::INTEGER || kind_ == TypeKind::LONGINT;
+}
+
+bool TypeNode::isReal() const {
+    return kind_ == TypeKind::REAL || kind_ == TypeKind::LONGREAL;
+}
+
+bool TypeNode::isString() const {
+    return kind_ == TypeKind::STRING;
+}
+
 void TypeNode::setRef(int ref) {
     ref_ = ref;
 }

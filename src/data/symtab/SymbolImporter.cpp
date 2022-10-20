@@ -88,10 +88,14 @@ void SymbolImporter::readDeclaration(SymbolFile *file, NodeType nodeType) {
                     expr = std::make_unique<IntegerLiteralNode>(EMPTY_POS, file->readInt(), type);
                     break;
                 case TypeKind::LONGINT:
-                    expr = std::make_unique<IntegerLiteralNode>(EMPTY_POS, (int) file->readLong(), type);
+                    expr = std::make_unique<IntegerLiteralNode>(EMPTY_POS, file->readLong(), type);
                     break;
                 case TypeKind::REAL:
+                    expr = std::make_unique<RealLiteralNode>(EMPTY_POS, file->readFloat(), type);
+                    break;
                 case TypeKind::LONGREAL:
+                    expr = std::make_unique<RealLiteralNode>(EMPTY_POS, file->readDouble(), type);
+                    break;
                 default:
                     logger_->error(file->path(), "Cannot import constant " + name + ".");
             }
