@@ -216,6 +216,9 @@ void SemanticAnalysis::visit(ProcedureNode &node) {
     }
     block(node);
     symbols_->closeScope();
+    if (node.isExtern() && node.getLevel() != SymbolTable::MODULE_LEVEL) {
+        logger_->error(node.pos(), "only top-level procedures can be external.");
+    }
 }
 
 void SemanticAnalysis::visit(ParameterNode &node) {

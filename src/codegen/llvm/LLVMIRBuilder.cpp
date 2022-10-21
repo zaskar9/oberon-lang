@@ -619,6 +619,11 @@ void LLVMIRBuilder::call(ProcedureNodeReference &node) {
 }
 
 void LLVMIRBuilder::proc(ProcedureNode &node) {
+    auto name = qualifiedName(node.getIdentifier(), node.isExtern());
+    if (module_->getFunction(name)) {
+        logger_->error(node.pos(), "Function " + name + " already defined.");
+        return;
+    }
     std::vector<Type*> params;
     for (size_t j = 0; j < node.getFormalParameterCount(); j++) {
         auto param = node.getFormalParameter(j);
@@ -626,7 +631,6 @@ void LLVMIRBuilder::proc(ProcedureNode &node) {
         params.push_back(param->isVar() ? param_t->getPointerTo() : param_t);
     }
     auto type = FunctionType::get(getLLVMType(node.getReturnType()), params, node.hasVarArgs());
-    auto name = qualifiedName(node.getIdentifier(), node.isExtern());
     auto callee = module_->getOrInsertFunction(name, type);
     functions_[&node] = ::cast<Function>(callee.getCallee());
 }

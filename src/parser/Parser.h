@@ -39,7 +39,7 @@ private:
     std::unique_ptr<Designator> designator();
     std::unique_ptr<Selector> selector();
     bool maybeTypeguard();
-    std::unique_ptr<IdentDef> identdef();
+    std::unique_ptr<IdentDef> identdef(bool checkAlphaNum = true);
     void ident_list(std::vector<std::unique_ptr<Ident>> &idents);
 
     std::unique_ptr<ModuleNode> module();
@@ -74,7 +74,7 @@ private:
     void actual_parameters(ActualParameters *params);
 
     bool assertToken(const Token *token, TokenType expected);
-    void moveSelectors(std::vector<std::unique_ptr<Selector>> &selectors, Designator *designator);
+    bool assertOberonIdent(const Ident *ident);
 
     void resync(std::set<TokenType> types);
 

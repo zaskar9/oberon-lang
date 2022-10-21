@@ -10,7 +10,6 @@
 
 #include <memory>
 #include <string>
-#include <optional>
 #include "BlockNode.h"
 #include "ImportNode.h"
 

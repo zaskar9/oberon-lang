@@ -51,8 +51,11 @@ std::unique_ptr<QualIdent> Parser::qualident() {
 }
 
 // identdef = ident [ "*" ] .
-std::unique_ptr<IdentDef> Parser::identdef() {
+std::unique_ptr<IdentDef> Parser::identdef(bool checkAlphaNum) {
     auto identifier = ident();
+    if (checkAlphaNum) {
+        assertOberonIdent(identifier.get());
+    }
     auto exp = false;
     if (scanner_->peek()->type() == TokenType::op_times) {
         scanner_->next(); // skip the asterisk
@@ -461,6 +464,7 @@ void Parser::procedure_declaration(BlockNode *block) {
         scanner_->next(); // skip EXTERN keyword
         proc->setExtern(true);
     } else {
+        assertOberonIdent(proc->getIdentifier());
         procedure_body(proc.get());
         auto identifier = ident();
         if (*identifier != *proc->getIdentifier()) {
@@ -484,7 +488,7 @@ std::unique_ptr<ProcedureNode> Parser::procedure_heading() {
     logger_->debug({}, "procedure_heading");
     auto token = scanner_->next(); // skip PROCEDURE keyword
     auto pos = token->start();
-    auto identifier = identdef();
+    auto identifier = identdef(false);
     auto proc = std::make_unique<ProcedureNode>(pos, std::move(identifier));
     if (scanner_->peek()->type() == TokenType::lparen) {
         formal_parameters(proc.get());
@@ -493,8 +497,12 @@ std::unique_ptr<ProcedureNode> Parser::procedure_heading() {
         scanner_->next(); // skip colon
         proc->setReturnType(type(proc.get()));
     }
-    // [<;>]
-    resync({ TokenType::semicolon });
+    auto peek = scanner_->peek();
+    if (peek->type() != TokenType::semicolon) {
+        logger_->error(peek->start(), "unexpected token.");
+        // [<;>]
+        resync({ TokenType::semicolon });
+    }
     return proc;
 }
 
@@ -749,8 +757,8 @@ std::unique_ptr<StatementNode> Parser::for_statement() {
     token_ = scanner_->next(); // skip FOR keyword
     auto pos = token_->start();
     // FilePos pos = scanner_->peek()->start();
-    auto ident = this->ident();
-    auto counter = std::make_unique<ValueReferenceNode>(ident->pos(), std::make_unique<Designator>(std::move(ident)));
+    auto identifier = ident();
+    auto counter = std::make_unique<ValueReferenceNode>(identifier->pos(), std::make_unique<Designator>(std::move(identifier)));
     token_ = scanner_->next();
     std::unique_ptr<ExpressionNode> low = nullptr;
     if (assertToken(token_.get(), TokenType::op_becomes)) {
@@ -926,10 +934,12 @@ bool Parser::assertToken(const Token *token, TokenType expected) {
     return false;
 }
 
-void Parser::moveSelectors(std::vector<std::unique_ptr<Selector>> &selectors, Designator *designator) {
-    for (auto& selector: selectors) {
-        designator->addSelector(std::move(selector));
+bool Parser::assertOberonIdent(const Ident *ident) {
+    if (ident->name().contains("_")) {
+        logger_->error(ident->pos(), "illegal identifier: " + to_string(*ident) + ".");
+        return false;
     }
+    return true;
 }
 
 void Parser::resync(std::set<TokenType> types) {
