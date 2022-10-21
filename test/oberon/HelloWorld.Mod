@@ -1,16 +1,8 @@
 MODULE HelloWorld;
+IMPORT Out;
 
-CONST Message = "Hoi Niklaus!\n";
-
-(* Import `printf` function from C <stdio.h> library. *)
-PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
-
-(* Writes a string value to standard out. *)
-PROCEDURE Write(str: STRING);
-BEGIN
-    printf(str)
-END Write;
+CONST Message = "Hoi Niklaus!";
 
 BEGIN
-	Write(Message)
+    Out.String(Message); Out.Ln
 END HelloWorld.
