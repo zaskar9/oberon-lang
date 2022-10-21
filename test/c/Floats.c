@@ -14,5 +14,7 @@ int main(int argc, const char* argv[]) {
     double d1 = 3.141592654;
     float f1 = (float) d1;
     f1 = i1;
-    printf("%f\n", atanf(2));
+
+    float pi = 3.141592654;
+    printf("%f\n", pi);
 }

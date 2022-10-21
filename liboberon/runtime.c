@@ -3,6 +3,7 @@
 //
 
 #include <math.h>
+#include "runtime.h"
 
 float realf(int x) {
     return (float) x;

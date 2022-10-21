@@ -22,9 +22,9 @@ clean :
 %.smb : %.Mod
 	@$(OC) $(O7CFLAGS) $<
 
-lib : compat.o Oberon.o Out.o Random.o Math.o
-	@$(CC) -dynamiclib -o $(LIB)/liboberon.dylib compat.o Oberon.o Out.o Random.o Math.o -install_name @rpath/liboberon.dylib
-	@$(CC) -shared -o $(LIB)/liboberon.so compat.o Oberon.o Out.o Random.o Math.o -install_name @rpath/liboberon.dylib
+lib : runtime.o Oberon.o Out.o Random.o Math.o
+	@$(CC) -dynamiclib -o $(LIB)/liboberon.dylib runtime.o Oberon.o Out.o Random.o Math.o -install_name @rpath/liboberon.dylib
+	@$(CC) -shared -o $(LIB)/liboberon.so runtime.o Oberon.o Out.o Random.o Math.o -install_name @rpath/liboberon.dylib
 
 inc : Oberon.smb Out.smb Random.smb Math.smb
 	@mv Oberon.smb $(INC)

@@ -27,8 +27,10 @@ BEGIN
 END Long;
 
 PROCEDURE Real*(val: REAL);
+VAR valL: LONGREAL;
 BEGIN
-    printf("%f", val)
+    valL := val;
+    printf("%f", valL)
 END Real;
 
 END Out.
