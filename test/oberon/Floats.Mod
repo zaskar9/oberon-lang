@@ -32,5 +32,6 @@ BEGIN
     Out.Real(Math.real(3)); Out.Ln;
     f1 := 0.1;
     f2 := 0.2;
-    Out.Real(f1 + f2); Out.Ln
+    Out.Real(f1 + f2); Out.Ln;
+    Out.Real(9 / 5); Out.Ln
 END Floats.
