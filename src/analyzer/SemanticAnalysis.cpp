@@ -10,13 +10,13 @@
 SemanticAnalysis::SemanticAnalysis(SymbolTable *symbols, SymbolImporter *importer, SymbolExporter *exporter)
         : Analysis(), NodeVisitor(),
           symbols_(symbols), logger_(), parent_(), importer_(importer), exporter_(exporter), forwards_() {
-    tBoolean_ = dynamic_cast<TypeNode *>(symbols_->lookup(SymbolTable::BOOLEAN));
-    tByte_ = dynamic_cast<TypeNode *>(symbols_->lookup(SymbolTable::BYTE));
-    tChar_ = dynamic_cast<TypeNode *>(symbols_->lookup(SymbolTable::CHAR));
-    tInteger_ = dynamic_cast<TypeNode *>(symbols_->lookup(SymbolTable::INTEGER));
-    tReal_ = dynamic_cast<TypeNode *>(symbols_->lookup(SymbolTable::REAL));
-    tLongReal_ = dynamic_cast<TypeNode *>(symbols_->lookup(SymbolTable::LONGREAL));
-    tString_ = dynamic_cast<TypeNode *>(symbols_->lookup(SymbolTable::STRING));
+    tBoolean_ = dynamic_cast<TypeNode *>(symbols_->lookup(to_string(TypeKind::BOOLEAN)));
+    tByte_ = dynamic_cast<TypeNode *>(symbols_->lookup(to_string(TypeKind::BYTE)));
+    tChar_ = dynamic_cast<TypeNode *>(symbols_->lookup(to_string(TypeKind::CHAR)));
+    tInteger_ = dynamic_cast<TypeNode *>(symbols_->lookup(to_string(TypeKind::INTEGER)));
+    tReal_ = dynamic_cast<TypeNode *>(symbols_->lookup(to_string(TypeKind::REAL)));
+    tLongReal_ = dynamic_cast<TypeNode *>(symbols_->lookup(to_string(TypeKind::LONGREAL)));
+    tString_ = dynamic_cast<TypeNode *>(symbols_->lookup(to_string(TypeKind::STRING)));
 }
 
 void SemanticAnalysis::run(Logger *logger, Node *node) {

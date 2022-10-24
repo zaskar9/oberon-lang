@@ -48,6 +48,10 @@ set(SYMTAB_SOURCES
 set(PARSER_SOURCES
         parser/Parser.cpp parser/Parser.h)
 
+set(SYSTEM_SOURCES
+        system/OberonSystem.cpp system/OberonSystem.h
+        system/PredefinedProcedure.cpp system/PredefinedProcedure.h)
+
 set(ANALYZER_SOURCES
         analyzer/Analyzer.cpp analyzer/Analyzer.h
         analyzer/SemanticAnalysis.cpp analyzer/SemanticAnalysis.h
@@ -68,8 +72,9 @@ set(ALL_SOURCES
         ${LOGGING_SOURCES}
         ${SCANNER_SOURCES}
         ${DATA_SOURCES}
-        ${PARSER_SOURCES}
         ${SYMTAB_SOURCES}
+        ${PARSER_SOURCES}
+        ${SYSTEM_SOURCES}
         ${ANALYZER_SOURCES}
         ${CODEGEN_SOURCES}
         ${COMPILER_SOURCES} data/ast/PointerTypeNode.cpp data/ast/PointerTypeNode.h)

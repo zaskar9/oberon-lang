@@ -14,7 +14,7 @@
 #include "DeclarationNode.h"
 #include "ProcedureTypeNode.h"
 
-class ProcedureNode final : public DeclarationNode, public BlockNode {
+class ProcedureNode : public DeclarationNode, public BlockNode {
 
 private:
     std::unique_ptr<ProcedureTypeNode> proctype_;
@@ -43,6 +43,10 @@ public:
 
     void setExtern(bool value);
     [[nodiscard]] bool isExtern() const;
+
+    [[nodiscard]] virtual bool isPredefined() const {
+        return false;
+    }
 
     void accept(NodeVisitor &visitor) override;
     void print(std::ostream &stream) const override;

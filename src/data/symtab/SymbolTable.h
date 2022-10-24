@@ -26,16 +26,10 @@ class SymbolTable {
 private:
     std::unordered_map<std::string, std::unique_ptr<Scope>> scopes_;
     Scope *scope_;
-    // all predefines are collected for memory-management purposes
-    std::vector<std::unique_ptr<Node>> predefines_;
     // references for import and export
     std::vector<TypeNode*> references_;
     std::unique_ptr<Scope> universe_;
     TypeNode *nilType_;
-
-    BasicTypeNode *basicType(const std::string &name, TypeKind kind, unsigned int size);
-    PointerTypeNode *pointerType(TypeNode *base);
-    ProcedureNode *procedure(const std::string &name, std::vector<std::pair<TypeNode*, bool>> params);
 
 public:
     explicit SymbolTable();
@@ -47,6 +41,7 @@ public:
     [[nodiscard]] TypeNode *getRef(char ref) const;
 
     void insert(const std::string &name, Node *node);
+    void insertGlobal(const std::string &name, Node *node);
 
     [[nodiscard]] Node *lookup(const std::string &name) const;
     [[nodiscard]] Node *lookup(const std::string &qualifier, const std::string &name) const;
@@ -55,9 +50,10 @@ public:
     [[nodiscard]] bool isDuplicate(const std::string &name) const;
 
     [[nodiscard]] TypeNode *getNilType() const;
+    void setNilType(TypeNode *nilType);
 
     void createNamespace(const std::string &module, bool activate = false);
-    Scope *getNamespace(const std::string &module);
+    [[nodiscard]] Scope *getNamespace(const std::string &module);
     void setNamespace(const std::string &module);
 
     void openScope();
@@ -67,15 +63,6 @@ public:
 
     static const unsigned int GLOBAL_LEVEL;
     static const unsigned int MODULE_LEVEL;
-
-    static const std::string BOOLEAN;
-    static const std::string BYTE;
-    static const std::string CHAR;
-    static const std::string INTEGER;
-    static const std::string LONGINT;
-    static const std::string REAL;
-    static const std::string LONGREAL;
-    static const std::string STRING;
 
 };
 

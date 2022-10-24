@@ -20,6 +20,8 @@ enum class TypeKind : char {
     STRING = 15
 };
 
+std::ostream &operator<<(std::ostream &stream, const TypeKind &kind);
+
 class TypeNode : public Node {
 
 private:

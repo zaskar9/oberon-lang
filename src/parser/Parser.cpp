@@ -464,7 +464,7 @@ void Parser::procedure_declaration(BlockNode *block) {
         procedure_body(proc.get());
         auto identifier = ident();
         if (*identifier != *proc->getIdentifier()) {
-            logger_->error(token_->start(), "procedure name mismatch: expected " +
+            logger_->error(token_->start(), "createProcedure name mismatch: expected " +
                     to_string(*proc->getIdentifier()) + ", found " + to_string(*identifier) + ".");
         }
     }
