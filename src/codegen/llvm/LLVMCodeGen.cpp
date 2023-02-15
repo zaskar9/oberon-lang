@@ -120,7 +120,7 @@ void LLVMCodeGen::emit(Module *module, boost::filesystem::path path, OutputFileT
 #endif
             break;
     }
-    std::string name = change_extension(path, ext).string();
+    std::string name = path.replace_extension(ext).string();
     std::error_code ec;
     llvm::raw_fd_ostream output(name, ec, llvm::sys::fs::OF_None);
     if (ec) {
