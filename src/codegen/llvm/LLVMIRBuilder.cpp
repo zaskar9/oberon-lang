@@ -578,29 +578,27 @@ void LLVMIRBuilder::cast(ExpressionNode &node) {
     }
 }
 
-Value *LLVMIRBuilder::callBuiltIn(std::string name, std::vector<Value *> &params) {
+Value *LLVMIRBuilder::callBuiltIn(ProcedureNodeReference &node, std::string name, std::vector<Value *> &params) {
     if (name == "NEW") {
         auto type = FunctionType::get(builder_.getInt8PtrTy(), {builder_.getInt64Ty()}, false);
         auto callee = module_->getOrInsertFunction("malloc", type);
         std::vector<Value *> values;
-        auto pointer_t = (PointerType *) params[0]->getType();
+        auto ptr = (PointerTypeNode *) node.getActualParameter(0)->getType();
         auto layout = module_->getDataLayout();
-        auto base = pointer_t->getContainedType(0);
-        values.push_back(ConstantInt::get(builder_.getInt64Ty(), layout.getTypeAllocSize(base->getContainedType(0))));
+        auto base = ptr->getBase();
+        values.push_back(ConstantInt::get(builder_.getInt64Ty(), layout.getTypeAllocSize(getLLVMType(base))));
         value_ = builder_.CreateCall(callee, values);
-        value_ = builder_.CreateBitCast(value_, base);
+        value_ = builder_.CreateBitCast(value_, getLLVMType(ptr)); // TODO remove once non-opaque pointers are no longer supported
         return builder_.CreateStore(value_, params[0]);
     }
     return nullptr;
 }
 
 void LLVMIRBuilder::call(ProcedureNodeReference &node) {
-    std::vector<Value*> params;
-    // caution: formal parameters on referenced node, actual parameters on reference node
     auto proc = dynamic_cast<ProcedureNode *>(node.dereference());
-    size_t fp_cnt = proc->getFormalParameterCount();
+    std::vector<Value *> params;
     for (size_t i = 0; i < node.getActualParameterCount(); i++) {
-        setRefMode(i >= fp_cnt || !proc->getFormalParameter(i)->isVar());
+        setRefMode(i >= proc->getFormalParameterCount() || !proc->getFormalParameter(i)->isVar());
         node.getActualParameter(i)->accept(*this);
         params.push_back(value_);
         restoreRefMode();
@@ -611,7 +609,7 @@ void LLVMIRBuilder::call(ProcedureNodeReference &node) {
     if (fun) {
         value_ = builder_.CreateCall(fun, params);
     } else {
-        value_ = callBuiltIn(ident->name(), params);
+        value_ = callBuiltIn(node, ident->name(), params);
         if (!value_) {
             logger_->error(node.pos(), "Undefined procedure: " + to_string(*ident) + ".");
         }

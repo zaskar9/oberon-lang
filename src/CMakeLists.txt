@@ -81,7 +81,7 @@ find_package(Boost REQUIRED COMPONENTS filesystem program_options)
 if (Boost_FOUND)
     include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
     target_link_libraries(${OBERON_LANG} ${Boost_LIBRARIES})
-endif()
+endif ()
 
 find_package(LLVM REQUIRED CONFIG)
 if (LLVM_FOUND)
@@ -90,7 +90,7 @@ if (LLVM_FOUND)
     add_definitions(${LLVM_DEFINITIONS})
     llvm_map_components_to_libnames(llvm_libs core support passes ${LLVM_TARGETS_TO_BUILD})
     target_link_libraries(${OBERON_LANG} ${llvm_libs})
-endif()
+endif ()
 
 
 set(GRAMMAR_SOURCES     
@@ -104,7 +104,7 @@ find_package(Boost REQUIRED COMPONENTS filesystem program_options)
 if (Boost_FOUND)
     include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
     target_link_libraries(${GRAMMAR_TOOL} ${Boost_LIBRARIES})
-endif()
+endif ()
 
 
 configure_file(config.h.in config.h @ONLY)
