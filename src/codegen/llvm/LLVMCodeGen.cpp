@@ -92,11 +92,11 @@ void LLVMCodeGen::generate(Node *ast, boost::filesystem::path path) {
         auto mpm = pb_.buildPerModuleDefaultPipeline(lvl_);
         mpm.run(*module.get(), mam);
     }
-    if (module) {
+    if (module && logger_->getErrorCount() == 0) {
         logger_->debug(PROJECT_NAME, "emitting code...");
         emit(module.get(), path, type_);
     } else {
-        logger_->error(path.string(), "code generation failed.");
+        logger_->debug(PROJECT_NAME, "code generation failed.");
     }
 }
 
@@ -120,7 +120,7 @@ void LLVMCodeGen::emit(Module *module, boost::filesystem::path path, OutputFileT
 #endif
             break;
     }
-    std::string name = change_extension(path, ext).string();
+    std::string name = path.replace_extension(ext).string();
     std::error_code ec;
     llvm::raw_fd_ostream output(name, ec, llvm::sys::fs::OF_None);
     if (ec) {

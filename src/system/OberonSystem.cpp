@@ -76,4 +76,6 @@ void Oberon07::initSymbolTable(SymbolTable *symbols) {
     );
     symbols->setNilType(this->getBasicType(TypeKind::NILTYPE));
     this->createProcedure(std::make_unique<New>(), true);
+    this->createProcedure(std::make_unique<Inc>(), true);
+    this->createProcedure(std::make_unique<Dec>(), true);
 }

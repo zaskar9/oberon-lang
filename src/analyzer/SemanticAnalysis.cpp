@@ -304,7 +304,7 @@ void SemanticAnalysis::visit(ValueReferenceNode &node) {
                         logger_->error(sel->pos(), "selector type mismatch.");
                     }
                 }
-                if (sel->getType() == NodeType::array_type) {
+                if (sel->getType() == NodeType::array_type && type->isArray()) {
                     auto array_t = dynamic_cast<ArrayTypeNode *>(type);
                     auto expr = dynamic_cast<ArrayIndex*>(sel)->getExpression();
                     expr->accept(*this);
@@ -319,7 +319,7 @@ void SemanticAnalysis::visit(ValueReferenceNode &node) {
                         }
                     }
                     type = array_t->getMemberType();
-                } else if (sel->getType() == NodeType::record_type) {
+                } else if (sel->getType() == NodeType::record_type && type->isRecord()) {
                     auto record_t = dynamic_cast<RecordTypeNode *>(type);
                     auto ref = dynamic_cast<RecordField *>(sel);
                     auto field = record_t->getField(ref->ident()->name());
@@ -330,7 +330,7 @@ void SemanticAnalysis::visit(ValueReferenceNode &node) {
                         logger_->error(ref->pos(),
                                        "unknown record field: " + to_string(*ref->ident()) + ".");
                     }
-                } else if (sel->getType() == NodeType::pointer_type) {
+                } else if (sel->getType() == NodeType::pointer_type && type->isPointer()) {
                     auto pointer_t = dynamic_cast<PointerTypeNode *>(type);
                     type = pointer_t->getBase();
                 } else if (sel->getType() == NodeType::type_declaration) {
@@ -393,65 +393,73 @@ void SemanticAnalysis::visit(BinaryExpressionNode &node) {
         lhs->accept(*this);
     } else {
         logger_->error(node.pos(), "undefined left-hand side in expression.");
+        return;
     }
     auto rhs = node.getRightExpression();
     if (rhs) {
         rhs->accept(*this);
     } else {
         logger_->error(node.pos(), "undefined right-hand side in expression.");
+        return;
     }
-    if (lhs && rhs) {
-        auto op = node.getOperator();
-        // Type inference
-        auto lhsType = lhs->getType();
-        auto rhsType = rhs->getType();
-        auto common = commonType(lhsType, rhsType);
-        if (common) {
-            if (op == OperatorType::EQ
-                || op == OperatorType::NEQ
-                || op == OperatorType::LT
-                || op == OperatorType::LEQ
-                || op == OperatorType::GT
-                || op == OperatorType::GEQ) {
-                node.setType(this->tBoolean_);
-            } else if (op == OperatorType::DIV) {
-                if (lhsType->isInteger() && rhsType->isInteger()) {
-                    node.setType(common);
+    auto op = node.getOperator();
+    // Type inference
+    auto lhsType = lhs->getType();
+    if (!lhsType) {
+        logger_->error(lhs->pos(), "undefined left-hand side type in expression.");
+        return;
+    }
+    auto rhsType = rhs->getType();
+    if (!rhsType) {
+        logger_->error(lhs->pos(), "undefined right-hand side type in expression.");
+        return;
+    }
+    auto common = commonType(lhsType, rhsType);
+    if (common) {
+        if (op == OperatorType::EQ
+            || op == OperatorType::NEQ
+            || op == OperatorType::LT
+            || op == OperatorType::LEQ
+            || op == OperatorType::GT
+            || op == OperatorType::GEQ) {
+            node.setType(this->tBoolean_);
+        } else if (op == OperatorType::DIV) {
+            if (lhsType->isInteger() && rhsType->isInteger()) {
+                node.setType(common);
+            } else {
+                logger_->error(node.pos(), "integer division needs integer arguments.");
+            }
+        } else if (op == OperatorType::DIVIDE) {
+            if (common->isInteger()) {
+                if (common->kind() == TypeKind::LONGINT) {
+                    node.setType(this->tLongReal_);
                 } else {
-                    logger_->error(node.pos(), "integer division needs integer arguments.");
-                }
-            } else if (op == OperatorType::DIVIDE) {
-                if (common->isInteger()) {
-                    if (common->kind() == TypeKind::LONGINT) {
-                        node.setType(this->tLongReal_);
-                    } else {
-                        node.setType(this->tReal_);
-                    }
-                } else {
-                    node.setType(common);
+                    node.setType(this->tReal_);
                 }
             } else {
                 node.setType(common);
             }
         } else {
-            logger_->error(node.pos(), "incompatible types (" + lhsType->getIdentifier()->name() + ", " +
-                                       rhsType->getIdentifier()->name() + ")");
+            node.setType(common);
         }
-        // Folding
-        if (lhs->isConstant() && !lhs->isLiteral()) {
-            node.setLeftExpression(fold(lhs));
+    } else {
+        logger_->error(node.pos(), "incompatible types (" + lhsType->getIdentifier()->name() + ", " +
+                                   rhsType->getIdentifier()->name() + ")");
+    }
+    // Folding
+    if (lhs->isConstant() && !lhs->isLiteral()) {
+        node.setLeftExpression(fold(lhs));
+    }
+    if (rhs->isConstant() && !rhs->isLiteral()) {
+        node.setRightExpression(fold(rhs));
+    }
+    // Casting
+    if (common) {
+        if (node.getLeftExpression()->getType() != common) {
+            node.getLeftExpression()->setCast(common);
         }
-        if (rhs->isConstant() && !rhs->isLiteral()) {
-            node.setRightExpression(fold(rhs));
-        }
-        // Casting
-        if (common) {
-            if (node.getLeftExpression()->getType() != common) {
-                node.getLeftExpression()->setCast(common);
-            }
-            if (node.getRightExpression()->getType() != common) {
-                node.getRightExpression()->setCast(common);
-            }
+        if (node.getRightExpression()->getType() != common) {
+            node.getRightExpression()->setCast(common);
         }
     }
 }

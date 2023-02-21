@@ -57,7 +57,7 @@ void LLVMIRBuilder::visit(ModuleNode &node) {
 
 void LLVMIRBuilder::visit(ProcedureNode &node) {
     if (node.getProcedureCount() > 0) {
-        logger_->error(node.pos(), "Found unsupported nested procedures in " + to_string(node.getIdentifier()) + ".");
+        logger_->error(node.pos(), "found unsupported nested procedures in " + to_string(node.getIdentifier()) + ".");
     }
     if (!node.isExtern()) {
         function_ = functions_[&node];
@@ -107,9 +107,9 @@ void LLVMIRBuilder::visit(ValueReferenceNode &node) {
     } else if (level == level_) /* same procedure level */ {
         value_ = values_[ref];
     } else if (level > level_) /* parent procedure level */ {
-        logger_->error(ref->pos(), "Referencing variables of parent procedures is not yet supported.");
+        logger_->error(ref->pos(), "referencing variables of parent procedures is not yet supported.");
     } else /* error */ {
-        logger_->error(ref->pos(), "Cannot reference variable of child procedure.");
+        logger_->error(ref->pos(), "cannot reference variable of child procedure.");
     }
     auto type = ref->getType();
     if (type->getNodeType() == NodeType::array_type ||
@@ -160,7 +160,7 @@ void LLVMIRBuilder::visit(ValueReferenceNode &node) {
                 selector_t = dynamic_cast<PointerTypeNode *>(selector_t)->getBase();
                 type = selector_t;
             } else {
-                logger_->error(sel->pos(), "Unexpected selector.");
+                logger_->error(sel->pos(), "unexpected selector.");
             }
         }
         // clean up
@@ -361,7 +361,7 @@ void LLVMIRBuilder::visit(BinaryExpressionNode &node) {
                 break;
             default:
                 value_ = nullptr;
-                logger_->error(node.pos(), " unknown operator.");
+                logger_->error(node.pos(), "unknown operator.");
                 break;
         }
     }
@@ -579,27 +579,73 @@ void LLVMIRBuilder::cast(ExpressionNode &node) {
     }
 }
 
+Value *LLVMIRBuilder::callPredefined(ProcedureNodeReference &node, std::string name, std::vector<Value *> &params) {
+    if (name == New::NAME) {
+        auto type = FunctionType::get(builder_.getInt8PtrTy(), {builder_.getInt64Ty()}, false);
+        auto callee = module_->getOrInsertFunction("malloc", type);
+        std::vector<Value *> values;
+        auto ptr = (PointerTypeNode *) node.getActualParameter(0)->getType();
+        auto layout = module_->getDataLayout();
+        auto base = ptr->getBase();
+        values.push_back(ConstantInt::get(builder_.getInt64Ty(), layout.getTypeAllocSize(getLLVMType(base))));
+        value_ = builder_.CreateCall(callee, values);
+        value_ = builder_.CreateBitCast(value_, getLLVMType(ptr)); // TODO remove once non-opaque pointers are no longer supported
+        return builder_.CreateStore(value_, params[0]);
+    } else if (name == Inc::NAME || name == Dec::NAME) {
+        auto target = getLLVMType(node.getActualParameter(0)->getType());
+        Value *delta;
+        if (params.size() > 2) {
+            auto param = node.getActualParameter(2);
+            logger_->error(param->pos(), "more actual than formal parameters.");
+            return value_;
+        } else if (params.size() > 1) {
+            auto source = params[1]->getType();
+            delta = params[1];
+            if (target->getIntegerBitWidth() > source->getIntegerBitWidth()) {
+                delta = builder_.CreateSExt(delta, target);
+            } else if (target->getIntegerBitWidth() < source->getIntegerBitWidth()) {
+                delta = builder_.CreateTrunc(delta, target);
+            }
+        } else {
+            if (target->isIntegerTy(64)) {
+                delta = builder_.getInt64(1);
+            } else {
+                delta = builder_.getInt32(1);
+            }
+        }
+        Value *value = builder_.CreateLoad(target, params[0]);
+        if (name == Inc::NAME) {
+            value = builder_.CreateAdd(value, delta);
+        } else {
+            value = builder_.CreateSub(value, delta);
+        }
+        return builder_.CreateStore(value, params[0]);
+    }
+    logger_->error(node.pos(), "unsupported predefined procedure: " + name + ".");
+    // to generate correct LLVM IR, the current value is returned (no-op).
+    return value_;
+}
+
 void LLVMIRBuilder::call(ProcedureNodeReference &node) {
     std::vector<Value*> params;
     // caution: formal parameters on referenced node, actual parameters on reference node
     auto proc = dynamic_cast<ProcedureNode *>(node.dereference());
-        size_t fp_cnt = proc->getFormalParameterCount();
-        for (size_t i = 0; i < node.getActualParameterCount(); i++) {
-            setRefMode(i >= fp_cnt || !proc->getFormalParameter(i)->isVar());
-            node.getActualParameter(i)->accept(*this);
-            params.push_back(value_);
-            restoreRefMode();
-        }
+    auto ident = proc->getIdentifier();
+    size_t fp_cnt = proc->getFormalParameterCount();
+    for (size_t i = 0; i < node.getActualParameterCount(); i++) {
+        setRefMode(i >= fp_cnt || !proc->getFormalParameter(i)->isVar());
+        node.getActualParameter(i)->accept(*this);
+        params.push_back(value_);
+        restoreRefMode();
+    }
     if (proc->isPredefined()) {
-        auto predef = dynamic_cast<PredefinedProcedure* >(proc);
-        value_ = predef->call(&builder_, module_, params);
+        value_ = callPredefined(node, ident->name(), params);
     } else {
-        auto ident = proc->getIdentifier();
         auto fun = module_->getFunction(qualifiedName(ident, proc->isExtern()));
         if (fun) {
             value_ = builder_.CreateCall(fun, params);
         } else {
-            logger_->error(node.pos(), "Undefined procedure: " + to_string(*ident) + ".");
+            logger_->error(node.pos(), "undefined procedure: " + to_string(*ident) + ".");
         }
     }
 }
@@ -673,7 +719,7 @@ Type* LLVMIRBuilder::getLLVMType(TypeNode *type) {
         types_[type] = result;
     }
     if (result == nullptr) {
-        logger_->error(type->pos(), "Cannot map type to LLVM intermediate representation.");
+        logger_->error(type->pos(), "cannot map type to LLVM intermediate representation.");
         exit(1);
     }
     return result;

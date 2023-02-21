@@ -12,7 +12,7 @@ std::unique_ptr<ModuleNode> SymbolImporter::read(const std::string &module, Symb
 }
 
 std::unique_ptr<ModuleNode> SymbolImporter::read(const std::string &alias, const std::string &module, SymbolTable *symbols) {
-    auto include = boost::filesystem::change_extension(module, "smb");
+    auto include = boost::filesystem::path(module).replace_extension("smb");
     auto fp = path_ / include;
     if (!boost::filesystem::exists(fp)) {
         logger_->debug(include.string(), "Symbol file not found: " + fp.string() + ".");

@@ -18,18 +18,21 @@ const std::string New::NAME = "NEW";
 
 void New::setup(OberonSystem *system) {
     auto anyType = system->getBasicType(TypeKind::ANYTYPE);
-    this->setSignature({{ system->createPointerType(anyType), true }}, nullptr);
+    this->setSignature({ { system->createPointerType(anyType), true } }, nullptr);
 }
 
-Value *New::call(IRBuilder<> *builder, Module *module, std::vector<Value *> params) {
-    auto type = FunctionType::get(builder->getInt8PtrTy(), {builder->getInt64Ty()}, false);
-    auto callee = module->getOrInsertFunction("malloc", type);
-    std::vector<Value *> values;
-    auto pointer_t = (PointerType *) params[0]->getType();
-    auto layout = module->getDataLayout();
-    auto base = pointer_t->getContainedType(0);
-    values.push_back(ConstantInt::get(builder->getInt64Ty(), layout.getTypeAllocSize(base->getContainedType(0))));
-    Value *value = builder->CreateCall(callee, values);
-    value = builder->CreateBitCast(value, base);
-    return builder->CreateStore(value, params[0]);
+const std::string Inc::NAME = "INC";
+
+void Inc::setup(OberonSystem *system) {
+    auto longType = system->getBasicType(TypeKind::LONGINT);
+    this->setSignature({ { longType, true } }, nullptr);
+    this->setVarArgs(true);
+}
+
+const std::string Dec::NAME = "DEC";
+
+void Dec::setup(OberonSystem *system) {
+    auto longType = system->getBasicType(TypeKind::LONGINT);
+    this->setSignature({ { longType, true } }, nullptr);
+    this->setVarArgs(true);
 }

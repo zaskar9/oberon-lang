@@ -8,6 +8,7 @@
 
 #include <llvm/IR/IRBuilder.h>
 #include "OberonSystem.h"
+#include "data/ast/NodeReference.h"
 
 using namespace llvm;
 
@@ -21,7 +22,6 @@ public:
     ~PredefinedProcedure() override;
 
     virtual void setup(OberonSystem *system) = 0;
-    [[nodiscard]] virtual Value *call(IRBuilder<> *builder, Module *module, std::vector<Value *> params) = 0;
 
     [[nodiscard]] bool isPredefined() const override {
         return true;
@@ -37,38 +37,35 @@ public:
     ~New() override = default;
 
     void setup(OberonSystem *system) override;
-    Value *call(IRBuilder<> *builder, Module *module, std::vector<Value *> params) override;
 
     static const std::string NAME;
 
 };
 
 
-//class Inc final : public PredefinedProcedure {
-//
-//public:
-//    explicit Inc() : PredefinedProcedure(Inc::NAME) {};
-//    ~Inc() override = default;
-//
-//    void setup(OberonSystem *system) override;
-//    Value *call(IRBuilder<> *builder, Module *module, std::vector<Value *> params) override;
-//
-//    static const std::string NAME;
-//
-//};
-//
-//
-//class Dec final : public PredefinedProcedure {
-//
-//public:
-//    explicit Dec() : PredefinedProcedure(Dec::NAME) {};
-//    ~Dec() override = default;
-//
-//    void setup(OberonSystem *system) override;
-//    Value *call(IRBuilder<> *builder, Module *module, std::vector<Value *> params) override;
-//
-//    static const std::string NAME;
-//};
+class Inc final : public PredefinedProcedure {
+
+public:
+    explicit Inc() : PredefinedProcedure(Inc::NAME) {};
+    ~Inc() override = default;
+
+    void setup(OberonSystem *system) override;
+
+    static const std::string NAME;
+
+};
+
+
+class Dec final : public PredefinedProcedure {
+
+public:
+    explicit Dec() : PredefinedProcedure(Dec::NAME) {};
+    ~Dec() override = default;
+
+    void setup(OberonSystem *system) override;
+
+    static const std::string NAME;
+};
 
 
 #endif //OBERON_LANG_PREDEFINEDPROCEDURE_H

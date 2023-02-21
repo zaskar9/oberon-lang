@@ -41,6 +41,8 @@ private:
     void restoreRefMode();
     bool deref() const;
 
+    Value *callPredefined(ProcedureNodeReference &node, std::string name, std::vector<Value *> &params);
+
     void cast(ExpressionNode &node);
 
     void call(ProcedureNodeReference &node);
