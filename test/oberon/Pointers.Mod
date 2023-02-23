@@ -45,6 +45,12 @@ BEGIN
     RETURN person
 END createPerson;
 
+PROCEDURE deletePerson(person: Person);
+BEGIN
+    FREE(person.address);
+    FREE(person)
+END deletePerson;
+
 PROCEDURE printPerson(person: Person);
 BEGIN
     Out.String(person.title); Out.String(" "); Out.String(person.name); Out.Ln;
@@ -88,10 +94,16 @@ BEGIN
     contacts[1] := createPerson("Prof. Dr.", "Tobias Sutter", "Universitätsstraße", ptr2^, "Konstanz", KNZip, "Germany");
     printContacts(contacts);
 
+    deletePerson(contacts[0]);
+    deletePerson(contacts[1]);
+    FREE(ptr1);
+    IF (ptr1 = NIL) THEN Out.String("Pointer (ptr1) is NIL after FREE."); Out.Ln END;
+
     (* --- Test pointer to array type ------------------------------------------------------------------------------- *)
     NEW(array);
     array[0] := ten;
     array[1] := ten;
-    Out.Int(array[0] * array[1]); Out.Ln
+    Out.Int(array[0] * array[1]); Out.Ln;
+    FREE(array)
 
 END Pointers.

@@ -581,7 +581,7 @@ void LLVMIRBuilder::cast(ExpressionNode &node) {
 
 Value *LLVMIRBuilder::callPredefined(ProcedureNodeReference &node, std::string name, std::vector<Value *> &params) {
     if (name == New::NAME) {
-        auto type = FunctionType::get(builder_.getInt8PtrTy(), {builder_.getInt64Ty()}, false);
+        auto type = FunctionType::get(builder_.getInt8PtrTy(), { builder_.getInt64Ty() }, false);
         auto callee = module_->getOrInsertFunction("malloc", type);
         std::vector<Value *> values;
         auto ptr = (PointerTypeNode *) node.getActualParameter(0)->getType();
@@ -591,6 +591,13 @@ Value *LLVMIRBuilder::callPredefined(ProcedureNodeReference &node, std::string n
         value_ = builder_.CreateCall(callee, values);
         value_ = builder_.CreateBitCast(value_, getLLVMType(ptr)); // TODO remove once non-opaque pointers are no longer supported
         return builder_.CreateStore(value_, params[0]);
+    } else if (name == Free::NAME) {
+        auto type = FunctionType::get(builder_.getVoidTy(), { builder_.getPtrTy() }, false);
+        auto callee = module_->getOrInsertFunction("free", type);
+        std::vector<Value *> values;
+        values.push_back(builder_.CreateLoad(builder_.getPtrTy(), params[0]));
+        builder_.CreateCall(callee, values);
+        return builder_.CreateStore(ConstantPointerNull::get(builder_.getPtrTy()), params[0]);
     } else if (name == Inc::NAME || name == Dec::NAME) {
         auto target = getLLVMType(node.getActualParameter(0)->getType());
         Value *delta;

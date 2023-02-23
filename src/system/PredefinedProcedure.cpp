@@ -21,6 +21,13 @@ void New::setup(OberonSystem *system) {
     this->setSignature({ { system->createPointerType(anyType), true } }, nullptr);
 }
 
+const std::string Free::NAME = "FREE";
+
+void Free::setup(OberonSystem *system) {
+    auto anyType = system->getBasicType(TypeKind::ANYTYPE);
+    this->setSignature({ { system->createPointerType(anyType), true } }, nullptr);
+}
+
 const std::string Inc::NAME = "INC";
 
 void Inc::setup(OberonSystem *system) {

@@ -42,6 +42,18 @@ public:
 
 };
 
+class Free final : public PredefinedProcedure {
+
+public:
+    explicit Free() : PredefinedProcedure(Free::NAME) {}
+    ~Free() override = default;
+
+    void setup(OberonSystem *system) override;
+
+    static const std::string NAME;
+
+};
+
 
 class Inc final : public PredefinedProcedure {
 
