@@ -77,6 +77,59 @@ public:
     void setup(OberonSystem *system) override;
 
     static const std::string NAME;
+
+};
+
+
+class Lsl final : public PredefinedProcedure {
+
+public:
+    explicit Lsl() : PredefinedProcedure(Lsl::NAME) {};
+    ~Lsl() override = default;
+
+    void setup(OberonSystem *system) override;
+
+    static const std::string NAME;
+
+};
+
+
+class Asr final : public PredefinedProcedure {
+
+public:
+    explicit Asr() : PredefinedProcedure(Asr::NAME) {};
+    ~Asr() override = default;
+
+    void setup(OberonSystem *system) override;
+
+    static const std::string NAME;
+
+};
+
+
+class Ror final : public PredefinedProcedure {
+
+public:
+    explicit Ror() : PredefinedProcedure(Ror::NAME) {};
+    ~Ror() override = default;
+
+    void setup(OberonSystem *system) override;
+
+    static const std::string NAME;
+
+};
+
+
+class Rol final : public PredefinedProcedure {
+
+public:
+    explicit Rol() : PredefinedProcedure(Rol::NAME) {};
+    ~Rol() override = default;
+
+    void setup(OberonSystem *system) override;
+
+    static const std::string NAME;
+
 };
 
 

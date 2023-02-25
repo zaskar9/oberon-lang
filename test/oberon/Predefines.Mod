@@ -31,7 +31,32 @@ BEGIN
     FREE(p)
 END NewFree;
 
+PROCEDURE LslAsr;
+VAR x, n: LONGINT;
 BEGIN
+    x := 32;
+    n := 2;
+    Out.Long(LSL(x, n)); Out.String(",");
+    Out.Long(ASR(x, n)); Out.Ln
+END LslAsr;
+
+PROCEDURE RolRor;
+VAR x, n: LONGINT;
+BEGIN
+    x := -32;
+    n := 2;
+    Out.Long(ROL(x, n)); Out.String(",");
+    Out.Long(ROR(x, n)); Out.Ln
+END RolRor;
+
+PROCEDURE Test(VAR x: INTEGER);
+BEGIN
+    x := 10
+END Test;
+
+BEGIN
+    NewFree;
     IncDec;
-    NewFree
+    LslAsr;
+    RolRor
 END Predefines.

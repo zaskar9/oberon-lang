@@ -14,6 +14,7 @@ void PredefinedProcedure::setSignature(std::vector<std::pair<TypeNode *, bool>> 
     this->setReturnType(ret);
 }
 
+
 const std::string New::NAME = "NEW";
 
 void New::setup(OberonSystem *system) {
@@ -21,12 +22,14 @@ void New::setup(OberonSystem *system) {
     this->setSignature({ { system->createPointerType(anyType), true } }, nullptr);
 }
 
+
 const std::string Free::NAME = "FREE";
 
 void Free::setup(OberonSystem *system) {
     auto anyType = system->getBasicType(TypeKind::ANYTYPE);
     this->setSignature({ { system->createPointerType(anyType), true } }, nullptr);
 }
+
 
 const std::string Inc::NAME = "INC";
 
@@ -36,6 +39,7 @@ void Inc::setup(OberonSystem *system) {
     this->setVarArgs(true);
 }
 
+
 const std::string Dec::NAME = "DEC";
 
 void Dec::setup(OberonSystem *system) {
@@ -43,3 +47,36 @@ void Dec::setup(OberonSystem *system) {
     this->setSignature({ { longType, true } }, nullptr);
     this->setVarArgs(true);
 }
+
+
+const std::string Lsl::NAME = "LSL";
+
+void Lsl::setup(OberonSystem *system) {
+    auto longType = system->getBasicType(TypeKind::LONGINT);
+    this->setSignature({ { longType, false }, { longType, false } }, longType);
+}
+
+
+const std::string Asr::NAME = "ASR";
+
+void Asr::setup(OberonSystem *system) {
+    auto longType = system->getBasicType(TypeKind::LONGINT);
+    this->setSignature({ { longType, false }, { longType, false } }, longType);
+}
+
+
+const std::string Ror::NAME = "ROR";
+
+void Ror::setup(OberonSystem *system) {
+    auto longType = system->getBasicType(TypeKind::LONGINT);
+    this->setSignature({ { longType, false }, { longType, false } }, longType);
+}
+
+
+const std::string Rol::NAME = "ROL";
+
+void Rol::setup(OberonSystem *system) {
+    auto longType = system->getBasicType(TypeKind::LONGINT);
+    this->setSignature({ { longType, false }, { longType, false } }, longType);
+}
+

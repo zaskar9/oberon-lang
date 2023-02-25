@@ -61,12 +61,14 @@ void LLVMIRBuilder::visit(ProcedureNode &node) {
     }
     if (!node.isExtern()) {
         function_ = functions_[&node];
+        // function_->addFnAttr(Attribute::AttrKind::NoInline);
         Function::arg_iterator args = function_->arg_begin();
         for (size_t i = 0; i < node.getFormalParameterCount(); i++) {
             auto arg = args++;
             auto param = node.getFormalParameter(i);
             arg->setName(param->getIdentifier()->name());
             values_[param] = arg;
+            // function_->addParamAttr(i, Attribute::AttrKind::NoUndef);
         }
         auto entry = BasicBlock::Create(builder_.getContext(), "entry", function_);
         builder_.SetInsertPoint(entry);
@@ -627,6 +629,21 @@ Value *LLVMIRBuilder::callPredefined(ProcedureNodeReference &node, std::string n
             value = builder_.CreateSub(value, delta);
         }
         return builder_.CreateStore(value, params[0]);
+    } else if (name == Lsl::NAME || name == Asr::NAME) {
+        if (name == Lsl::NAME) {
+            return builder_.CreateShl(params[0], params[1]);
+        }
+        return builder_.CreateAShr(params[0], params[1]);
+    } else if (name == Ror::NAME) {
+        Value *lhs = builder_.CreateLShr(params[0], params[1]);
+        Value *delta = builder_.CreateSub(builder_.getInt64(64), params[1]);
+        Value *rhs = builder_.CreateShl(params[0], delta);
+        return builder_.CreateOr(lhs, rhs);
+    } else if (name == Rol::NAME) {
+        Value *lhs = builder_.CreateShl(params[0], params[1]);
+        Value *delta = builder_.CreateSub(builder_.getInt64(64), params[1]);
+        Value *rhs = builder_.CreateLShr(params[0], delta);
+        return builder_.CreateOr(lhs, rhs);
     }
     logger_->error(node.pos(), "unsupported predefined procedure: " + name + ".");
     // to generate correct LLVM IR, the current value is returned (no-op).
