@@ -652,14 +652,14 @@ Value *LLVMIRBuilder::callPredefined(ProcedureNodeReference &node, std::string n
 
 void LLVMIRBuilder::call(ProcedureNodeReference &node) {
     auto proc = dynamic_cast<ProcedureNode *>(node.dereference());
-    auto ident = proc->getIdentifier();
-    size_t fp_cnt = proc->getFormalParameterCount();
+    std::vector<Value*> params;
     for (size_t i = 0; i < node.getActualParameterCount(); i++) {
         setRefMode(i >= proc->getFormalParameterCount() || !proc->getFormalParameter(i)->isVar());
         node.getActualParameter(i)->accept(*this);
         params.push_back(value_);
         restoreRefMode();
     }
+    auto ident = proc->getIdentifier();
     if (proc->isPredefined()) {
         value_ = callPredefined(node, ident->name(), params);
     } else {
