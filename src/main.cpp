@@ -17,7 +17,7 @@
 namespace fs = boost::filesystem;
 namespace po = boost::program_options;
 
-int main(const int argc, const char *argv[]) {
+int main(const int argc, const char **argv) {
     auto logger = std::make_unique<Logger>(LogLevel::INFO, &std::cout);
 #ifdef _DEBUG
     logger->setLevel(LogLevel::DEBUG);

@@ -651,13 +651,11 @@ Value *LLVMIRBuilder::callPredefined(ProcedureNodeReference &node, std::string n
 }
 
 void LLVMIRBuilder::call(ProcedureNodeReference &node) {
-    std::vector<Value*> params;
-    // caution: formal parameters on referenced node, actual parameters on reference node
     auto proc = dynamic_cast<ProcedureNode *>(node.dereference());
     auto ident = proc->getIdentifier();
     size_t fp_cnt = proc->getFormalParameterCount();
     for (size_t i = 0; i < node.getActualParameterCount(); i++) {
-        setRefMode(i >= fp_cnt || !proc->getFormalParameter(i)->isVar());
+        setRefMode(i >= proc->getFormalParameterCount() || !proc->getFormalParameter(i)->isVar());
         node.getActualParameter(i)->accept(*this);
         params.push_back(value_);
         restoreRefMode();
