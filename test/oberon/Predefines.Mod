@@ -1,6 +1,8 @@
 MODULE Predefines;
 IMPORT Out;
 
+VAR a, b: INTEGER;
+
 PROCEDURE IncDec;
 VAR i: INTEGER;
     l: LONGINT;
@@ -49,14 +51,27 @@ BEGIN
     Out.Long(ROR(x, n)); Out.Ln
 END RolRor;
 
-PROCEDURE Test(VAR x: INTEGER);
+PROCEDURE Odd(x: INTEGER);
 BEGIN
-    x := 10
-END Test;
+    Out.Int(x);
+    IF ODD(x) THEN
+        Out.String(" is odd.")
+    ELSE
+        Out.String(" is even.")
+    END;
+    Out.Ln
+END Odd;
 
 BEGIN
     NewFree;
     IncDec;
     LslAsr;
-    RolRor
+    RolRor;
+    Odd(9);
+    Odd(32);
+    IF (a < b) THEN HALT(27) END;
+    (* ASSERT(7 > 3) *)
+    Out.String("Hello! Hello!");
+    HALT(55);
+    Out.String("Unreachable!")
 END Predefines.

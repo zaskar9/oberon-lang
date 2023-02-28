@@ -49,7 +49,9 @@ void LLVMIRBuilder::visit(ModuleNode &node) {
         builder_.SetInsertPoint(entry);
         level_ = node.getLevel() + 1;
         node.getStatements()->accept(*this);
-        builder_.CreateRet(builder_.getInt32(0));
+        if (builder_.GetInsertBlock()->getTerminator() == nullptr) {
+            builder_.CreateRet(builder_.getInt32(0));
+        }
     }
     // verify the module
     llvm::verifyModule(*module_, &errs());
@@ -396,6 +398,10 @@ void LLVMIRBuilder::visit([[maybe_unused]] PointerTypeNode &node) {
 void LLVMIRBuilder::visit(StatementSequenceNode &node) {
     for (size_t i = 0; i < node.getStatementCount(); i++) {
         node.getStatement(i)->accept(*this);
+        // Check whether basic block is already terminated
+        if (builder_.GetInsertBlock()->getTerminator()) {
+            break;
+        }
     }
 }
 
@@ -616,11 +622,7 @@ Value *LLVMIRBuilder::callPredefined(ProcedureNodeReference &node, std::string n
                 delta = builder_.CreateTrunc(delta, target);
             }
         } else {
-            if (target->isIntegerTy(64)) {
-                delta = builder_.getInt64(1);
-            } else {
-                delta = builder_.getInt32(1);
-            }
+            delta = ConstantInt::get(target, 1);
         }
         Value *value = builder_.CreateLoad(target, params[0]);
         if (name == Inc::NAME) {
@@ -644,6 +646,15 @@ Value *LLVMIRBuilder::callPredefined(ProcedureNodeReference &node, std::string n
         Value *delta = builder_.CreateSub(builder_.getInt64(64), params[1]);
         Value *rhs = builder_.CreateLShr(params[0], delta);
         return builder_.CreateOr(lhs, rhs);
+    } else if (name == Odd::NAME) {
+        auto type = params[0]->getType();
+        value_ = builder_.CreateSRem(params[0], ConstantInt::get(type, 2));
+        return builder_.CreateICmpEQ(value_, ConstantInt::get(type, 1));
+    } else if (name == Halt::NAME) {
+        auto type = FunctionType::get(builder_.getVoidTy(), { builder_.getInt32Ty() }, false);
+        auto callee = module_->getOrInsertFunction("exit", type);
+        builder_.CreateCall(callee, { params[0] });
+        return builder_.CreateUnreachable();
     }
     logger_->error(node.pos(), "unsupported predefined procedure: " + name + ".");
     // to generate correct LLVM IR, the current value is returned (no-op).

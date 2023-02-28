@@ -80,6 +80,10 @@ bool SymbolTable::isDuplicate(const std::string &name) const {
     return scope_->lookup(name, true) != nullptr;
 }
 
+bool SymbolTable::isGlobal(const std::string &name) const {
+    return universe_->lookup(name, true) != nullptr;
+}
+
 TypeNode *SymbolTable::getNilType() const {
     return nilType_;
 }

@@ -133,4 +133,42 @@ public:
 };
 
 
+class Odd final : public PredefinedProcedure {
+
+public:
+    explicit Odd() : PredefinedProcedure(Odd::NAME) {};
+    ~Odd() override = default;
+
+    void setup(OberonSystem *system) override;
+
+    static const std::string NAME;
+
+};
+
+
+class Halt final : public PredefinedProcedure {
+
+public:
+    explicit Halt() : PredefinedProcedure(Halt::NAME) {};
+    ~Halt() override = default;
+
+    void setup(OberonSystem *system) override;
+
+    static const std::string NAME;
+
+};
+
+
+class Assert final : public PredefinedProcedure {
+public:
+    explicit Assert() : PredefinedProcedure(Assert::NAME) {};
+    ~Assert() override = default;
+
+    void setup(OberonSystem *system) override;
+
+    static const std::string NAME;
+
+};
+
+
 #endif //OBERON_LANG_PREDEFINEDPROCEDURE_H

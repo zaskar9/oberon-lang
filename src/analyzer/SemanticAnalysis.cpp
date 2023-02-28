@@ -795,6 +795,9 @@ void SemanticAnalysis::assertUnique(Ident *ident, Node &node) {
     if (symbols_->isDuplicate(ident->name())) {
         logger_->error(ident->pos(), "duplicate definition: " + ident->name() + ".");
     }
+    if (symbols_->isGlobal(ident->name())) {
+        logger_->error(ident->pos(), "predefined identifier: " + ident->name() + ".");
+    }
     symbols_->insert(ident->name(), &node);
 }
 

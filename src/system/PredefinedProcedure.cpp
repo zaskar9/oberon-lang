@@ -80,3 +80,27 @@ void Rol::setup(OberonSystem *system) {
     this->setSignature({ { longType, false }, { longType, false } }, longType);
 }
 
+
+const std::string Odd::NAME = "ODD";
+
+void Odd::setup(OberonSystem *system) {
+    auto longType = system->getBasicType(TypeKind::LONGINT);
+    auto boolType = system->getBasicType(TypeKind::BOOLEAN);
+    this->setSignature({ { longType, false } }, boolType);
+}
+
+
+const std::string Halt::NAME = "HALT";
+
+void Halt::setup(OberonSystem *system) {
+    auto intType = system->getBasicType(TypeKind::INTEGER);
+    this->setSignature({ { intType, false} }, nullptr);
+}
+
+
+const std::string Assert::NAME = "ASSERT";
+
+void Assert::setup(OberonSystem *system) {
+    auto boolType = system->getBasicType(TypeKind::BOOLEAN);
+    this->setSignature({ { boolType, false } }, nullptr);
+}

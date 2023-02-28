@@ -83,4 +83,7 @@ void Oberon07::initSymbolTable(SymbolTable *symbols) {
     this->createProcedure(std::make_unique<Asr>(), true);
     this->createProcedure(std::make_unique<Ror>(), true);
     this->createProcedure(std::make_unique<Rol>(), true);
+    this->createProcedure(std::make_unique<Odd>(), true);
+    this->createProcedure(std::make_unique<Halt>(), true);
+    this->createProcedure(std::make_unique<Assert>(), true);
 }

@@ -48,6 +48,7 @@ public:
     [[nodiscard]] Node *lookup(Ident *ident) const;
 
     [[nodiscard]] bool isDuplicate(const std::string &name) const;
+    [[nodiscard]] bool isGlobal(const std::string &name) const;
 
     [[nodiscard]] TypeNode *getNilType() const;
     void setNilType(TypeNode *nilType);
