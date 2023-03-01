@@ -7,14 +7,15 @@
 
 
 #include "data/symtab/SymbolTable.h"
+#include "PredefinedProcedure.h"
 
 class OberonSystem {
 
 private:
     std::unique_ptr<SymbolTable> symbols_;
     std::vector<std::unique_ptr<Node>> predefines_;
-    std::unordered_map<std::string, BasicTypeNode*> baseTypes_;
-    std::unordered_map<std::string, BasicTypeNode*> procedures_;
+    std::unordered_map<std::string, BasicTypeNode *> baseTypes_;
+    std::unordered_map<std::string, BasicTypeNode *> procedures_;
 
 protected:
     virtual void initSymbolTable(SymbolTable *symbols) = 0;
@@ -27,7 +28,8 @@ public:
     BasicTypeNode *createBasicType(TypeKind kind, unsigned int size);
     BasicTypeNode *getBasicType(TypeKind kind);
     PointerTypeNode *createPointerType(TypeNode *base);
-    void createProcedure(std::unique_ptr<ProcedureNode> proc, bool toSymbols);
+    void createProcedure(ProcType type, std::string name, std::vector<std::pair<TypeNode *, bool>> params,
+                         TypeNode *ret, bool hasVarArgs, bool toSymbols);
 
     SymbolTable *getSymbolTable();
 

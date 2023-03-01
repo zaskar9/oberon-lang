@@ -1,86 +1,66 @@
 MODULE ShortCircuit;
+IMPORT Out;
 
 VAR i: INTEGER;
 
-(* Import `printf` function from C <stdio.h> library. *)
-PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
-
-(* Writes a string value to standard out. *)
-PROCEDURE Write(str: STRING);
-BEGIN
-    printf(str)
-END Write;
-
-(* Writes a newline to standard out. *)
-PROCEDURE WriteLn;
-BEGIN
-    printf("\n")
-END WriteLn;
-
-(* Writes an integer value to standard out. *)
-PROCEDURE WriteInt(val: INTEGER);
-BEGIN
-    printf("%d", val)
-END WriteInt;
-
 PROCEDURE checkOne(i: INTEGER): BOOLEAN;
 BEGIN
-    Write("1 ");
+    Out.String("1 ");
     RETURN i # 0
 END checkOne;
 
 PROCEDURE checkTwo(i: INTEGER): BOOLEAN;
 BEGIN
-    Write("2 ");
+    Out.String("2 ");
     RETURN i > 0
 END checkTwo;
 
 PROCEDURE checkThree(i: INTEGER): BOOLEAN;
 CONST Num = 100;
 BEGIN
-    Write("3 ");
+    Out.String("3 ");
     RETURN (Num DIV i = Num)
 END checkThree;
 
 PROCEDURE checkRange(i: INTEGER);
 BEGIN
     IF (i >= 0) & (i < 10) OR (i >= 90) & (i < 100) THEN
-        Write("passed")
+        Out.String("passed")
     ELSE
-        Write("not passed")
+        Out.String("not passed")
     END;
-    WriteLn
+    Out.Ln
 END checkRange;
 
 PROCEDURE check(i: INTEGER);
 BEGIN
-    WriteInt(i); Write(": ");
+    Out.Int(i); Out.String(": ");
     IF checkOne(i) & checkTwo(i) & checkThree(i) THEN
-        Write("-> passed")
+        Out.String("-> passed")
     ELSE
-        Write("-> not passed")
+        Out.String("-> not passed")
     END;
-    WriteLn;
-    WriteInt(i); Write(": ");
+    Out.Ln;
+    Out.Int(i); Out.String(": ");
     IF checkOne(i) OR checkTwo(i) THEN
-        Write("-> passed")
+        Out.String("-> passed")
     ELSE
-        Write("-> not passed")
+        Out.String("-> not passed")
     END;
-    WriteLn;
-    WriteInt(i); Write(": ");
+    Out.Ln;
+    Out.Int(i); Out.String(": ");
     IF (checkOne(i) OR checkTwo(i)) & checkThree(i) THEN
-        Write("-> passed")
+        Out.String("-> passed")
     ELSE
-        Write("-> not passed")
+        Out.String("-> not passed")
     END;
-    WriteLn
+    Out.Ln
 END check;
 
 BEGIN
     check(0);
-    WriteLn;
+    Out.Ln;
     check(-1);
-    WriteLn;
+    Out.Ln;
     check(1)
 END ShortCircuit.

@@ -1,4 +1,5 @@
 MODULE Records;
+IMPORT Out;
 
 (* TYPE TParent = RECORD var1, param: INTEGER END;
      TChild = RECORD var2, param: INTEGER; parent: TParent END; *)
@@ -6,21 +7,17 @@ MODULE Records;
 CONST Dim = 10;
 TYPE TArray = ARRAY Dim OF INTEGER;
 
-(* Import `printf` function from C <stdio.h> library. *)
-PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
-
 PROCEDURE print(a: TArray);
 VAR i: INTEGER;
 BEGIN
-    printf("[");
+    Out.String("[");
     FOR i := 0 TO Dim - 1 DO
+        Out.Int(a[i]);
         IF i < Dim - 1 THEN
-            printf("%d, ", a[i])
-        ELSE
-            printf("%d", a[i])
+            Out.String(", ")
         END
     END;
-    printf("]\n")
+    Out.String("]"); Out.Ln
 END print;
 
 (* PROCEDURE Child2(param: INTEGER; VAR parent: TChild);
@@ -61,8 +58,8 @@ BEGIN
     r1.x := 4; r1.y := 5; r1.z := 6;
     (* printf("{ %d, %d, %d }\n", r2.x, r2.y, r2.z);
     r2.x := 4; r2.y := 5; r2.z := 6; *)
-    printf("{ %d, %d, %d }\n", r1.x, r1.y, r1.z);
-    printf("{ %d, %d, %d }\n", r2.x, r2.y, r2.z)
+    Out.String("{"); Out.Int(r1.x); Out.String(", "); Out.Int(r1.y); Out.String(", "); Out.Int(r1.z); Out.String("}"); Out.Ln;
+    Out.String("{"); Out.Int(r2.x); Out.String(", "); Out.Int(r2.y); Out.String(", "); Out.Int(r2.z); Out.String("}"); Out.Ln
 END Assignment;
 
 PROCEDURE ArrayAssignment;
@@ -76,7 +73,7 @@ BEGIN
     a2 := a1;
     print(a2);
     FOR i := 0 TO Dim - 1 DO
-        a1[i] := Dim - i
+        a1[i] := Dim - i - 1
     END;
     print(a1);
     print(a2)
@@ -84,5 +81,6 @@ END ArrayAssignment;
 
 BEGIN
     (* Parent(100); *)
+    Assignment;
     ArrayAssignment
 END Records.

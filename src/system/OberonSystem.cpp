@@ -3,7 +3,6 @@
 //
 
 #include "OberonSystem.h"
-#include "PredefinedProcedure.h"
 
 OberonSystem::~OberonSystem() = default;
 
@@ -45,17 +44,15 @@ PointerTypeNode *OberonSystem::createPointerType(TypeNode *base) {
     return ptr;
 }
 
-void OberonSystem::createProcedure(std::unique_ptr<ProcedureNode> proc, bool toSymbols) {
+void OberonSystem::createProcedure(ProcType type, std::string name, std::vector<std::pair<TypeNode *, bool>> params,
+                                   TypeNode *ret, bool hasVarArgs, bool toSymbols) {
+    auto proc = std::make_unique<PredefinedProcedure>(type, name, params, ret);
+    proc->setVarArgs(hasVarArgs);
     auto ptr = proc.get();
     predefines_.push_back(std::move(proc));
-    if (ptr->isPredefined()) {
-        auto predef = dynamic_cast<PredefinedProcedure *>(ptr);
-        predef->setup(this);
-    }
     if (toSymbols) {
         symbols_->insertGlobal(ptr->getIdentifier()->name(), ptr);
     }
-
 }
 
 void Oberon07::initSymbolTable(SymbolTable *symbols) {
@@ -74,16 +71,22 @@ void Oberon07::initSymbolTable(SymbolTable *symbols) {
                     {{TypeKind::STRING,   8}, true}
             }
     );
+
     symbols->setNilType(this->getBasicType(TypeKind::NILTYPE));
-    this->createProcedure(std::make_unique<New>(), true);
-    this->createProcedure(std::make_unique<Free>(), true);
-    this->createProcedure(std::make_unique<Inc>(), true);
-    this->createProcedure(std::make_unique<Dec>(), true);
-    this->createProcedure(std::make_unique<Lsl>(), true);
-    this->createProcedure(std::make_unique<Asr>(), true);
-    this->createProcedure(std::make_unique<Ror>(), true);
-    this->createProcedure(std::make_unique<Rol>(), true);
-    this->createProcedure(std::make_unique<Odd>(), true);
-    this->createProcedure(std::make_unique<Halt>(), true);
-    this->createProcedure(std::make_unique<Assert>(), true);
+    auto anyType = this->getBasicType(TypeKind::ANYTYPE);
+    auto boolType = this->getBasicType(TypeKind::BOOLEAN);
+    auto intType = this->getBasicType(TypeKind::INTEGER);
+    auto longType = this->getBasicType(TypeKind::LONGINT);
+
+    this->createProcedure(ProcType::NEW, "NEW", {{this->createPointerType(anyType), true}}, nullptr, false, true);
+    this->createProcedure(ProcType::FREE, "FREE", {{this->createPointerType(anyType), true}}, nullptr, false, true);
+    this->createProcedure(ProcType::INC, "INC", {{longType, true}}, nullptr, true, true);
+    this->createProcedure(ProcType::DEC, "DEC", {{longType, true}}, nullptr, true, true);
+    this->createProcedure(ProcType::LSL, "LSL", {{longType, false}, {longType, false}}, longType, false, true);
+    this->createProcedure(ProcType::ASR, "ASR", {{longType, false}, {longType, false}}, longType, false, true);
+    this->createProcedure(ProcType::ROL, "ROL", {{longType, false}, {longType, false}}, longType, false, true);
+    this->createProcedure(ProcType::ROR, "ROR", {{longType, false}, {longType, false}}, longType, false, true);
+    this->createProcedure(ProcType::ODD, "ODD", {{longType, false}}, boolType, false, true);
+    this->createProcedure(ProcType::HALT, "HALT", {{ intType, false}}, nullptr, false, true);
+    this->createProcedure(ProcType::ASSERT, "ASSERT", {{boolType, false}}, nullptr, false, true);
 }

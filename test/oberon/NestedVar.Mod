@@ -1,27 +1,7 @@
 MODULE NestedVar;
+IMPORT Out;
 
 VAR var0: INTEGER;
-
-(* Import `printf` function from C <stdio.h> library. *)
-PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
-
-(* Writes a string value to standard out. *)
-PROCEDURE Write(str: STRING);
-BEGIN
-    printf(str)
-END Write;
-
-(* Writes a newline to standard out. *)
-PROCEDURE WriteLn;
-BEGIN
-    printf("\n")
-END WriteLn;
-
-(* Writes an integer value to standard out. *)
-PROCEDURE WriteInt(val: INTEGER);
-BEGIN
-    printf("%d", val)
-END WriteInt;
 
 PROCEDURE Proc1(VAR param1: INTEGER);
 VAR var1: INTEGER;
@@ -57,5 +37,5 @@ END Proc1;
 BEGIN
     var0 := 1;
     Proc1(var0);
-    WriteInt(var0); WriteLn
+    Out.Int(var0); Out.Ln
 END NestedVar.

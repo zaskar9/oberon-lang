@@ -65,12 +65,13 @@ END Odd;
 BEGIN
     a := 1;
     b := 0;
+    ASSERT(a > b);
     NewFree;
     IncDec;
     LslAsr;
     RolRor;
-    Odd(9);
-    Odd(32);
+    Odd(a);
+    Odd(b);
     ASSERT(a > b);
     Out.String("Passed assertion."); Out.Ln;
     IF (a > b) THEN HALT(1) END;
