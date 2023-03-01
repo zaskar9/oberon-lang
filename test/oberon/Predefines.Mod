@@ -63,15 +63,18 @@ BEGIN
 END Odd;
 
 BEGIN
+    a := 1;
+    b := 0;
     NewFree;
     IncDec;
     LslAsr;
     RolRor;
     Odd(9);
     Odd(32);
-    IF (a < b) THEN HALT(27) END;
-    (* ASSERT(7 > 3) *)
-    Out.String("Hello! Hello!");
-    HALT(55);
+    ASSERT(a > b);
+    Out.String("Passed assertion."); Out.Ln;
+    IF (a > b) THEN HALT(1) END;
+    Out.String("Passed halt."); Out.Ln;
+    HALT(0);
     Out.String("Unreachable!")
 END Predefines.

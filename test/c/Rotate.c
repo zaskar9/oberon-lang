@@ -3,6 +3,7 @@
 //
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <limits.h>
 
 #define LONG_WIDTH (sizeof (long) * CHAR_BIT)
@@ -36,4 +37,5 @@ int main(int argc, const char* argv[]) {
     long n = 2;
     printf("%lu\n", rotl64(x, n));
     printf("%lu\n", rotr64(x, n));
+    abort();
 }

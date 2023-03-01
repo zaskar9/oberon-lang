@@ -655,6 +655,17 @@ Value *LLVMIRBuilder::callPredefined(ProcedureNodeReference &node, std::string n
         auto callee = module_->getOrInsertFunction("exit", type);
         builder_.CreateCall(callee, { params[0] });
         return builder_.CreateUnreachable();
+    } else if (name == Assert::NAME) {
+        auto tail = BasicBlock::Create(builder_.getContext(), "tail", function_);
+        auto abort = BasicBlock::Create(builder_.getContext(), "abort", function_);
+        builder_.CreateCondBr(params[0], tail, abort);
+        builder_.SetInsertPoint(abort);
+        auto type = FunctionType::get(builder_.getVoidTy(), { }, false);
+        auto callee = module_->getOrInsertFunction("abort", type);
+        builder_.CreateCall(callee, { });
+        value_ = builder_.CreateUnreachable();
+        builder_.SetInsertPoint(tail);
+        return value_;
     }
     logger_->error(node.pos(), "unsupported predefined procedure: " + name + ".");
     // to generate correct LLVM IR, the current value is returned (no-op).
