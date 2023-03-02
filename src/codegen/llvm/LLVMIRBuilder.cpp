@@ -9,8 +9,15 @@
 #include <llvm/IR/Verifier.h>
 
 LLVMIRBuilder::LLVMIRBuilder(Logger *logger, LLVMContext &context, Module *module) : NodeVisitor(),
-        logger_(logger), builder_(context), module_(module), value_(), values_(), types_(), functions_(),
-        deref_ctx(), level_(0), function_() { }
+        logger_(logger), builder_(context), module_(module), value_(), values_(), types_(), functions_(), strings_(),
+        deref_ctx(), level_(0), function_(), attrs_(AttrBuilder(context)) {
+    attrs_
+        .addAttribute(Attribute::NoInline)
+        .addAttribute(Attribute::NoUnwind)
+        .addAttribute(Attribute::OptimizeNone)
+        .addAttribute(Attribute::StackProtect)
+        .addAttribute(Attribute::getWithUWTableKind(context, UWTableKind::Default));
+}
 
 void LLVMIRBuilder::build(Node *node) {
     node->accept(*this);
@@ -54,7 +61,7 @@ void LLVMIRBuilder::visit(ModuleNode &node) {
         }
     }
     // verify the module
-    llvm::verifyModule(*module_, &errs());
+    verifyModule(*module_, &errs());
 }
 
 void LLVMIRBuilder::visit(ProcedureNode &node) {
@@ -63,6 +70,7 @@ void LLVMIRBuilder::visit(ProcedureNode &node) {
     }
     if (!node.isExtern()) {
         function_ = functions_[&node];
+        function_->addFnAttrs(attrs_);
         // function_->addFnAttr(Attribute::AttrKind::NoInline);
         Function::arg_iterator args = function_->arg_begin();
         for (size_t i = 0; i < node.getFormalParameterCount(); i++) {
@@ -93,7 +101,7 @@ void LLVMIRBuilder::visit(ProcedureNode &node) {
                 builder_.CreateUnreachable();
             }
         }
-        llvm::verifyFunction(*function_, &errs());
+        verifyFunction(*function_, &errs());
     }
 }
 
@@ -235,7 +243,11 @@ void LLVMIRBuilder::visit(RealLiteralNode &node) {
 
 void LLVMIRBuilder::visit(StringLiteralNode &node) {
     std::string val = node.value();
-    value_ = builder_.CreateGlobalStringPtr(val, ".str");
+    value_ = strings_[val];
+    if (!value_) {
+        strings_[val] = builder_.CreateGlobalStringPtr(val, ".str");;
+        value_ = strings_[val];
+    }
 }
 
 void LLVMIRBuilder::visit(NilLiteralNode &node) {
@@ -591,23 +603,32 @@ Value *LLVMIRBuilder::callPredefined(ProcedureNodeReference &node, std::vector<V
     auto proc = dynamic_cast<PredefinedProcedure *>(node.dereference());
     auto ptype = proc->getProcType();
     if (ptype == ProcType::NEW) {
-        auto type = FunctionType::get(builder_.getInt8PtrTy(), {builder_.getInt64Ty()}, false);
-        auto callee = module_->getOrInsertFunction("malloc", type);
+        auto fun = module_->getFunction("malloc");
+        if (!fun) {
+            auto type = FunctionType::get(builder_.getInt8PtrTy(), {builder_.getInt64Ty()}, false);
+            fun = Function::Create(type, GlobalValue::ExternalLinkage, "malloc", module_);
+            fun->addFnAttr(Attribute::getWithAllocSizeArgs(builder_.getContext(), 0, {}));
+            fun->addParamAttr(0, Attribute::NoUndef);
+        }
         std::vector<Value *> values;
         auto ptr = (PointerTypeNode *) node.getActualParameter(0)->getType();
         auto layout = module_->getDataLayout();
         auto base = ptr->getBase();
         values.push_back(ConstantInt::get(builder_.getInt64Ty(), layout.getTypeAllocSize(getLLVMType(base))));
-        value_ = builder_.CreateCall(callee, values);
+        value_ = builder_.CreateCall(FunctionCallee(fun), values);
         // TODO remove next line (bit-cast) once non-opaque pointers are no longer supported
         value_ = builder_.CreateBitCast(value_, getLLVMType(ptr));
         return builder_.CreateStore(value_, params[0]);
     } else if (ptype == ProcType::FREE) {
-        auto type = FunctionType::get(builder_.getVoidTy(), {builder_.getPtrTy()}, false);
-        auto callee = module_->getOrInsertFunction("free", type);
+        auto fun = module_->getFunction("free");
+        if (!fun) {
+            auto type = FunctionType::get(builder_.getVoidTy(), {builder_.getPtrTy()}, false);
+            fun = Function::Create(type, GlobalValue::ExternalLinkage, "free", module_);
+            fun->addParamAttr(0, Attribute::NoUndef);
+        }
         std::vector<Value *> values;
         values.push_back(builder_.CreateLoad(builder_.getPtrTy(), params[0]));
-        builder_.CreateCall(callee, values);
+        builder_.CreateCall(FunctionCallee(fun), values);
         return builder_.CreateStore(ConstantPointerNull::get(builder_.getPtrTy()), params[0]);
     } else if (ptype == ProcType::INC || ptype == ProcType::DEC) {
         auto target = getLLVMType(node.getActualParameter(0)->getType());
@@ -653,17 +674,22 @@ Value *LLVMIRBuilder::callPredefined(ProcedureNodeReference &node, std::vector<V
         value_ = builder_.CreateSRem(params[0], ConstantInt::get(type, 2));
         return builder_.CreateICmpEQ(value_, ConstantInt::get(type, 1));
     } else if (ptype == ProcType::HALT) {
-        auto type = FunctionType::get(builder_.getVoidTy(), {builder_.getInt32Ty()}, false);
-        auto callee = module_->getOrInsertFunction("exit", type);
-        builder_.CreateCall(callee, {params[0]});
+        auto fun = module_->getFunction("exit");
+        if (!fun) {
+            auto type = FunctionType::get(builder_.getVoidTy(), {builder_.getInt32Ty()}, false);
+            fun = Function::Create(type, GlobalValue::ExternalLinkage, "exit", module_);
+            fun->addFnAttr(Attribute::NoReturn);
+            fun->addParamAttr(0, Attribute::NoUndef);
+        }
+        builder_.CreateCall(FunctionCallee(fun), {params[0]});
         return builder_.CreateUnreachable();
     } else if (ptype == ProcType::ASSERT) {
         auto fun = module_->getFunction("abort");
         if (!fun) {
             auto type = FunctionType::get(builder_.getVoidTy(), {}, false);
-            fun = Function::Create(type, llvm::GlobalValue::ExternalLinkage, "abort", module_);
-            fun->addFnAttr(Attribute::AttrKind::Cold);
-            fun->addFnAttr(Attribute::AttrKind::NoReturn);
+            fun = Function::Create(type, GlobalValue::ExternalLinkage, "abort", module_);
+            fun->addFnAttr(Attribute::Cold);
+            fun->addFnAttr(Attribute::NoReturn);
         }
         auto tail = BasicBlock::Create(builder_.getContext(), "tail", function_);
         auto abort = BasicBlock::Create(builder_.getContext(), "abort", function_);

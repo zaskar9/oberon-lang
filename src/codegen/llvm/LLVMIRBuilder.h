@@ -28,9 +28,11 @@ private:
     std::map<DeclarationNode*, Value*> values_;
     std::map<TypeNode*, Type*> types_;
     std::map<ProcedureNode*, Function*> functions_;
+    std::map<std::string, Constant*> strings_;
     std::stack<bool> deref_ctx;
     unsigned int level_;
     Function *function_;
+    AttrBuilder attrs_;
 
     Type* getLLVMType(TypeNode *type);
     MaybeAlign getLLVMAlign(TypeNode *type);
