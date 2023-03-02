@@ -21,16 +21,26 @@ BEGIN
     printf("%d", val)
 END Int;
 
+(* Writes a long value to standard out. *)
 PROCEDURE Long*(val: LONGINT);
 BEGIN
     printf("%ld", val)
 END Long;
 
+(* Writes a real value to standard out. *)
 PROCEDURE Real*(val: REAL);
 VAR valL: LONGREAL;
 BEGIN
     valL := val;
     printf("%f", valL)
 END Real;
+
+(* Writes a character to standard out. *)
+PROCEDURE Char*(ch: CHAR);
+VAR chL: INTEGER;
+BEGIN
+    chL := ch;
+    printf("%c", chL)
+END OutChar;
 
 END Out.

@@ -794,7 +794,7 @@ bool SemanticAnalysis::assertCompatible(const FilePos &pos, TypeNode *expected, 
     if (expected == actual) {
         return true;
     } else if (expected && actual) {
-        if (expected->kind() == TypeKind::ANYTYPE || expected->kind() == TypeKind::ANYTYPE) {
+        if (expected->kind() == TypeKind::ANYTYPE) {
             return true;
         }
         auto expectedId = expected->getIdentifier();
@@ -815,6 +815,13 @@ bool SemanticAnalysis::assertCompatible(const FilePos &pos, TypeNode *expected, 
                 auto act_ptr = dynamic_cast<PointerTypeNode *>(actual);
                 return assertCompatible(pos, exp_ptr->getBase(), act_ptr->getBase(), true);
             } else if (actual->kind() == TypeKind::NILTYPE) {
+                return true;
+            }
+        } else if (expected->kind() == TypeKind::CHAR && actual->isString()) {
+            return true;
+        } else if (expected->isString() && actual->isArray()) {
+            auto act_arr = dynamic_cast<ArrayTypeNode *>(actual);
+            if (act_arr->getMemberType()->kind() == TypeKind::CHAR) {
                 return true;
             }
         }

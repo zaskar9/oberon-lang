@@ -230,7 +230,16 @@ void LLVMIRBuilder::visit(RealLiteralNode &node) {
 
 void LLVMIRBuilder::visit(StringLiteralNode &node) {
     std::string val = node.value();
-    value_ = builder_.CreateGlobalStringPtr(val, ".str");
+    auto cast = node.getCast();
+    if (cast && cast->kind() == TypeKind::CHAR) {
+        if (val.length() > 1) {
+            logger_->error(node.pos(), "character too large for enclosing character literal type.");
+        }
+        int ord = (int) val[0];
+        value_ = builder_.getInt8(ord);
+    } else {
+        value_ = builder_.CreateGlobalStringPtr(val, ".str");
+    }
 }
 
 void LLVMIRBuilder::visit(NilLiteralNode &node) {
@@ -671,6 +680,8 @@ Type* LLVMIRBuilder::getLLVMType(TypeNode *type) {
     } else if (type->getNodeType() == NodeType::basic_type) {
         if (type->kind() == TypeKind::BOOLEAN) {
             result = builder_.getInt1Ty();
+        } else if (type->kind() == TypeKind::BYTE || type->kind() == TypeKind::CHAR) {
+            result = builder_.getInt8Ty();
         } else if (type->kind() == TypeKind::INTEGER) {
             result = builder_.getInt32Ty();
         } else if (type->kind() == TypeKind::LONGINT) {

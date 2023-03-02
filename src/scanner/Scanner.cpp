@@ -370,20 +370,21 @@ const Token* Scanner::scanString() {
     std::stringstream ss;
     auto p = current();
     read();
-    do {
+    while (ch_ != '"') {
         ss << ch_;
         if (ch_ == '\\') {
             read();
             ss << ch_;
         }
         read();
-    } while (ch_ != '"');
+    }
     read();
     std::string str = ss.str();
     return new StringLiteralToken(p, current(), unescape(str));
 }
 
 std::string Scanner::escape(std::string str) {
+    boost::replace_all(str, "\0", "\\0");
     boost::replace_all(str, "\'", "\\'");
     boost::replace_all(str, "\"", "\\\"");
     boost::replace_all(str, "\?", "\\?");
@@ -400,6 +401,7 @@ std::string Scanner::escape(std::string str) {
 }
 
 std::string Scanner::unescape(std::string str) {
+    boost::replace_all(str, "\\0", "\0");
     boost::replace_all(str, "\\'", "\'");
     boost::replace_all(str, "\\\"", "\"");
     boost::replace_all(str, "\\?", "\?");
