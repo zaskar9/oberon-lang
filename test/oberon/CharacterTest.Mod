@@ -7,13 +7,6 @@ VAR string: ARRAY 256 OF CHAR;
 (* Import `printf` function from C <stdio.h> library. *)
 PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
 
-PROCEDURE OutChar(ch: CHAR);
-VAR chL: INTEGER;
-BEGIN
-    chL := ch;
-    printf("%c", chL)
-END OutChar;
-
 BEGIN
     string[0] := "O";
     string[1] := "b";
@@ -25,7 +18,7 @@ BEGIN
 
     (* Out.String(string); Out.Ln; *)
     FOR i := 0 TO 6 DO
-        OutChar(string[i])
+        Out.Char(string[i])
     END;
     Out.Ln
 

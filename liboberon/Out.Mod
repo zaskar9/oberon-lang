@@ -41,6 +41,6 @@ VAR chL: INTEGER;
 BEGIN
     chL := ch;
     printf("%c", chL)
-END OutChar;
+END Char;
 
 END Out.
