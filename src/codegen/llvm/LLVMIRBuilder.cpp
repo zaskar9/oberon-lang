@@ -177,13 +177,14 @@ void LLVMIRBuilder::visit(ValueReferenceNode &node) {
             auto param = dynamic_cast<ParameterNode*>(ref);
             // load value of parameter that is either passed by reference or is an array or
             // record parameter since getelementptr only computes the address
-            if (param->isVar() || param->getType()->getNodeType() == NodeType::array_type ||
-                                  param->getType()->getNodeType() == NodeType::record_type ||
-                                  param->getType()->getNodeType() == NodeType::pointer_type) {
+            if (param->isVar() || param->getType()->kind() == TypeKind::ARRAY ||
+                                  param->getType()->kind() == TypeKind::RECORD ||
+                                  param->getType()->kind() == TypeKind::POINTER) {
                 value_ = builder_.CreateLoad(getLLVMType(type), value_);
             }
         }
     }
+    cast(node);
 }
 
 void LLVMIRBuilder::visit([[maybe_unused]] TypeReferenceNode &node) {
@@ -237,6 +238,7 @@ void LLVMIRBuilder::visit(StringLiteralNode &node) {
         }
         int ord = (int) val[0];
         value_ = builder_.getInt8(ord);
+        node.setCast(nullptr);
     } else {
         value_ = builder_.CreateGlobalStringPtr(val, ".str");
     }
@@ -583,6 +585,17 @@ void LLVMIRBuilder::cast(ExpressionNode &node) {
                     value_ = builder_.CreateFPTrunc(value_, getLLVMType(target));
                 }
             }
+        } else if (source->isArray() && target->isString()) {
+            auto type = dynamic_cast<ArrayTypeNode*>(source);
+            if (type->getMemberType()->kind() == TypeKind::CHAR) {
+                value_->getType();
+            } else {
+                logger_->error(node.pos(), "cannot cast " + to_string(*source->getIdentifier()) + " to " +
+                                           to_string(*target->getIdentifier()) + ".");
+            }
+        } else {
+            logger_->error(node.pos(), "unhandled cast from " + to_string(*source->getIdentifier())
+                                       + " to " + to_string(*target->getIdentifier()) + ".");
         }
     }
 }
