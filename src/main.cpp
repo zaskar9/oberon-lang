@@ -30,7 +30,8 @@ int main(const int argc, const char **argv) {
     visible.add_options()
             ("help,h", "Display available visible.")
             ("version,v", "Print version information.")
-            ("filetype", po::value<std::string>()->value_name("<type>"), "Specify type of output file. [asm, bc, obj, ll]")
+            ("filetype", po::value<std::string>()->value_name("<type>"), "Set type of output file. [asm, bc, obj, ll]")
+            ("reloc", po::value<std::string>()->value_name("<model>"), "Set relocation model. [DEFAULT, STATIC, PIC]")
             (",O", po::value<int>()->value_name("<level>"), "Optimization level. [O0, O1, O2, O3]")
             ("quiet,q", "Suppress all compiler outputs.")
             (",I", po::value<std::string>()->value_name("<directories>"), "Include directories for symbol files.");

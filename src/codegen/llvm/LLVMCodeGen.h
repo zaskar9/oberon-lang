@@ -30,7 +30,7 @@ private:
     void emit(Module *module, boost::filesystem::path path, OutputFileType type);
 
 public:
-    explicit LLVMCodeGen(Logger *logger);
+    explicit LLVMCodeGen(Logger *logger, RelocationModel rm = RelocationModel::DEFAULT);
     ~LLVMCodeGen() = default;
 
     std::string getDescription() final;

@@ -15,7 +15,7 @@
 #include <llvm/Support/raw_ostream.h>
 #include <config.h>
 
-LLVMCodeGen::LLVMCodeGen(Logger *logger)
+LLVMCodeGen::LLVMCodeGen(Logger *logger, RelocationModel rm)
         : logger_(logger), type_(OutputFileType::ObjectFile), ctx_(), pb_(), lvl_(llvm::OptimizationLevel::O0) {
     // Initialize LLVM
     llvm::InitializeAllTargetInfos();
@@ -27,8 +27,8 @@ LLVMCodeGen::LLVMCodeGen(Logger *logger)
     std::string triple = llvm::sys::getDefaultTargetTriple();
     // Set up target
     std::string error;
-    auto tm = llvm::TargetRegistry::lookupTarget(triple, error);
-    if (!tm) {
+    auto target = llvm::TargetRegistry::lookupTarget(triple, error);
+    if (!target) {
         logger_->error(PROJECT_NAME, error);
     } else {
         // Set up target machine to match host
@@ -36,7 +36,18 @@ LLVMCodeGen::LLVMCodeGen(Logger *logger)
         std::string features;
         TargetOptions opt;
         auto model = Optional<Reloc::Model>();
-        tm_ = tm->createTargetMachine(triple, cpu, features, opt, model);
+        switch (rm) {
+            case RelocationModel::STATIC:
+                model = Reloc::Model::Static;
+                break;
+            case RelocationModel::PIC:
+                model = Reloc::Model::PIC_;
+                break;
+            case RelocationModel::DEFAULT:
+            default:
+                break;
+        }
+        tm_ = target->createTargetMachine(triple, cpu, features, opt, model);
     }
 }
 
