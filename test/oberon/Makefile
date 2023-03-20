@@ -15,7 +15,7 @@ endif
 # Oberon compiler settings
 O7C = ../../cmake-build-release/src/oberon-lang
 LIB = ./lib
-INC = ./include
+INC = .;./include
 
 # C++ compiler settings
 CXX = clang
@@ -43,7 +43,7 @@ endif
 	@$(CXX) $< -o $@ -L$(LIB) $(LDFLAGS)
 
 %.o : %.Mod
-	@$(O7C) -O3 -I$(INC) $<
+	@$(O7C) -O3 -I"$(INC)" $<
 
 %.s : %.Mod
 	@$(O7C) --filetype=asm $<

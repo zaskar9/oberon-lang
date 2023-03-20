@@ -48,7 +48,7 @@ clean :
 	@$(CXX) $< -o $@
 
 %.o : %.Mod
-	@$(O7C) -q -O3 $<
+	@$(O7C) -q -O3 --reloc=pic $<
 
 %.o : %.c
 	@$(CXX) -c $<
