@@ -29,11 +29,11 @@ As of February 2022, the following configurations are tested and known to work.
 
 |       | macOS             | Windows              | Linux (Ubuntu) |
 |-------|-------------------|----------------------|----------------|
-| Boost | 1.81.0            | 1.80.0               | 1.80.0         |
+| Boost | 1.81.0            | 1.80.0               | 1.74.0         |
 | LLVM  | 15.0.7            | 14.0.0               | 14.0.0         |
-| CMake | 3.25.2            | 3.19.2               | 3.22.2         |
-| IDE   | CLion 2022.3.2    | Visual Studio 17.1.0 | CLion 2021.3.3 |
-| CXX   | LLVM Clang 15.0.7 | CL 19.31.31104       | GCC 11.2.0     |
+| CMake | 3.25.2            | 3.19.2               | 3.26.0         |
+| IDE   | CLion 2022.3.3    | Visual Studio 17.1.0 | CLion 2022.3.3 |
+| CXX   | LLVM Clang 15.0.7 | CL 19.31.31104       | GCC 11.3.0     |
  
 Detailed instruction on how to build the Oberon compiler and its dependencies can be found in the Wiki section of this
 project repository.

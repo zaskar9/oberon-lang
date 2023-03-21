@@ -11,11 +11,11 @@
 #include <boost/filesystem.hpp>
 #include <llvm/Passes/PassBuilder.h>
 #include <llvm/Target/TargetMachine.h>
-#include "LLVMIRBuilder.h"
 #include "analyzer/Analyzer.h"
 #include "codegen/CodeGen.h"
 #include "logging/Logger.h"
 
+using namespace llvm;
 
 class LLVMCodeGen final : public CodeGen {
 
@@ -23,19 +23,19 @@ private:
     Logger *logger_;
     OutputFileType type_;
     LLVMContext ctx_;
-    llvm::PassBuilder pb_;
+    PassBuilder pb_;
     llvm::OptimizationLevel lvl_;
-    llvm::TargetMachine *tm_;
+    TargetMachine *tm_;
 
     void emit(Module *module, boost::filesystem::path path, OutputFileType type);
 
 public:
     explicit LLVMCodeGen(Logger *logger);
-    ~LLVMCodeGen() = default;
+    ~LLVMCodeGen() override = default;
 
     std::string getDescription() final;
-    void setFileType(OutputFileType type) final;
-    void setOptimizationLevel(::OptimizationLevel level) final;
+
+    void configure(CompilerFlags *flags) final;
 
     void generate(Node *ast, boost::filesystem::path path) final;
 
