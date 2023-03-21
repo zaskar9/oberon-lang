@@ -12,10 +12,13 @@ else
 	endif
 endif
 
+# liboberon settings
+LIB = ./lib
+INC = ".;./include"
+
 # Oberon compiler settings
 O7C = ../../cmake-build-release/src/oberon-lang
-LIB = ./lib
-INC = .;./include
+O7CFLAGS = -O3 -I$(INC)
 
 # C++ compiler settings
 CXX = clang
@@ -25,6 +28,7 @@ LDFLAGS = -loberon
 ifeq ($(OS), macos)
 	LDFLAGS += -rpath @executable_path/lib
 else ifeq ($(OS), linux)
+	O7CFLAGS += --reloc=pic
 	LDFLAGS += -lm
 endif
 
@@ -43,7 +47,7 @@ endif
 	@$(CXX) $< -o $@ -L$(LIB) $(LDFLAGS)
 
 %.o : %.Mod
-	@$(O7C) -O3 -I"$(INC)" $<
+	@$(O7C) $(O7CFLAGS) $<
 
 %.s : %.Mod
 	@$(O7C) --filetype=asm $<
