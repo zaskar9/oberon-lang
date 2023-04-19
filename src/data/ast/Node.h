@@ -8,12 +8,12 @@
 #define OBERON0C_AST_H
 
 
+#include "global.h"
 #include <list>
 #include <memory>
 #include <ostream>
 #include <string>
 #include <utility>
-#include "../../global.h"
 
 enum class NodeType : char {
     ident,

@@ -8,12 +8,12 @@
 #define OBERON0C_REFERENCENODE_H
 
 
-#include <memory>
-#include <vector>
 #include "ExpressionNode.h"
 #include "DeclarationNode.h"
 #include "ProcedureNode.h"
 #include "Selector.h"
+#include <memory>
+#include <vector>
 
 class NodeReference {
 

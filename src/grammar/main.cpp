@@ -4,11 +4,11 @@
  * Created by Michael Grossniklaus on 3/11/20.
  */
 
-#include <iomanip>
-#include <boost/filesystem.hpp>
 #include <config.h>
 #include "Loader.h"
 #include "Validator.h"
+#include <boost/filesystem.hpp>
+#include <iomanip>
 
 namespace fs = boost::filesystem;
 

@@ -6,11 +6,11 @@
 #define OBERON_LANG_COMPILER_H
 
 
-#include <boost/filesystem.hpp>
 #include "codegen/CodeGen.h"
 #include "data/symtab/SymbolExporter.h"
 #include "logging/Logger.h"
 #include "CompilerFlags.h"
+#include <boost/filesystem.hpp>
 
 class Compiler {
 

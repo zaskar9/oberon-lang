@@ -8,9 +8,9 @@
 #define OBERON0C_TYPENODE_H
 
 
-#include <utility>
 #include "Node.h"
 #include "Ident.h"
+#include <utility>
 
 enum class TypeKind : char {
     ANYTYPE = 0, NOTYPE = 1, NILTYPE = 2,

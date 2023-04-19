@@ -8,11 +8,11 @@
 #define OBERON_LLVM_GRAMMAR_H
 
 
+#include "../scanner/Token.h"
 #include <memory>
 #include <vector>
 #include <unordered_set>
 #include <unordered_map>
-#include "../scanner/Token.h"
 
 class Symbol {
 

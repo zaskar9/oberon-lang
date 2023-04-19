@@ -8,9 +8,9 @@
 #define OBERON_LLVM_COMPILATIONSTATUS_H
 
 
-#include <vector>
 #include "../global.h"
 #include "../logging/Logger.h"
+#include <vector>
 
 struct Message {
     FilePos pos;

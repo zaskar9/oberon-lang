@@ -6,10 +6,10 @@
 #define OBERON_LANG_CODEGEN_H
 
 
-#include <boost/filesystem.hpp>
 #include "global.h"
 #include "data/ast/Node.h"
 #include "compiler/CompilerFlags.h"
+#include <boost/filesystem.hpp>
 
 class CodeGen {
 

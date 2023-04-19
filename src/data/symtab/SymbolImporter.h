@@ -6,13 +6,13 @@
 #define OBERON_LANG_SYMBOLIMPORTER_H
 
 
-#include <boost/filesystem.hpp>
 #include "logging/Logger.h"
 #include "compiler/CompilerFlags.h"
 #include "data/ast/ModuleNode.h"
 #include "data/ast/TypeNode.h"
 #include "SymbolTable.h"
 #include "SymbolFile.h"
+#include <boost/filesystem.hpp>
 
 class SymbolImporter {
 

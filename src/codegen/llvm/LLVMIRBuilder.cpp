@@ -715,7 +715,7 @@ MaybeAlign LLVMIRBuilder::getLLVMAlign(TypeNode *type) {
     } else if (type->getNodeType() == NodeType::pointer_type) {
         return MaybeAlign(layout.getPointerPrefAlignment());
     } else if (type->getNodeType() == NodeType::basic_type) {
-        return MaybeAlign(layout.getPrefTypeAlignment(getLLVMType(type)));
+        return MaybeAlign(layout.getPrefTypeAlign(getLLVMType(type)));
     }
     return MaybeAlign();
 }

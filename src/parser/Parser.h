@@ -8,9 +8,6 @@
 #define OBERON0C_PARSER_H
 
 
-#include <memory>
-#include <vector>
-#include <set>
 #include "scanner/Scanner.h"
 #include "logging/Logger.h"
 #include "data/ast/Node.h"
@@ -26,6 +23,9 @@
 #include "data/ast/StatementSequenceNode.h"
 #include "data/ast/NodeReference.h"
 #include "data/symtab/SymbolTable.h"
+#include <memory>
+#include <set>
+#include <vector>
 
 class Parser {
 
