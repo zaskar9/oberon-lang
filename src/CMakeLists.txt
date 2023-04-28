@@ -54,9 +54,9 @@ set(ANALYZER_SOURCES
         analyzer/LambdaLifter.cpp analyzer/LambdaLifter.h)
 
 set(CODEGEN_SOURCES
-        codegen/CodeGen.h
+        codegen/CodeGen.cpp codegen/CodeGen.h
         codegen/llvm/LLVMIRBuilder.cpp codegen/llvm/LLVMIRBuilder.h
-        codegen/llvm/LLVMCodeGen.cpp codegen/llvm/LLVMCodeGen.h codegen/CodeGen.cpp)
+        codegen/llvm/LLVMCodeGen.cpp codegen/llvm/LLVMCodeGen.h)
 
 set(COMPILER_SOURCES
         compiler/CompilerFlags.cpp compiler/CompilerFlags.h
@@ -72,7 +72,7 @@ set(ALL_SOURCES
         ${SYMTAB_SOURCES}
         ${ANALYZER_SOURCES}
         ${CODEGEN_SOURCES}
-        ${COMPILER_SOURCES} data/ast/PointerTypeNode.cpp data/ast/PointerTypeNode.h)
+        ${COMPILER_SOURCES})
 
 add_executable(${OBERON_LANG} main.cpp ${ALL_SOURCES})
 target_include_directories(${OBERON_LANG} PUBLIC .)
