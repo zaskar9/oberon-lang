@@ -8,8 +8,8 @@
 #define OBERON_LLVM_COMPILATIONSTATUS_H
 
 
-#include "../global.h"
-#include "../logging/Logger.h"
+#include "global.h"
+#include "logging/Logger.h"
 #include <vector>
 
 struct Message {

@@ -6,7 +6,7 @@
 #define OBERON_LANG_IDENT_H
 
 
-#include "../../global.h"
+#include "global.h"
 #include "Node.h"
 #include <optional>
 #include <string>

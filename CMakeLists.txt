@@ -16,6 +16,7 @@ else ()
     endif ()
 endif ()
 
+# compile error for LLVM 16 with C++23
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)

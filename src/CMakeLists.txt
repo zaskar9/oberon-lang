@@ -2,6 +2,8 @@ set(Boost_USE_MULTITHREADED TRUE)
 set(OBERON_LANG "oberon-lang")
 set(GRAMMAR_TOOL "grammar-tool")
 
+# add source tree to search path to avoid relative includes
+include_directories(BEFORE .)
 
 set(LOGGING_SOURCES
         logging/Logger.cpp logging/Logger.h)

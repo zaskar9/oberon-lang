@@ -8,9 +8,9 @@
 #define OBERON0C_LOGGER_H
 
 
+#include "global.h"
 #include <string>
 #include <iostream>
-#include "global.h"
 
 enum class LogLevel : unsigned int { DEBUG = 1, INFO = 2, WARNING = 3, ERROR = 4, QUIET = 5 };
 

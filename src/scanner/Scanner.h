@@ -10,7 +10,7 @@
 
 #include "Token.h"
 #include "LiteralToken.h"
-#include "../logging/Logger.h"
+#include "logging/Logger.h"
 #include <boost/filesystem.hpp>
 #include <fstream>
 #include <sstream>

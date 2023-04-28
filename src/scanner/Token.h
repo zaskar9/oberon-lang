@@ -8,8 +8,8 @@
 #define OBERON0C_TOKEN_H
 
 
-#include <ostream>
 #include "global.h"
+#include <ostream>
 
 enum class TokenType : char {
     eof, undef,
