@@ -8,11 +8,11 @@
 #define OBERON0C_PROCEDURENODE_H
 
 
-#include <memory>
-#include <vector>
 #include "BlockNode.h"
 #include "DeclarationNode.h"
 #include "ProcedureTypeNode.h"
+#include <memory>
+#include <vector>
 
 class ProcedureNode final : public DeclarationNode, public BlockNode {
 

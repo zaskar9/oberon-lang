@@ -16,6 +16,8 @@
 #include <llvm/Support/raw_ostream.h>
 #include <config.h>
 
+using namespace llvm;
+
 LLVMCodeGen::LLVMCodeGen(Logger *logger)
         : logger_(logger), type_(OutputFileType::ObjectFile), ctx_(), pb_(), lvl_(llvm::OptimizationLevel::O0) {
     // Initialize LLVM
@@ -60,7 +62,7 @@ void LLVMCodeGen::configure(CompilerFlags *flags) {
         std::string cpu = "generic";
         std::string features;
         TargetOptions opt;
-        auto model = Optional<Reloc::Model>();
+        auto model = std::optional<Reloc::Model>();
         switch (flags->getRelocationModel()) {
             case RelocationModel::STATIC:
                 model = Reloc::Model::Static;

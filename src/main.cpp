@@ -4,15 +4,16 @@
  * Created by Michael Grossniklaus on 12/14/17.
  */
 
-#include <iostream>
-#include <boost/algorithm/string.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/program_options.hpp>
+
 #include <config.h>
-#include "codegen/llvm/LLVMCodeGen.h"
 #include "compiler/CompilerFlags.h"
 #include "compiler/Compiler.h"
 #include "logging/Logger.h"
+#include "codegen/llvm/LLVMCodeGen.h"
+#include <boost/algorithm/string.hpp>
+#include <boost/filesystem.hpp>
+#include <boost/program_options.hpp>
+#include <iostream>
 
 namespace fs = boost::filesystem;
 namespace po = boost::program_options;

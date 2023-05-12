@@ -8,10 +8,10 @@
 #define OBERON0C_RECORDTYPESYMBOL_H
 
 
-#include <memory>
-#include <vector>
 #include "TypeNode.h"
 #include "DeclarationNode.h"
+#include <memory>
+#include <vector>
 
 class RecordTypeNode final : public TypeNode {
 

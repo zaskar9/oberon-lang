@@ -6,11 +6,11 @@
 #define OBERON_LANG_SELECTOR_H
 
 
+#include "Ident.h"
+#include "DeclarationNode.h"
 #include <memory>
 #include <string>
 #include <vector>
-#include "Ident.h"
-#include "DeclarationNode.h"
 
 class Selector {
 

@@ -8,10 +8,10 @@
 #define OBERON_LLVM_ANALYZER_H
 
 
+#include "data/ast/Node.h"
+#include "logging/Logger.h"
 #include <memory>
 #include <vector>
-#include "../data/ast/Node.h"
-#include "../logging/Logger.h"
 
 class Analysis {
 

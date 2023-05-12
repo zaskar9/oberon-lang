@@ -8,15 +8,15 @@
 #define OBERON_LLVM_GLOBAL_H
 
 
-#include <string>
 #include <sstream>
+#include <string>
 
 struct FilePos {
     std::string fileName;
     int lineNo, charNo;
 };
 
-static const FilePos EMPTY_POS = { "", 0, 0 };
+static const FilePos EMPTY_POS = {"", 0, 0 };
 
 template <typename T>
 static std::string to_string(T obj) {

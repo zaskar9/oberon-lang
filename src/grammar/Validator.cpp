@@ -6,6 +6,7 @@
  */
 
 #include <algorithm>
+#include <iterator>
 #include "Validator.h"
 
 first_sets Validator::computeFirstSets() const {

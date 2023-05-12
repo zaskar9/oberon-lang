@@ -9,8 +9,8 @@
 #define OBERON_LLVM_VALIDATOR_H
 
 
-#include <unordered_map>
 #include "Grammar.h"
+#include <unordered_map>
 
 typedef std::unordered_map<Symbol*, std::unordered_set<Terminal*>> first_sets;
 typedef std::unordered_map<NonTerminal*, std::unordered_set<Terminal*>> follow_sets;
