@@ -29,7 +29,7 @@ ifeq ($(OS), macos)
 	LDFLAGS += -rpath @executable_path/lib
 else ifeq ($(OS), linux)
 	O7CFLAGS += --reloc=pic
-	LDFLAGS += -lm
+	LDFLAGS += -lm -Wl,-rpath,$(LIB)
 endif
 
 .PHONY: clean

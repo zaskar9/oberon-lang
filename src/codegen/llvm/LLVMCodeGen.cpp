@@ -62,7 +62,11 @@ void LLVMCodeGen::configure(CompilerFlags *flags) {
         std::string cpu = "generic";
         std::string features;
         TargetOptions opt;
+#ifdef _LLVM_LEGACY
+        auto model = llvm::Optional<Reloc::Model>();
+#else
         auto model = std::optional<Reloc::Model>();
+#endif
         switch (flags->getRelocationModel()) {
             case RelocationModel::STATIC:
                 model = Reloc::Model::Static;
