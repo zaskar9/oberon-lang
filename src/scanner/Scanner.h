@@ -26,9 +26,10 @@ private:
     Logger *logger_;
     std::queue<const Token*> tokens_;
     int lineNo_, charNo_;
+    char ch_;
+    bool eof_;
     std::unordered_map<std::string, TokenType> keywords_;
     std::ifstream file_;
-    char ch_{};
 
     void init();
     void read();

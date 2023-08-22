@@ -20,14 +20,13 @@ INC = ".;./include"
 O7C = ../../cmake-build-release/src/oberon-lang
 O7CFLAGS = -O3 -I$(INC)
 
-# C++ compiler settings
-CXX = clang
-
-# Linker flags
+# Compiler and linker settings
 LDFLAGS = -loberon
 ifeq ($(OS), macos)
+    CXX = clang
 	LDFLAGS += -rpath @executable_path/lib
 else ifeq ($(OS), linux)
+	CXX = gcc
 	O7CFLAGS += --reloc=pic
 	LDFLAGS += -lm -Wl,-rpath,$(LIB)
 endif
