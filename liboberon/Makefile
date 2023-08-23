@@ -8,7 +8,7 @@ else
 	else ifeq ($(UNAME), Linux)
 		OS = linux
 	else
-    	$(error OS not supported by this Makefile)
+		$(error OS not supported by this Makefile)
 	endif
 endif
 
@@ -32,9 +32,10 @@ else ifeq ($(OS), linux)
 	LDFLAGS += -shared
 endif
 
-.PHONY: clean
+.PHONY: all clean dist install
+.DEFAULT_GOAL = dist
 
-all : lib inc
+all : dist install
 
 clean :
 	@rm -f *.o *.smb *.$(EXT)
@@ -48,11 +49,18 @@ clean :
 %.smb : %.Mod
 	@$(O7C) $(O7CFLAGS) $<
 
-lib : runtime.o Oberon.o Out.o Random.o Math.o
-	@$(CXX) $(LDFLAGS) -o $(LIB)/$(LIBNAME).$(EXT) runtime.o Oberon.o Out.o Random.o Math.o
+dist : runtime.o Oberon.o Out.o Random.o Math.o
+	@echo -n Building library...
+	@$(CXX) $(LDFLAGS) -o $(LIBNAME).$(EXT) runtime.o Oberon.o Out.o Random.o Math.o
+	@echo ' done.'
 
-inc : Oberon.smb Out.smb Random.smb Math.smb
+install : dist Oberon.smb Out.smb Random.smb Math.smb
+	@echo -n Installing library...
+	@mv $(LIBNAME).$(EXT) $(LIB)
+	@echo ' done.'
+	@echo -n Installing symbol files...
 	@mv Oberon.smb $(INC)
 	@mv Out.smb $(INC)
 	@mv Random.smb $(INC)
 	@mv Math.smb $(INC)
+	@echo ' done.'

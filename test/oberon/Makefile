@@ -8,7 +8,7 @@ else
 	else ifeq ($(UNAME), Linux)
 		OS = linux
 	else
-    	$(error OS not supported by this Makefile)
+		$(error OS not supported by this Makefile)
 	endif
 endif
 
@@ -19,7 +19,7 @@ O7C = ../../cmake-build-release/src/oberon-lang
 O7CFLAGS = -O3 -I$(INC)
 LDFLAGS = -loberon
 ifeq ($(OS), macos)
-    CXX = clang
+	CXX = clang
 	LDFLAGS += -rpath @executable_path/lib
 else ifeq ($(OS), linux)
 	CXX = gcc
