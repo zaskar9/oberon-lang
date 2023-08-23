@@ -61,4 +61,5 @@ int main(const int argc, const char *argv[]) {
     } else {
         std::cout << "Grammar is backtrack-free." << std::endl;
     }
+    return 0;
 }
