@@ -12,15 +12,11 @@ else
 	endif
 endif
 
-# liboberon settings
+# Compiler and linker settings
 LIB = ./lib
 INC = ".;./include"
-
-# Oberon compiler settings
 O7C = ../../cmake-build-release/src/oberon-lang
 O7CFLAGS = -O3 -I$(INC)
-
-# Compiler and linker settings
 LDFLAGS = -loberon
 ifeq ($(OS), macos)
     CXX = clang
@@ -49,7 +45,7 @@ endif
 	@$(O7C) $(O7CFLAGS) $<
 
 %.s : %.Mod
-	@$(O7C) --filetype=asm $<
+	@$(O7C) $(O7CFLAGS) --filetype=asm $<
 
 %.ll : %.Mod
-	@$(O7C) --filetype=ll $<
+	@$(O7C) $(O7CFLAGS) --filetype=ll $<

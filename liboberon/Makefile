@@ -12,20 +12,15 @@ else
 	endif
 endif
 
-# Oberon compiler settings
-O7C = ../cmake-build-release/src/oberon-lang
+# Compiler and linker settings
 LIB = ../test/oberon/lib
 INC = ../test/oberon/include
-
-# C++ compiler settings
-CXX =
-
-# Linker flags
+O7C = ../cmake-build-release/src/oberon-lang
+O7CFLAGS = -q -O3 --reloc=pic
 LDFLAGS =
 
-# Library extension
+# Library settings
 LIBNAME = liboberon
-EXT =
 
 ifeq ($(OS), macos)
 	EXT = dylib
@@ -44,14 +39,11 @@ all : lib inc
 clean :
 	@rm -f *.o *.smb *.$(EXT)
 
-% : %.o
-	@$(CXX) $< -o $@
-
-%.o : %.Mod
-	@$(O7C) -q -O3 --reloc=pic $<
-
 %.o : %.c
 	@$(CXX) -c $<
+
+%.o : %.Mod
+	@$(O7C) $(O7CFLAGS) $<
 
 %.smb : %.Mod
 	@$(O7C) $(O7CFLAGS) $<

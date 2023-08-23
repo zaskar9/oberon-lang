@@ -2,7 +2,7 @@ MODULE Floats;
 IMPORT Out, Math;
 
 CONST MAX_INTEGER = 2147483647;
-      MIN_INTEGER = -2147483648;
+      MIN_INTEGER = -1 * 2147483647 - 1;
       MAX_REAL = 3.40282E+38;
       MIN_REAL = 1.17549E-38;
 
@@ -33,5 +33,6 @@ BEGIN
     f1 := 0.1;
     f2 := 0.2;
     Out.Real(f1 + f2); Out.Ln;
-    Out.Real(9 / 5); Out.Ln
+    Out.Real(9 / 5); Out.Ln;
+    Out.String("["); Out.Long(MAX_INTEGER); Out.String(", "); Out.Long(MIN_INTEGER); Out.String("]"); Out.Ln
 END Floats.
