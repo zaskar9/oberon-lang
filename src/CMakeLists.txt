@@ -2,6 +2,8 @@ set(Boost_USE_MULTITHREADED TRUE)
 set(OBERON_LANG "oberon-lang")
 set(GRAMMAR_TOOL "grammar-tool")
 
+set(Boost_NO_WARN_NEW_VERSIONS 1)
+
 # add source tree to search path to avoid relative includes
 include_directories(BEFORE .)
 
@@ -81,10 +83,10 @@ target_include_directories(${OBERON_LANG} PUBLIC .)
 
 find_package(Boost REQUIRED COMPONENTS filesystem program_options)
 if (Boost_FOUND)
-    include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
-    target_link_libraries(${OBERON_LANG} ${Boost_LIBRARIES})
+    target_link_libraries(${OBERON_LANG} PRIVATE ${Boost_LIBRARIES})
 endif ()
 
+# disabled options below somehow interfere with other targets
 find_package(LLVM REQUIRED CONFIG)
 if (LLVM_FOUND)
     if (${LLVM_VERSION} LESS 16.0.0)
@@ -93,10 +95,13 @@ if (LLVM_FOUND)
     else ()
         message(STATUS "Found LLVM: ${LLVM_VERSION}")
     endif ()
-    include_directories(SYSTEM ${LLVM_INCLUDE_DIRS})
+    # list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
+    # include(HandleLLVMOptions)
     add_definitions(${LLVM_DEFINITIONS})
+    # target_include_directories(${OBERON_LANG} PRIVATE ${LLVM_INCLUDE_DIRS})
+    include_directories(SYSTEM ${LLVM_INCLUDE_DIRS})
     llvm_map_components_to_libnames(llvm_libs core support passes ${LLVM_TARGETS_TO_BUILD})
-    target_link_libraries(${OBERON_LANG} ${llvm_libs})
+    target_link_libraries(${OBERON_LANG} PRIVATE ${llvm_libs})
 endif ()
 
 
@@ -107,10 +112,9 @@ set(GRAMMAR_SOURCES
 
 add_executable(${GRAMMAR_TOOL} grammar/main.cpp ${GRAMMAR_SOURCES} ${SCANNER_SOURCES} ${LOGGING_SOURCES})
 
-find_package(Boost REQUIRED COMPONENTS filesystem program_options)
+find_package(Boost REQUIRED COMPONENTS filesystem)
 if (Boost_FOUND)
-    include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
-    target_link_libraries(${GRAMMAR_TOOL} ${Boost_LIBRARIES})
+    target_link_libraries(${GRAMMAR_TOOL} PRIVATE Boost::boost Boost::filesystem)
 endif ()
 
 
