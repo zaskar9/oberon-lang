@@ -83,7 +83,7 @@ target_include_directories(${OBERON_LANG} PUBLIC .)
 
 find_package(Boost REQUIRED COMPONENTS filesystem program_options)
 if (Boost_FOUND)
-    target_link_libraries(${OBERON_LANG} PRIVATE ${Boost_LIBRARIES})
+    target_link_libraries(${OBERON_LANG} PRIVATE Boost::boost Boost::filesystem Boost::program_options)
 endif ()
 
 # disabled options below somehow interfere with other targets
