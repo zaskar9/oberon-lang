@@ -1,5 +1,5 @@
 # Compiler settings
-O7C = ..\out\build\$(PROCESSOR_ARCHITECTURE)-Release\src\oberon-lang.exe
+O7C = ..\out\build\$(CPU_ARCH)-Release\src\oberon-lang.exe
 CXX = cl.exe
 LIBX = lib.exe
 LIB = ..\test\oberon\lib
@@ -27,7 +27,7 @@ clean:
 	@$(O7C) -q -O3 $<
 
 lib: runtime.obj Oberon.obj Out.obj Random.obj Math.obj
-	@$(LIBX) /nologo /machine:$(PROCESSOR_ARCHITECTURE) /out:$(LIB)\$(NAME).$(EXT) runtime.obj Oberon.obj Out.obj Random.obj Math.obj
+	@$(LIBX) /nologo /machine:$(CPU_ARCH) /out:$(LIB)\$(NAME).$(EXT) runtime.obj Oberon.obj Out.obj Random.obj Math.obj
 
 inc: Oberon.smb Out.smb Random.smb Math.smb
 	@move Oberon.smb $(INC) >nul

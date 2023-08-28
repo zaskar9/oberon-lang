@@ -1,5 +1,5 @@
 # Compiler and linker settings
-O7C = ..\..\out\build\$(PROCESSOR_ARCHITECTURE)-Release\src\oberon-lang.exe
+O7C = ..\..\out\build\$(CPU_ARCH)-Release\src\oberon-lang.exe
 LD = link.exe
 INC = ".;.\include"
 
@@ -20,4 +20,4 @@ clean:
 
 .Mod.exe:
 	@make.bat $*.obj
-	@$(LD) /nologo $*.obj /incremental:no /machine:$(PROCESSOR_ARCHITECTURE) /subsystem:console /nodefaultlib:libcmt lib\liboberon.lib msvcrt.lib legacy_stdio_definitions.lib
+	@$(LD) /nologo $*.obj /incremental:no /machine:$(CPU_ARCH) /subsystem:console /nodefaultlib:libcmt lib\liboberon.lib msvcrt.lib legacy_stdio_definitions.lib
