@@ -194,7 +194,10 @@ void SemanticAnalysis::visit(VariableDeclarationNode &node) {
     checkExport(node);
     auto type = node.getType();
     if (type) {
-        type->accept(*this);
+        // type only needs to be checked for the first variable in a variable list
+        if (node.index() == 0) {
+            type->accept(*this);
+        }
     } else {
         logger_->error(node.pos(), "undefined variable type.");
     }
@@ -223,7 +226,10 @@ void SemanticAnalysis::visit(ParameterNode &node) {
     node.setLevel(symbols_->getLevel());
     auto type = node.getType();
     if (type) {
-        type->accept(*this);
+        // type only needs to be checked for the first parameter in a parameter list
+        if (node.index() == 0) {
+            type->accept(*this);
+        }
         node.setType(resolveType(type));
     } else {
         logger_->error(node.pos(), "undefined parameter type.");
@@ -233,7 +239,10 @@ void SemanticAnalysis::visit(ParameterNode &node) {
 void SemanticAnalysis::visit(FieldNode &node) {
     auto type = node.getType();
     if (type) {
-        type->accept(*this);
+        // type only needs to be checked for the first field in a field list
+        if (node.index() == 0) {
+            type->accept(*this);
+        }
         node.setType(resolveType(type));
     } else {
         logger_->error(node.pos(), "undefined record field type.");
