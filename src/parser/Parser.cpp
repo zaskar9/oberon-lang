@@ -580,7 +580,7 @@ void Parser::fp_section(ProcedureNode *proc) {
         auto node = type(proc);
         int index = 0;
         for (auto &&ident : idents) {
-            proc->addFormalParameter(std::make_unique<ParameterNode>(token->start(), std::move(ident), node, index++, var));
+            proc->addFormalParameter(std::make_unique<ParameterNode>(token->start(), std::move(ident), node, var, index++));
         }
     }
     // [<;>, <)>]

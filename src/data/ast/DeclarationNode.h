@@ -112,7 +112,7 @@ private:
     bool var_;
 
 public:
-    explicit ParameterNode(const FilePos &pos, std::unique_ptr<Ident> ident, TypeNode *type, unsigned int index = 0, bool var = false) :
+    explicit ParameterNode(const FilePos &pos, std::unique_ptr<Ident> ident, TypeNode *type, bool var, unsigned int index = 0) :
             DeclarationNode(NodeType::parameter, pos, std::move(ident), type, index), var_(var) { };
     ~ParameterNode() final = default;
 
