@@ -23,13 +23,11 @@ PROCEDURE NewTreeNode(key: INTEGER): TreeNode;
   END NewTreeNode;
 
 PROCEDURE MinValueNode(node: TreeNode): TreeNode;
-  VAR tmp: TreeNode;
   BEGIN
-    tmp := node;
-    WHILE tmp.left # NIL DO
-      tmp := tmp.left
+    WHILE node.left # NIL DO
+      node := node.left
     END;
-    RETURN tmp
+    RETURN node
   END MinValueNode;
 
 PROCEDURE Insert(VAR node: TreeNode; key: INTEGER);
