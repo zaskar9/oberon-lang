@@ -11,7 +11,6 @@
 #include "BlockNode.h"
 #include "ImportNode.h"
 #include <memory>
-#include <optional>
 #include <string>
 
 class ModuleNode final : public DeclarationNode, public BlockNode {
