@@ -934,18 +934,18 @@ bool Parser::assertToken(const Token *token, TokenType expected) {
     return false;
 }
 
-void Parser::moveSelectors(std::vector<std::unique_ptr<Selector>> &selectors, Designator *designator) {
-    for (auto& selector: selectors) {
-        designator->addSelector(std::move(selector));
-    }
-}
-
 bool Parser::assertOberonIdent(const Ident *ident) {
-    if (ident->name().contains("_")) {
+    if (ident->name().find('_') != std::string::npos) {
         logger_->error(ident->pos(), "illegal identifier: " + to_string(*ident) + ".");
         return false;
     }
     return true;
+}
+
+void Parser::moveSelectors(std::vector<std::unique_ptr<Selector>> &selectors, Designator *designator) {
+    for (auto& selector: selectors) {
+        designator->addSelector(std::move(selector));
+    }
 }
 
 void Parser::resync(std::set<TokenType> types) {
