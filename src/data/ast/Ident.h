@@ -6,11 +6,11 @@
 #define OBERON_LANG_IDENT_H
 
 
+#include "global.h"
+#include "Node.h"
 #include <optional>
 #include <string>
 #include <utility>
-#include "Node.h"
-#include "../../global.h"
 
 class Ident {
 

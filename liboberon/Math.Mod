@@ -9,8 +9,8 @@ PROCEDURE logf(x: REAL): REAL; EXTERN;
 PROCEDURE sinf(x: REAL): REAL; EXTERN;
 PROCEDURE cosf(x: REAL): REAL; EXTERN;
 PROCEDURE atanf(x: REAL): REAL; EXTERN;
-PROCEDURE realf(x: INTEGER): REAL; EXTERN;
-PROCEDURE entierf(x: REAL): INTEGER; EXTERN;
+PROCEDURE rt_realf(x: INTEGER): REAL; EXTERN;
+PROCEDURE rt_entierf(x: REAL): INTEGER; EXTERN;
 
 PROCEDURE sqrt*(x: REAL): REAL;
 BEGIN
@@ -44,12 +44,12 @@ END arctan;
 
 PROCEDURE real*(x: INTEGER): REAL;
 BEGIN
-    RETURN realf(x)
+    RETURN rt_realf(x)
 END real;
 
 PROCEDURE entier*(x: REAL): INTEGER;
 BEGIN
-    RETURN entierf(x)
+    RETURN rt_entierf(x)
 END entier;
 
 END Math.

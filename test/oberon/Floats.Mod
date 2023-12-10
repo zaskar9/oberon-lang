@@ -1,20 +1,17 @@
 MODULE Floats;
 IMPORT Out, Math;
 
-CONST integerMax = 2147483647;
-      integerMin = -2147483648;
-      realMax = 3.40282E+38;
-      realMin = 1.17549E-38;
+CONST MAX_INTEGER = 2147483647;
+      MIN_INTEGER = -1 * 2147483647 - 1;
+      MAX_REAL = 3.40282E+38;
+      MIN_REAL = 1.17549E-38;
 
 VAR f1, f2: REAL;
     d1, d2: LONGREAL;
     i1, i2: INTEGER;
     l1, l2: LONGINT;
 
-PROCEDURE Out__Int(i, x: INTEGER); EXTERN;
-
 BEGIN
-    Out.String("["); Out.Int(integerMin); Out.String(", "); Out.Int(integerMax); Out.String("]"); Out.Ln;
     i1 := 1; Out.Int(i1); Out.Ln;
     i2 := 2; Out.Int(i2); Out.Ln;
     l1 := i1; Out.Long(l1); Out.Ln;
@@ -35,5 +32,7 @@ BEGIN
     Out.Real(Math.real(3)); Out.Ln;
     f1 := 0.1;
     f2 := 0.2;
-    Out.Real(f1 + f2); Out.Ln
+    Out.Real(f1 + f2); Out.Ln;
+    Out.Real(9 / 5); Out.Ln;
+    Out.String("["); Out.Long(MAX_INTEGER); Out.String(", "); Out.Long(MIN_INTEGER); Out.String("]"); Out.Ln
 END Floats.

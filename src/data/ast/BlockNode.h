@@ -8,10 +8,10 @@
 #define OBERON0C_BLOCKNODE_H
 
 
-#include <memory>
-#include <vector>
 #include "DeclarationNode.h"
 #include "StatementSequenceNode.h"
+#include <memory>
+#include <vector>
 
 class ProcedureNode;
 

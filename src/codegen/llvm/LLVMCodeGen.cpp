@@ -5,6 +5,7 @@
  */
 
 #include "LLVMCodeGen.h"
+#include "LLVMIRBuilder.h"
 #include <llvm/Bitcode/BitcodeWriter.h>
 #include <llvm/IR/LegacyPassManager.h>
 #include <llvm/MC/TargetRegistry.h>
@@ -15,41 +16,28 @@
 #include <llvm/Support/raw_ostream.h>
 #include <config.h>
 
+using namespace llvm;
+
 LLVMCodeGen::LLVMCodeGen(Logger *logger)
         : logger_(logger), type_(OutputFileType::ObjectFile), ctx_(), pb_(), lvl_(llvm::OptimizationLevel::O0) {
     // Initialize LLVM
-    llvm::InitializeAllTargetInfos();
-    llvm::InitializeAllTargets();
-    llvm::InitializeAllTargetMCs();
-    llvm::InitializeAllAsmParsers();
-    llvm::InitializeAllAsmPrinters();
-    // Use default target triple of host
-    std::string triple = llvm::sys::getDefaultTargetTriple();
-    // Set up target
-    std::string error;
-    auto tm = llvm::TargetRegistry::lookupTarget(triple, error);
-    if (!tm) {
-        logger_->error(PROJECT_NAME, error);
-    } else {
-        // Set up target machine to match host
-        std::string cpu = "generic";
-        std::string features;
-        TargetOptions opt;
-        auto model = Optional<Reloc::Model>();
-        tm_ = tm->createTargetMachine(triple, cpu, features, opt, model);
-    }
+    InitializeAllTargetInfos();
+    InitializeAllTargets();
+    InitializeAllTargetMCs();
+    InitializeAllAsmParsers();
+    InitializeAllAsmPrinters();
+    tm_ = nullptr;
 }
 
 std::string LLVMCodeGen::getDescription() {
-    return tm_->getTargetTriple().str();
+    return sys::getDefaultTargetTriple();
 }
 
-void LLVMCodeGen::setFileType(OutputFileType type) {
-    type_ = type;
-}
-
-void LLVMCodeGen::setOptimizationLevel(::OptimizationLevel level) {
-    switch (level) {
+void LLVMCodeGen::configure(CompilerFlags *flags) {
+    // Set output file type
+    type_ = flags->getFileType();
+    // Set optimization level
+    switch (flags->getOptimizationLevel()) {
         case ::OptimizationLevel::O1:
             lvl_ = llvm::OptimizationLevel::O1;
             break;
@@ -61,6 +49,36 @@ void LLVMCodeGen::setOptimizationLevel(::OptimizationLevel level) {
             break;
         default:
             lvl_ = llvm::OptimizationLevel::O0;
+    }
+    // Use default target triple of host
+    std::string triple = sys::getDefaultTargetTriple();
+    // Set up target
+    std::string error;
+    auto target = TargetRegistry::lookupTarget(triple, error);
+    if (!target) {
+        logger_->error(PROJECT_NAME, error);
+    } else {
+        // Set up target machine to match host
+        std::string cpu = "generic";
+        std::string features;
+        TargetOptions opt;
+#ifdef _LLVM_LEGACY
+        auto model = llvm::Optional<Reloc::Model>();
+#else
+        auto model = std::optional<Reloc::Model>();
+#endif
+        switch (flags->getRelocationModel()) {
+            case RelocationModel::STATIC:
+                model = Reloc::Model::Static;
+                break;
+            case RelocationModel::PIC:
+                model = Reloc::Model::PIC_;
+                break;
+            case RelocationModel::DEFAULT:
+            default:
+                break;
+        }
+        tm_ = target->createTargetMachine(triple, cpu, features, opt, model);
     }
 }
 
@@ -78,17 +96,16 @@ void LLVMCodeGen::generate(Node *ast, boost::filesystem::path path) {
     if (lvl_ != llvm::OptimizationLevel::O0) {
         logger_->debug(PROJECT_NAME, "optimizing...");
         // Create basic analyses
-        llvm::LoopAnalysisManager lam;
-        llvm::FunctionAnalysisManager fam;
-        llvm::CGSCCAnalysisManager cgam;
-        llvm::ModuleAnalysisManager mam;
+        LoopAnalysisManager lam;
+        FunctionAnalysisManager fam;
+        CGSCCAnalysisManager cgam;
+        ModuleAnalysisManager mam;
         // Register all the basic analyses with the managers
         pb_.registerModuleAnalyses(mam);
         pb_.registerCGSCCAnalyses(cgam);
         pb_.registerFunctionAnalyses(fam);
         pb_.registerLoopAnalyses(lam);
         pb_.crossRegisterProxies(lam, fam, cgam, mam);
-
         auto mpm = pb_.buildPerModuleDefaultPipeline(lvl_);
         mpm.run(*module.get(), mam);
     }
@@ -120,9 +137,9 @@ void LLVMCodeGen::emit(Module *module, boost::filesystem::path path, OutputFileT
 #endif
             break;
     }
-    std::string name = change_extension(path, ext).string();
+    std::string name = path.replace_extension(ext).string();
     std::error_code ec;
-    llvm::raw_fd_ostream output(name, ec, llvm::sys::fs::OF_None);
+    raw_fd_ostream output(name, ec, sys::fs::OF_None);
     if (ec) {
         logger_->error(path.string(), ec.message());
         return;
@@ -133,11 +150,11 @@ void LLVMCodeGen::emit(Module *module, boost::filesystem::path path, OutputFileT
         return;
     }
     if (type == OutputFileType::BitCodeFile) {
-        llvm::WriteBitcodeToFile(*module, output);
+        WriteBitcodeToFile(*module, output);
         output.flush();
         return;
     }
-    llvm::CodeGenFileType ft;
+    CodeGenFileType ft;
     switch (type) {
         case OutputFileType::AssemblyFile:
             ft = CGFT_AssemblyFile;

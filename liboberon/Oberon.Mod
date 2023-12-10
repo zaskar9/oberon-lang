@@ -14,7 +14,7 @@ VAR ts*: TimeSpec;
 PROCEDURE time(t: LONGINT): LONGINT; EXTERN;
 
 (* Import `timespec_get` function from C <time.h> library. *)
-PROCEDURE timespec_get(VAR ts: TimeSpec; base: INTEGER); EXTERN;
+PROCEDURE rt_timespec_get(VAR ts: TimeSpec; base: INTEGER); EXTERN;
 
 PROCEDURE Time*(): LONGINT;
 VAR t: LONGINT;
@@ -25,21 +25,21 @@ END Time;
 PROCEDURE TimeMillis*(): LONGINT;
 VAR ts: TimeSpec;
 BEGIN
-    timespec_get(ts, TIME_UTC);
+    rt_timespec_get(ts, TIME_UTC);
     RETURN ts.secs * 1000 + ts.nsecs DIV 1000000
 END TimeMillis;
 
 PROCEDURE TimeMicros*(): LONGINT;
 VAR ts: TimeSpec;
 BEGIN
-    timespec_get(ts, TIME_UTC);
+    rt_timespec_get(ts, TIME_UTC);
     RETURN ts.secs * 1000000 + ts.nsecs DIV 1000
 END TimeMicros;
 
 PROCEDURE TimeNanos*(): LONGINT;
 VAR ts: TimeSpec;
 BEGIN
-    timespec_get(ts, TIME_UTC);
+    rt_timespec_get(ts, TIME_UTC);
     RETURN ts.secs * 1000000000 + ts.nsecs
 END TimeNanos;
 

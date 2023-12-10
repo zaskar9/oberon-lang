@@ -5,15 +5,15 @@ MODULE Vigenere;
 IMPORT In, Out;
 
 TYPE TString = RECORD
-                        Text : ARRAY 256 OF CHAR;
-                        Length : INTEGER;
-                    END;
+                  Text : ARRAY 256 OF CHAR;
+                  Length : INTEGER;
+               END;
 
 PROCEDURE ReadString(VAR StrOut : TString);
 (* Liest einen String ein und hält seine Länge fest; Leerschläge am Anfang werden ignoriert *)
 
 VAR ch : CHAR;
-       i, j : INTEGER;
+    i, j : INTEGER;
 BEGIN
     In.Open;
     i:= 0; j:= 0;
@@ -110,7 +110,7 @@ PROCEDURE Codieren(Code : BOOLEAN; VAR KlTxt, Schlu, Chffr : TString);
 
 VAR i, j : INTEGER;
 BEGIN
-    IF Code THEN    
+    IF Code THEN
         j:= 0;
         FOR i:= 0 TO KlTxt.Length-1 DO
             IF (ORD(KlTxt.Text[i]) >= ORD("A")) & (ORD(KlTxt.Text[i]) <= ORD("Z")) THEN

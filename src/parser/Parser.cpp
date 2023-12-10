@@ -755,10 +755,10 @@ std::unique_ptr<StatementNode> Parser::repeat_statement() {
 std::unique_ptr<StatementNode> Parser::for_statement() {
     logger_->debug({}, "for_statement");
     token_ = scanner_->next(); // skip FOR keyword
-    auto pos = token_->start();
-    // FilePos pos = scanner_->peek()->start();
-    auto identifier = ident();
-    auto counter = std::make_unique<ValueReferenceNode>(identifier->pos(), std::make_unique<Designator>(std::move(identifier)));
+    auto start = token_->start();
+    auto ident = this->ident();
+    auto pos = ident->pos();
+    auto counter = std::make_unique<ValueReferenceNode>(pos, std::make_unique<Designator>(std::move(ident)));
     token_ = scanner_->next();
     std::unique_ptr<ExpressionNode> low = nullptr;
     if (assertToken(token_.get(), TokenType::op_becomes)) {
@@ -774,7 +774,7 @@ std::unique_ptr<StatementNode> Parser::for_statement() {
         scanner_->next(); // skip BY keyword
         step = expression();
     }
-    auto statement = std::make_unique<ForLoopNode>(pos, std::move(counter), std::move(low), std::move(high), std::move(step));
+    auto statement = std::make_unique<ForLoopNode>(start, std::move(counter), std::move(low), std::move(high), std::move(step));
     token_ = scanner_->next();
     if (assertToken(token_.get(), TokenType::kw_do)) {
         statement_sequence(statement->getStatements());
@@ -932,6 +932,12 @@ bool Parser::assertToken(const Token *token, TokenType expected) {
     }
     logger_->error(token->start(), to_string(expected) + " expected, found " + to_string(token->type()) + ".");
     return false;
+}
+
+void Parser::moveSelectors(std::vector<std::unique_ptr<Selector>> &selectors, Designator *designator) {
+    for (auto& selector: selectors) {
+        designator->addSelector(std::move(selector));
+    }
 }
 
 bool Parser::assertOberonIdent(const Ident *ident) {

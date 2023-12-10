@@ -926,11 +926,15 @@ double SemanticAnalysis::foldReal(const ExpressionNode *expr) const {
                 return lValue - rValue;
             case OperatorType::TIMES:
                 return lValue * rValue;
-            case OperatorType::DIV:
+            case OperatorType::DIVIDE:
                 return lValue / rValue;
             default:
                 logger_->error(binExpr->pos(), "incompatible binary operator.");
         }
+    } else if (expr->getNodeType() == NodeType::integer) {
+        // promote integer to real
+        auto integer = dynamic_cast<const IntegerLiteralNode *>(expr);
+        return (double) integer->value();
     } else if (expr->getNodeType() == NodeType::real) {
         auto real = dynamic_cast<const RealLiteralNode *>(expr);
         return real->value();

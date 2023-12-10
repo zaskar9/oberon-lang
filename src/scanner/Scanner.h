@@ -8,16 +8,16 @@
 #define OBERON0C_SCANNER_H
 
 
-#include <memory>
-#include <string>
-#include <queue>
-#include <unordered_map>
-#include <fstream>
-#include <sstream>
-#include <boost/filesystem.hpp>
 #include "Token.h"
 #include "LiteralToken.h"
-#include "../logging/Logger.h"
+#include "logging/Logger.h"
+#include <boost/filesystem.hpp>
+#include <fstream>
+#include <sstream>
+#include <memory>
+#include <queue>
+#include <string>
+#include <unordered_map>
 
 class Scanner {
 
@@ -26,9 +26,10 @@ private:
     Logger *logger_;
     std::queue<const Token*> tokens_;
     int lineNo_, charNo_;
+    char ch_;
+    bool eof_;
     std::unordered_map<std::string, TokenType> keywords_;
     std::ifstream file_;
-    char ch_{};
 
     void init();
     void read();

@@ -12,7 +12,7 @@ std::unique_ptr<ModuleNode> SymbolImporter::read(const std::string &module, Symb
 }
 
 std::unique_ptr<ModuleNode> SymbolImporter::read(const std::string &alias, const std::string &module, SymbolTable *symbols) {
-    auto include = boost::filesystem::change_extension(module, "smb");
+    auto include = boost::filesystem::path(module).replace_extension("smb");
     auto fp = path_ / include;
     if (!boost::filesystem::exists(fp)) {
         logger_->debug(include.string(), "Symbol file not found: " + fp.string() + ".");
@@ -131,7 +131,7 @@ TypeNode *SymbolImporter::readType(SymbolFile *file) {
         if (ref == (char) TypeKind::NOTYPE) {
             return nullptr;
         }
-        return symbols_->getRef((size_t) ref);
+        return symbols_->getRef(static_cast<size_t>((unsigned) ref));
     }
     TypeNode *type = nullptr;
     auto kind = (TypeKind) file->readChar();
@@ -146,7 +146,7 @@ TypeNode *SymbolImporter::readType(SymbolFile *file) {
         type = readRecordType(file);
     }
     if (type) {
-        symbols_->setRef((size_t) ref, type);
+        symbols_->setRef(static_cast<size_t>((unsigned) ref), type);
     }
     return type;
 }

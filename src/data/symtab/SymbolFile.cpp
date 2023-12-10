@@ -14,8 +14,8 @@ std::string SymbolFile::path() const {
     return path_;
 }
 
-char SymbolFile::readChar() {
-    char val;
+signed char SymbolFile::readChar() {
+    signed char val;
     file_.read(reinterpret_cast<char *>(&val), sizeof(val));
 #ifdef _DEBUG
     std::cout << (int) val << "|";
@@ -23,7 +23,7 @@ char SymbolFile::readChar() {
     return val;
 }
 
-void SymbolFile::writeChar(char val) {
+void SymbolFile::writeChar(signed char val) {
 #ifdef _DEBUG
     std::cout << (int) val << "|";
 #endif

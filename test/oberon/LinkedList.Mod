@@ -24,6 +24,7 @@ VAR node: Node;
 BEGIN
     NEW(node);
     node.value := val;
+    node.next := NIL;
     IF l.last # NIL THEN
         l.last.next := node;
         l.last := node

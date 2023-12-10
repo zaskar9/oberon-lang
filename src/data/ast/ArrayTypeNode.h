@@ -8,10 +8,10 @@
 #define OBERON0C_ARRAYTYPESYMBOL_H
 
 
-#include <memory>
-#include <utility>
 #include "TypeNode.h"
 #include "ExpressionNode.h"
+#include <memory>
+#include <utility>
 
 class ArrayTypeNode final : public TypeNode {
 

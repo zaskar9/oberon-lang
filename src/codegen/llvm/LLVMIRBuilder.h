@@ -8,13 +8,13 @@
 #define OBERON0C_LLVMCODEGEN_H
 
 
-#include <map>
-#include <stack>
+#include "data/ast/NodeVisitor.h"
+#include "logging/Logger.h"
 #include <llvm/IR/DataLayout.h>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
-#include "data/ast/NodeVisitor.h"
-#include "logging/Logger.h"
+#include <map>
+#include <stack>
 
 using namespace llvm;
 
@@ -41,7 +41,7 @@ private:
     void restoreRefMode();
     bool deref() const;
 
-    Value *callBuiltIn(std::string name, std::vector<Value *> &params);
+    Value *callBuiltIn(ProcedureNodeReference &proc, std::string name, std::vector<Value *> &params);
 
     void cast(ExpressionNode &node);
 

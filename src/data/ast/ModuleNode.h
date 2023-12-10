@@ -8,10 +8,11 @@
 #define OBERON0C_MODULENODE_H
 
 
-#include <memory>
-#include <string>
 #include "BlockNode.h"
 #include "ImportNode.h"
+#include <memory>
+#include <optional>
+#include <string>
 
 class ModuleNode final : public DeclarationNode, public BlockNode {
 

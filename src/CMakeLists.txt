@@ -2,6 +2,10 @@ set(Boost_USE_MULTITHREADED TRUE)
 set(OBERON_LANG "oberon-lang")
 set(GRAMMAR_TOOL "grammar-tool")
 
+set(Boost_NO_WARN_NEW_VERSIONS 1)
+
+# add source tree to search path to avoid relative includes
+include_directories(BEFORE .)
 
 set(LOGGING_SOURCES
         logging/Logger.cpp logging/Logger.h)
@@ -54,9 +58,9 @@ set(ANALYZER_SOURCES
         analyzer/LambdaLifter.cpp analyzer/LambdaLifter.h)
 
 set(CODEGEN_SOURCES
-        codegen/CodeGen.h
+        codegen/CodeGen.cpp codegen/CodeGen.h
         codegen/llvm/LLVMIRBuilder.cpp codegen/llvm/LLVMIRBuilder.h
-        codegen/llvm/LLVMCodeGen.cpp codegen/llvm/LLVMCodeGen.h codegen/CodeGen.cpp)
+        codegen/llvm/LLVMCodeGen.cpp codegen/llvm/LLVMCodeGen.h)
 
 set(COMPILER_SOURCES
         compiler/CompilerFlags.cpp compiler/CompilerFlags.h
@@ -72,25 +76,33 @@ set(ALL_SOURCES
         ${SYMTAB_SOURCES}
         ${ANALYZER_SOURCES}
         ${CODEGEN_SOURCES}
-        ${COMPILER_SOURCES} data/ast/PointerTypeNode.cpp data/ast/PointerTypeNode.h)
+        ${COMPILER_SOURCES})
 
 add_executable(${OBERON_LANG} main.cpp ${ALL_SOURCES})
 target_include_directories(${OBERON_LANG} PUBLIC .)
 
 find_package(Boost REQUIRED COMPONENTS filesystem program_options)
 if (Boost_FOUND)
-    include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
-    target_link_libraries(${OBERON_LANG} ${Boost_LIBRARIES})
-endif()
+    target_link_libraries(${OBERON_LANG} PRIVATE Boost::boost Boost::filesystem Boost::program_options)
+endif ()
 
+# disabled options below somehow interfere with other targets
 find_package(LLVM REQUIRED CONFIG)
 if (LLVM_FOUND)
-    # message(STATUS "Found LLVM: ${LLVM_PACKAGE_VERSION}")
-    include_directories(SYSTEM ${LLVM_INCLUDE_DIRS})
+    if (${LLVM_VERSION} LESS 16.0.0)
+        message(STATUS "Found legacy LLVM: ${LLVM_VERSION}")
+        add_definitions(-D_LLVM_LEGACY)
+    else ()
+        message(STATUS "Found LLVM: ${LLVM_VERSION}")
+    endif ()
+    # list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
+    # include(HandleLLVMOptions)
     add_definitions(${LLVM_DEFINITIONS})
+    # target_include_directories(${OBERON_LANG} PRIVATE ${LLVM_INCLUDE_DIRS})
+    include_directories(SYSTEM ${LLVM_INCLUDE_DIRS})
     llvm_map_components_to_libnames(llvm_libs core support passes ${LLVM_TARGETS_TO_BUILD})
-    target_link_libraries(${OBERON_LANG} ${llvm_libs})
-endif()
+    target_link_libraries(${OBERON_LANG} PRIVATE ${llvm_libs})
+endif ()
 
 
 set(GRAMMAR_SOURCES     
@@ -100,11 +112,10 @@ set(GRAMMAR_SOURCES
 
 add_executable(${GRAMMAR_TOOL} grammar/main.cpp ${GRAMMAR_SOURCES} ${SCANNER_SOURCES} ${LOGGING_SOURCES})
 
-find_package(Boost REQUIRED COMPONENTS filesystem program_options)
+find_package(Boost REQUIRED COMPONENTS filesystem)
 if (Boost_FOUND)
-    include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
-    target_link_libraries(${GRAMMAR_TOOL} ${Boost_LIBRARIES})
-endif()
+    target_link_libraries(${GRAMMAR_TOOL} PRIVATE Boost::boost Boost::filesystem)
+endif ()
 
 
 configure_file(config.h.in config.h @ONLY)
