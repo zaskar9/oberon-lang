@@ -6,6 +6,7 @@
 
 #include "ModuleNode.h"
 #include "NodeVisitor.h"
+#include <algorithm>
 
 void ModuleNode::addImport(std::unique_ptr<ImportNode> import) {
     imports_.push_back(std::move(import));
@@ -24,7 +25,9 @@ void ModuleNode::addExternalModule(std::unique_ptr<ModuleNode> module) {
 }
 
 void ModuleNode::addExternalProcedure(ProcedureNode *proc) {
-    extprocs_.push_back(proc);
+    if (std::find(extprocs_.begin(), extprocs_.end(), proc) == extprocs_.end()) {
+        extprocs_.push_back(proc);
+    }
 }
 
 ProcedureNode *ModuleNode::getExternalProcedure(size_t num) const {

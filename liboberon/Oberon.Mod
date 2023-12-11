@@ -1,6 +1,6 @@
 MODULE Oberon;
 
-CONST TIME_UTC* = 1;
+CONST TIMEUTC* = 1;
 
 TYPE TTime* = LONGINT;
      TimeSpec* = RECORD
@@ -25,21 +25,21 @@ END Time;
 PROCEDURE TimeMillis*(): LONGINT;
 VAR ts: TimeSpec;
 BEGIN
-    rt_timespec_get(ts, TIME_UTC);
+    rt_timespec_get(ts, TIMEUTC);
     RETURN ts.secs * 1000 + ts.nsecs DIV 1000000
 END TimeMillis;
 
 PROCEDURE TimeMicros*(): LONGINT;
 VAR ts: TimeSpec;
 BEGIN
-    rt_timespec_get(ts, TIME_UTC);
+    rt_timespec_get(ts, TIMEUTC);
     RETURN ts.secs * 1000000 + ts.nsecs DIV 1000
 END TimeMicros;
 
 PROCEDURE TimeNanos*(): LONGINT;
 VAR ts: TimeSpec;
 BEGIN
-    rt_timespec_get(ts, TIME_UTC);
+    rt_timespec_get(ts, TIMEUTC);
     RETURN ts.secs * 1000000000 + ts.nsecs
 END TimeNanos;
 
