@@ -7,11 +7,11 @@
 #ifndef OBERON0C_IFTHENELSENODE_H
 #define OBERON0C_IFTHENELSENODE_H
 
-#include <vector>
+
 #include "StatementNode.h"
 #include "ExpressionNode.h"
 #include "StatementSequenceNode.h"
-
+#include <vector>
 
 class ElseIfNode final : public Node {
 

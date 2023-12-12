@@ -6,6 +6,7 @@
  */
 
 #include <algorithm>
+#include <iterator>
 #include "Validator.h"
 
 first_sets Validator::computeFirstSets() const {
@@ -59,7 +60,9 @@ follow_sets Validator::computeFollowSets(first_sets firstSets) const {
         auto firstSet = std::unordered_set<Terminal *>();
         followSets[nonterminal] = firstSet;
     }
-    followSets[grammar_->getStart()].insert(grammar_->getEof());
+    if (grammar_->getStart()) {
+        followSets[grammar_->getStart()].insert(grammar_->getEof());
+    }
     bool changes = true;
     while (changes) {
         changes = false;
@@ -114,7 +117,7 @@ first_plus_sets Validator::computeFirstPlusSets(first_sets firstSets, follow_set
             }
             i++;
         }
-        if ((i ==k) && epsilon) {
+        if ((i == k) && epsilon) {
             auto followSet = followSets[production->getHead()];
             firstPlusSet.insert(followSet.begin(), followSet.end());
             firstPlusSet.insert(grammar_->getEpsilon());
@@ -133,11 +136,15 @@ bool Validator::checkBacktrackFree(first_plus_sets firstPlusSets, std::pair<Prod
                 if (p_outer->getHead() == p_inner->getHead()) {
                     auto fps_outer = firstPlusSets[p_outer];
                     auto fps_inner = firstPlusSets[p_inner];
+                    auto vec_outer = std::vector<Symbol*>(fps_outer.begin(), fps_outer.end());
+                    auto vec_inner = std::vector<Symbol*>(fps_inner.begin(), fps_inner.end());
+                    std::sort(vec_outer.begin(), vec_outer.end());
+                    std::sort(vec_inner.begin(), vec_inner.end());
                     auto intersect = std::vector<Symbol*>();
-                    std::set_intersection(fps_outer.begin(), fps_outer.end(),
-                                          fps_inner.begin(), fps_inner.end(),
+                    std::set_intersection(vec_outer.begin(), vec_outer.end(),
+                                          vec_inner.begin(), vec_inner.end(),
                                           std::inserter(intersect, intersect.begin()));
-                    if (intersect.size() > 0) {
+                    if (!intersect.empty()) {
                         pair.first = p_outer;
                         pair.second = p_inner;
                         return false;

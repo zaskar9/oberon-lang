@@ -8,10 +8,10 @@
 #define OBERON0C_SCOPE_H
 
 
+#include "data/ast/DeclarationNode.h"
 #include <memory>
 #include <unordered_map>
 #include <vector>
-#include "../ast/DeclarationNode.h"
 
 class Scope {
 

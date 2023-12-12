@@ -9,7 +9,7 @@
 
 
 #include "Analyzer.h"
-#include "../data/ast/NodeVisitor.h"
+#include "data/ast/NodeVisitor.h"
 
 class LambdaLifter final : public Analysis, private NodeVisitor {
 

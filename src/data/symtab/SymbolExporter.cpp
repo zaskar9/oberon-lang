@@ -43,7 +43,7 @@ void SymbolExporter::write(const std::string &name, SymbolTable *symbols) {
 void SymbolExporter::writeDeclaration(SymbolFile *file, DeclarationNode *decl) {
     // write out declaration node type
     auto nodeType = decl->getNodeType();
-    file->writeChar((char) nodeType);
+    file->writeChar(static_cast<signed char>(nodeType));
     // write out name
     file->writeString(decl->getIdentifier()->name());
     // write out type
@@ -102,7 +102,7 @@ void SymbolExporter::writeType(SymbolFile *file, TypeNode *type) {
         type->setRef(ref_);
         ref_++;
     }
-    file->writeChar((char) type->kind());
+    file->writeChar(static_cast<signed char>(type->kind()));
     switch (type->kind()) {
         case TypeKind::ARRAY:
             writeArrayType(file, dynamic_cast<ArrayTypeNode*>(type));
@@ -154,13 +154,13 @@ void SymbolExporter::writeRecordType(SymbolFile *file, RecordTypeNode *type) {
     // write out the number of fields in this record
     file->writeInt(type->getFieldCount());
     // write out the size of the type, i.e., sum of the sizes of the type of all fields
-    file->writeInt((int) type->getSize());
+    file->writeInt(static_cast<int>(type->getSize()));
     auto offset = 0u;
     for (size_t i = 0; i < type->getFieldCount(); i++) {
         auto field = type->getField(i);
         if (field->getIdentifier()->isExported()) {
             // write out field node type
-            file->writeChar((char) field->getNodeType());
+            file->writeChar(static_cast<signed char>(field->getNodeType()));
             // write out field number
             file->writeInt(i + 1);
             // write out field name
@@ -180,7 +180,7 @@ void SymbolExporter::writeRecordType(SymbolFile *file, RecordTypeNode *type) {
 
 void SymbolExporter::writeParameter(SymbolFile *file, ParameterNode *param) {
     // write out numeric value for NodeType::parameter
-    file->writeChar((char) param->getNodeType());
+    file->writeChar(static_cast<signed char>(param->getNodeType()));
     // write out whether this parameter is read-only (1) or a VAR-parameter (0)
     if (param->isVar()) {
         file->writeChar(0);

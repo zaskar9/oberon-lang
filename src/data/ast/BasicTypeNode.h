@@ -8,8 +8,8 @@
 #define OBERON0C_BASICTYPENODE_H
 
 
-#include <string>
 #include "TypeNode.h"
+#include <string>
 
 class BasicTypeNode final : public TypeNode {
 

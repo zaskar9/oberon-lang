@@ -8,15 +8,15 @@
 #define OBERON_LLVM_GLOBAL_H
 
 
-#include <string>
 #include <sstream>
+#include <string>
 
 struct FilePos {
     std::string fileName;
     int lineNo, charNo;
 };
 
-static const FilePos EMPTY_POS = { "", 0, 0 };
+static const FilePos EMPTY_POS = {"", 0, 0 };
 
 template <typename T>
 static std::string to_string(T obj) {
@@ -24,14 +24,6 @@ static std::string to_string(T obj) {
     stream << obj;
     return stream.str();
 }
-
-enum class OutputFileType {
-    AssemblyFile, BitCodeFile, LLVMIRFile, ObjectFile
-};
-
-enum class OptimizationLevel {
-    O0, O1, O2, O3
-};
 
 
 #endif //OBERON_LLVM_GLOBAL_H

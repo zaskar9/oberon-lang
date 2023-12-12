@@ -6,13 +6,13 @@
 #define OBERON_LANG_SYMBOLEXPORTER_H
 
 
-#include <boost/filesystem.hpp>
 #include "logging/Logger.h"
 #include "SymbolTable.h"
 #include "SymbolFile.h"
 #include "data/ast/ArrayTypeNode.h"
 #include "data/ast/ProcedureTypeNode.h"
 #include "data/ast/RecordTypeNode.h"
+#include <boost/filesystem.hpp>
 
 class SymbolExporter {
 

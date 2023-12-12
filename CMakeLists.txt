@@ -1,10 +1,10 @@
-cmake_minimum_required(VERSION 3.21)
+cmake_minimum_required(VERSION 3.26)
 
-project(oberon-lang)
+project(oberon-lang VERSION 0.0.1)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     # warning level 4
-    add_compile_options(/Wall /W4 /w44265 /w44061 /w44062 /experimental:external /external:W0 /external:anglebrackets)
+    add_compile_options(/Wall /W4 /external:anglebrackets /external:W0)
 else ()
     # lots of warnings and all warnings as errors -Wglobal-constructors -Wexit-time-destructors
     add_compile_options(-W -Wall -Wextra -Werror -Wpedantic -Wunreachable-code -Wshadow -Woverloaded-virtual -Winvalid-pch -Wcast-align -Wformat=2 -Wformat-nonliteral -Wmissing-declarations -Wmissing-noreturn -Wmissing-format-attribute -Wmissing-include-dirs -Wredundant-decls -Wswitch-default -Wsign-conversion)
@@ -16,7 +16,8 @@ else ()
     endif ()
 endif ()
 
-set(CMAKE_CXX_STANDARD 23)
+# compile error for LLVM 16 with C++23
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
