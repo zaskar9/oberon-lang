@@ -546,10 +546,14 @@ void LLVMIRBuilder::visit(ForLoopNode& node) {
 }
 
 void LLVMIRBuilder::visit(ReturnNode& node) {
-    setRefMode(true);
-    node.getValue()->accept(*this);
-    restoreRefMode();
-    value_ = builder_.CreateRet(value_);
+    if (node.getValue()) {
+        setRefMode(true);
+        node.getValue()->accept(*this);
+        restoreRefMode();
+        value_ = builder_.CreateRet(value_);
+    } else {
+        value_ = builder_.CreateRetVoid();
+    }
 }
 
 void LLVMIRBuilder::cast(ExpressionNode &node) {

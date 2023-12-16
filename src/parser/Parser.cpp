@@ -396,8 +396,9 @@ void Parser::field_list(BlockNode *block, RecordTypeNode *record) {
             auto token = scanner_->next();
             if (assertToken(token.get(), TokenType::colon)) {
                 auto node = type(block);
+                int index = 0;
                 for (auto &&ident: idents) {
-                    record->addField(std::make_unique<FieldNode>(ident->pos(), std::move(ident), node));
+                    record->addField(std::make_unique<FieldNode>(ident->pos(), std::move(ident), node, index++));
                 }
             }
         }
@@ -436,8 +437,9 @@ void Parser::var_declarations(BlockNode *block) {
         // auto pos = token->start();
         if (assertToken(token.get(), TokenType::colon)) {
             auto node = type(block);
+            int index = 0;
             for (auto &&ident : idents) {
-                auto variable = std::make_unique<VariableDeclarationNode>(ident->pos(), std::move(ident), node);
+                auto variable = std::make_unique<VariableDeclarationNode>(ident->pos(), std::move(ident), node, index++);
                 block->addVariable(std::move(variable));
             }
             token = scanner_->next();
@@ -584,8 +586,9 @@ void Parser::fp_section(ProcedureNode *proc) {
             logger_->error(token->start(), ": expected, found " + to_string(token->type()) + ".");
         }
         auto node = type(proc);
+        int index = 0;
         for (auto &&ident : idents) {
-            proc->addFormalParameter(std::make_unique<ParameterNode>(token->start(), std::move(ident), node, var));
+            proc->addFormalParameter(std::make_unique<ParameterNode>(token->start(), std::move(ident), node, var, index++));
         }
     }
     // [<;>, <)>]
@@ -651,6 +654,10 @@ std::unique_ptr<StatementNode> Parser::statement() {
         return for_statement();
     } else if (token->type() == TokenType::kw_return) {
         token_ = scanner_->next();
+        std::set follows{ TokenType::semicolon, TokenType::kw_end, TokenType::kw_elsif, TokenType::kw_else, TokenType::kw_until };
+        if (follows.find(scanner_->peek()->type()) != follows.end()) {
+            return std::make_unique<ReturnNode>(token_->start(), nullptr);
+        }
         return std::make_unique<ReturnNode>(token_->start(), expression());
     } else {
         logger_->error(token->start(), "unknown or empty statement.");

@@ -26,6 +26,10 @@ void DeclarationNode::print(std::ostream &stream) const {
     stream << *getIdentifier() << ": " << *getType();
 }
 
+unsigned int DeclarationNode::index() const {
+    return index_;
+}
+
 void DeclarationNode::setLevel(unsigned int level) {
     level_ = level;
 }

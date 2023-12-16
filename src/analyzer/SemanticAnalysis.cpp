@@ -194,7 +194,10 @@ void SemanticAnalysis::visit(VariableDeclarationNode &node) {
     checkExport(node);
     auto type = node.getType();
     if (type) {
-        type->accept(*this);
+        // type only needs to be checked for the first variable in a variable list
+        if (node.index() == 0) {
+            type->accept(*this);
+        }
     } else {
         logger_->error(node.pos(), "undefined variable type.");
     }
@@ -226,7 +229,10 @@ void SemanticAnalysis::visit(ParameterNode &node) {
     node.setLevel(symbols_->getLevel());
     auto type = node.getType();
     if (type) {
-        type->accept(*this);
+        // type only needs to be checked for the first parameter in a parameter list
+        if (node.index() == 0) {
+            type->accept(*this);
+        }
         node.setType(resolveType(type));
     } else {
         logger_->error(node.pos(), "undefined parameter type.");
@@ -236,7 +242,10 @@ void SemanticAnalysis::visit(ParameterNode &node) {
 void SemanticAnalysis::visit(FieldNode &node) {
     auto type = node.getType();
     if (type) {
-        type->accept(*this);
+        // type only needs to be checked for the first field in a field list
+        if (node.index() == 0) {
+            type->accept(*this);
+        }
         node.setType(resolveType(type));
     } else {
         logger_->error(node.pos(), "undefined record field type.");
@@ -396,65 +405,73 @@ void SemanticAnalysis::visit(BinaryExpressionNode &node) {
         lhs->accept(*this);
     } else {
         logger_->error(node.pos(), "undefined left-hand side in expression.");
+        return;
     }
     auto rhs = node.getRightExpression();
     if (rhs) {
         rhs->accept(*this);
     } else {
         logger_->error(node.pos(), "undefined right-hand side in expression.");
+        return;
     }
-    if (lhs && rhs) {
-        auto op = node.getOperator();
-        // Type inference
-        auto lhsType = lhs->getType();
-        auto rhsType = rhs->getType();
-        auto common = commonType(lhsType, rhsType);
-        if (common) {
-            if (op == OperatorType::EQ
-                || op == OperatorType::NEQ
-                || op == OperatorType::LT
-                || op == OperatorType::LEQ
-                || op == OperatorType::GT
-                || op == OperatorType::GEQ) {
-                node.setType(this->tBoolean_);
-            } else if (op == OperatorType::DIV) {
-                if (lhsType->isInteger() && rhsType->isInteger()) {
-                    node.setType(common);
+    auto lhsType = lhs->getType();
+    if (!lhsType) {
+        logger_->error(lhs->pos(), "undefined type.");
+        return;
+    }
+    auto rhsType = rhs->getType();
+    if (!rhsType) {
+        logger_->error(lhs->pos(), "undefined type.");
+        return;
+    }
+    // Type inference
+    auto op = node.getOperator();
+    auto common = commonType(lhsType, rhsType);
+    if (common) {
+        if (op == OperatorType::EQ
+            || op == OperatorType::NEQ
+            || op == OperatorType::LT
+            || op == OperatorType::LEQ
+            || op == OperatorType::GT
+            || op == OperatorType::GEQ) {
+            node.setType(this->tBoolean_);
+        } else if (op == OperatorType::DIV) {
+            if (lhsType->isInteger() && rhsType->isInteger()) {
+                node.setType(common);
+            } else {
+                logger_->error(node.pos(), "integer division needs integer arguments.");
+            }
+        } else if (op == OperatorType::DIVIDE) {
+            if (common->isInteger()) {
+                if (common->kind() == TypeKind::LONGINT) {
+                    node.setType(this->tLongReal_);
                 } else {
-                    logger_->error(node.pos(), "integer division needs integer arguments.");
-                }
-            } else if (op == OperatorType::DIVIDE) {
-                if (common->isInteger()) {
-                    if (common->kind() == TypeKind::LONGINT) {
-                        node.setType(this->tLongReal_);
-                    } else {
-                        node.setType(this->tReal_);
-                    }
-                } else {
-                    node.setType(common);
+                    node.setType(this->tReal_);
                 }
             } else {
                 node.setType(common);
             }
         } else {
-            logger_->error(node.pos(), "incompatible types (" + lhsType->getIdentifier()->name() + ", " +
-                                       rhsType->getIdentifier()->name() + ")");
+            node.setType(common);
         }
-        // Folding
-        if (lhs->isConstant() && !lhs->isLiteral()) {
-            node.setLeftExpression(fold(lhs));
+    } else {
+        logger_->error(node.pos(), "incompatible types (" + lhsType->getIdentifier()->name() + ", " +
+                                   rhsType->getIdentifier()->name() + ")");
+    }
+    // Folding
+    if (lhs->isConstant() && !lhs->isLiteral()) {
+        node.setLeftExpression(fold(lhs));
+    }
+    if (rhs->isConstant() && !rhs->isLiteral()) {
+        node.setRightExpression(fold(rhs));
+    }
+    // Casting
+    if (common) {
+        if (node.getLeftExpression()->getType() != common) {
+            node.getLeftExpression()->setCast(common);
         }
-        if (rhs->isConstant() && !rhs->isLiteral()) {
-            node.setRightExpression(fold(rhs));
-        }
-        // Casting
-        if (common) {
-            if (node.getLeftExpression()->getType() != common) {
-                node.getLeftExpression()->setCast(common);
-            }
-            if (node.getRightExpression()->getType() != common) {
-                node.getRightExpression()->setCast(common);
-            }
+        if (node.getRightExpression()->getType() != common) {
+            node.getRightExpression()->setCast(common);
         }
     }
 }
@@ -557,12 +574,13 @@ void SemanticAnalysis::visit(AssignmentNode &node) {
         lvalue->accept(*this);
         auto decl = lvalue->dereference();
         if (decl) {
-            if (decl->getNodeType() == NodeType::parameter) {
-                auto param = dynamic_cast<ParameterNode *>(lvalue->dereference());
-                if (!param->isVar()) {
-                    logger_->error(lvalue->pos(), "cannot assign non-var parameter.");
-                }
-            } else if (lvalue->dereference()->getNodeType() == NodeType::constant) {
+//            if (decl->getNodeType() == NodeType::parameter) {
+//                auto param = dynamic_cast<ParameterNode *>(lvalue->dereference());
+//                if (!param->isVar()) {
+//                    logger_->error(lvalue->pos(), "cannot assign non-var parameter.");
+//                }
+//            }
+            if (lvalue->dereference()->getNodeType() == NodeType::constant) {
                 logger_->error(lvalue->pos(), "cannot assign constant.");
             }
         } else {

@@ -381,6 +381,9 @@ void NodePrettyPrinter::visit(ForLoopNode &node) {
 }
 
 void NodePrettyPrinter::visit(ReturnNode &node) {
-    stream_ << "RETURN ";
-    node.getValue()->accept(*this);
+    stream_ << "RETURN";
+    if (node.getValue()) {
+        stream_ << " ";
+        node.getValue()->accept(*this);
+    }
 }
