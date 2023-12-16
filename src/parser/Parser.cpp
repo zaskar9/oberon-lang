@@ -654,6 +654,10 @@ std::unique_ptr<StatementNode> Parser::statement() {
         return for_statement();
     } else if (token->type() == TokenType::kw_return) {
         token_ = scanner_->next();
+        std::set follows{ TokenType::semicolon, TokenType::kw_end, TokenType::kw_elsif, TokenType::kw_else, TokenType::kw_until };
+        if (follows.find(scanner_->peek()->type()) != follows.end()) {
+            return std::make_unique<ReturnNode>(token_->start(), nullptr);
+        }
         return std::make_unique<ReturnNode>(token_->start(), expression());
     } else {
         logger_->error(token->start(), "unknown or empty statement.");

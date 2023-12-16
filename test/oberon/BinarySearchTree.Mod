@@ -54,11 +54,11 @@ PROCEDURE Delete(VAR node: TreeNode; key: INTEGER);
     ELSE (* Key is found *)
       IF node.left = NIL THEN
         tempNode := node.right;
-        DISPOSE(node);
+        (* FREE(node); <- coming soon to oberon-lang *)
         node := tempNode
       ELSIF node.right = NIL THEN
         tempNode := node.left;
-        DISPOSE(node);
+        (* FREE(node); <- coming soon to oberon-lang *)
         node := tempNode
       ELSE
         tempNode := MinValueNode(node.right);
@@ -90,6 +90,7 @@ BEGIN
 
   (* Perform an in-order traversal to print the values in ascending order *)
   InOrderTraversal(root);
+  Out.Ln;
 
   (* Delete a node with a given key, for example, delete the node with key 5 *)
   Delete(root, 5);

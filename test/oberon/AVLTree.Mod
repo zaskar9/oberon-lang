@@ -10,6 +10,7 @@ TYPE
 
 VAR
   root: TreeNode;
+  i: INTEGER;
 
 PROCEDURE NewTreeNode(key: INTEGER): TreeNode;
   VAR
@@ -124,20 +125,20 @@ PROCEDURE Insert(VAR node: TreeNode; key: INTEGER);
 PROCEDURE InOrderTraversal(node: TreeNode);
   BEGIN
     IF node # NIL THEN
+      Out.String("(");
       InOrderTraversal(node.left);
-      Out.Int(node.key); Out.Ln; (* Print the value *)
-      InOrderTraversal(node.right)
+      Out.Int(node.key); (* Print the value *)
+      InOrderTraversal(node.right);
+      Out.String(")")
     END
   END InOrderTraversal;
 
 BEGIN
   root := NIL; (* Initialize an empty tree *)
   (* Insert values into the AVL tree *)
-  Insert(root, 10);
-  Insert(root, 5);
-  Insert(root, 15);
-  Insert(root, 3);
-  Insert(root, 7);
+  FOR i := 1 TO 10 DO
+    Insert(root, i)
+  END;
 
   (* Perform an in-order traversal to print the values in ascending order *)
   InOrderTraversal(root); Out.Ln

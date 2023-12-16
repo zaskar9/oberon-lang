@@ -27,7 +27,7 @@ private:
     std::unique_ptr<ExpressionNode> value_;
 
 public:
-    explicit ReturnNode(const FilePos &pos, std::unique_ptr<ExpressionNode> value) :
+    ReturnNode(const FilePos &pos, std::unique_ptr<ExpressionNode> value) :
             StatementNode(NodeType::ret, pos), value_(std::move(value)) { };
     ~ReturnNode() override = default;
 

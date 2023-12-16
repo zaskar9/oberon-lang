@@ -574,12 +574,13 @@ void SemanticAnalysis::visit(AssignmentNode &node) {
         lvalue->accept(*this);
         auto decl = lvalue->dereference();
         if (decl) {
-            if (decl->getNodeType() == NodeType::parameter) {
-                auto param = dynamic_cast<ParameterNode *>(lvalue->dereference());
-                if (!param->isVar()) {
-                    logger_->error(lvalue->pos(), "cannot assign non-var parameter.");
-                }
-            } else if (lvalue->dereference()->getNodeType() == NodeType::constant) {
+//            if (decl->getNodeType() == NodeType::parameter) {
+//                auto param = dynamic_cast<ParameterNode *>(lvalue->dereference());
+//                if (!param->isVar()) {
+//                    logger_->error(lvalue->pos(), "cannot assign non-var parameter.");
+//                }
+//            }
+            if (lvalue->dereference()->getNodeType() == NodeType::constant) {
                 logger_->error(lvalue->pos(), "cannot assign constant.");
             }
         } else {
