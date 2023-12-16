@@ -76,17 +76,18 @@ BEGIN
     (* --- Test pointer to base type -------------------------------------------------------------------------------- *)
     ptr1 := NIL;
     ptr2 := NIL;
-    IF (ptr1 = ptr2) THEN Out.String("Pointers are equal (NIL)."); Out.Ln END;
-    IF (ptr1 = NIL) THEN Out.String("Pointer (ptr1) is NIL."); Out.Ln END;
-    IF (NIL = NIL) THEN Out.String("NIL equality."); Out.Ln END;
+    ASSERT(ptr1 = ptr2);
+    ASSERT(ptr1 = NIL);
+    IF (NIL = NIL) THEN Out.String("NIL = NIL"); Out.Ln END;
+    (* ASSERT(NIL = NIL); <-- strangely, this does not work! *)
     NEW(ptr1);
-    IF (ptr1 # NIL) THEN Out.String("Pointer (ptr1) is ~NIL."); Out.Ln END;
+    ASSERT(ptr1 # NIL);
     ptr1^ := 2 * ten;
     ptr2 := ptr1;
-    IF (ptr1 = ptr2) THEN Out.String("Pointers are equal (~NIL)."); Out.Ln END;
-    Out.Int(ptr2^); Out.Ln;
+    ASSERT(ptr1 = ptr2);
+    ASSERT(ptr2^ = ptr1^);
     ptr2^ := ten;
-    Out.Int(ptr1^); Out.Ln;
+    ASSERT(ptr1^ = ptr2^);
 
     (* --- Test pointer to record type ------------------------------------------------------------------------------ *)
     michael := createPerson("Prof. Dr.", "Michael Grossniklaus", "Universitätsstraße", ptr1^, "Konstanz", KNZip, "Germany");
@@ -97,13 +98,13 @@ BEGIN
     deletePerson(contacts[0]);
     deletePerson(contacts[1]);
     FREE(ptr1);
-    IF (ptr1 = NIL) THEN Out.String("Pointer (ptr1) is NIL after FREE."); Out.Ln END;
+    ASSERT(ptr1 = NIL);
 
     (* --- Test pointer to array type ------------------------------------------------------------------------------- *)
     NEW(array);
     array[0] := ten;
     array[1] := ten;
-    Out.Int(array[0] * array[1]); Out.Ln;
+    ASSERT(array[0] * array[1] = ten * ten);
     FREE(array)
 
 END Pointers.

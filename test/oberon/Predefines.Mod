@@ -30,7 +30,8 @@ BEGIN
     p.name := "Julien Zweifel";
     p.title[0] := "Mr.";
     p.zipcode := 8036;
-    FREE(p)
+    FREE(p);
+    ASSERT(p = NIL)
 END NewFree;
 
 PROCEDURE LslAsr;

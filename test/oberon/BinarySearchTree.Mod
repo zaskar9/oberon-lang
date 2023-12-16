@@ -54,11 +54,11 @@ PROCEDURE Delete(VAR node: TreeNode; key: INTEGER);
     ELSE (* Key is found *)
       IF node.left = NIL THEN
         tempNode := node.right;
-        (* FREE(node); <- coming soon to oberon-lang *)
+        FREE(node);
         node := tempNode
       ELSIF node.right = NIL THEN
         tempNode := node.left;
-        (* FREE(node); <- coming soon to oberon-lang *)
+        FREE(node);
         node := tempNode
       ELSE
         tempNode := MinValueNode(node.right);

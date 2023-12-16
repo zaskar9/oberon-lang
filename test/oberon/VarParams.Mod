@@ -35,11 +35,11 @@ END print;
 
 BEGIN
     a[0] := 42; a[1] := 24;
-    print(a);
     one(a);
-    print(a);
+    ASSERT((a[0] = 24) & (a[1] = 42));
     two(a);
-    print(a);
+    ASSERT((a[0] = 42) & (a[1] = 24));
     three(a);
-    print(a)
+    ASSERT((a[0] = 42) & (a[1] = 24));
+    Out.String("VAR-parameter tests passed!"); Out.Ln
 END VarParams.
