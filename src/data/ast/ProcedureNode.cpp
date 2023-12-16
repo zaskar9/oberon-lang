@@ -65,5 +65,5 @@ void ProcedureNode::accept(NodeVisitor &visitor) {
 }
 
 void ProcedureNode::print(std::ostream &stream) const {
-    stream << "PROCEDURE " << getIdentifier() << ";";
+    stream << "PROCEDURE " << *getIdentifier() << ";";
 }

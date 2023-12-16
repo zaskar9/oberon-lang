@@ -38,6 +38,9 @@ int main(int argc, const char* argv[]) {
     michael->name = "Michael Grossniklaus";
     printPerson(michael);
 
+    free(michael);
+    michael = NULL;
+
 //    root = (struct node *) malloc(sizeof(struct node));
 //    root->value = 5;
 //    child = (struct node *) malloc(sizeof(struct node));

@@ -87,8 +87,8 @@ std::unique_ptr<Designator> Parser::designator() {
 // TODO selector = "." ident | "[" exp_list "]" | "^" | "(" qualident ")" | actual_parameters .
 // selector = "." ident | "[" expression "]" | "^" | "(" qualident ")" | actual_parameters .
 std::unique_ptr<Selector> Parser::selector() {
-    std::unique_ptr<Selector> sel = nullptr;
     logger_->debug({}, "selector");
+    std::unique_ptr<Selector> sel = nullptr;
     auto token = scanner_->peek();
     if (token->type() == TokenType::period) {
         token_ = scanner_->next();
@@ -127,6 +127,7 @@ std::unique_ptr<Selector> Parser::selector() {
 }
 
 bool Parser::maybeTypeguard() {
+    logger_->debug({}, "maybe_typeguard");
     // we need a look-ahead of 5 to check whether we have (ident) or (ident.ident)
     auto peek = scanner_->peek(true);
     if (peek->type() == TokenType::lparen) {
@@ -470,7 +471,7 @@ void Parser::procedure_declaration(BlockNode *block) {
         procedure_body(proc.get());
         auto identifier = ident();
         if (*identifier != *proc->getIdentifier()) {
-            logger_->error(token_->start(), "procedure name mismatch: expected " +
+            logger_->error(token_->start(), "createProcedure name mismatch: expected " +
                     to_string(*proc->getIdentifier()) + ", found " + to_string(*identifier) + ".");
         }
     }

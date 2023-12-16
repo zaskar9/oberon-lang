@@ -28,9 +28,11 @@ private:
     std::map<DeclarationNode*, Value*> values_;
     std::map<TypeNode*, Type*> types_;
     std::map<ProcedureNode*, Function*> functions_;
+    std::map<std::string, Constant*> strings_;
     std::stack<bool> deref_ctx;
     unsigned int level_;
     Function *function_;
+    AttrBuilder attrs_;
 
     Type* getLLVMType(TypeNode *type);
     MaybeAlign getLLVMAlign(TypeNode *type);
@@ -41,7 +43,7 @@ private:
     void restoreRefMode();
     bool deref() const;
 
-    Value *callBuiltIn(ProcedureNodeReference &proc, std::string name, std::vector<Value *> &params);
+    Value *callPredefined(ProcedureNodeReference &node, std::vector<Value *> &params);
 
     void cast(ExpressionNode &node);
 

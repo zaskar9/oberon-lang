@@ -46,11 +46,13 @@ BEGIN
 END isPrime;
 
 BEGIN
+    ASSERT(~isPrime(16));
     n := 17;
     Out.String("The number "); Out.Int(n); Out.String(" is ");
     IF ~isPrime(n) THEN
         Out.String("not ")
     END;
     Out.String("a prime number."); Out.Ln;
+    ASSERT(isPrime(17));
     sieve(200); Out.Ln
 END Primes.

@@ -1,4 +1,5 @@
 MODULE Nested;
+IMPORT Out;
 
 CONST const0 = 10;
 
@@ -7,39 +8,18 @@ TYPE TPoint2D = RECORD x, y: INTEGER; color: RECORD r, g, b: INTEGER END END;
 VAR var0: INTEGER;
     array0: ARRAY const0 OF INTEGER;
 
-(* Import `printf` function from C <stdio.h> library. *)
-PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
-
-(* Writes a string value to standard out. *)
-PROCEDURE Write(str: STRING);
-BEGIN
-    printf(str)
-END Write;
-
-(* Writes a newline to standard out. *)
-PROCEDURE WriteLn;
-BEGIN
-    printf("\n")
-END WriteLn;
-
-(* Writes an integer value to standard out. *)
-PROCEDURE WriteInt(val: INTEGER);
-BEGIN
-    printf("%d", val)
-END WriteInt;
-
 PROCEDURE PrintArray;
 VAR i: INTEGER;
 BEGIN
-    Write("[");
+    Out.String("[");
     i := 0;
     WHILE i < const0 DO
-        WriteInt(array0[i]);
-        IF i + 1 < const0 THEN Write(", ") END;
+        Out.Int(array0[i]);
+        IF i + 1 < const0 THEN Out.String(", ") END;
         i := i + 1
     END;
-    Write("]");
-    WriteLn
+    Out.String("]");
+    Out.Ln
 END PrintArray;
 
 PROCEDURE Procedure1(param1: INTEGER);
@@ -64,20 +44,20 @@ VAR var1: INTEGER;
 
     BEGIN
         var2 := 0;
-        WriteInt(var2); WriteLn;
+        Out.Int(var2); Out.Ln;
         Procedure3(param2);
-        WriteInt(var2); WriteLn
+        Out.Int(var2); Out.Ln
     END Procedure2;
 
 BEGIN
     var0 := 0;
     var1 := 0;
-    WriteInt(var0); WriteLn;
-    WriteInt(var1); WriteLn;
+    Out.Int(var0); Out.Ln;
+    Out.Int(var1); Out.Ln;
     PrintArray();
     Procedure2(param1);
-    WriteInt(var0); WriteLn;
-    WriteInt(var1); WriteLn;
+    Out.Int(var0); Out.Ln;
+    Out.Int(var1); Out.Ln;
     PrintArray
 END Procedure1;
 

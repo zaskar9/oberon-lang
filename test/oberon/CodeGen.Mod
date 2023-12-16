@@ -1,4 +1,5 @@
 MODULE CodeGen;
+IMPORT Out, Random;
 
 CONST Dim = 20;
 
@@ -23,40 +24,16 @@ VAR x, y, z, i: INTEGER;
     points: PointList;
     poly3d: Polygon3D;
 
-(* Import `printf` function from C <stdio.h> library. *)
-PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
-
-(* Import `rand` function from C <stdlib.h> library. *)
-PROCEDURE rand(): INTEGER; EXTERN;
-
-(* Writes a string value to standard out. *)
-PROCEDURE Write(val: STRING);
-BEGIN
-    printf(val)
-END Write;
-
-(* Writes a newline to standard out. *)
-PROCEDURE WriteLn;
-BEGIN
-    printf("\n")
-END WriteLn;
-
-(* Writes an integer value to standard out. *)
-PROCEDURE WriteInt(val: INTEGER);
-BEGIN
-    printf("%d", val)
-END WriteInt;
-
 (* Writes an integer tuple to standard out. *)
 PROCEDURE WriteTuple(x, y: INTEGER);
 BEGIN
-    printf("(%d, %d)", x, y)
+    Out.String("("); Out.Int(x); Out.String(", "); Out.Int(y); Out.String(")")
 END WriteTuple;
 
 (* Writes an integer triple to standard out. *)
 PROCEDURE WriteTriple(x, y, z: INTEGER);
 BEGIN
-    printf("(%d, %d, %d)", x, y, z)
+    Out.String("("); Out.Int(x); Out.String(", "); Out.Int(y); Out.String(", "); Out.Int(z); Out.String(")")
 END WriteTriple;
 
 (* Computes the maximum of two numbers. *)
@@ -139,7 +116,7 @@ VAR i: INTEGER;
 BEGIN
     i := 0;
     REPEAT
-        a[i] := rand() MOD 100;
+        a[i] := Random.Int(100);
         i := i + 1
     UNTIL i = Dim
 END Init;
@@ -148,15 +125,15 @@ END Init;
 PROCEDURE Print();
 VAR i: INTEGER;
 BEGIN
-    Write("[");
+    Out.String("[");
     i := 0;
     WHILE i < Dim DO
-        WriteInt(a[i]);
-        IF i + 1 < Dim THEN Write(", ") END;
+        Out.Int(a[i]);
+        IF i + 1 < Dim THEN Out.String(", ") END;
         i := i + 1
     END;
-    Write("]");
-    WriteLn()
+    Out.String("]");
+    Out.Ln
 END Print;
 
 (* Applies the bubble-sort algorithm to the array. *)
@@ -193,7 +170,7 @@ PROCEDURE CreatePoints(VAR points: PointList);
 VAR i: INTEGER;
 BEGIN
     FOR i := 0 TO Dim - 1 DO
-        points[i] := CreatePoint3D(rand() MOD 1000, rand() MOD 1000, rand() MOD 1000)
+        points[i] := CreatePoint3D(Random.Int(1000), Random.Int(1000), Random.Int(1000))
     END
 END CreatePoints;
 
@@ -212,7 +189,7 @@ PROCEDURE WritePoints(VAR points: PointList);
 VAR i: INTEGER;
 BEGIN
     FOR i := 0 TO Dim - 1 DO
-        WritePoint3D(points[i]); WriteLn
+        WritePoint3D(points[i]); Out.Ln
     END
 END WritePoints;
 
@@ -251,19 +228,20 @@ BEGIN
 END parent; *)
 
 BEGIN
+    Random.Randomize();
     x := 27;
     y := 9;
     z := 3;
-    WriteTuple(x, y); WriteLn;
+    WriteTuple(x, y); Out.Ln;
     Swap(x, y);
-    WriteTuple(x, y); WriteLn;
-    WriteInt(gcd(x, y)); WriteLn;
-    WriteInt(max(x, y)); WriteLn;
-    WriteInt(compare(x, y)); WriteLn;
-    WriteInt(compare(y, x)); WriteLn;
-    WriteInt(rFib(x)); WriteLn;
-    WriteInt(rFac(z)); WriteLn;
-    WriteInt(iFac(z)); WriteLn;
+    WriteTuple(x, y); Out.Ln;
+    Out.Int(gcd(x, y)); Out.Ln;
+    Out.Int(max(x, y)); Out.Ln;
+    Out.Int(compare(x, y)); Out.Ln;
+    Out.Int(compare(y, x)); Out.Ln;
+    Out.Int(rFib(x)); Out.Ln;
+    Out.Int(rFac(z)); Out.Ln;
+    Out.Int(iFac(z)); Out.Ln;
     poly3d := CreatePoly3D(x, y, z);
     WritePoints(poly3d.points);
     Init;
@@ -271,7 +249,7 @@ BEGIN
     BubbleSort;
     Print;
     FOR x := 5 TO 0 BY -1 DO
-        WriteInt(x); WriteLn
+        Out.Int(x); Out.Ln
     END
-    (* WriteInt(parent(x, y)) *)
+    (* Out.Int(parent(x, y)) *)
 END CodeGen.

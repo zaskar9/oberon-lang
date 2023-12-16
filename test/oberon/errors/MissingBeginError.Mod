@@ -1,4 +1,4 @@
-MODULE MissingBegin;
+MODULE MissingBeginError;
 
 VAR val: INTEGER;
 
@@ -9,4 +9,4 @@ END Inc;
 BEGIN
     val := 42;
     Inc(val)
-END MissingBegin.
+END MissingBeginError.

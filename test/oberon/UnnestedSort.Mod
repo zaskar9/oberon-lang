@@ -1,3 +1,5 @@
+(* This is a generated file. Do not edit. *)
+
 MODULE UnnestedSort(*0*);
 
    CONST Dim(*1*) = 50;

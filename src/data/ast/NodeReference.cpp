@@ -138,8 +138,8 @@ ValueReferenceNode::ValueReferenceNode(const FilePos &pos, DeclarationNode *node
 void ValueReferenceNode::resolve(DeclarationNode *node) {
     node_ = node;
     auto type = node->getType();
-    if (type->getNodeType() == NodeType::procedure ||
-        type->getNodeType() == NodeType::procedure_type) {
+    if (type && (type->getNodeType() == NodeType::procedure ||
+        type->getNodeType() == NodeType::procedure_type)) {
         this->initActualParameters();
         this->setNodeType(NodeType::procedure_call);
     }

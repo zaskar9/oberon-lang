@@ -6,6 +6,31 @@
 
 #include "TypeNode.h"
 
+std::ostream &operator<<(std::ostream &stream, const TypeKind &kind) {
+    std::string result;
+    switch (kind) {
+        case TypeKind::ANYTYPE: result = "ANYTYPE"; break;
+        case TypeKind::NOTYPE: result = "NOTYPE"; break;
+        case TypeKind::NILTYPE: result = "NILTYPE"; break;
+        case TypeKind::ARRAY: result = "ARRAY"; break;
+        case TypeKind::POINTER: result = "POINTER"; break;
+        case TypeKind::PROCEDURE: result = "PROCEDURE"; break;
+        case TypeKind::RECORD: result = "RECORD"; break;
+        case TypeKind::SET: result = "SET"; break;
+        case TypeKind::BOOLEAN: result = "BOOLEAN"; break;
+        case TypeKind::BYTE: result = "BYTE"; break;
+        case TypeKind::CHAR: result = "CHAR"; break;
+        case TypeKind::INTEGER: result = "INTEGER"; break;
+        case TypeKind::LONGINT: result = "LONGINT"; break;
+        case TypeKind::REAL: result = "REAL"; break;
+        case TypeKind::LONGREAL: result = "LONGREAL"; break;
+        case TypeKind::STRING: result = "STRING"; break;
+        default: result = "UNKNOWN"; break;
+    }
+    stream << result;
+    return stream;
+}
+
 Ident *TypeNode::getIdentifier() const {
     return ident_;
 }

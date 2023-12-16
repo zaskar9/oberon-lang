@@ -46,18 +46,6 @@ BEGIN
     b := t
 END Swap;
 
-(* Increments the given parameter value by 1. *)
-PROCEDURE INC(VAR v: INTEGER);
-BEGIN
-    v := v + 1
-END INC;
-
-(* Decrements the given parameter value by 1. *)
-PROCEDURE DEC(VAR v: INTEGER);
-BEGIN
-    v := v - 1
-END DEC;
-
 (* ------------------------------------------------- InsertionSort ------------------------------------------------ *)
 PROCEDURE InsertionSort(VAR a: Vector);
 VAR i, j: INTEGER;

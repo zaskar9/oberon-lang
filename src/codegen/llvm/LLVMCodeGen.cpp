@@ -109,11 +109,11 @@ void LLVMCodeGen::generate(Node *ast, boost::filesystem::path path) {
         auto mpm = pb_.buildPerModuleDefaultPipeline(lvl_);
         mpm.run(*module.get(), mam);
     }
-    if (module) {
+    if (module && logger_->getErrorCount() == 0) {
         logger_->debug(PROJECT_NAME, "emitting code...");
         emit(module.get(), path, type_);
     } else {
-        logger_->error(path.string(), "code generation failed.");
+        logger_->debug(PROJECT_NAME, "code generation failed.");
     }
 }
 

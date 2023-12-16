@@ -10,13 +10,13 @@
 SemanticAnalysis::SemanticAnalysis(SymbolTable *symbols, SymbolImporter *importer, SymbolExporter *exporter)
         : Analysis(), NodeVisitor(),
           symbols_(symbols), logger_(), parent_(), importer_(importer), exporter_(exporter), forwards_() {
-    tBoolean_ = dynamic_cast<TypeNode *>(symbols_->lookup(SymbolTable::BOOLEAN));
-    tByte_ = dynamic_cast<TypeNode *>(symbols_->lookup(SymbolTable::BYTE));
-    tChar_ = dynamic_cast<TypeNode *>(symbols_->lookup(SymbolTable::CHAR));
-    tInteger_ = dynamic_cast<TypeNode *>(symbols_->lookup(SymbolTable::INTEGER));
-    tReal_ = dynamic_cast<TypeNode *>(symbols_->lookup(SymbolTable::REAL));
-    tLongReal_ = dynamic_cast<TypeNode *>(symbols_->lookup(SymbolTable::LONGREAL));
-    tString_ = dynamic_cast<TypeNode *>(symbols_->lookup(SymbolTable::STRING));
+    tBoolean_ = dynamic_cast<TypeNode *>(symbols_->lookup(to_string(TypeKind::BOOLEAN)));
+    tByte_ = dynamic_cast<TypeNode *>(symbols_->lookup(to_string(TypeKind::BYTE)));
+    tChar_ = dynamic_cast<TypeNode *>(symbols_->lookup(to_string(TypeKind::CHAR)));
+    tInteger_ = dynamic_cast<TypeNode *>(symbols_->lookup(to_string(TypeKind::INTEGER)));
+    tReal_ = dynamic_cast<TypeNode *>(symbols_->lookup(to_string(TypeKind::REAL)));
+    tLongReal_ = dynamic_cast<TypeNode *>(symbols_->lookup(to_string(TypeKind::LONGREAL)));
+    tString_ = dynamic_cast<TypeNode *>(symbols_->lookup(to_string(TypeKind::STRING)));
 }
 
 void SemanticAnalysis::run(Logger *logger, Node *node) {
@@ -316,7 +316,7 @@ void SemanticAnalysis::visit(ValueReferenceNode &node) {
                         logger_->error(sel->pos(), "selector type mismatch.");
                     }
                 }
-                if (sel->getType() == NodeType::array_type) {
+                if (sel->getType() == NodeType::array_type && type->isArray()) {
                     auto array_t = dynamic_cast<ArrayTypeNode *>(type);
                     auto expr = dynamic_cast<ArrayIndex*>(sel)->getExpression();
                     expr->accept(*this);
@@ -331,7 +331,7 @@ void SemanticAnalysis::visit(ValueReferenceNode &node) {
                         }
                     }
                     type = array_t->getMemberType();
-                } else if (sel->getType() == NodeType::record_type) {
+                } else if (sel->getType() == NodeType::record_type && type->isRecord()) {
                     auto record_t = dynamic_cast<RecordTypeNode *>(type);
                     auto ref = dynamic_cast<RecordField *>(sel);
                     auto field = record_t->getField(ref->ident()->name());
@@ -342,7 +342,7 @@ void SemanticAnalysis::visit(ValueReferenceNode &node) {
                         logger_->error(ref->pos(),
                                        "unknown record field: " + to_string(*ref->ident()) + ".");
                     }
-                } else if (sel->getType() == NodeType::pointer_type) {
+                } else if (sel->getType() == NodeType::pointer_type && type->isPointer()) {
                     auto pointer_t = dynamic_cast<PointerTypeNode *>(type);
                     type = pointer_t->getBase();
                 } else if (sel->getType() == NodeType::type_declaration) {
@@ -416,12 +416,12 @@ void SemanticAnalysis::visit(BinaryExpressionNode &node) {
     }
     auto lhsType = lhs->getType();
     if (!lhsType) {
-        logger_->error(lhs->pos(), "undefined type.");
+        logger_->error(lhs->pos(), "undefined left-hand side type in expression.");
         return;
     }
     auto rhsType = rhs->getType();
     if (!rhsType) {
-        logger_->error(lhs->pos(), "undefined type.");
+        logger_->error(lhs->pos(), "undefined right-hand side type in expression.");
         return;
     }
     // Type inference
@@ -807,6 +807,9 @@ void SemanticAnalysis::assertUnique(Ident *ident, Node &node) {
     }
     if (symbols_->isDuplicate(ident->name())) {
         logger_->error(ident->pos(), "duplicate definition: " + ident->name() + ".");
+    }
+    if (symbols_->isGlobal(ident->name())) {
+        logger_->error(ident->pos(), "predefined identifier: " + ident->name() + ".");
     }
     symbols_->insert(ident->name(), &node);
 }
