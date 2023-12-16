@@ -4,6 +4,30 @@
 
 #include "CompilerFlags.h"
 
+void CompilerFlags::setFileType(OutputFileType type) {
+    type_ = type;
+}
+
+OutputFileType CompilerFlags::getFileType() {
+    return type_;
+}
+
+void CompilerFlags::setOptimizationLevel(OptimizationLevel level) {
+    level_ = level;
+}
+
+OptimizationLevel CompilerFlags::getOptimizationLevel() {
+    return level_;
+}
+
+void CompilerFlags::setRelocationModel(RelocationModel model) {
+    model_ = model;
+}
+
+RelocationModel CompilerFlags::getRelocationModel() {
+    return model_;
+}
+
 void CompilerFlags::addIncludeDirectory(fs::path directory) {
     includes_.push_back(directory);
 }

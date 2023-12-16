@@ -15,7 +15,7 @@
 #include "UndefinedToken.h"
 
 Scanner::Scanner(const boost::filesystem::path &path, Logger *logger) :
-        filename_(path.string()), logger_(logger), tokens_(), lineNo_(1), charNo_(0) {
+        filename_(path.string()), logger_(logger), tokens_(), lineNo_(1), charNo_(0), ch_{}, eof_(false) {
     init();
     file_.open(filename_, std::ios::in);
     if (!file_.is_open()) {
@@ -80,12 +80,12 @@ std::unique_ptr<const Token> Scanner::next() {
 const Token* Scanner::scanToken() {
     const Token *token;
     // Skip whitespace
-    while ((ch_ != -1) && (ch_ <= ' ')) {
+    while (!eof_ && ch_ <= ' ') {
         read();
     }
     FilePos pos = current();
-    if (ch_ != -1) {
-        if (((ch_ >= 'A') && (ch_ <= 'Z')) || ((ch_ >= 'a') && (ch_ <= 'z')) || ch_ == '_') {
+    if (!eof_) {
+        if ((ch_ >= 'A' && ch_ <= 'Z') || (ch_ >= 'a' && ch_ <= 'z') || ch_ == '_') {
             // Scan identifier
             token = scanIdent();
         } else if ((ch_ >= '0') && (ch_ <= '9')) {
@@ -161,10 +161,10 @@ const Token* Scanner::scanToken() {
                 case '.':
                     read();
                     token = new Token(TokenType::period, pos);
-                    if (ch_ == '.') {
+                    if (!eof_ && ch_ == '.') {
                         FilePos nextPos = current();
                         read();
-                        if (ch_ == '.') {
+                        if (!eof_ && ch_ == '.') {
                             read();
                             token = new Token(TokenType::varargs, pos, current());
                         } else {
@@ -238,7 +238,7 @@ void Scanner::read() {
         charNo_++;
     } else if (file_.eof()) {
         charNo_++;
-        ch_ = -1;
+        eof_ = true;
     } else {
         logger_->error(filename_, "error reading file.");
         exit(1);
@@ -269,7 +269,7 @@ void Scanner::scanComment() {
                 read();
                 break;
             }
-            if (ch_ == -1) {
+            if (eof_) {
                 break;
             }
             read();
@@ -278,7 +278,7 @@ void Scanner::scanComment() {
             read();
             break;
         }
-        if (ch_ == -1) {
+        if (eof_) {
             logger_->error(pos, "comment not terminated.");
             break;
         }
@@ -291,9 +291,9 @@ const Token* Scanner::scanIdent() {
     do {
         ss << ch_;
         read();
-    } while (((ch_ >= '0') && (ch_ <= '9')) ||
-             ((ch_ >= 'a') && (ch_ <= 'z')) ||
-             ((ch_ >= 'A') && (ch_ <= 'Z')) || ch_ == '_');
+    } while ((ch_ >= '0' && ch_ <= '9') ||
+             (ch_ >= 'a' && ch_ <= 'z') ||
+             (ch_ >= 'A' && ch_ <= 'Z') || ch_ == '_');
     std::string ident = ss.str();
     auto it = keywords_.find(ident);
     if (it != keywords_.end()) {

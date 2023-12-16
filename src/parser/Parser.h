@@ -8,9 +8,6 @@
 #define OBERON0C_PARSER_H
 
 
-#include <memory>
-#include <vector>
-#include <set>
 #include "scanner/Scanner.h"
 #include "logging/Logger.h"
 #include "data/ast/Node.h"
@@ -26,6 +23,9 @@
 #include "data/ast/StatementSequenceNode.h"
 #include "data/ast/NodeReference.h"
 #include "data/symtab/SymbolTable.h"
+#include <memory>
+#include <set>
+#include <vector>
 
 class Parser {
 
@@ -39,7 +39,7 @@ private:
     std::unique_ptr<Designator> designator();
     std::unique_ptr<Selector> selector();
     bool maybeTypeguard();
-    std::unique_ptr<IdentDef> identdef();
+    std::unique_ptr<IdentDef> identdef(bool checkAlphaNum = true);
     void ident_list(std::vector<std::unique_ptr<Ident>> &idents);
 
     std::unique_ptr<ModuleNode> module();
@@ -74,6 +74,7 @@ private:
     void actual_parameters(ActualParameters *params);
 
     bool assertToken(const Token *token, TokenType expected);
+    bool assertOberonIdent(const Ident *ident);
     void moveSelectors(std::vector<std::unique_ptr<Selector>> &selectors, Designator *designator);
 
     void resync(std::set<TokenType> types);

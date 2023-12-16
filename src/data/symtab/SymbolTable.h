@@ -8,14 +8,14 @@
 #define OBERON0C_TABLE_H
 
 
-#include <memory>
-#include <string>
-#include <unordered_map>
 #include "Scope.h"
 #include "data/ast/TypeNode.h"
 #include "logging/Logger.h"
 #include "data/ast/ProcedureNode.h"
 #include "data/ast/PointerTypeNode.h"
+#include <memory>
+#include <string>
+#include <unordered_map>
 
 /**
  * The symbol table manages the different lexical scopes of the compiled module as well as the scopes of the imported

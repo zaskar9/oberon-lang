@@ -23,10 +23,23 @@ BEGIN
     one(a)
 END two;
 
+PROCEDURE three(a: List);
+BEGIN
+    one(a)
+END three;
+
+PROCEDURE print(a: List);
+BEGIN
+    Out.String("["); Out.Int(a[0]); Out.String(","); Out.Int(a[1]); Out.String("]"); Out.Ln
+END print;
+
 BEGIN
     a[0] := 42; a[1] := 24;
+    print(a);
     one(a);
-    Out.String("["); Out.Int(a[0]); Out.String(","); Out.Int(a[1]); Out.String("]"); Out.Ln;
+    print(a);
     two(a);
-    Out.String("["); Out.Int(a[0]); Out.String(","); Out.Int(a[1]); Out.String("]"); Out.Ln
+    print(a);
+    three(a);
+    print(a)
 END VarParams.

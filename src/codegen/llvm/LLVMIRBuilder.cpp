@@ -567,10 +567,14 @@ void LLVMIRBuilder::visit(ForLoopNode& node) {
 }
 
 void LLVMIRBuilder::visit(ReturnNode& node) {
-    setRefMode(true);
-    node.getValue()->accept(*this);
-    restoreRefMode();
-    value_ = builder_.CreateRet(value_);
+    if (node.getValue()) {
+        setRefMode(true);
+        node.getValue()->accept(*this);
+        restoreRefMode();
+        value_ = builder_.CreateRet(value_);
+    } else {
+        value_ = builder_.CreateRetVoid();
+    }
 }
 
 void LLVMIRBuilder::cast(ExpressionNode &node) {
@@ -729,6 +733,11 @@ void LLVMIRBuilder::call(ProcedureNodeReference &node) {
 }
 
 void LLVMIRBuilder::proc(ProcedureNode &node) {
+    auto name = qualifiedName(node.getIdentifier(), node.isExtern());
+    if (module_->getFunction(name)) {
+        logger_->error(node.pos(), "Function " + name + " already defined.");
+        return;
+    }
     std::vector<Type*> params;
     for (size_t j = 0; j < node.getFormalParameterCount(); j++) {
         auto param = node.getFormalParameter(j);
@@ -736,7 +745,6 @@ void LLVMIRBuilder::proc(ProcedureNode &node) {
         params.push_back(param->isVar() ? param_t->getPointerTo() : param_t);
     }
     auto type = FunctionType::get(getLLVMType(node.getReturnType()), params, node.hasVarArgs());
-    auto name = qualifiedName(node.getIdentifier(), node.isExtern());
     auto callee = module_->getOrInsertFunction(name, type);
     functions_[&node] = ::cast<Function>(callee.getCallee());
 }
@@ -827,7 +835,7 @@ MaybeAlign LLVMIRBuilder::getLLVMAlign(TypeNode *type) {
     } else if (type->getNodeType() == NodeType::pointer_type) {
         return MaybeAlign(layout.getPointerPrefAlignment());
     } else if (type->getNodeType() == NodeType::basic_type) {
-        return MaybeAlign(layout.getPrefTypeAlignment(getLLVMType(type)));
+        return MaybeAlign(layout.getPrefTypeAlign(getLLVMType(type)));
     }
     return MaybeAlign();
 }

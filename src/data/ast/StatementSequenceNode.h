@@ -8,10 +8,10 @@
 #define OBERON0C_STATEMENTSEQUENCENODE_H
 
 
-#include <memory>
-#include <vector>
 #include "Node.h"
 #include "StatementNode.h"
+#include <memory>
+#include <vector>
 
 class StatementSequenceNode final : public Node {
 

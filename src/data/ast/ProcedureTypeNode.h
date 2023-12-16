@@ -6,9 +6,9 @@
 #define OBERON_LANG_PROCEDURETYPENODE_H
 
 
-#include <vector>
 #include "TypeNode.h"
 #include "DeclarationNode.h"
+#include <vector>
 
 class ProcedureTypeNode final : public TypeNode {
 

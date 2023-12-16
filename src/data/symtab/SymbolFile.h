@@ -21,14 +21,14 @@ public:
     void open(const std::string &path, std::ios::openmode mode);
     [[nodiscard]] std::string path() const;
 
-    [[nodiscard]] char readChar();
+    [[nodiscard]] signed char readChar();
     [[nodiscard]] int readInt();
     [[nodiscard]] long readLong();
     [[nodiscard]] float readFloat();
     [[nodiscard]] double readDouble();
     [[nodiscard]] std::string readString();
 
-    void writeChar(char val);
+    void writeChar(signed char val);
     void writeInt(int val);
     void writeLong(long val);
     void writeFloat(float val);

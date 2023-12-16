@@ -1,0 +1,11 @@
+{
+  "version": "0.2.1",
+  "tasks": [
+    {
+      "taskLabel": "Build",
+      "appliesTo": "CMakeLists.txt",
+      "contextType": "build",
+      "type": "launch"
+    }
+  ]
+}

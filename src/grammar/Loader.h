@@ -8,7 +8,7 @@
 #define OBERON_LLVM_LOADER_H
 
 
-#include "../scanner/Scanner.h"
+#include "scanner/Scanner.h"
 #include "Grammar.h"
 
 class Loader {

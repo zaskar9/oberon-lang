@@ -10,9 +10,9 @@
 
 #define TAB_WIDTH 3
 
+#include "NodeVisitor.h"
 #include <iostream>
 #include <iomanip>
-#include "NodeVisitor.h"
 
 class NodePrettyPrinter final : private NodeVisitor {
 

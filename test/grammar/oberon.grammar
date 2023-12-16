@@ -47,11 +47,11 @@ for_statement = "FOR" ident ":=" expression "TO" expression [ "BY" const_express
 
 procedure_declaration = procedure_heading ";" ( procedure_body ident | "EXTERN" ) ";" .
 procedure_heading = "PROCEDURE" identdef [ formal_parameters ] [ ":" type ] .
-pprocedure_body = declarations [ "BEGIN" statement_sequence ] "END" .
+procedure_body = declarations [ "BEGIN" statement_sequence ] "END" .
 declarations = [ const_declarations ] [ type_declarations ] [ var_declarations ] { procedure_declaration } .
 formal_parameters = "(" [ fp_section { ";" fp_section } ] ")" .
 fp_section = ( [ "VAR" ] ident { "," ident } ":" type | "..." ) .
 
-module = "MODULE" ident ";" [ import_list ] declarations [ "BEGIN" statement_sequence ] "END" ident "." .
-import_list = IMPORT import {"," import} ";" .
+module* = "MODULE" ident ";" [ import_list ] declarations [ "BEGIN" statement_sequence ] "END" ident "." .
+import_list = "IMPORT" import {"," import} ";" .
 import = ident [":=" ident] .

@@ -8,12 +8,12 @@
 #define OBERON_LLVM_SEMANTICANALYSIS_H
 
 
-#include <map>
 #include "Analyzer.h"
 #include "data/ast/NodeVisitor.h"
 #include "data/symtab/SymbolTable.h"
 #include "data/symtab/SymbolImporter.h"
 #include "data/symtab/SymbolExporter.h"
+#include <map>
 
 class SemanticAnalysis final : public Analysis, private NodeVisitor {
 

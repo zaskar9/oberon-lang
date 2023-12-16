@@ -4,15 +4,16 @@
  * Created by Michael Grossniklaus on 12/14/17.
  */
 
-#include <iostream>
-#include <boost/algorithm/string.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/program_options.hpp>
+
 #include <config.h>
-#include "codegen/llvm/LLVMCodeGen.h"
 #include "compiler/CompilerFlags.h"
 #include "compiler/Compiler.h"
 #include "logging/Logger.h"
+#include "codegen/llvm/LLVMCodeGen.h"
+#include <boost/algorithm/string.hpp>
+#include <boost/filesystem.hpp>
+#include <boost/program_options.hpp>
+#include <iostream>
 
 namespace fs = boost::filesystem;
 namespace po = boost::program_options;
@@ -30,7 +31,8 @@ int main(const int argc, const char **argv) {
     visible.add_options()
             ("help,h", "Display available visible.")
             ("version,v", "Print version information.")
-            ("filetype", po::value<std::string>()->value_name("<type>"), "Specify type of output file. [asm, bc, obj, ll]")
+            ("filetype", po::value<std::string>()->value_name("<type>"), "Set type of output file. [asm, bc, obj, ll]")
+            ("reloc", po::value<std::string>()->value_name("<model>"), "Set relocation model. [default, static, pic]")
             (",O", po::value<int>()->value_name("<level>"), "Optimization level. [O0, O1, O2, O3]")
             ("quiet,q", "Suppress all compiler outputs.")
             (",I", po::value<std::string>()->value_name("<directories>"), "Include directories for symbol files.");
@@ -79,16 +81,16 @@ int main(const int argc, const char **argv) {
             int level = vm["-O"].as<int>();
             switch (level) {
                 case 0:
-                    codegen->setOptimizationLevel(::OptimizationLevel::O0);
+                    flags->setOptimizationLevel(::OptimizationLevel::O0);
                     break;
                 case 1:
-                    codegen->setOptimizationLevel(::OptimizationLevel::O1);
+                    flags->setOptimizationLevel(::OptimizationLevel::O1);
                     break;
                 case 2:
-                    codegen->setOptimizationLevel(::OptimizationLevel::O2);
+                    flags->setOptimizationLevel(::OptimizationLevel::O2);
                     break;
                 case 3:
-                    codegen->setOptimizationLevel(::OptimizationLevel::O3);
+                    flags->setOptimizationLevel(::OptimizationLevel::O3);
                     break;
                 default:
                     logger->error(PROJECT_NAME, "unsupported optimization level: " + std::to_string(level) + ".");
@@ -98,18 +100,29 @@ int main(const int argc, const char **argv) {
         if (vm.count("filetype")) {
             auto type = vm["filetype"].as<std::string>();
             if (type == "asm") {
-                codegen->setFileType(OutputFileType::AssemblyFile);
+                flags->setFileType(OutputFileType::AssemblyFile);
             } else if (type == "bc") {
-                codegen->setFileType(OutputFileType::BitCodeFile);
+                flags->setFileType(OutputFileType::BitCodeFile);
             } else if (type == "ll") {
-                codegen->setFileType(OutputFileType::LLVMIRFile);
+                flags->setFileType(OutputFileType::LLVMIRFile);
             } else if (type == "obj") {
-                codegen->setFileType(OutputFileType::ObjectFile);
+                flags->setFileType(OutputFileType::ObjectFile);
             } else {
                 logger->error(PROJECT_NAME, "unsupported output file type: " + type + ".");
                 return 1;
             }
         }
+        if (vm.count("reloc")) {
+            auto model = vm["reloc"].as<std::string>();
+            if (model == "pic") {
+                flags->setRelocationModel(RelocationModel::PIC);
+            } else if (model == "static") {
+                flags->setRelocationModel(RelocationModel::STATIC);
+            } else {
+                flags->setRelocationModel(RelocationModel::DEFAULT);
+            }
+        }
+        codegen->configure(flags.get());
         auto inputs = vm["inputs"].as<std::vector<std::string>>();
         for (auto &input : inputs) {
             logger->info(PROJECT_NAME, "compiling module " + input + ".");

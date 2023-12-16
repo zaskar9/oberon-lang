@@ -194,7 +194,10 @@ void SemanticAnalysis::visit(VariableDeclarationNode &node) {
     checkExport(node);
     auto type = node.getType();
     if (type) {
-        type->accept(*this);
+        // type only needs to be checked for the first variable in a variable list
+        if (node.index() == 0) {
+            type->accept(*this);
+        }
     } else {
         logger_->error(node.pos(), "undefined variable type.");
     }
@@ -216,6 +219,9 @@ void SemanticAnalysis::visit(ProcedureNode &node) {
     }
     block(node);
     symbols_->closeScope();
+    if (node.isExtern() && node.getLevel() != SymbolTable::MODULE_LEVEL) {
+        logger_->error(node.pos(), "only top-level procedures can be external.");
+    }
 }
 
 void SemanticAnalysis::visit(ParameterNode &node) {
@@ -223,7 +229,10 @@ void SemanticAnalysis::visit(ParameterNode &node) {
     node.setLevel(symbols_->getLevel());
     auto type = node.getType();
     if (type) {
-        type->accept(*this);
+        // type only needs to be checked for the first parameter in a parameter list
+        if (node.index() == 0) {
+            type->accept(*this);
+        }
         node.setType(resolveType(type));
     } else {
         logger_->error(node.pos(), "undefined parameter type.");
@@ -233,7 +242,10 @@ void SemanticAnalysis::visit(ParameterNode &node) {
 void SemanticAnalysis::visit(FieldNode &node) {
     auto type = node.getType();
     if (type) {
-        type->accept(*this);
+        // type only needs to be checked for the first field in a field list
+        if (node.index() == 0) {
+            type->accept(*this);
+        }
         node.setType(resolveType(type));
     } else {
         logger_->error(node.pos(), "undefined record field type.");
@@ -402,8 +414,6 @@ void SemanticAnalysis::visit(BinaryExpressionNode &node) {
         logger_->error(node.pos(), "undefined right-hand side in expression.");
         return;
     }
-    auto op = node.getOperator();
-    // Type inference
     auto lhsType = lhs->getType();
     if (!lhsType) {
         logger_->error(lhs->pos(), "undefined left-hand side type in expression.");
@@ -414,6 +424,8 @@ void SemanticAnalysis::visit(BinaryExpressionNode &node) {
         logger_->error(lhs->pos(), "undefined right-hand side type in expression.");
         return;
     }
+    // Type inference
+    auto op = node.getOperator();
     auto common = commonType(lhsType, rhsType);
     if (common) {
         if (op == OperatorType::EQ
@@ -562,12 +574,13 @@ void SemanticAnalysis::visit(AssignmentNode &node) {
         lvalue->accept(*this);
         auto decl = lvalue->dereference();
         if (decl) {
-            if (decl->getNodeType() == NodeType::parameter) {
-                auto param = dynamic_cast<ParameterNode *>(lvalue->dereference());
-                if (!param->isVar()) {
-                    logger_->error(lvalue->pos(), "cannot assign non-var parameter.");
-                }
-            } else if (lvalue->dereference()->getNodeType() == NodeType::constant) {
+//            if (decl->getNodeType() == NodeType::parameter) {
+//                auto param = dynamic_cast<ParameterNode *>(lvalue->dereference());
+//                if (!param->isVar()) {
+//                    logger_->error(lvalue->pos(), "cannot assign non-var parameter.");
+//                }
+//            }
+            if (lvalue->dereference()->getNodeType() == NodeType::constant) {
                 logger_->error(lvalue->pos(), "cannot assign constant.");
             }
         } else {
