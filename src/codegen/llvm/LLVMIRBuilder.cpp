@@ -16,7 +16,10 @@ LLVMIRBuilder::LLVMIRBuilder(Logger *logger, LLVMContext &context, Module *modul
         .addAttribute(Attribute::NoUnwind)
         .addAttribute(Attribute::OptimizeNone)
         .addAttribute(Attribute::StackProtect)
-        .addAttribute(Attribute::getWithUWTableKind(context, UWTableKind::Default));
+#ifndef _LLVM_LEGACY
+        .addAttribute(Attribute::getWithUWTableKind(context, UWTableKind::Default))
+#endif
+        ;
 }
 
 void LLVMIRBuilder::build(Node *node) {
@@ -72,16 +75,22 @@ void LLVMIRBuilder::visit(ProcedureNode &node) {
         function_ = functions_[&node];
         function_->addFnAttrs(attrs_);
         // function_->addFnAttr(Attribute::AttrKind::NoInline);
+        auto entry = BasicBlock::Create(builder_.getContext(), "entry", function_);
+        builder_.SetInsertPoint(entry);
         Function::arg_iterator args = function_->arg_begin();
         for (size_t i = 0; i < node.getFormalParameterCount(); i++) {
             auto arg = args++;
             auto param = node.getFormalParameter(i);
             arg->setName(param->getIdentifier()->name());
-            values_[param] = arg;
+            if (param->isVar()) {
+                values_[param] = arg;
+            } else {
+                auto value = builder_.CreateAlloca(getLLVMType(param->getType()), nullptr);
+                builder_.CreateStore(arg, value);
+                values_[param] = value;
+            }
             // function_->addParamAttr(i, Attribute::AttrKind::NoUndef);
         }
-        auto entry = BasicBlock::Create(builder_.getContext(), "entry", function_);
-        builder_.SetInsertPoint(entry);
         for (size_t i = 0; i < node.getVariableCount(); i++) {
             auto var = node.getVariable(i);
             auto value = builder_.CreateAlloca(getLLVMType(var->getType()), nullptr, var->getIdentifier()->name());
@@ -129,15 +138,15 @@ void LLVMIRBuilder::visit(ValueReferenceNode &node) {
         type->getNodeType() == NodeType::pointer_type) {
         auto selector_t = type;
         auto base = value_;
-        if (ref->getNodeType() == NodeType::parameter) {
-            auto param = dynamic_cast<ParameterNode*>(ref);
-            // create a base address within the stack frame of the current procedure for
-            // array and record parameters that are passed by value
-            if (!param->isVar()) {
-                base = builder_.CreateAlloca(getLLVMType(type));
-                builder_.CreateStore(value_, base);
-            }
-        }
+//        if (ref->getNodeType() == NodeType::parameter && type->getNodeType() != NodeType::pointer_type) {
+//            auto param = dynamic_cast<ParameterNode*>(ref);
+//            // create a base address within the stack frame of the current procedure for
+//            // array and record parameters that are passed by value
+//            if (!param->isVar()) {
+//                base = builder_.CreateAlloca(getLLVMType(type));
+//                builder_.CreateStore(value_, base);
+//            }
+//        }
         std::vector<Value *> indices;
         indices.push_back(builder_.getInt32(0));
         for (size_t i = 0; i < node.getSelectorCount(); i++) {
@@ -184,18 +193,19 @@ void LLVMIRBuilder::visit(ValueReferenceNode &node) {
         type = selector_t;
     }
     if (deref()) {
-        if (ref->getNodeType() == NodeType::variable) {
-            value_ = builder_.CreateLoad(getLLVMType(type), value_);
-        } else if (ref->getNodeType() == NodeType::parameter) {
-            auto param = dynamic_cast<ParameterNode*>(ref);
-            // load value of parameter that is either passed by reference or is an array or
-            // record parameter since getelementptr only computes the address
-            if (param->isVar() || param->getType()->getNodeType() == NodeType::array_type ||
-                                  param->getType()->getNodeType() == NodeType::record_type ||
-                                  param->getType()->getNodeType() == NodeType::pointer_type) {
-                value_ = builder_.CreateLoad(getLLVMType(type), value_);
-            }
-        }
+        value_ = builder_.CreateLoad(getLLVMType(type), value_);
+//        if (ref->getNodeType() == NodeType::variable) {
+//            value_ = builder_.CreateLoad(getLLVMType(type), value_);
+//        } else if (ref->getNodeType() == NodeType::parameter) {
+//            auto param = dynamic_cast<ParameterNode*>(ref);
+//            // load value of parameter that is either passed by reference or is an array or
+//            // record parameter since getelementptr only computes the address
+//            if (param->isVar() || param->getType()->getNodeType() == NodeType::array_type ||
+//                                  param->getType()->getNodeType() == NodeType::record_type ||
+//                                  param->getType()->getNodeType() == NodeType::pointer_type) {
+//                value_ = builder_.CreateLoad(getLLVMType(type), value_);
+//            }
+//        }
     }
 }
 
@@ -625,15 +635,24 @@ Value *LLVMIRBuilder::callPredefined(ProcedureNodeReference &node, std::vector<V
         return builder_.CreateStore(value_, params[0]);
     } else if (ptype == ProcType::FREE) {
         auto fun = module_->getFunction("free");
+#ifdef _LLVM_LEGACY
+        auto void_t = PointerType::get(builder_.getVoidTy(), 0);
+#else
+        auto void_t = builder_.getPtrTy();
+#endif
         if (!fun) {
-            auto type = FunctionType::get(builder_.getVoidTy(), {builder_.getPtrTy()}, false);
+            auto type = FunctionType::get(builder_.getVoidTy(), {void_t}, false);
             fun = Function::Create(type, GlobalValue::ExternalLinkage, "free", module_);
             fun->addParamAttr(0, Attribute::NoUndef);
         }
         std::vector<Value *> values;
-        values.push_back(builder_.CreateLoad(builder_.getPtrTy(), params[0]));
+        values.push_back(builder_.CreateLoad(void_t, params[0]));
         builder_.CreateCall(FunctionCallee(fun), values);
-        return builder_.CreateStore(ConstantPointerNull::get(builder_.getPtrTy()), params[0]);
+#ifdef _LLVM_LEGACY
+        auto ptr = (PointerTypeNode*) node.getActualParameter(0)->getType();
+        void_t = (PointerType*) getLLVMType(ptr);
+#endif
+        return builder_.CreateStore(ConstantPointerNull::get(void_t), params[0]);
     } else if (ptype == ProcType::INC || ptype == ProcType::DEC) {
         auto target = getLLVMType(node.getActualParameter(0)->getType());
         Value *delta;
