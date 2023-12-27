@@ -4,6 +4,22 @@
 
 #include "CompilerFlags.h"
 
+void CompilerFlags::setOutputFile(std::string file) {
+    outfile_ = file;
+}
+
+std::string CompilerFlags::getOutputFile() {
+    return outfile_;
+}
+
+void CompilerFlags::setTargetTriple(std::string target) {
+    target_ = target;
+}
+
+std::string CompilerFlags::getTragetTriple() {
+    return target_;
+}
+
 void CompilerFlags::setFileType(OutputFileType type) {
     type_ = type;
 }
