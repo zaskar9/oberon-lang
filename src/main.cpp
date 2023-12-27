@@ -31,11 +31,13 @@ int main(const int argc, const char **argv) {
     visible.add_options()
             ("help,h", "Display available visible.")
             ("version,v", "Print version information.")
+            (",I", po::value<std::string>()->value_name("<directories>"), "Include directories for symbol files.")
+            (",O", po::value<int>()->value_name("<level>"), "Optimization level. [O0, O1, O2, O3]")
+            (",o", po::value<std::string>()->value_name("<filename>"), "Name of the output file.")
             ("filetype", po::value<std::string>()->value_name("<type>"), "Set type of output file. [asm, bc, obj, ll]")
             ("reloc", po::value<std::string>()->value_name("<model>"), "Set relocation model. [default, static, pic]")
-            (",O", po::value<int>()->value_name("<level>"), "Optimization level. [O0, O1, O2, O3]")
-            ("quiet,q", "Suppress all compiler outputs.")
-            (",I", po::value<std::string>()->value_name("<directories>"), "Include directories for symbol files.");
+            ("target", po::value<std::string>()->value_name("<triple>"), "Target triple for cross compilation.")
+            ("quiet,q", "Suppress all compiler outputs.");
     auto hidden = po::options_description("HIDDEN");
     hidden.add_options()
             ("inputs", po::value<std::vector<std::string>>());
@@ -122,7 +124,16 @@ int main(const int argc, const char **argv) {
                 flags->setRelocationModel(RelocationModel::DEFAULT);
             }
         }
+        if (vm.count("-o")) {
+            flags->setOutputFile(vm["-o"].as<std::string>());
+        }
+        if (vm.count("target")) {
+            flags->setTargetTriple(vm["target"].as<std::string>());
+        }
         codegen->configure(flags.get());
+        if (logger->getErrorCount() != 0) {
+            return EXIT_FAILURE;
+        }
         auto inputs = vm["inputs"].as<std::vector<std::string>>();
         for (auto &input : inputs) {
             logger->info(PROJECT_NAME, "compiling module " + input + ".");

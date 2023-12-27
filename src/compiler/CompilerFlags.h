@@ -28,15 +28,23 @@ enum class RelocationModel {
 class CompilerFlags {
 
 private:
+    std::string outfile_;
+    std::string target_;
     OutputFileType type_;
     OptimizationLevel level_;
     RelocationModel model_;
     std::vector<fs::path> includes_;
 
 public:
-    explicit CompilerFlags() : type_(OutputFileType::ObjectFile), level_(OptimizationLevel::O0),
-                               model_(RelocationModel::DEFAULT), includes_() {};
+    CompilerFlags() : outfile_(), target_(), type_(OutputFileType::ObjectFile), level_(OptimizationLevel::O0),
+        model_(RelocationModel::DEFAULT), includes_() {};
     ~CompilerFlags() = default;
+
+    void setOutputFile(std::string file);
+    std::string getOutputFile();
+
+    void setTargetTriple(std::string target);
+    std::string getTragetTriple();
 
     void setFileType(OutputFileType type);
     OutputFileType getFileType();

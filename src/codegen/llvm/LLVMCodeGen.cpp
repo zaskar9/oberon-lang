@@ -50,8 +50,12 @@ void LLVMCodeGen::configure(CompilerFlags *flags) {
         default:
             lvl_ = llvm::OptimizationLevel::O0;
     }
-    // Use default target triple of host
-    std::string triple = sys::getDefaultTargetTriple();
+    std::string triple = flags->getTragetTriple();
+    if (triple.empty()) {
+        // Use default target triple of host as fallback
+        triple = sys::getDefaultTargetTriple();
+    }
+    logger_->debug(PROJECT_NAME, "using target triple: " + triple + ".");
     // Set up target
     std::string error;
     auto target = TargetRegistry::lookupTarget(triple, error);

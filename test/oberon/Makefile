@@ -13,16 +13,19 @@ else
 endif
 
 # Compiler and linker settings
+# TGT = aarch64-linux-gnu
+# TGT = x86_64-linux-gnu
 LIB = ./lib
 INC = ".;./include"
 O7C = ../../cmake-build-release/src/oberon-lang
-O7CFLAGS = -O3 -I$(INC)
+O7CFLAGS = -O3 -I$(INC) # --target $(TGT)
 LDFLAGS = -loberon
 ifeq ($(OS), macos)
 	CXX = clang
+	# CXXFLAGS += -target $(TGT)
 	LDFLAGS += -rpath @executable_path/lib
 else ifeq ($(OS), linux)
-	CXX = gcc
+	CXX = gcc # x86_64-linux-gnu-gcc
 	O7CFLAGS += --reloc=pic
 	LDFLAGS += -lm -Wl,-rpath,$(LIB)
 endif
@@ -39,7 +42,7 @@ else ifeq ($(OS), linux)
 endif
 
 % : %.o
-	@$(CXX) $< -o $@ -L$(LIB) $(LDFLAGS)
+	@$(CXX) $(CXXFLAGS) $< -o $@ -L$(LIB) $(LDFLAGS)
 
 %.o : %.Mod
 	@$(O7C) $(O7CFLAGS) $<

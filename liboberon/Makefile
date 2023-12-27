@@ -13,10 +13,12 @@ else
 endif
 
 # Compiler and linker settings
+# TGT = aarch64-linux-gnu
+# TGT = x86_64-linux-gnu
 LIB = ../test/oberon/lib
 INC = ../test/oberon/include
 O7C = ../cmake-build-release/src/oberon-lang
-O7CFLAGS = -q -O3 --reloc=pic
+O7CFLAGS = -q -O3 --reloc=pic # --target $(TGT)
 LDFLAGS =
 
 # Library settings
@@ -28,7 +30,7 @@ ifeq ($(OS), macos)
 	LDFLAGS += -dynamiclib -install_name @rpath/$(LIBNAME).$(EXT)
 else ifeq ($(OS), linux)
 	EXT = so
-	CXX = gcc
+	CXX = gcc # x86_64-linux-gnu-gcc
 	LDFLAGS += -shared
 endif
 
