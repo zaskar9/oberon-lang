@@ -35,7 +35,8 @@ void Compiler::compile(boost::filesystem::path file) {
             auto printer = std::make_unique<NodePrettyPrinter>(std::cout);
             printer->print(ast.get());
 #endif
-            codegen_->generate(ast.get(), fp.string());
+            //codegen_->generate(ast.get(), fp.string());
+            codegen_->jit(ast.get(), fp.string());
         }
 
     }

@@ -105,7 +105,7 @@ if (LLVM_FOUND)
     add_definitions(${LLVM_DEFINITIONS})
     # target_include_directories(${OBERON_LANG} PRIVATE ${LLVM_INCLUDE_DIRS})
     include_directories(SYSTEM ${LLVM_INCLUDE_DIRS})
-    llvm_map_components_to_libnames(llvm_libs core support passes ${LLVM_TARGETS_TO_BUILD})
+    llvm_map_components_to_libnames(llvm_libs core executionengine jitlink orcjit nativecodegen support passes ${LLVM_TARGETS_TO_BUILD})
     target_link_libraries(${OBERON_LANG} PRIVATE ${llvm_libs})
 endif ()
 

@@ -6,6 +6,7 @@
 
 #include "LLVMCodeGen.h"
 #include "LLVMIRBuilder.h"
+#include "llvm/ExecutionEngine/Orc/LLJIT.h"
 #include <llvm/Bitcode/BitcodeWriter.h>
 #include <llvm/IR/LegacyPassManager.h>
 #include <llvm/MC/TargetRegistry.h>
@@ -18,14 +19,31 @@
 
 using namespace llvm;
 
+int mingw_noop_main(void) {
+  // Cygwin and MinGW insert calls from the main function to the runtime
+  // function __main. The __main function is responsible for setting up main's
+  // environment (e.g. running static constructors), however this is not needed
+  // when running under lli: the executor process will have run non-JIT ctors,
+  // and ORC will take care of running JIT'd ctors. To avoid a missing symbol
+  // error we just implement __main as a no-op.
+  //
+  // FIXME: Move this to ORC-RT (and the ORC-RT substitution library once it
+  //        exists). That will allow it to work out-of-process, and for all
+  //        ORC tools (the problem isn't lli specific).
+  return 0;
+}
+
 LLVMCodeGen::LLVMCodeGen(Logger *logger)
-        : logger_(logger), type_(OutputFileType::ObjectFile), ctx_(), pb_(), lvl_(llvm::OptimizationLevel::O0) {
+        : logger_(logger), type_(OutputFileType::ObjectFile), pb_(), lvl_(llvm::OptimizationLevel::O0) {
     // Initialize LLVM
-    InitializeAllTargetInfos();
-    InitializeAllTargets();
-    InitializeAllTargetMCs();
-    InitializeAllAsmParsers();
-    InitializeAllAsmPrinters();
+    InitializeNativeTarget();
+    InitializeNativeTargetAsmPrinter();
+    InitializeNativeTargetAsmParser();
+   //InitializeAllTargetInfos();
+    //InitializeAllTargets();
+    //InitializeAllTargetMCs();
+    //InitializeAllAsmParsers();
+    //InitializeAllAsmPrinters();
     tm_ = nullptr;
 }
 
@@ -116,6 +134,53 @@ void LLVMCodeGen::generate(Node *ast, boost::filesystem::path path) {
     if (module && logger_->getErrorCount() == 0) {
         logger_->debug(PROJECT_NAME, "emitting code...");
         emit(module.get(), path, type_);
+    } else {
+        logger_->debug(PROJECT_NAME, "code generation failed.");
+    }
+}
+
+void LLVMCodeGen::jit(Node *ast, boost::filesystem::path path) {
+    // Set up the LLVM module
+    logger_->debug(PROJECT_NAME, "generating LLVM code...");
+    std::cout << "OK..." << std::endl;
+    auto Context = std::make_unique<llvm::LLVMContext>();
+    auto name = path.filename().string();
+    auto module = std::make_unique<Module>(path.filename().string(), *Context.get());
+    module->setSourceFileName(path.string());
+    module->setDataLayout(tm_->createDataLayout());
+    module->setTargetTriple(tm_->getTargetTriple().getTriple());
+    // Generate LLVM intermediate representation
+    auto builder = std::make_unique<LLVMIRBuilder>(logger_, *Context.get(), module.get());
+    builder->build(ast);
+    if (module && logger_->getErrorCount() == 0) {
+        logger_->debug(PROJECT_NAME, "JIT...");
+        std::cout << "JIT..." << std::endl;
+        auto J = llvm::orc::LLJITBuilder().create();
+
+        // If this is a Mingw or Cygwin executor then we need to alias __main to
+        // orc_rt_int_void_return_0.
+        if (J.get()->getTargetTriple().isOSCygMing()) {
+            auto dylibsym = J.get()->getProcessSymbolsJITDylib()->define(
+                orc::absoluteSymbols({{J.get()->mangleAndIntern("__main"),
+                {orc::ExecutorAddr::fromPtr(mingw_noop_main),
+                JITSymbolFlags::Exported}}})
+            );
+        }
+
+        auto H = J.get()->addIRModule(llvm::orc::ThreadSafeModule(std::move(module), std::move(Context)));
+        
+        auto MainAddr = J.get()->lookup("main");
+        int Result;
+        if (!MainAddr) {
+            logger_->debug(PROJECT_NAME, "failed to find main entry point.");
+        } else {
+            using MainFnTy = int32_t();
+            auto MainFn = MainAddr->toPtr<MainFnTy *>();
+            Result = MainFn();
+            // TODO : exit with Result code.
+            logger_->debug(PROJECT_NAME, "return code: " + to_string(Result));
+            std::cout << "return code: " + to_string(Result) << std::endl;
+        }
     } else {
         logger_->debug(PROJECT_NAME, "code generation failed.");
     }

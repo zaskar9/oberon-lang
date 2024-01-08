@@ -37,6 +37,7 @@ int main(const int argc, const char **argv) {
             ("filetype", po::value<std::string>()->value_name("<type>"), "Set type of output file. [asm, bc, obj, ll]")
             ("reloc", po::value<std::string>()->value_name("<model>"), "Set relocation model. [default, static, pic]")
             ("target", po::value<std::string>()->value_name("<triple>"), "Target triple for cross compilation.")
+            ("run,r", "Run with LLVM JIT.")
             ("quiet,q", "Suppress all compiler outputs.");
     auto hidden = po::options_description("HIDDEN");
     hidden.add_options()
