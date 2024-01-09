@@ -34,16 +34,14 @@ int mingw_noop_main(void) {
 }
 
 LLVMCodeGen::LLVMCodeGen(Logger *logger)
-        : logger_(logger), type_(OutputFileType::ObjectFile), pb_(), lvl_(llvm::OptimizationLevel::O0) {
+        : logger_(logger), type_(OutputFileType::ObjectFile), ctx_(), pb_(), lvl_(llvm::OptimizationLevel::O0) {
     // Initialize LLVM
-    InitializeNativeTarget();
-    InitializeNativeTargetAsmPrinter();
-    InitializeNativeTargetAsmParser();
-   //InitializeAllTargetInfos();
-    //InitializeAllTargets();
-    //InitializeAllTargetMCs();
-    //InitializeAllAsmParsers();
-    //InitializeAllAsmPrinters();
+    // TODO : Some can be skipped when running JIT
+    InitializeAllTargetInfos();
+    InitializeAllTargets();
+    InitializeAllTargetMCs();
+    InitializeAllAsmParsers();
+    InitializeAllAsmPrinters();
     tm_ = nullptr;
 }
 
@@ -52,6 +50,7 @@ std::string LLVMCodeGen::getDescription() {
 }
 
 void LLVMCodeGen::configure(CompilerFlags *flags) {
+    // TODO : Setup for JIT
     // Set output file type
     type_ = flags->getFileType();
     // Set optimization level
@@ -139,10 +138,10 @@ void LLVMCodeGen::generate(Node *ast, boost::filesystem::path path) {
     }
 }
 
-void LLVMCodeGen::jit(Node *ast, boost::filesystem::path path) {
+int LLVMCodeGen::jit(Node *ast, boost::filesystem::path path) {
     // Set up the LLVM module
     logger_->debug(PROJECT_NAME, "generating LLVM code...");
-    std::cout << "OK..." << std::endl;
+    // TODO : Second context created as LLVMIRBuilder needs std::make_unique
     auto Context = std::make_unique<llvm::LLVMContext>();
     auto name = path.filename().string();
     auto module = std::make_unique<Module>(path.filename().string(), *Context.get());
@@ -152,11 +151,15 @@ void LLVMCodeGen::jit(Node *ast, boost::filesystem::path path) {
     // Generate LLVM intermediate representation
     auto builder = std::make_unique<LLVMIRBuilder>(logger_, *Context.get(), module.get());
     builder->build(ast);
+    // TODO : Run optimizer?
     if (module && logger_->getErrorCount() == 0) {
         logger_->debug(PROJECT_NAME, "JIT...");
-        std::cout << "JIT..." << std::endl;
-        auto J = llvm::orc::LLJITBuilder().create();
 
+        llvm::orc::LLJITBuilder Builder;
+        auto JTMB = llvm::orc::JITTargetMachineBuilder::detectHost();
+        auto J = Builder.setJITTargetMachineBuilder(JTMB.get()).create();
+
+        // NOTE : Remove this when this is moved into compiler_rt for JIT
         // If this is a Mingw or Cygwin executor then we need to alias __main to
         // orc_rt_int_void_return_0.
         if (J.get()->getTargetTriple().isOSCygMing()) {
@@ -167,7 +170,10 @@ void LLVMCodeGen::jit(Node *ast, boost::filesystem::path path) {
             );
         }
 
+        // TODO : Error handling
         auto H = J.get()->addIRModule(llvm::orc::ThreadSafeModule(std::move(module), std::move(Context)));
+        
+        // TODO : Link extra object / dll supplied by user
         
         auto MainAddr = J.get()->lookup("main");
         int Result;
@@ -177,13 +183,13 @@ void LLVMCodeGen::jit(Node *ast, boost::filesystem::path path) {
             using MainFnTy = int32_t();
             auto MainFn = MainAddr->toPtr<MainFnTy *>();
             Result = MainFn();
-            // TODO : exit with Result code.
             logger_->debug(PROJECT_NAME, "return code: " + to_string(Result));
-            std::cout << "return code: " + to_string(Result) << std::endl;
+            return Result;
         }
     } else {
         logger_->debug(PROJECT_NAME, "code generation failed.");
     }
+    return 1;
 }
 
 void LLVMCodeGen::emit(Module *module, boost::filesystem::path path, OutputFileType type) {

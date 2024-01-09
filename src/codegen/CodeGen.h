@@ -21,7 +21,7 @@ public:
     virtual void configure(CompilerFlags *flags) = 0;
 
     virtual void generate(Node *ast, boost::filesystem::path path) = 0;
-    virtual void jit(Node *ast, boost::filesystem::path path) = 0;
+    virtual int jit(Node *ast, boost::filesystem::path path) = 0;
 };
 
 

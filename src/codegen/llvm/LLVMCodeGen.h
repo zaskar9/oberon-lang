@@ -40,7 +40,7 @@ public:
     void configure(CompilerFlags *flags) final;
 
     void generate(Node *ast, boost::filesystem::path path) final;
-    void jit(Node *ast, boost::filesystem::path path) final;
+    int jit(Node *ast, boost::filesystem::path path) final;
 };
 
 

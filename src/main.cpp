@@ -116,6 +116,10 @@ int main(const int argc, const char **argv) {
             }
         }
         if (vm.count("reloc")) {
+            if (vm.count("run")) {
+                logger->error(PROJECT_NAME, "reloc flag not supported with run.");
+                return 1;
+            }
             auto model = vm["reloc"].as<std::string>();
             if (model == "pic") {
                 flags->setRelocationModel(RelocationModel::PIC);
@@ -129,6 +133,10 @@ int main(const int argc, const char **argv) {
             flags->setOutputFile(vm["-o"].as<std::string>());
         }
         if (vm.count("target")) {
+            if (vm.count("run")) {
+                logger->error(PROJECT_NAME, "target flag not supported with run.");
+                return 1;
+            }
             flags->setTargetTriple(vm["target"].as<std::string>());
         }
         codegen->configure(flags.get());
@@ -136,10 +144,19 @@ int main(const int argc, const char **argv) {
             return EXIT_FAILURE;
         }
         auto inputs = vm["inputs"].as<std::vector<std::string>>();
-        for (auto &input : inputs) {
-            logger->info(PROJECT_NAME, "compiling module " + input + ".");
-            auto path = fs::path(input);
-            compiler->compile(path);
+        if (vm.count("run")) {
+            if (inputs.size() != 1) {
+                logger->error(PROJECT_NAME, "run argument expect only one module as input.");
+                return 1;
+            }
+            auto path = fs::path(inputs[0]);
+            exit(compiler->jit(path));
+        } else {
+            for (auto &input : inputs) {
+                logger->info(PROJECT_NAME, "compiling module " + input + ".");
+                auto path = fs::path(input);
+                compiler->compile(path);
+            }
         }
         std::string status = (logger->getErrorCount() == 0 ? "complete" : "failed");
         logger->info(PROJECT_NAME, "compilation " + status + ": " +

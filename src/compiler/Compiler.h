@@ -24,7 +24,7 @@ public:
     ~Compiler() = default;
 
     void compile(boost::filesystem::path file);
-
+    int jit(boost::filesystem::path file);
 };
 
 
