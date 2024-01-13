@@ -24,7 +24,10 @@ public:
     ~Compiler() = default;
 
     void compile(boost::filesystem::path file);
+#ifndef _LLVM_LEGACY
     int jit(boost::filesystem::path file);
+#endif
+
 };
 
 

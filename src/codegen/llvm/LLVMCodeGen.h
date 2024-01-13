@@ -40,7 +40,10 @@ public:
     void configure(CompilerFlags *flags) final;
 
     void generate(Node *ast, boost::filesystem::path path) final;
+#ifndef _LLVM_LEGACY
     int jit(Node *ast, boost::filesystem::path path) final;
+#endif
+
 };
 
 

@@ -174,12 +174,16 @@ int main(const int argc, const char **argv) {
         }
         auto inputs = vm["inputs"].as<std::vector<std::string>>();
         if (flags->isJit()) {
+#ifndef _LLVM_LEGACY
             if (inputs.size() != 1) {
                 logger->error(PROJECT_NAME, "only one input module supported in JIT mode.");
                 return EXIT_FAILURE;
             }
             auto path = fs::path(inputs[0]);
             exit(compiler->jit(path));
+#else
+            logger->error(PROJECT_NAME, "linked LLVM version does not support JIT mode.");
+#endif
         } else {
             for (auto &input : inputs) {
                 logger->info(PROJECT_NAME, "compiling module " + input + ".");

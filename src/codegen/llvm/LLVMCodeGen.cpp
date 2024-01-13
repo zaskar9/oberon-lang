@@ -166,6 +166,7 @@ void LLVMCodeGen::generate(Node *ast, boost::filesystem::path path) {
     }
 }
 
+#ifndef _LLVM_LEGACY
 int LLVMCodeGen::jit(Node *ast, boost::filesystem::path path) {
     // Set up the LLVM module
     logger_->debug(PROJECT_NAME, "Generating LLVM code...");
@@ -217,8 +218,9 @@ int LLVMCodeGen::jit(Node *ast, boost::filesystem::path path) {
     } else {
         logger_->debug(PROJECT_NAME, "Code generation failed.");
     }
-    return 1;
+    return EXIT_FAILURE;
 }
+#endif
 
 void LLVMCodeGen::emit(Module *module, boost::filesystem::path path, OutputFileType type) {
     std::string ext;

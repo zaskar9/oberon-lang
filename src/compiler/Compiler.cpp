@@ -41,6 +41,7 @@ void Compiler::compile(boost::filesystem::path file) {
     }
 }
 
+#ifndef _LLVM_LEGACY
 int Compiler::jit(boost::filesystem::path file) {
     // Scan and parse the input file
     logger_->debug(PROJECT_NAME, "parsing...");
@@ -69,5 +70,6 @@ int Compiler::jit(boost::filesystem::path file) {
         }
 
     }
-    return 1;
+    return EXIT_FAILURE;
 }
+#endif
