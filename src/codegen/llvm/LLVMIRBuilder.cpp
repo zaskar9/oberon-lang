@@ -619,7 +619,7 @@ Value *LLVMIRBuilder::callPredefined(ProcedureNodeReference &node, std::vector<V
     if (ptype == ProcType::NEW) {
         auto fun = module_->getFunction("malloc");
         if (!fun) {
-            auto type = FunctionType::get(builder_.getInt8PtrTy(), {builder_.getInt64Ty()}, false);
+            auto type = FunctionType::get(builder_.getPtrTy(), {builder_.getInt64Ty()}, false);
             fun = Function::Create(type, GlobalValue::ExternalLinkage, "malloc", module_);
             fun->addFnAttr(Attribute::getWithAllocSizeArgs(builder_.getContext(), 0, {}));
             fun->addParamAttr(0, Attribute::NoUndef);
@@ -819,7 +819,7 @@ Type* LLVMIRBuilder::getLLVMType(TypeNode *type) {
         } else if (type->kind() == TypeKind::LONGREAL) {
             result = builder_.getDoubleTy();
         } else if (type->kind() == TypeKind::STRING) {
-            result = builder_.getInt8PtrTy();
+            result = builder_.getPtrTy();
         }
         types_[type] = result;
     }

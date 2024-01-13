@@ -12,7 +12,7 @@
 #include <llvm/IR/LegacyPassManager.h>
 #include <llvm/MC/TargetRegistry.h>
 #include <llvm/Target/TargetMachine.h>
-#include <llvm/Support/Host.h>
+#include <llvm/TargetParser/Host.h>
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Support/raw_ostream.h>
 #include <config.h>
@@ -262,10 +262,10 @@ void LLVMCodeGen::emit(Module *module, boost::filesystem::path path, OutputFileT
     CodeGenFileType ft;
     switch (type) {
         case OutputFileType::AssemblyFile:
-            ft = CGFT_AssemblyFile;
+            ft = CodeGenFileType::AssemblyFile;
             break;
         default:
-            ft = CGFT_ObjectFile;
+            ft = CodeGenFileType::ObjectFile;
             break;
     }
     legacy::PassManager pass;
