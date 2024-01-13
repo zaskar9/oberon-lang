@@ -262,10 +262,18 @@ void LLVMCodeGen::emit(Module *module, boost::filesystem::path path, OutputFileT
     CodeGenFileType ft;
     switch (type) {
         case OutputFileType::AssemblyFile:
+#ifdef _LLVM_18
             ft = CodeGenFileType::AssemblyFile;
+#else
+            ft = CodeGenFileType::CGFT_AssemblyFile;
+#endif
             break;
         default:
+#ifdef _LLVM_18
             ft = CodeGenFileType::ObjectFile;
+#else
+            ft = CodeGenFileType::CGFT_ObjectFile;
+#endif
             break;
     }
     legacy::PassManager pass;
