@@ -491,7 +491,7 @@ void LLVMIRBuilder::visit(ProcedureCallNode& node) {
 }
 
 void LLVMIRBuilder::visit([[maybe_unused]] LoopNode& node) {
-    // todo code generation for general loop
+    // TODO code generation for general loop
 }
 
 void LLVMIRBuilder::visit(WhileLoopNode& node) {
