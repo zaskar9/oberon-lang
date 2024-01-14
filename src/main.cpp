@@ -68,7 +68,13 @@ int main(const int argc, const char **argv) {
         return EXIT_SUCCESS;
     } else if (vm.count("version")) {
         std::cout << PROJECT_NAME << " version " << PROJECT_VERSION << std::endl;
-        std::cout << "Target: " << codegen->getDescription() << std::endl;
+        std::cout << "Target:   " << codegen->getDescription() << std::endl;
+        std::cout << "Includes: ";
+        std::cout << "Boost " << BOOST_VERSION / 100000 << "."
+                              << BOOST_VERSION / 100 % 1000 << "."
+                              << BOOST_VERSION % 100 << ", ";
+        std::cout << "LLVM " << LLVM_VERSION << std::endl;
+
         return EXIT_SUCCESS;
     } else if (vm.count("inputs")) {
         if (vm.count("quiet")) {
