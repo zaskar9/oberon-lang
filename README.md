@@ -29,10 +29,10 @@ As of August 2023, the following configurations are tested and known to work.
 
 |       | macOS             | Windows        | Linux (Ubuntu) |
 |-------|-------------------|----------------|----------------|
-| Boost | 1.82.0            | 1.82.0         | 1.74.0         |
-| LLVM  | 16.0.6            | 15.0.7         | 14.0.0         |
-| CMake | 3.26.0            | 3.26.0         | 3.26.0         |
-| CXX   | LLVM Clang 16.0.6 | CL 19.37.32822 | GCC 11.4.0     |
+| Boost | 1.83.0            | 1.83.0         | 1.74.0         |
+| LLVM  | 17.0.6            | 17.0.2         | 17.0.0         |
+| CMake | 3.28.0            | 3.27.0         | 3.26.0         |
+| CXX   | LLVM Clang 17.0.6 | CL 19.38.33133 | GCC 11.4.0     |
 
 For macOS and Linux, both the x64 and the arm64 version have been tested. Full support for Windows (arm64) is currently
 under development.
