@@ -188,6 +188,11 @@ int LLVMCodeGen::jit(Node *ast, boost::filesystem::path path) {
         auto jittmbuilder = llvm::orc::JITTargetMachineBuilder::detectHost();
         auto jit = jitbuilder.setJITTargetMachineBuilder(jittmbuilder.get()).create();
 
+        if (auto err = jit.takeError()) {
+            logger_->error(PROJECT_NAME, toString(std::move(err)));
+            return EXIT_FAILURE;
+        }
+
         // NOTE : Remove this when this is moved into compiler_rt for JIT
         // If this is a Mingw or Cygwin executor then we need to alias __main to
         // orc_rt_int_void_return_0.
@@ -199,8 +204,10 @@ int LLVMCodeGen::jit(Node *ast, boost::filesystem::path path) {
             );
         }
 
-        // TODO error handling
-        auto H = jit.get()->addIRModule(llvm::orc::ThreadSafeModule(std::move(module), std::move(context)));
+        if (auto err = jit.get()->addIRModule(llvm::orc::ThreadSafeModule(std::move(module), std::move(context)))) {
+            logger_->error(PROJECT_NAME, toString(std::move(err)));
+            return EXIT_FAILURE;
+        }
         
         // TODO link extra object / dll supplied by user
 
