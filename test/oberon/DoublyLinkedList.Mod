@@ -2,57 +2,68 @@ MODULE DoublyLinkedList;
 IMPORT Out;
 
 TYPE
-  Node = RECORD
+  Node = POINTER TO NodeDesc;
+  NodeDesc = RECORD
     value: INTEGER;
-    prev, next: POINTER TO Node
+    prev, next: Node
+  END;
+  List* = RECORD
+    head, tail: Node
   END;
 
 VAR
-  head, tail: POINTER TO Node;
+  list: List;
 
-PROCEDURE InsertAtEnd(value: INTEGER);
+PROCEDURE append(VAR l: List; value: INTEGER);
   VAR
-    newNode: POINTER TO Node;
+    newNode: Node;
   BEGIN
     NEW(newNode);
     newNode.value := value;
 
-    IF tail = NIL THEN
+    IF l.tail = NIL THEN
       (* If the list is empty, set the new node as both head and tail *)
-      head := newNode;
-      tail := newNode
+      l.head := newNode;
+      l.tail := newNode
     ELSE
       (* Append the new node to the end of the list *)
-      newNode.prev := tail;
-      tail.next := newNode;
-      tail := newNode
+      newNode.prev := l.tail;
+      l.tail.next := newNode;
+      l.tail := newNode
     END
-  END InsertAtEnd;
+  END append;
 
-PROCEDURE DisplayList;
+PROCEDURE print(l: List);
   VAR
-    currentNode: POINTER TO Node;
+    currentNode: Node;
+    first: BOOLEAN;
   BEGIN
-    currentNode := head;
+    currentNode := l.head;
+    Out.String("[");
+    first := TRUE;
     WHILE currentNode # NIL DO
+      IF ~first THEN
+        Out.String(", ")
+      END;
       (* Print the value of the current node *)
-      Out.Int(currentNode.value); Out.String(" ");
+      Out.Int(currentNode.value);
       (* Move to the next node *)
-      currentNode := currentNode.next
+      currentNode := currentNode.next;
+      first := FALSE
     END;
-    Out.Ln
-  END DisplayList;
+    Out.String("]"); Out.Ln
+  END print;
 
 BEGIN
-  head := NIL;
-  tail := NIL;
+  list.head := NIL;
+  list.tail := list.head;
 
   (* Insert values into the doubly linked list *)
-  InsertAtEnd(10);
-  InsertAtEnd(20);
-  InsertAtEnd(30);
-  InsertAtEnd(40);
+  append(list, 10);
+  append(list, 20);
+  append(list, 30);
+  append(list, 40);
 
   (* Display the doubly linked list *)
-  DisplayList
+  print(list)
 END DoublyLinkedList.

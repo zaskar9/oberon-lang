@@ -184,44 +184,29 @@ int LLVMCodeGen::jit(Node *ast, boost::filesystem::path path) {
     if (module && logger_->getErrorCount() == 0) {
         logger_->debug(PROJECT_NAME, "Running JIT...");
 
-        llvm::orc::LLJITBuilder jitbuilder;
-        auto jittmbuilder = llvm::orc::JITTargetMachineBuilder::detectHost();
-        auto jit = jitbuilder.setJITTargetMachineBuilder(jittmbuilder.get()).create();
+        ExitOnError exitOnErr;
+        exitOnErr.setBanner(std::string(PROJECT_NAME) + ": [error] ");
+        auto jit = exitOnErr(orc::LLJITBuilder().create());
 
-        if (auto err = jit.takeError()) {
-            logger_->error(PROJECT_NAME, toString(std::move(err)));
-            return EXIT_FAILURE;
-        }
-
-        // NOTE : Remove this when this is moved into compiler_rt for JIT
-        // If this is a Mingw or Cygwin executor then we need to alias __main to
-        // orc_rt_int_void_return_0.
-        if (jit.get()->getTargetTriple().isOSCygMing()) {
-            auto dylibsym = jit.get()->getProcessSymbolsJITDylib()->define(
-                orc::absoluteSymbols({{jit.get()->mangleAndIntern("__main"),
+        // TODO Remove this when this is moved into compiler_rt for JIT
+        // If this is a Mingw or Cygwin executor then we need to alias __main to orc_rt_int_void_return_0.
+        if (jit->getTargetTriple().isOSCygMing()) {
+            auto dylibsym = jit->getProcessSymbolsJITDylib()->define(
+                orc::absoluteSymbols({{jit->mangleAndIntern("__main"),
                                        {orc::ExecutorAddr::fromPtr(mingw_noop_main),
                 JITSymbolFlags::Exported}}})
             );
         }
 
-        if (auto err = jit.get()->addIRModule(llvm::orc::ThreadSafeModule(std::move(module), std::move(context)))) {
-            logger_->error(PROJECT_NAME, toString(std::move(err)));
-            return EXIT_FAILURE;
-        }
-        
-        // TODO link extra object / dll supplied by user
+        exitOnErr(jit->addIRModule(orc::ThreadSafeModule(std::move(module), std::move(context))));
 
-        auto mainAddr = jit.get()->lookup("main");
-        int result;
-        if (!mainAddr) {
-            logger_->debug(PROJECT_NAME, "Failed to find main entry point.");
-        } else {
-            using mainFnTy = int32_t();
-            auto mainFn = mainAddr->toPtr<mainFnTy *>();
-            result = mainFn();
-            logger_->debug(PROJECT_NAME, "Return code: " + to_string(result));
-            return result;
-        }
+        // TODO Link with other modules (*.sym, *.o, and *.obj files)
+
+        auto mainAddr = exitOnErr(jit->lookup("main"));
+        auto mainFn = mainAddr.toPtr<int(void)>();
+        int result = mainFn();
+        logger_->debug(PROJECT_NAME, "Return code: " + to_string(result));
+        return result;
     } else {
         logger_->debug(PROJECT_NAME, "Code generation failed.");
     }
