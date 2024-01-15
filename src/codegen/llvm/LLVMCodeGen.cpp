@@ -123,7 +123,8 @@ void LLVMCodeGen::configure(CompilerFlags *flags) {
             auto lib = flags->findLibrary(fname);
             if (lib.has_value()) {
                 logger_->debug(PROJECT_NAME, "Loading dynamic library: " + fname);
-                sys::DynamicLibrary::LoadLibraryPermanently(lib.value().c_str());
+                const std::string value(lib.value().string());
+                sys::DynamicLibrary::LoadLibraryPermanently(value.c_str());
             } else {
                 logger_->debug(PROJECT_NAME, "Dynamic library not found: " + fname);
             }
