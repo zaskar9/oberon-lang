@@ -43,6 +43,8 @@ LLVMCodeGen::LLVMCodeGen(Logger *logger)
     InitializeAllAsmParsers();
     InitializeAllAsmPrinters();
     tm_ = nullptr;
+    jit_ = nullptr;
+    exitOnErr_.setBanner(std::string(PROJECT_NAME) + ": [error] ");
 }
 
 std::string LLVMCodeGen::getDescription() {
@@ -102,34 +104,53 @@ void LLVMCodeGen::configure(CompilerFlags *flags) {
     }
     // TODO Setup for JIT
     if (flags->isJit()) {
-        std::string prefix;
-        std::string libext;
-        if (tm_->getTargetTriple().isOSWindows()) {
-            prefix = "";
-            libext = ".dll";
-        } else if (tm_->getTargetTriple().isMacOSX()) {
-            prefix = "lib";
-            libext = ".dylib";
-        } else {
-            prefix = "lib";
-            libext = ".so";
+        jit_ = exitOnErr_(orc::LLJITBuilder().create());
+        // TODO Remove this when this is moved into compiler_rt for JIT
+        // If this is a Mingw or Cygwin executor then we need to alias __main to orc_rt_int_void_return_0.
+        if (jit_->getTargetTriple().isOSCygMing()) {
+            auto dylibsym = jit_->getProcessSymbolsJITDylib()->define(
+                    orc::absoluteSymbols({{jit_->mangleAndIntern("__main"),
+                                           {orc::ExecutorAddr::fromPtr(mingw_noop_main),
+                                            JITSymbolFlags::Exported}}})
+            );
         }
         // Load libraries
-        logger_->debug(PROJECT_NAME, "Loading dynamic libraries...");
         for (const auto& name : flags->getLibraries()) {
-            std::stringstream ss;
-            ss << prefix << name << libext;
-            std::string fname = ss.str();
-            auto lib = flags->findLibrary(fname);
-            if (lib.has_value()) {
-                logger_->debug(PROJECT_NAME, "Loading dynamic library: " + fname);
+            logger_->debug(PROJECT_NAME, "Searching for library: " + name );
+            auto lib = flags->findLibrary(getLibName(name, true, jit_->getTargetTriple()));
+            if (lib) {
                 const std::string value(lib.value().string());
+                logger_->debug(PROJECT_NAME, "Loading dynamic library: " + value);
                 sys::DynamicLibrary::LoadLibraryPermanently(value.c_str());
             } else {
-                logger_->debug(PROJECT_NAME, "Dynamic library not found: " + fname);
+                lib = flags->findLibrary(getLibName(name, false, jit_->getTargetTriple()));
+                if (lib) {
+                    const std::string value(lib.value().string());
+                    logger_->debug(PROJECT_NAME, "Loading static library: " + value);
+                    auto &dylib = exitOnErr_(jit_->createJITDylib("name"));
+                    exitOnErr_(jit_->linkStaticLibraryInto(dylib, value.c_str()));
+                    jit_->getMainJITDylib().addToLinkOrder(dylib);
+                } else {
+                    logger_->error(PROJECT_NAME, "Library not found: " + name);
+                }
             }
         }
     }
+}
+
+std::string LLVMCodeGen::getLibName(const std::string &name, bool dylib, const llvm::Triple &triple) {
+    std::stringstream ss;
+    if (triple.isOSWindows()) {
+        ss << name << (dylib ? ".dll" : ".lib");
+    } else {
+        ss << "lib" << name;
+        if (dylib) {
+            ss << (triple.isMacOSX() ? ".dylib" : ".so");
+        } else {
+            ss << ".a";
+        }
+    }
+    return ss.str();
 }
 
 void LLVMCodeGen::generate(Node *ast, boost::filesystem::path path) {
@@ -171,7 +192,7 @@ void LLVMCodeGen::generate(Node *ast, boost::filesystem::path path) {
 int LLVMCodeGen::jit(Node *ast, boost::filesystem::path path) {
     // Set up the LLVM module
     logger_->debug(PROJECT_NAME, "Generating LLVM code...");
-    // TODO Second context created as LLVMIRBuilder needs std::make_unique
+    // TODO second context created as LLVMIRBuilder needs std::make_unique
     auto context = std::make_unique<llvm::LLVMContext>();
     auto name = path.filename().string();
     auto module = std::make_unique<Module>(path.filename().string(), *context.get());
@@ -184,26 +205,11 @@ int LLVMCodeGen::jit(Node *ast, boost::filesystem::path path) {
     // TODO run optimizer?
     if (module && logger_->getErrorCount() == 0) {
         logger_->debug(PROJECT_NAME, "Running JIT...");
+        exitOnErr_(jit_->addIRModule(orc::ThreadSafeModule(std::move(module), std::move(context))));
 
-        ExitOnError exitOnErr;
-        exitOnErr.setBanner(std::string(PROJECT_NAME) + ": [error] ");
-        auto jit = exitOnErr(orc::LLJITBuilder().create());
+        // TODO link with other imported modules (*.o and *.obj files)
 
-        // TODO Remove this when this is moved into compiler_rt for JIT
-        // If this is a Mingw or Cygwin executor then we need to alias __main to orc_rt_int_void_return_0.
-        if (jit->getTargetTriple().isOSCygMing()) {
-            auto dylibsym = jit->getProcessSymbolsJITDylib()->define(
-                orc::absoluteSymbols({{jit->mangleAndIntern("__main"),
-                                       {orc::ExecutorAddr::fromPtr(mingw_noop_main),
-                JITSymbolFlags::Exported}}})
-            );
-        }
-
-        exitOnErr(jit->addIRModule(orc::ThreadSafeModule(std::move(module), std::move(context))));
-
-        // TODO Link with other modules (*.sym, *.o, and *.obj files)
-
-        auto mainAddr = exitOnErr(jit->lookup("main"));
+        auto mainAddr = exitOnErr_(jit_->lookup("main"));
         auto mainFn = mainAddr.toPtr<int(void)>();
         int result = mainFn();
         logger_->debug(PROJECT_NAME, "Return code: " + to_string(result));

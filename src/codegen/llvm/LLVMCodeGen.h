@@ -11,11 +11,13 @@
 #include "analyzer/Analyzer.h"
 #include "codegen/CodeGen.h"
 #include "logging/Logger.h"
+#include <string>
 #include <boost/filesystem.hpp>
+#include <llvm/ExecutionEngine/Orc/LLJIT.h>
 #include <llvm/Passes/PassBuilder.h>
 #include <llvm/Target/TargetMachine.h>
 
-// using namespace llvm;
+
 
 int mingw_noop_main(void);
 
@@ -28,8 +30,11 @@ private:
     llvm::PassBuilder pb_;
     llvm::OptimizationLevel lvl_;
     llvm::TargetMachine *tm_;
+    std::unique_ptr<llvm::orc::LLJIT> jit_;
+    llvm::ExitOnError exitOnErr_;
 
     void emit(llvm::Module *module, boost::filesystem::path path, OutputFileType type);
+    static std::string getLibName(const std::string &name, bool dylib, const llvm::Triple &triple);
 
 public:
     explicit LLVMCodeGen(Logger *logger);
