@@ -29,11 +29,12 @@ int main(const int argc, const char **argv) {
     auto compiler = std::make_unique<Compiler>(logger.get(), flags.get(), codegen.get());
     auto visible = po::options_description("OPTIONS");
     visible.add_options()
-            ("help,h", "Display available visible.")
+            ("help,h", "Displays this help information.")
             ("version", "Print version information.")
             (",I", po::value<std::string>()->value_name("<directories>"), "Search paths for symbol files.")
             (",L", po::value<std::string>()->value_name("<directories>"), "Search paths for libraries.")
             (",l", po::value<std::vector<std::string>>()->value_name("<library>"), "Static or dynamic library.")
+            (",f", po::value<std::vector<std::string>>()->value_name("<flag>"), "Compiler flags.")
             (",O", po::value<int>()->value_name("<level>"), "Optimization level. [O0, O1, O2, O3]")
             (",o", po::value<std::string>()->value_name("<filename>"), "Name of the output file.")
             ("filetype", po::value<std::string>()->value_name("<type>"), "Set type of output file. [asm, bc, obj, ll]")
@@ -89,7 +90,7 @@ int main(const int argc, const char **argv) {
             boost::algorithm::split(includes, param, boost::is_any_of(";"));
             for (const auto& include : includes) {
                 flags->addIncludeDirectory(include);
-                logger->debug(PROJECT_NAME, "adding include search path: \"" + include + "\".");
+                logger->debug("Include search path: \"" + include + "\".");
             }
         }
         if (vm.count("-L")) {
@@ -98,14 +99,14 @@ int main(const int argc, const char **argv) {
             boost::algorithm::split(libraries, param, boost::is_any_of(";"));
             for (const auto& library : libraries) {
                 flags->addLibraryDirectory(library);
-                logger->debug(PROJECT_NAME, "adding library search path: \"" + library + "\".");
+                logger->debug("Library search path: \"" + library + "\".");
             }
         }
         if (vm.count("-l")) {
             auto param = vm["-l"].as<std::vector<std::string>>();
             for (const auto& lib : param) {
                 flags->addLibrary(lib);
-                logger->debug(PROJECT_NAME, "adding library: \"" + lib + "\".");
+                logger->debug("Library: \"" + lib + "\".");
             }
         }
         if (vm.count("-O")) {
@@ -192,16 +193,16 @@ int main(const int argc, const char **argv) {
 #endif
         } else {
             for (auto &input : inputs) {
-                logger->info(PROJECT_NAME, "compiling module " + input + ".");
+                logger->debug("Compiling module " + input + ".");
                 auto path = fs::path(input);
                 compiler->compile(path);
             }
         }
         std::string status = (logger->getErrorCount() == 0 ? "complete" : "failed");
-        logger->info(PROJECT_NAME, "compilation " + status + ": " +
-                                   std::to_string(logger->getErrorCount()) + " error(s), " +
-                                   std::to_string(logger->getWarningCount()) + " warning(s), " +
-                                   std::to_string(logger->getInfoCount()) + " message(s).");
+        logger->info("Compilation " + status + ": " +
+                          std::to_string(logger->getErrorCount()) + " error(s), " +
+                          std::to_string(logger->getWarningCount()) + " warning(s), " +
+                          std::to_string(logger->getInfoCount()) + " message(s).");
         exit(logger->getErrorCount() != 0);
     } else {
         logger->error(PROJECT_NAME, "no input files specified.");

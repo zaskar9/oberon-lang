@@ -38,7 +38,7 @@ private:
     std::unique_ptr<QualIdent> qualident();
     std::unique_ptr<Designator> designator();
     std::unique_ptr<Selector> selector();
-    bool maybeTypeguard();
+    bool maybe_typeguard();
     std::unique_ptr<IdentDef> identdef(bool checkAlphaNum = true);
     void ident_list(std::vector<std::unique_ptr<Ident>> &idents);
 

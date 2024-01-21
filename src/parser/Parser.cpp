@@ -22,7 +22,7 @@ std::unique_ptr<Ident> Parser::ident() {
     if (assertToken(token, TokenType::const_ident)) {
         token_ = scanner_->next();
         auto ident = dynamic_cast<const IdentToken*>(token_.get());
-        logger_->debug({}, to_string(*ident));
+        logger_->debug(to_string(*ident));
         return std::make_unique<Ident>(ident->start(), ident->value());
     }
     // [<END>, <ELSE>, <ELSIF>, <THEN>, <UNTIL>, <BY>, <DO>, <TO>, <OF>, <MOD>, <DIV>, <OR>,
@@ -39,6 +39,7 @@ std::unique_ptr<Ident> Parser::ident() {
 
 // qualident = [ ident "." ] ident .
 std::unique_ptr<QualIdent> Parser::qualident() {
+    logger_->debug("qualident");
     auto qualifier = ident();
     if (scanner_->peek()->type() == TokenType::period) {
         scanner_->next(); // skip the period
@@ -52,6 +53,7 @@ std::unique_ptr<QualIdent> Parser::qualident() {
 
 // identdef = ident [ "*" ] .
 std::unique_ptr<IdentDef> Parser::identdef(bool checkAlphaNum) {
+    logger_->debug("identdef");
     auto identifier = ident();
     if (checkAlphaNum) {
         assertOberonIdent(identifier.get());
@@ -66,6 +68,7 @@ std::unique_ptr<IdentDef> Parser::identdef(bool checkAlphaNum) {
 
 // designator = qualident { selector } .
 std::unique_ptr<Designator> Parser::designator() {
+    logger_->debug("designator");
     auto identifier = qualident();
     auto designator = std::make_unique<Designator>(std::move(identifier));
     auto token = scanner_->peek();
@@ -87,7 +90,7 @@ std::unique_ptr<Designator> Parser::designator() {
 // TODO selector = "." ident | "[" exp_list "]" | "^" | "(" qualident ")" | actual_parameters .
 // selector = "." ident | "[" expression "]" | "^" | "(" qualident ")" | actual_parameters .
 std::unique_ptr<Selector> Parser::selector() {
-    logger_->debug({}, "selector");
+    logger_->debug("selector");
     std::unique_ptr<Selector> sel = nullptr;
     auto token = scanner_->peek();
     if (token->type() == TokenType::period) {
@@ -111,7 +114,7 @@ std::unique_ptr<Selector> Parser::selector() {
         token_ = scanner_->next();
         sel = std::make_unique<Dereference>(token_->start());
     } else if (token->type() == TokenType::lparen) {
-        if (maybeTypeguard()) {
+        if (maybe_typeguard()) {
             token_ = scanner_->next(); // skip "("
             auto ident = qualident();
             sel = std::make_unique<Typeguard>(token_->start(), std::move((ident)));
@@ -126,8 +129,8 @@ std::unique_ptr<Selector> Parser::selector() {
     return sel;
 }
 
-bool Parser::maybeTypeguard() {
-    logger_->debug({}, "maybe_typeguard");
+bool Parser::maybe_typeguard() {
+    logger_->debug("maybe_typeguard");
     // we need a look-ahead of 5 to check whether we have (ident) or (ident.ident)
     auto peek = scanner_->peek(true);
     if (peek->type() == TokenType::lparen) {
@@ -150,7 +153,7 @@ bool Parser::maybeTypeguard() {
 
 // ident_list = identdef { "," identdef } .
 void Parser::ident_list(std::vector<std::unique_ptr<Ident>> &idents) {
-    logger_->debug({}, "ident_list");
+    logger_->debug("ident_list");
     while (true) {
         auto token = scanner_->peek();
         if (token->type() == TokenType::const_ident) {
@@ -177,7 +180,7 @@ void Parser::ident_list(std::vector<std::unique_ptr<Ident>> &idents) {
 
 // module = "MODULE" ident ";" [ import_list ] declarations [ "BEGIN" statement_sequence ] "END" ident "." .
 std::unique_ptr<ModuleNode> Parser::module() {
-    logger_->debug({}, "module");
+    logger_->debug("module");
     token_ = scanner_->next();
     if (assertToken(token_.get(), TokenType::kw_module)) {
         auto module = std::make_unique<ModuleNode>(token_->start(), ident());
@@ -213,7 +216,7 @@ std::unique_ptr<ModuleNode> Parser::module() {
 
 // import_list = IMPORT import {"," import} ";" .
 void Parser::import_list(ModuleNode *module) {
-    logger_->debug({}, "import_list");
+    logger_->debug("import_list");
     scanner_->next(); // skip IMPORT keyword
     while (true) {
         import(module);
@@ -236,7 +239,7 @@ void Parser::import_list(ModuleNode *module) {
 
 // import = ident [":=" ident] .
 void Parser::import(ModuleNode *module) {
-    logger_->debug({}, "import");
+    logger_->debug("import");
     auto token = scanner_->peek();
     if (assertToken(token, TokenType::const_ident)) {
         auto identifier = ident();
@@ -258,7 +261,7 @@ void Parser::import(ModuleNode *module) {
 // TODO                        { procedure_declaration ";" } .
 // declarations = [ const_declarations ] [ type_declarations ] [ var_declarations ] { procedure_declaration } .
 void Parser::declarations(BlockNode *block) {
-    logger_->debug({}, "declarations");
+    logger_->debug("declarations");
     if (scanner_->peek()->type() == TokenType::kw_const) {
         const_declarations(block);
     }
@@ -277,7 +280,7 @@ void Parser::declarations(BlockNode *block) {
 // TODO const_expression = expression .
 // const_declarations = "CONST" { identdef "=" expression ";" } .
 void Parser::const_declarations(BlockNode *block) {
-    logger_->debug({}, "const_declarations");
+    logger_->debug("const_declarations");
     scanner_->next(); // skip CONST keyword
     while (scanner_->peek()->type() == TokenType::const_ident) {
         auto pos = scanner_->peek()->start();
@@ -298,7 +301,7 @@ void Parser::const_declarations(BlockNode *block) {
 
 // type_declarations =  "TYPE" { ident "=" type ";" } .
 void Parser::type_declarations(BlockNode *block) {
-    logger_->debug({}, "type_declarations");
+    logger_->debug("type_declarations");
     scanner_->next(); // skip TYPE keyword
     while (scanner_->peek()->type() == TokenType::const_ident) {
         auto pos = scanner_->peek()->start();
@@ -321,7 +324,7 @@ void Parser::type_declarations(BlockNode *block) {
 // TODO type = qualident | array_type | record_type | pointer_type | procedure_type.
 // type = qualident | array_type | record_type | pointer_type .
 TypeNode* Parser::type(BlockNode *block, Ident* identifier) {
-    logger_->debug({}, "type");
+    logger_->debug("type");
     auto token = scanner_->peek();
     if (token->type() == TokenType::const_ident) {
         auto referenced = qualident();
@@ -355,7 +358,7 @@ TypeNode* Parser::type(BlockNode *block, Ident* identifier) {
 // TODO array_type = "ARRAY" expression { "," expression } "OF" type .
 // array_type = "ARRAY" expression "OF" type .
 ArrayTypeNode* Parser::array_type(BlockNode *block, Ident* identifier) {
-    logger_->debug({}, "array_type");
+    logger_->debug("array_type");
     FilePos pos = scanner_->next()->start(); // skip ARRAY keyword and get its position
     auto expr = expression();
     if (assertToken(scanner_->peek(), TokenType::kw_of)) {
@@ -370,7 +373,7 @@ ArrayTypeNode* Parser::array_type(BlockNode *block, Ident* identifier) {
 // TODO record_type = "RECORD" [ "(" qualident ")" ] [ field_list { ";" field_list } ] END.
 // record_type = "RECORD" field_list { ";" field_list } "END" .
 RecordTypeNode* Parser::record_type(BlockNode *block, Ident* identifier) {
-    logger_->debug({}, "record_type");
+    logger_->debug("record_type");
     FilePos pos = scanner_->next()->start(); // skip RECORD keyword and get its position
     auto node = new RecordTypeNode(pos, identifier);
     field_list(block, node);
@@ -388,7 +391,7 @@ RecordTypeNode* Parser::record_type(BlockNode *block, Ident* identifier) {
 
 // field_list = ident_list ":" type .
 void Parser::field_list(BlockNode *block, RecordTypeNode *record) {
-    logger_->debug({}, "field_list");
+    logger_->debug("field_list");
     std::vector<std::unique_ptr<Ident>> idents;
     auto next = scanner_->peek();
     if (next->type() == TokenType::const_ident) {
@@ -416,7 +419,7 @@ void Parser::field_list(BlockNode *block, RecordTypeNode *record) {
 
 // pointer_type = "POINTER" "TO" type .
 PointerTypeNode* Parser::pointer_type(BlockNode *block, Ident *identifier) {
-    logger_->debug({}, "pointer_type");
+    logger_->debug("pointer_type");
     FilePos pos = scanner_->next()->start(); // skip POINTER keyword and get its position
     if (assertToken(scanner_->peek(), TokenType::kw_to)) {
         scanner_->next(); // skip TO keyword
@@ -429,7 +432,7 @@ PointerTypeNode* Parser::pointer_type(BlockNode *block, Ident *identifier) {
 
 // var_declarations = "VAR" { ident_list ":" type ";" } .
 void Parser::var_declarations(BlockNode *block) {
-    logger_->debug({}, "var_declarations");
+    logger_->debug("var_declarations");
     scanner_->next(); // skip VAR keyword
     while (scanner_->peek()->type() == TokenType::const_ident) {
         std::vector<std::unique_ptr<Ident>> idents;
@@ -455,7 +458,7 @@ void Parser::var_declarations(BlockNode *block) {
 
 // procedure_declaration = procedure_heading ";" ( procedure_body ident | "EXTERN" ) ";" .
 void Parser::procedure_declaration(BlockNode *block) {
-    logger_->debug({}, "procedure_declaration");
+    logger_->debug("procedure_declaration");
     auto proc = procedure_heading();
     auto token = scanner_->peek();
     if (token->type() != TokenType::semicolon) {
@@ -488,7 +491,7 @@ void Parser::procedure_declaration(BlockNode *block) {
 
 // procedure_heading = "PROCEDURE" identdef [ formal_parameters ] [ ":" type ] .
 std::unique_ptr<ProcedureNode> Parser::procedure_heading() {
-    logger_->debug({}, "procedure_heading");
+    logger_->debug("procedure_heading");
     auto token = scanner_->next(); // skip PROCEDURE keyword
     auto pos = token->start();
     auto identifier = identdef(false);
@@ -512,7 +515,7 @@ std::unique_ptr<ProcedureNode> Parser::procedure_heading() {
 // TODO procedure_body = declarations [ "BEGIN" statement_sequence ] [ "RETURN" expression] "END" .
 // procedure_body = declarations [ "BEGIN" statement_sequence ] "END" .
 void Parser::procedure_body(ProcedureNode *proc) {
-    logger_->debug({}, "procedure_body");
+    logger_->debug("procedure_body");
     declarations(proc);
     auto token = scanner_->peek();
     if (token->type() == TokenType::kw_end) {
@@ -530,7 +533,7 @@ void Parser::procedure_body(ProcedureNode *proc) {
 // TODO formal_parameters = "(" [ fp_section { ";" fp_section } ] ")" [":" qualident] .
 // formal_parameters = "(" [ fp_section { ";" fp_section } ] ")" .
 void Parser::formal_parameters(ProcedureNode *proc) {
-    logger_->debug({}, "formal_parameters");
+    logger_->debug("formal_parameters");
     auto token = scanner_->next(); // skip left parenthesis
     if (token->type() == TokenType::lparen) {
         TokenType type = scanner_->peek()->type();
@@ -557,7 +560,7 @@ void Parser::formal_parameters(ProcedureNode *proc) {
 // TODO formal_type = { "ARRAY" "OF" } qualident.
 // fp_section = ( [ "VAR" ] ident { "," ident } ":" type | "..." ) .
 void Parser::fp_section(ProcedureNode *proc) {
-    logger_->debug({}, "fp_section");
+    logger_->debug("fp_section");
     if (scanner_->peek()->type() == TokenType::varargs) {
         scanner_->next(); // skip varargs
         proc->setVarArgs(true);
@@ -598,7 +601,7 @@ void Parser::fp_section(ProcedureNode *proc) {
 
 // statement_sequence = statement { ";" statement } .
 void Parser::statement_sequence(StatementSequenceNode *statements) {
-    logger_->debug({}, "statement_sequence");
+    logger_->debug("statement_sequence");
     auto token = scanner_->peek();
     // [<UNTIL>, <ELSIF>, <ELSE>, <END>]
     if (token->type() == TokenType::kw_end || token->type() == TokenType::kw_elsif ||
@@ -632,7 +635,7 @@ void Parser::statement_sequence(StatementSequenceNode *statements) {
 //               while_statement | repeat_statement | for_statement | loop_statement
 //               with_statement | "EXIT" | "RETURN" [ expression ] ) .
 std::unique_ptr<StatementNode> Parser::statement() {
-    logger_->debug({}, "statement");
+    logger_->debug("statement");
     auto token = scanner_->peek();
     if (token->type() == TokenType::const_ident) {
         FilePos pos = token->start();
@@ -670,7 +673,7 @@ std::unique_ptr<StatementNode> Parser::statement() {
 
 // assignment = designator ":=" expression .
 std::unique_ptr<StatementNode> Parser::assignment(std::unique_ptr<ValueReferenceNode> lvalue) {
-    logger_->debug({}, "assignment");
+    logger_->debug("assignment");
     scanner_->next(); // skip assign operator
     auto statement = std::make_unique<AssignmentNode>(lvalue->pos(), std::move(lvalue), expression());
     // [<;>, <END>, <ELSIF>, <ELSE>, <UNTIL>]
@@ -680,7 +683,7 @@ std::unique_ptr<StatementNode> Parser::assignment(std::unique_ptr<ValueReference
 
 // if_statement = "IF" expression "THEN" statement_sequence { "ELSIF" expression "THEN" statement_sequence } [ "ELSE" statement_sequence ] "END" .
 std::unique_ptr<StatementNode> Parser::if_statement() {
-    logger_->debug({}, "if_statement");
+    logger_->debug("if_statement");
     token_ = scanner_->next(); // skip IF keyword
     auto condition = expression();
     auto statement = std::make_unique<IfThenElseNode>(token_->start(), std::move(condition));
@@ -711,7 +714,7 @@ std::unique_ptr<StatementNode> Parser::if_statement() {
 
 // loop_statement = "LOOP" statement_sequence "END" .
 std::unique_ptr<StatementNode> Parser::loop_statement() {
-    logger_->debug({}, "loop_statement");
+    logger_->debug("loop_statement");
     token_ = scanner_->next(); // skip LOOP keyword
     auto statement = std::make_unique<LoopNode>(token_->start());
     statement_sequence(statement->getStatements());
@@ -726,7 +729,7 @@ std::unique_ptr<StatementNode> Parser::loop_statement() {
 
 // while_statement = "WHILE" expression "DO" statement_sequence "END" .
 std::unique_ptr<StatementNode> Parser::while_statement() {
-    logger_->debug({}, "while_statement");
+    logger_->debug("while_statement");
     token_ = scanner_->next(); // skip WHILE keyword
     auto statement = std::make_unique<WhileLoopNode>(token_->start(), expression());
     token_ = scanner_->next();
@@ -744,7 +747,7 @@ std::unique_ptr<StatementNode> Parser::while_statement() {
 
 // repeat_statement = "REPEAT" statement_sequence "UNTIL" expression .
 std::unique_ptr<StatementNode> Parser::repeat_statement() {
-    logger_->debug({}, "repeat_statement");
+    logger_->debug("repeat_statement");
     token_ = scanner_->next(); // skip REPEAT keyword
     auto statement = std::make_unique<RepeatLoopNode>(token_->start());
     statement_sequence(statement->getStatements());
@@ -761,7 +764,7 @@ std::unique_ptr<StatementNode> Parser::repeat_statement() {
 
 // for_statement = "FOR" ident ":=" expression "TO" expression [ "BY" const_expression ] "DO" statement_sequence "END" .
 std::unique_ptr<StatementNode> Parser::for_statement() {
-    logger_->debug({}, "for_statement");
+    logger_->debug("for_statement");
     token_ = scanner_->next(); // skip FOR keyword
     auto start = token_->start();
     auto ident = this->ident();
@@ -798,7 +801,7 @@ std::unique_ptr<StatementNode> Parser::for_statement() {
 
 // actual_parameters = "(" [ expression { "," expression } ] ")" .
 void Parser::actual_parameters(ActualParameters *params) {
-    logger_->debug({}, "actual_parameters");
+    logger_->debug("actual_parameters");
     token_ = scanner_->next(); // skip left parenthesis
     if (scanner_->peek()->type() == TokenType::rparen) {
         token_ = scanner_->next();
@@ -815,7 +818,7 @@ void Parser::actual_parameters(ActualParameters *params) {
 
 // expression = simple_expression [ ( "=" | "#" | "<" | "<=" | ">" | ">=" ) simple_expression ] .
 std::unique_ptr<ExpressionNode> Parser::expression() {
-    logger_->debug({}, "expression");
+    logger_->debug("expression");
     auto result = simple_expression();
     TokenType token = scanner_->peek()->type();
     if (token == TokenType::op_eq
@@ -840,7 +843,7 @@ std::unique_ptr<ExpressionNode> Parser::expression() {
 
 // simple_expression = [ "+" | "-" ] term { ( "+" | "-" | "OR" ) term } .
 std::unique_ptr<ExpressionNode> Parser::simple_expression() {
-    logger_->debug({}, "simple_expression");
+    logger_->debug("simple_expression");
     std::unique_ptr<ExpressionNode> expr;
     TokenType token = scanner_->peek()->type();
     if (token == TokenType::op_plus) {
@@ -866,7 +869,7 @@ std::unique_ptr<ExpressionNode> Parser::simple_expression() {
 
 // term = factor { ( "*" | "/" | "DIV" | "MOD" | "&" ) factor } .
 std::unique_ptr<ExpressionNode> Parser::term() {
-    logger_->debug({}, "term");
+    logger_->debug("term");
     auto expr = factor();
     TokenType token = scanner_->peek()->type();
     while (token == TokenType::op_times
@@ -884,41 +887,35 @@ std::unique_ptr<ExpressionNode> Parser::term() {
 
 // factor = designator | integer | real | string | "NIL" | "TRUE" | "FALSE" | "(" expression ")" | "~" factor .
 std::unique_ptr<ExpressionNode> Parser::factor() {
-    logger_->debug({}, "factor");
+    logger_->debug("factor");
     auto token = scanner_->peek();
     if (token->type() == TokenType::const_ident) {
         FilePos pos = token->start();
         auto designator = this->designator();
         return std::make_unique<ValueReferenceNode>(pos, std::move(designator));
-    } else if (token->type() == TokenType::int_literal) {
-        auto tmp = scanner_->next();
+    }
+    auto tmp = scanner_->next();
+    if (token->type() == TokenType::int_literal) {
         auto number = dynamic_cast<const IntLiteralToken *>(tmp.get());
         return std::make_unique<IntegerLiteralNode>(number->start(), number->value());
     } else if (token->type() == TokenType::long_literal) {
-        auto tmp = scanner_->next();
         auto number = dynamic_cast<const LongLiteralToken *>(tmp.get());
         return std::make_unique<IntegerLiteralNode>(number->start(), number->value());
     } else if (token->type() == TokenType::float_literal) {
-        auto tmp = scanner_->next();
         auto number = dynamic_cast<const FloatLiteralToken *>(tmp.get());
         return std::make_unique<RealLiteralNode>(number->start(), number->value());
     } else if (token->type() == TokenType::double_literal) {
-        auto tmp = scanner_->next();
         auto number = dynamic_cast<const DoubleLiteralToken *>(tmp.get());
         return std::make_unique<RealLiteralNode>(number->start(), number->value());
     } else if (token->type() == TokenType::string_literal) {
-        auto tmp = scanner_->next();
         auto string = dynamic_cast<const StringLiteralToken *>(tmp.get());
         return std::make_unique<StringLiteralNode>(string->start(), string->value());
     } else if (token->type() == TokenType::boolean_literal) {
-        auto tmp = scanner_->next();
         auto boolean = dynamic_cast<const BooleanLiteralToken*>(tmp.get());
         return std::make_unique<BooleanLiteralNode>(boolean->start(), boolean->value());
     } else if (token->type() == TokenType::kw_nil) {
-        auto tmp = scanner_->next();
         return std::make_unique<NilLiteralNode>(tmp->start());
     } else if (token->type() == TokenType::lparen) {
-        scanner_->next();
         auto expr = expression();
         token = scanner_->peek();
         if (assertToken(token, TokenType::rparen)) {
@@ -926,7 +923,6 @@ std::unique_ptr<ExpressionNode> Parser::factor() {
         }
         return expr;
     } else if (token->type() == TokenType::op_not) {
-        scanner_->next();
         return std::make_unique<UnaryExpressionNode>(token->start(), OperatorType::NOT, factor());
     } else {
         logger_->error(token->start(), "unexpected token: " + to_string(token->type()) + ".");

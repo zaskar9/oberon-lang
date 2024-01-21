@@ -12,14 +12,14 @@
 
 unique_ptr<Node> Compiler::run(const boost::filesystem::path &file) {
     // Scan and parse the input file
-    logger_->debug(PROJECT_NAME, "parsing...");
+    logger_->debug("Parsing...");
     auto errors = logger_->getErrorCount();
     auto scanner = std::make_unique<Scanner>(file.string(), logger_);
     auto parser = std::make_unique<Parser>(scanner.get(), logger_);
     auto ast = parser->parse();
     if (ast && ast->getNodeType() == NodeType::module) {
         // Run the analyzer
-        logger_->debug(PROJECT_NAME, "analyzing...");
+        logger_->debug("Analyzing...");
         auto analyzer = std::make_unique<Analyzer>(logger_);
         auto path = file.parent_path();
         auto importer = std::make_unique<SymbolImporter>(logger_, flags_, path);

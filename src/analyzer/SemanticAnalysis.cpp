@@ -164,7 +164,7 @@ void SemanticAnalysis::visit(TypeDeclarationNode &node) {
     auto it = forwards_.find(ident->name());
     if (it != forwards_.end()) {
         auto pointer_t = it->second;
-        logger_->debug({}, "resolving " + to_string(*ident));
+        logger_->debug("Resolving forward reference " + to_string(*ident));
         pointer_t->accept(*this);
         forwards_.erase(it);
     }
@@ -546,7 +546,7 @@ void SemanticAnalysis::visit(PointerTypeNode &node) {
             if (sym == nullptr) {
                 auto ident = type->getIdentifier();
                 forwards_[ident->name()] = &node;
-                logger_->debug({}, "possible forward type reference: " + to_string(*ident));
+                logger_->debug("Found possible forward type reference: " + to_string(*ident));
             } else {
                 type->accept(*this);
                 node.setBase(resolveType(type));

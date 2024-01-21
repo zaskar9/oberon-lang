@@ -38,6 +38,10 @@ void Logger::log(const LogLevel level, const std::string &fileName, const std::s
     log(level, fileName, -1, -1, msg);
 }
 
+void Logger::log(const LogLevel level, const std::string &msg) {
+    log(level, "", msg);
+}
+
 void Logger::error(const FilePos &pos, const std::string &msg) {
     log(LogLevel::ERROR, pos.fileName, pos.lineNo, pos.charNo, msg);
 }
@@ -54,12 +58,12 @@ void Logger::warning(const std::string &fileName, const std::string &msg) {
     log(LogLevel::WARNING, fileName, msg);
 }
 
-void Logger::info(const std::string &fileName, const std::string &msg) {
-    log(LogLevel::INFO, fileName, msg);
+void Logger::info(const std::string &msg) {
+    log(LogLevel::INFO, msg);
 }
 
-void Logger::debug(const std::string &fileName, const std::string &msg) {
-    log(LogLevel::DEBUG, fileName, msg);
+void Logger::debug(const std::string &msg) {
+    log(LogLevel::DEBUG, msg);
 }
 
 int Logger::getDebugCount() const {

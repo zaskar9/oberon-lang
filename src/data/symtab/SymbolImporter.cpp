@@ -15,16 +15,16 @@ std::unique_ptr<ModuleNode> SymbolImporter::read(const std::string &alias, const
     auto include = boost::filesystem::path(module).replace_extension("smb");
     auto fp = path_ / include;
     if (!boost::filesystem::exists(fp)) {
-        logger_->debug(include.string(), "Symbol file not found: " + fp.string() + ".");
+        logger_->debug("Symbol file not found: " + fp.string() + ".");
         auto opt = flags_->findInclude(include);
         if (opt.has_value()) {
             fp = opt.value();
         } else {
-            logger_->debug(include.string(), "File not found.");
+            logger_->error(include.string(), "file not found.");
             return nullptr;
         }
     }
-    logger_->debug(include.string(), "Using symbol file: " + fp.string() + ".");
+    logger_->debug("Using symbol file: " + fp.string() + ".");
     auto file = std::make_unique<SymbolFile>();
     file->open(fp.string(), std::ios::in);
 
