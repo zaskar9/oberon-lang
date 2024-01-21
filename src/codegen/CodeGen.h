@@ -21,6 +21,9 @@ public:
     virtual void configure(CompilerFlags *flags) = 0;
 
     virtual void generate(Node *ast, boost::filesystem::path path) = 0;
+#ifndef _LLVM_LEGACY
+    virtual int jit(Node *ast, boost::filesystem::path path) = 0;
+#endif
 
 };
 

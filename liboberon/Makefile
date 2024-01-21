@@ -54,11 +54,13 @@ clean :
 dist : runtime.o Oberon.o Out.o Random.o Math.o
 	@echo -n Building library...
 	@$(CXX) $(LDFLAGS) -o $(LIBNAME).$(EXT) runtime.o Oberon.o Out.o Random.o Math.o
+	ar rcs $(LIBNAME).a runtime.o Oberon.o Out.o Random.o Math.o
 	@echo ' done.'
 
 install : dist Oberon.smb Out.smb Random.smb Math.smb
 	@echo -n Installing library...
 	@mv $(LIBNAME).$(EXT) $(LIB)
+	@mv $(LIBNAME).a $(LIB)
 	@echo ' done.'
 	@echo -n Installing symbol files...
 	@mv Oberon.smb $(INC)

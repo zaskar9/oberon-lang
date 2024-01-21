@@ -6,27 +6,45 @@
 
 #include "LLVMCodeGen.h"
 #include "LLVMIRBuilder.h"
+#include <sstream>
 #include <llvm/Bitcode/BitcodeWriter.h>
+#include <llvm/ExecutionEngine/Orc/LLJIT.h>
 #include <llvm/IR/LegacyPassManager.h>
 #include <llvm/MC/TargetRegistry.h>
 #include <llvm/Target/TargetMachine.h>
-#include <llvm/Support/FileSystem.h>
-#include <llvm/Support/Host.h>
+#include <llvm/TargetParser/Host.h>
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Support/raw_ostream.h>
 #include <config.h>
 
 using namespace llvm;
 
+int mingw_noop_main(void) {
+  // Cygwin and MinGW insert calls from the main function to the runtime
+  // function __main. The __main function is responsible for setting up main's
+  // environment (e.g. running static constructors), however this is not needed
+  // when running under lli: the executor process will have run non-JIT ctors,
+  // and ORC will take care of running JIT'd ctors. To avoid a missing symbol
+  // error we just implement __main as a no-op.
+  //
+  // FIXME: Move this to ORC-RT (and the ORC-RT substitution library once it
+  //        exists). That will allow it to work out-of-process, and for all
+  //        ORC tools (the problem isn't lli specific).
+  return 0;
+}
+
 LLVMCodeGen::LLVMCodeGen(Logger *logger)
         : logger_(logger), type_(OutputFileType::ObjectFile), ctx_(), pb_(), lvl_(llvm::OptimizationLevel::O0) {
     // Initialize LLVM
+    // TODO some can be skipped when running JIT
     InitializeAllTargetInfos();
     InitializeAllTargets();
     InitializeAllTargetMCs();
     InitializeAllAsmParsers();
     InitializeAllAsmPrinters();
     tm_ = nullptr;
+    jit_ = nullptr;
+    exitOnErr_.setBanner(std::string(PROJECT_NAME) + ": [error] ");
 }
 
 std::string LLVMCodeGen::getDescription() {
@@ -84,11 +102,60 @@ void LLVMCodeGen::configure(CompilerFlags *flags) {
         }
         tm_ = target->createTargetMachine(triple, cpu, features, opt, model);
     }
+    // TODO Setup for JIT
+    if (flags->isJit()) {
+        jit_ = exitOnErr_(orc::LLJITBuilder().create());
+        // TODO Remove this when this is moved into compiler_rt for JIT
+        // If this is a Mingw or Cygwin executor then we need to alias __main to orc_rt_int_void_return_0.
+        if (jit_->getTargetTriple().isOSCygMing()) {
+            auto dylibsym = jit_->getProcessSymbolsJITDylib()->define(
+                    orc::absoluteSymbols({{jit_->mangleAndIntern("__main"),
+                                           {orc::ExecutorAddr::fromPtr(mingw_noop_main),
+                                            JITSymbolFlags::Exported}}})
+            );
+        }
+        // Load libraries
+        for (const auto& name : flags->getLibraries()) {
+            logger_->debug(PROJECT_NAME, "Searching for library: " + name );
+            auto lib = flags->findLibrary(getLibName(name, true, jit_->getTargetTriple()));
+            if (lib) {
+                const std::string value(lib.value().string());
+                logger_->debug(PROJECT_NAME, "Loading dynamic library: " + value);
+                sys::DynamicLibrary::LoadLibraryPermanently(value.c_str());
+            } else {
+                lib = flags->findLibrary(getLibName(name, false, jit_->getTargetTriple()));
+                if (lib) {
+                    const std::string value(lib.value().string());
+                    logger_->debug(PROJECT_NAME, "Loading static library: " + value);
+                    auto &dylib = exitOnErr_(jit_->createJITDylib("name"));
+                    exitOnErr_(jit_->linkStaticLibraryInto(dylib, value.c_str()));
+                    jit_->getMainJITDylib().addToLinkOrder(dylib);
+                } else {
+                    logger_->error(PROJECT_NAME, "Library not found: " + name);
+                }
+            }
+        }
+    }
+}
+
+std::string LLVMCodeGen::getLibName(const std::string &name, bool dylib, const llvm::Triple &triple) {
+    std::stringstream ss;
+    if (triple.isOSWindows()) {
+        ss << name << (dylib ? ".dll" : ".lib");
+    } else {
+        ss << "lib" << name;
+        if (dylib) {
+            ss << (triple.isMacOSX() ? ".dylib" : ".so");
+        } else {
+            ss << ".a";
+        }
+    }
+    return ss.str();
 }
 
 void LLVMCodeGen::generate(Node *ast, boost::filesystem::path path) {
     // Set up the LLVM module
-    logger_->debug(PROJECT_NAME, "generating LLVM code...");
+    logger_->debug(PROJECT_NAME, "Generating LLVM code...");
     auto name = path.filename().string();
     auto module = std::make_unique<Module>(path.filename().string(), ctx_);
     module->setSourceFileName(path.string());
@@ -98,7 +165,7 @@ void LLVMCodeGen::generate(Node *ast, boost::filesystem::path path) {
     auto builder = std::make_unique<LLVMIRBuilder>(logger_, ctx_, module.get());
     builder->build(ast);
     if (lvl_ != llvm::OptimizationLevel::O0) {
-        logger_->debug(PROJECT_NAME, "optimizing...");
+        logger_->debug(PROJECT_NAME, "Optimizing...");
         // Create basic analyses
         LoopAnalysisManager lam;
         FunctionAnalysisManager fam;
@@ -114,12 +181,45 @@ void LLVMCodeGen::generate(Node *ast, boost::filesystem::path path) {
         mpm.run(*module.get(), mam);
     }
     if (module && logger_->getErrorCount() == 0) {
-        logger_->debug(PROJECT_NAME, "emitting code...");
+        logger_->debug(PROJECT_NAME, "Emitting code...");
         emit(module.get(), path, type_);
     } else {
-        logger_->debug(PROJECT_NAME, "code generation failed.");
+        logger_->debug(PROJECT_NAME, "Code generation failed.");
     }
 }
+
+#ifndef _LLVM_LEGACY
+int LLVMCodeGen::jit(Node *ast, boost::filesystem::path path) {
+    // Set up the LLVM module
+    logger_->debug(PROJECT_NAME, "Generating LLVM code...");
+    // TODO second context created as LLVMIRBuilder needs std::make_unique
+    auto context = std::make_unique<llvm::LLVMContext>();
+    auto name = path.filename().string();
+    auto module = std::make_unique<Module>(path.filename().string(), *context.get());
+    module->setSourceFileName(path.string());
+    module->setDataLayout(tm_->createDataLayout());
+    module->setTargetTriple(tm_->getTargetTriple().getTriple());
+    // Generate LLVM intermediate representation
+    auto builder = std::make_unique<LLVMIRBuilder>(logger_, *context.get(), module.get());
+    builder->build(ast);
+    // TODO run optimizer?
+    if (module && logger_->getErrorCount() == 0) {
+        logger_->debug(PROJECT_NAME, "Running JIT...");
+        exitOnErr_(jit_->addIRModule(orc::ThreadSafeModule(std::move(module), std::move(context))));
+
+        // TODO link with other imported modules (*.o and *.obj files)
+
+        auto mainAddr = exitOnErr_(jit_->lookup("main"));
+        auto mainFn = mainAddr.toPtr<int(void)>();
+        int result = mainFn();
+        logger_->debug(PROJECT_NAME, "Return code: " + to_string(result));
+        return result;
+    } else {
+        logger_->debug(PROJECT_NAME, "Code generation failed.");
+    }
+    return EXIT_FAILURE;
+}
+#endif
 
 void LLVMCodeGen::emit(Module *module, boost::filesystem::path path, OutputFileType type) {
     std::string ext;
@@ -161,10 +261,18 @@ void LLVMCodeGen::emit(Module *module, boost::filesystem::path path, OutputFileT
     CodeGenFileType ft;
     switch (type) {
         case OutputFileType::AssemblyFile:
-            ft = CGFT_AssemblyFile;
+#ifdef _LLVM_18
+            ft = CodeGenFileType::AssemblyFile;
+#else
+            ft = CodeGenFileType::CGFT_AssemblyFile;
+#endif
             break;
         default:
-            ft = CGFT_ObjectFile;
+#ifdef _LLVM_18
+            ft = CodeGenFileType::ObjectFile;
+#else
+            ft = CodeGenFileType::CGFT_ObjectFile;
+#endif
             break;
     }
     legacy::PassManager pass;
