@@ -37,7 +37,7 @@ endif
 .PHONY: all clean dist install
 .DEFAULT_GOAL = dist
 
-all : dist install
+all : dist install clean
 
 clean :
 	@rm -f *.o *.smb *.$(EXT)
@@ -54,7 +54,7 @@ clean :
 dist : runtime.o Oberon.o Out.o Random.o Math.o
 	@echo -n Building library...
 	@$(CXX) $(LDFLAGS) -o $(LIBNAME).$(EXT) runtime.o Oberon.o Out.o Random.o Math.o
-	ar rcs $(LIBNAME).a runtime.o Oberon.o Out.o Random.o Math.o
+	@ar rcs $(LIBNAME).a runtime.o Oberon.o Out.o Random.o Math.o
 	@echo ' done.'
 
 install : dist Oberon.smb Out.smb Random.smb Math.smb
