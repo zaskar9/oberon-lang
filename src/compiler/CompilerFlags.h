@@ -33,30 +33,44 @@ private:
     OutputFileType type_;
     OptimizationLevel level_;
     RelocationModel model_;
-    std::vector<fs::path> includes_;
+    std::vector<fs::path> incpaths_;
+    std::vector<fs::path> libpaths_;
+    std::vector<std::string> libs_;
+    bool jit_;
+    static std::optional<fs::path> find(const fs::path &name, const std::vector<fs::path> &directories);
+
 
 public:
     CompilerFlags() : outfile_(), target_(), type_(OutputFileType::ObjectFile), level_(OptimizationLevel::O0),
-        model_(RelocationModel::DEFAULT), includes_() {};
+                      model_(RelocationModel::DEFAULT), incpaths_(), libpaths_(), libs_(), jit_(false) {};
     ~CompilerFlags() = default;
 
     void setOutputFile(std::string file);
-    std::string getOutputFile();
+    [[nodiscard]] std::string getOutputFile() const;
 
     void setTargetTriple(std::string target);
-    std::string getTragetTriple();
+    [[nodiscard]] std::string getTragetTriple() const;
 
     void setFileType(OutputFileType type);
-    OutputFileType getFileType();
+    [[nodiscard]] OutputFileType getFileType() const;
 
     void setOptimizationLevel(OptimizationLevel level);
-    OptimizationLevel getOptimizationLevel();
+    [[nodiscard]] OptimizationLevel getOptimizationLevel() const;
 
     void setRelocationModel(RelocationModel model);
-    RelocationModel getRelocationModel();
+    [[nodiscard]] RelocationModel getRelocationModel() const;
 
-    void addIncludeDirectory(fs::path directory);
-    std::optional<fs::path> findInclude(fs::path name);
+    void addIncludeDirectory(const fs::path &directory);
+    [[nodiscard]] std::optional<fs::path> findInclude(const fs::path &name) const;
+
+    void addLibraryDirectory(const fs::path &directory);
+    [[nodiscard]] std::optional<fs::path> findLibrary(const fs::path &name) const;
+
+    void addLibrary(const std::string &name);
+    [[nodiscard]] const std::vector<std::string>& getLibraries() const;
+
+    void setJit(bool jit);
+    [[nodiscard]] bool isJit();
 
 };
 
