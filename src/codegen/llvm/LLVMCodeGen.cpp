@@ -116,17 +116,17 @@ void LLVMCodeGen::configure(CompilerFlags *flags) {
         }
         // Load libraries
         for (const auto& name : flags->getLibraries()) {
-            logger_->debug("Searching for library: " + name + ".");
+            logger_->debug("Searching for library: '" + name + "'.");
             auto lib = flags->findLibrary(getLibName(name, true, jit_->getTargetTriple()));
             if (lib) {
                 const std::string value(lib.value().string());
-                logger_->debug("Loading dynamic library: " + value + ".");
+                logger_->debug("Loading dynamic library: '" + value + "'.");
                 sys::DynamicLibrary::LoadLibraryPermanently(value.c_str());
             } else {
                 lib = flags->findLibrary(getLibName(name, false, jit_->getTargetTriple()));
                 if (lib) {
                     const std::string value(lib.value().string());
-                    logger_->debug("Loading static library: " + value + ".");
+                    logger_->debug("Loading static library: '" + value + "'.");
                     auto &dylib = exitOnErr_(jit_->createJITDylib("name"));
                     exitOnErr_(jit_->linkStaticLibraryInto(dylib, value.c_str()));
                     jit_->getMainJITDylib().addToLinkOrder(dylib);
