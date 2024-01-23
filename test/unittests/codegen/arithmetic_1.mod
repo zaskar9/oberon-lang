@@ -1,7 +1,7 @@
 (*
   RUN: %oberon --run %s | filecheck %s
 *)
-MODULE Aithmetic1;
+MODULE Arithmetic1;
 
 PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
 
@@ -19,7 +19,7 @@ END Test;
 
 BEGIN
     Test
-END Aithmetic1.
+END Arithmetic1.
 (*
     CHECK: 9
     CHECK: 3

@@ -5,7 +5,7 @@
   Should trigger overflow as the number is outside positive range.
   Note : The max negative 32bit integer is not parsed as expected.
 *)
-MODULE Aithmetic3;
+MODULE Arithmetic3;
 
 PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
 
@@ -18,4 +18,4 @@ END Test;
 
 BEGIN
     Test
-END Aithmetic3.
+END Arithmetic3.
