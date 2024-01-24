@@ -3,5 +3,5 @@
   UNSUPPORTED: *
   It seems an empty module is not supported.
 *)
-MODULE EmptyModule;
-END EmptyModule.
+MODULE ModuleEmpty;
+END ModuleEmpty.

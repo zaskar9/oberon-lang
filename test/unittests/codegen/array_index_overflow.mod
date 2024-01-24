@@ -2,7 +2,7 @@
   RUN: %oberon --run %s
   XFAIL: *
   UNSUPPORTED: *
-  Should trigger UBSan out of bounds array indexing
+  Should trigger UBSan routine __ubsan_handle_out_of_bounds
 *)
 MODULE ArrayIndexOverflow;
 

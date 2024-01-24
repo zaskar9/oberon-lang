@@ -1,5 +1,6 @@
 (*
   RUN: %oberon --run %s
+  XFAIL: *
   UNSUPPORTED: *
   Note does not complain about end in first IF statment
 *)

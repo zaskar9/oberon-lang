@@ -3,6 +3,6 @@
   UNSUPPORTED: *
   It seems an empty module is not supported.
 *)
-MODULE TextAfterModule;
-END TextAfterModule.
+MODULE ModuleTextAfterEnd;
+END ModuleTextAfterEnd.
 Here we can place text freely.
