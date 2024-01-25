@@ -18,7 +18,6 @@ BEGIN
   printf("%d", r)
 END Test;
 
-
 BEGIN
     Test
 END Arithmetic12.
