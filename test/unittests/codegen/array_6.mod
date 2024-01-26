@@ -4,7 +4,7 @@
   UNSUPPORTED: *
   Should trigger UBSan routine __ubsan_handle_out_of_bounds
 *)
-MODULE ArrayIndexOverflow;
+MODULE Array6;
 
 PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
 
@@ -20,4 +20,4 @@ END Test;
 
 BEGIN
     Test
-END ArrayIndexOverflow.
+END Array6.
