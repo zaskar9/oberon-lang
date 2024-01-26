@@ -46,7 +46,7 @@ PROCEDURE print(l: List);
         Out.String(", ")
       END;
       (* Print the value of the current node *)
-      Out.Int(currentNode.value);
+      Out.Int(currentNode.value, 0);
       (* Move to the next node *)
       currentNode := currentNode.next;
       first := FALSE

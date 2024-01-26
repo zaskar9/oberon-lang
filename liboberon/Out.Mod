@@ -3,6 +3,9 @@ MODULE Out;
 (* Import `printf` function from C <stdio.h> library. *)
 PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
 
+(* Import `rt_out_int` from Oberon runtime library. *)
+PROCEDURE rt_out_int(i: LONGINT; n: INTEGER); EXTERN;
+
 (* Writes a string value to standard out. *)
 PROCEDURE String*(str: STRING);
 BEGIN
@@ -15,15 +18,16 @@ BEGIN
     printf("\n")
 END Ln;
 
-(* Writes an integer value to standard out. *)
-PROCEDURE Int*(val: INTEGER);
+(* Write the integer `val` in `n` field positions. *)
+PROCEDURE Int*(val: INTEGER; n: INTEGER);
 BEGIN
-    printf("%d", val)
+    rt_out_int(val, n)
 END Int;
 
-PROCEDURE Long*(val: LONGINT);
+(* Write the long integer `val` in `n` field positions. *)
+PROCEDURE Long*(val: LONGINT; n: INTEGER);
 BEGIN
-    printf("%ld", val)
+    rt_out_int(val, n)
 END Long;
 
 PROCEDURE Real*(val: REAL);

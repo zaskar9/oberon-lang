@@ -34,21 +34,21 @@ END checkRange;
 
 PROCEDURE check(i: INTEGER);
 BEGIN
-    Out.Int(i); Out.String(": ");
+    Out.Int(i, 0); Out.String(": ");
     IF checkOne(i) & checkTwo(i) & checkThree(i) THEN
         Out.String("-> passed")
     ELSE
         Out.String("-> not passed")
     END;
     Out.Ln;
-    Out.Int(i); Out.String(": ");
+    Out.Int(i, 0); Out.String(": ");
     IF checkOne(i) OR checkTwo(i) THEN
         Out.String("-> passed")
     ELSE
         Out.String("-> not passed")
     END;
     Out.Ln;
-    Out.Int(i); Out.String(": ");
+    Out.Int(i, 0); Out.String(": ");
     IF (checkOne(i) OR checkTwo(i)) & checkThree(i) THEN
         Out.String("-> passed")
     ELSE
