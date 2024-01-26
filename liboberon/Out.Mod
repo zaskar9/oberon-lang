@@ -20,8 +20,10 @@ END Ln;
 
 (* Write the integer `val` in `n` field positions. *)
 PROCEDURE Int*(val: INTEGER; n: INTEGER);
+VAR l : LONGINT;
 BEGIN
-    rt_out_int(val, n)
+    l := val;
+    rt_out_int(l, n)
 END Int;
 
 (* Write the long integer `val` in `n` field positions. *)

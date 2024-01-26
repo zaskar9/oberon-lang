@@ -115,10 +115,22 @@ int main(const int argc, const char **argv) {
             }
         }
         if (vm.count("-l")) {
-            auto param = vm["-l"].as<vector<string>>();
-            for (const auto& lib : param) {
+            auto params = vm["-l"].as<vector<string>>();
+            for (const auto& lib : params) {
                 flags->addLibrary(lib);
                 logger->debug("Library: '" + lib + "'.");
+            }
+        }
+        if (vm.count("-f")) {
+            auto params = vm["-f"].as<vector<string>>();
+            for (const auto& flag : params) {
+                if (flag == "enable-extern") {
+                    flags->setFlag(Flag::ENABLE_EXTERN);
+                } else if (flag == "enable-varargs") {
+                    flags->setFlag(Flag::ENABLE_VARARGS);
+                } else {
+                    logger->warning(PROJECT_NAME, "ignoring unrecognized flag -f" + flag + ".");
+                }
             }
         }
         if (vm.count("-O")) {

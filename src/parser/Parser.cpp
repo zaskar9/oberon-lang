@@ -467,14 +467,18 @@ void Parser::procedure_declaration(BlockNode *block) {
         scanner_->next();
     }
     if (scanner_->peek()->type() == TokenType::kw_extern) {
-        scanner_->next(); // skip EXTERN keyword
-        proc->setExtern(true);
+        auto external = scanner_->next(); // skip EXTERN keyword
+        if (flags_->hasFlag(Flag::ENABLE_EXTERN)) {
+            proc->setExtern(true);
+        } else {
+            logger_->error(external->start(), "external procedure support disabled [-fenable-extern].");
+        }
     } else {
         assertOberonIdent(proc->getIdentifier());
         procedure_body(proc.get());
         auto identifier = ident();
         if (*identifier != *proc->getIdentifier()) {
-            logger_->error(token_->start(), "createProcedure name mismatch: expected " +
+            logger_->error(token_->start(), "procedure name mismatch: expected " +
                     to_string(*proc->getIdentifier()) + ", found " + to_string(*identifier) + ".");
         }
     }
@@ -562,8 +566,12 @@ void Parser::formal_parameters(ProcedureNode *proc) {
 void Parser::fp_section(ProcedureNode *proc) {
     logger_->debug("fp_section");
     if (scanner_->peek()->type() == TokenType::varargs) {
-        scanner_->next(); // skip varargs
-        proc->setVarArgs(true);
+        auto varargs = scanner_->next(); // skip varargs
+        if (flags_->hasFlag(Flag::ENABLE_VARARGS)) {
+            proc->setVarArgs(true);
+        } else {
+            logger_->error(varargs->start(), "variadic arguments support disabled [-fenable-varargs].");
+        }
     } else {
         bool var = false;
         if (scanner_->peek()->type() == TokenType::kw_var) {

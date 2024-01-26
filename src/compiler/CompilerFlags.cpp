@@ -81,6 +81,14 @@ const std::vector<std::string> &CompilerFlags::getLibraries() const {
     return libs_;
 }
 
+void CompilerFlags::setFlag(Flag flag) {
+    flags_ |= static_cast<int>(flag);
+}
+
+bool CompilerFlags::hasFlag(Flag flag) const {
+    return flags_ & static_cast<int>(flag);
+}
+
 void CompilerFlags::setJit(bool jit) {
     jit_ = jit;
 }
