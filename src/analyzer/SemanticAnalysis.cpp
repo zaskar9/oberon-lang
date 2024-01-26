@@ -122,7 +122,7 @@ void SemanticAnalysis::visit(ImportNode &node) {
     if (module) {
         module_->addExternalModule(std::move(module));
     } else {
-        logger_->error(node.pos(), "Module " + node.getModule()->name() + " could not be imported.");
+        logger_->error(node.pos(), "module " + node.getModule()->name() + " could not be imported.");
     }
 }
 

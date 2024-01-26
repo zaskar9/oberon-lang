@@ -131,7 +131,7 @@ void LLVMCodeGen::configure(CompilerFlags *flags) {
                     exitOnErr_(jit_->linkStaticLibraryInto(dylib, value.c_str()));
                     jit_->getMainJITDylib().addToLinkOrder(dylib);
                 } else {
-                    logger_->error(name, "library not found.");
+                    logger_->error(PROJECT_NAME, "library not found: '" + name + "'.");
                 }
             }
         }

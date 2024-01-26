@@ -20,11 +20,11 @@ std::unique_ptr<ModuleNode> SymbolImporter::read(const std::string &alias, const
         if (opt.has_value()) {
             fp = opt.value();
         } else {
-            logger_->error(include.string(), "file not found.");
+            logger_->debug("Symbol file not found: '" + include.string() + "'.");
             return nullptr;
         }
     }
-    logger_->debug("Using symbol file: '" + fp.string() + "'.");
+    logger_->debug("Symbol file found: '" + fp.string() + "'.");
     auto file = std::make_unique<SymbolFile>();
     file->open(fp.string(), std::ios::in);
 
