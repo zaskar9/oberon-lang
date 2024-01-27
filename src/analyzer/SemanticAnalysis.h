@@ -87,7 +87,7 @@ private:
     TypeNode *resolveType(TypeNode *type);
 
 public:
-    explicit SemanticAnalysis(CompilerFlags *flags, SymbolTable *symbols, SymbolImporter *importer, SymbolExporter *exporter);
+    explicit SemanticAnalysis(SymbolTable *symbols, SymbolImporter *importer, SymbolExporter *exporter);
     ~SemanticAnalysis() override = default;
 
     void run(Logger *logger, Node *node) override;

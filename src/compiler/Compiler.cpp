@@ -30,7 +30,7 @@ unique_ptr<Node> Compiler::run(const boost::filesystem::path &file) {
         auto path = file.parent_path();
         auto importer = std::make_unique<SymbolImporter>(logger_, flags_, path);
         auto exporter = std::make_unique<SymbolExporter>(logger_, path);
-        analyzer->add(std::make_unique<SemanticAnalysis>(flags_, system_->getSymbolTable(), importer.get(), exporter.get()));
+        analyzer->add(std::make_unique<SemanticAnalysis>(system_->getSymbolTable(), importer.get(), exporter.get()));
         analyzer->add(std::make_unique<LambdaLifter>());
         analyzer->run(ast.get());
         if (logger_->getErrorCount() == errors) {
