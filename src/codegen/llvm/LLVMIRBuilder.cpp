@@ -123,7 +123,7 @@ void LLVMIRBuilder::visit(ProcedureNode &node) {
 }
 
 void LLVMIRBuilder::visit(ImportNode &node) {
-    std::string name = node.getModule()->name() + "_main";
+    std::string name = node.getModule()->name();
     auto type = FunctionType::get(builder_.getInt64Ty(), {});
     auto fun = module_->getOrInsertFunction(name, type);
     if (fun) {

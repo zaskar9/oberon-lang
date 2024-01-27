@@ -44,11 +44,11 @@ clean :
 
 %.o : %.c
 	@$(CXX) -c $<
-	@llvm-objcopy --redefine-sym _main=_$(basename $<)_main $@
+	@llvm-objcopy --redefine-sym _main=_$(basename $<) $@
 
 %.o : %.Mod
 	@$(O7C) $(O7CFLAGS) $<
-	@llvm-objcopy --redefine-sym _main=_$(basename $<)_main $@
+	@llvm-objcopy --redefine-sym _main=_$(basename $<) $@
 
 %.smb : %.Mod
 	@$(O7C) $(O7CFLAGS) $<
