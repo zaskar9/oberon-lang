@@ -37,5 +37,5 @@ END Proc1;
 BEGIN
     var0 := 1;
     Proc1(var0);
-    Out.Int(var0); Out.Ln
+    Out.Int(var0, 0); Out.Ln
 END NestedVar.

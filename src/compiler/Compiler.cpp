@@ -12,19 +12,25 @@
 
 unique_ptr<Node> Compiler::run(const boost::filesystem::path &file) {
     // Scan and parse the input file
-    logger_->debug(PROJECT_NAME, "parsing...");
+    logger_->debug("Parsing...");
     auto errors = logger_->getErrorCount();
-    auto scanner = std::make_unique<Scanner>(file.string(), logger_);
-    auto parser = std::make_unique<Parser>(scanner.get(), logger_);
+    auto scanner = std::make_unique<Scanner>(file, logger_);
+    auto parser = std::make_unique<Parser>(flags_, scanner.get(), logger_);
     auto ast = parser->parse();
     if (ast && ast->getNodeType() == NodeType::module) {
+        // Check if file name matches module name
+        if (file.filename().replace_extension("").string() != ast->getIdentifier()->name()) {
+            std::string name = ast->getIdentifier()->name();
+            logger_->warning(ast->pos(), "module " + name + " should be declared in a file named " + name +
+                                            ".Mod.");
+        }
         // Run the analyzer
-        logger_->debug(PROJECT_NAME, "analyzing...");
+        logger_->debug("Analyzing...");
         auto analyzer = std::make_unique<Analyzer>(logger_);
         auto path = file.parent_path();
         auto importer = std::make_unique<SymbolImporter>(logger_, flags_, path);
         auto exporter = std::make_unique<SymbolExporter>(logger_, path);
-        analyzer->add(std::make_unique<SemanticAnalysis>(system_->getSymbolTable(), importer.get(), exporter.get()));
+        analyzer->add(std::make_unique<SemanticAnalysis>(flags_, system_->getSymbolTable(), importer.get(), exporter.get()));
         analyzer->add(std::make_unique<LambdaLifter>());
         analyzer->run(ast.get());
         if (logger_->getErrorCount() == errors) {

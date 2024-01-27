@@ -85,6 +85,8 @@ set(ALL_SOURCES
 
 add_executable(${OBERON_LANG} main.cpp ${ALL_SOURCES})
 target_include_directories(${OBERON_LANG} PUBLIC .)
+# main executable needs to export symbols (of statically linked LLVM) for JIT mode
+set_target_properties(${OBERON_LANG} PROPERTIES ENABLE_EXPORTS ON)
 
 find_package(Boost REQUIRED COMPONENTS filesystem program_options)
 if (Boost_FOUND)
@@ -117,7 +119,7 @@ if (LLVM_FOUND)
 endif ()
 
 
-set(GRAMMAR_SOURCES     
+set(GRAMMAR_SOURCES
         grammar/Grammar.cpp grammar/Grammar.h
         grammar/Validator.cpp grammar/Validator.h
         grammar/Loader.cpp grammar/Loader.h codegen/CodeGen.h)

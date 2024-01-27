@@ -14,7 +14,7 @@ BEGIN
     Out.String("[");
     i := 0;
     WHILE i < const0 DO
-        Out.Int(array0[i]);
+        Out.Int(array0[i], 0);
         IF i + 1 < const0 THEN Out.String(", ") END;
         i := i + 1
     END;
@@ -44,20 +44,20 @@ VAR var1: INTEGER;
 
     BEGIN
         var2 := 0;
-        Out.Int(var2); Out.Ln;
+        Out.Int(var2, 0); Out.Ln;
         Procedure3(param2);
-        Out.Int(var2); Out.Ln
+        Out.Int(var2, 0); Out.Ln
     END Procedure2;
 
 BEGIN
     var0 := 0;
     var1 := 0;
-    Out.Int(var0); Out.Ln;
-    Out.Int(var1); Out.Ln;
+    Out.Int(var0, 0); Out.Ln;
+    Out.Int(var1, 0); Out.Ln;
     PrintArray();
     Procedure2(param1);
-    Out.Int(var0); Out.Ln;
-    Out.Int(var1); Out.Ln;
+    Out.Int(var0, 0); Out.Ln;
+    Out.Int(var1, 0); Out.Ln;
     PrintArray
 END Procedure1;
 

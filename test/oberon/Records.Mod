@@ -12,7 +12,7 @@ VAR i: INTEGER;
 BEGIN
     Out.String("[");
     FOR i := 0 TO Dim - 1 DO
-        Out.Int(a[i]);
+        Out.Int(a[i], 0);
         IF i < Dim - 1 THEN
             Out.String(", ")
         END
@@ -58,8 +58,8 @@ BEGIN
     r1.x := 4; r1.y := 5; r1.z := 6;
     (* printf("{ %d, %d, %d }\n", r2.x, r2.y, r2.z);
     r2.x := 4; r2.y := 5; r2.z := 6; *)
-    Out.String("{"); Out.Int(r1.x); Out.String(", "); Out.Int(r1.y); Out.String(", "); Out.Int(r1.z); Out.String("}"); Out.Ln;
-    Out.String("{"); Out.Int(r2.x); Out.String(", "); Out.Int(r2.y); Out.String(", "); Out.Int(r2.z); Out.String("}"); Out.Ln
+    Out.String("{"); Out.Int(r1.x, 0); Out.String(", "); Out.Int(r1.y, 0); Out.String(", "); Out.Int(r1.z, 0); Out.String("}"); Out.Ln;
+    Out.String("{"); Out.Int(r2.x, 0); Out.String(", "); Out.Int(r2.y, 0); Out.String(", "); Out.Int(r2.z, 0); Out.String("}"); Out.Ln
 END Assignment;
 
 PROCEDURE ArrayAssignment;
