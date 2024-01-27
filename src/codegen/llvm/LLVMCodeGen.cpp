@@ -209,7 +209,8 @@ int LLVMCodeGen::jit(Node *ast, boost::filesystem::path path) {
 
         // TODO link with other imported modules (*.o and *.obj files)
 
-        auto mainAddr = exitOnErr_(jit_->lookup("main"));
+        std:: string entry = dynamic_cast<ModuleNode*>(ast)->getIdentifier()->name();
+        auto mainAddr = exitOnErr_(jit_->lookup(entry));
         auto mainFn = mainAddr.toPtr<int(void)>();
         int result = mainFn();
         logger_->debug(PROJECT_NAME, "Return code: " + to_string(result));
