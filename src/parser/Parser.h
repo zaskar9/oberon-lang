@@ -56,6 +56,7 @@ private:
     std::unique_ptr<ExpressionNode> simple_expression();
     std::unique_ptr<ExpressionNode> term();
     std::unique_ptr<ExpressionNode> factor();
+    std::unique_ptr<ExpressionNode> basic_factor();
     TypeNode* type(BlockNode *block, Ident* identifier = nullptr);
     ArrayTypeNode* array_type(BlockNode *block, Ident* identifier = nullptr);
     RecordTypeNode* record_type(BlockNode *block, Ident* identifier = nullptr);

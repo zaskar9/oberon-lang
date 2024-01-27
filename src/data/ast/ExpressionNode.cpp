@@ -80,7 +80,7 @@ TypeNode *ExpressionNode::getCast() const {
 }
 
 bool UnaryExpressionNode::isConstant() const {
-    return expr_->isConstant();
+    return expr_ && expr_->isConstant();
 }
 
 int UnaryExpressionNode::getPrecedence() const {

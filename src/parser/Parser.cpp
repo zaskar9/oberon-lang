@@ -893,9 +893,25 @@ std::unique_ptr<ExpressionNode> Parser::term() {
     return expr;
 }
 
-// factor = designator | integer | real | string | "NIL" | "TRUE" | "FALSE" | "(" expression ")" | "~" factor .
+// factor = [ "+" | "-" | "~" ] basic_factor .
 std::unique_ptr<ExpressionNode> Parser::factor() {
     logger_->debug("factor");
+    auto token = scanner_->peek();
+    if (token->type() == TokenType::op_plus) {
+        scanner_->next();   // skip plus sign
+    } else if (token->type() == TokenType::op_minus) {
+        auto op = scanner_->next();
+        return std::make_unique<UnaryExpressionNode>(op->start(), OperatorType::NEG, basic_factor());
+    } else if (token->type() == TokenType::op_not) {
+        auto op = scanner_->next();
+        return std::make_unique<UnaryExpressionNode>(op->start(), OperatorType::NOT, factor());
+    }
+    return basic_factor();
+}
+
+// basic_factor = designator | integer | real | string | "NIL" | "TRUE" | "FALSE" | "(" expression ")" .
+std::unique_ptr<ExpressionNode> Parser::basic_factor() {
+    logger_->debug("basic_factor");
     auto token = scanner_->peek();
     if (token->type() == TokenType::const_ident) {
         FilePos pos = token->start();
@@ -919,7 +935,7 @@ std::unique_ptr<ExpressionNode> Parser::factor() {
         auto string = dynamic_cast<const StringLiteralToken *>(tmp.get());
         return std::make_unique<StringLiteralNode>(string->start(), string->value());
     } else if (token->type() == TokenType::boolean_literal) {
-        auto boolean = dynamic_cast<const BooleanLiteralToken*>(tmp.get());
+        auto boolean = dynamic_cast<const BooleanLiteralToken *>(tmp.get());
         return std::make_unique<BooleanLiteralNode>(boolean->start(), boolean->value());
     } else if (token->type() == TokenType::kw_nil) {
         return std::make_unique<NilLiteralNode>(tmp->start());
@@ -930,8 +946,6 @@ std::unique_ptr<ExpressionNode> Parser::factor() {
             scanner_->next();
         }
         return expr;
-    } else if (token->type() == TokenType::op_not) {
-        return std::make_unique<UnaryExpressionNode>(token->start(), OperatorType::NOT, factor());
     } else {
         logger_->error(token->start(), "unexpected token: " + to_string(token->type()) + ".");
         return nullptr;
