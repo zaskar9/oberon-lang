@@ -14,8 +14,8 @@ unique_ptr<Node> Compiler::run(const boost::filesystem::path &file) {
     // Scan and parse the input file
     logger_->debug("Parsing...");
     auto errors = logger_->getErrorCount();
-    auto scanner = std::make_unique<Scanner>(file, logger_);
-    auto parser = std::make_unique<Parser>(flags_, scanner.get(), logger_);
+    auto scanner = std::make_unique<Scanner>(logger_, file);
+    auto parser = std::make_unique<Parser>(flags_, logger_, scanner.get());
     auto ast = parser->parse();
     if (ast && ast->getNodeType() == NodeType::module) {
         // Check if file name matches module name
@@ -30,7 +30,7 @@ unique_ptr<Node> Compiler::run(const boost::filesystem::path &file) {
         auto path = file.parent_path();
         auto importer = std::make_unique<SymbolImporter>(logger_, flags_, path);
         auto exporter = std::make_unique<SymbolExporter>(logger_, path);
-        analyzer->add(std::make_unique<SemanticAnalysis>(flags_, system_->getSymbolTable(), importer.get(), exporter.get()));
+        analyzer->add(std::make_unique<SemanticAnalysis>(system_->getSymbolTable(), importer.get(), exporter.get()));
         analyzer->add(std::make_unique<LambdaLifter>());
         analyzer->run(ast.get());
         if (logger_->getErrorCount() == errors) {

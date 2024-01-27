@@ -29,7 +29,7 @@ private:
 
 public:
     explicit Loader(boost::filesystem::path path, Logger *logger) : logger_(logger),
-            scanner_(std::make_unique<Scanner>(path, logger)), id_(0) { };
+            scanner_(std::make_unique<Scanner>(logger, path)), id_(0) { };
     ~Loader() = default;
 
     [[nodiscard]] std::unique_ptr<Grammar> load();

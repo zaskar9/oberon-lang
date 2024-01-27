@@ -32,9 +32,9 @@ int main(const int argc, const char **argv) {
     logger->setLevel(LogLevel::DEBUG);
 #endif
     // TODO move CodeGen into Compiler by moving corresponding flags to CompilerFlags
-    auto codegen = make_unique<LLVMCodeGen>(logger.get());
     auto flags = make_unique<CompilerFlags>();
-    auto compiler = make_unique<Compiler>(logger.get(), flags.get(), codegen.get());
+    auto codegen = make_unique<LLVMCodeGen>(flags.get(), logger.get());
+    auto compiler = make_unique<Compiler>(flags.get(), logger.get(), codegen.get());
     auto visible = po::options_description("OPTIONS");
     visible.add_options()
             ("help,h", "Displays this help information.")
@@ -92,6 +92,12 @@ int main(const int argc, const char **argv) {
         if (vm.count("verbose")) {
             logger->setLevel(LogLevel::DEBUG);
         }
+#if defined(_WIN32) || defined(_WIN64)
+        // Windows uses a semicolon to separate multiple paths
+        std::string separator = ";"
+#else
+        std::string separator = ":";
+#endif
         if (vm.count("-I")) {
             auto params = vm["-I"].as<vector<string>>();
             vector<string> includes;
@@ -128,6 +134,8 @@ int main(const int argc, const char **argv) {
                     flags->setFlag(Flag::ENABLE_EXTERN);
                 } else if (flag == "enable-varargs") {
                     flags->setFlag(Flag::ENABLE_VARARGS);
+                } else if (flag == "enable-main") {
+                    flags->setFlag(Flag::ENABLE_MAIN);
                 } else {
                     logger->warning(PROJECT_NAME, "ignoring unrecognized flag -f" + flag + ".");
                 }

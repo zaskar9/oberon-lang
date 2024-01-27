@@ -26,7 +26,7 @@ enum class RelocationModel {
 };
 
 enum class Flag : int {
-    ENABLE_EXTERN = 1, ENABLE_VARARGS = 2
+    ENABLE_EXTERN = 1, ENABLE_VARARGS = 2, ENABLE_MAIN = 4
 };
 
 class CompilerFlags {
