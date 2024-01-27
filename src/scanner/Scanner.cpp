@@ -14,12 +14,14 @@
 #include "LiteralToken.h"
 #include "UndefinedToken.h"
 
-Scanner::Scanner(const boost::filesystem::path &path, Logger *logger) :
-        filename_(path.string()), logger_(logger), tokens_(), lineNo_(1), charNo_(0), ch_{}, eof_(false) {
+namespace fs = boost::filesystem;
+
+Scanner::Scanner(const fs::path &path, Logger *logger) :
+        path_(path), logger_(logger), tokens_(), lineNo_(1), charNo_(0), ch_{}, eof_(false) {
     init();
-    file_.open(filename_, std::ios::in);
+    file_.open(path_.string(), std::ios::in);
     if (!file_.is_open()) {
-        logger_->error(PROJECT_NAME, "cannot open file: " + filename_ + ".");
+        logger_->error(PROJECT_NAME, "cannot open file: " + path_.string() + ".");
         exit(1);
     }
     read();
@@ -240,7 +242,7 @@ void Scanner::read() {
         charNo_++;
         eof_ = true;
     } else {
-        logger_->error(filename_, "error reading file.");
+        logger_->error(path_.string(), "error reading file.");
         exit(1);
     }
 
@@ -248,7 +250,7 @@ void Scanner::read() {
 
 FilePos Scanner::current() const {
     FilePos pos;
-    pos.fileName = filename_;
+    pos.fileName = path_.string();
     pos.lineNo = lineNo_;
     pos.charNo = charNo_;
     return pos;

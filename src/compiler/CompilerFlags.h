@@ -25,6 +25,10 @@ enum class RelocationModel {
     DEFAULT, STATIC, PIC
 };
 
+enum class Flag : int {
+    ENABLE_EXTERN = 1, ENABLE_VARARGS = 2
+};
+
 class CompilerFlags {
 
 private:
@@ -36,13 +40,14 @@ private:
     std::vector<fs::path> incpaths_;
     std::vector<fs::path> libpaths_;
     std::vector<std::string> libs_;
+    int flags_;
     bool jit_;
-    static std::optional<fs::path> find(const fs::path &name, const std::vector<fs::path> &directories);
 
+    static std::optional<fs::path> find(const fs::path &name, const std::vector<fs::path> &directories);
 
 public:
     CompilerFlags() : outfile_(), target_(), type_(OutputFileType::ObjectFile), level_(OptimizationLevel::O0),
-                      model_(RelocationModel::DEFAULT), incpaths_(), libpaths_(), libs_(), jit_(false) {};
+                      model_(RelocationModel::DEFAULT), incpaths_(), libpaths_(), libs_(), flags_(0), jit_(false) {};
     ~CompilerFlags() = default;
 
     void setOutputFile(std::string file);
@@ -68,6 +73,9 @@ public:
 
     void addLibrary(const std::string &name);
     [[nodiscard]] const std::vector<std::string>& getLibraries() const;
+
+    void setFlag(Flag flag);
+    [[nodiscard]] bool hasFlag(Flag flag) const;
 
     void setJit(bool jit);
     [[nodiscard]] bool isJit();

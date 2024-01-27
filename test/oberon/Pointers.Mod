@@ -54,8 +54,8 @@ END deletePerson;
 PROCEDURE printPerson(person: Person);
 BEGIN
     Out.String(person.title); Out.String(" "); Out.String(person.name); Out.Ln;
-    Out.String(person.address.street); Out.String(" "); Out.Int(person.address.number); Out.Ln;
-    Out.Int(person.address.zipcode); Out.String(" "); Out.String(person.address.city); Out.Ln;
+    Out.String(person.address.street); Out.String(" "); Out.Int(person.address.number, 0); Out.Ln;
+    Out.Int(person.address.zipcode, 5); Out.String(" "); Out.String(person.address.city); Out.Ln;
     Out.String(person.address.country); Out.Ln
 END printPerson;
 
@@ -64,7 +64,7 @@ VAR current: INTEGER;
 BEGIN
     current := 0;
     WHILE (contacts[current] # NIL) DO
-        Out.String("<"); Out.Int(current + 1); Out.String(">"); Out.Ln;
+        Out.String("<"); Out.Int(current + 1, 0); Out.String(">"); Out.Ln;
         printPerson(contacts[current]);
         current := current + 1
     END

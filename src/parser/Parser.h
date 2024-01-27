@@ -23,6 +23,7 @@
 #include "data/ast/StatementSequenceNode.h"
 #include "data/ast/NodeReference.h"
 #include "data/symtab/SymbolTable.h"
+#include "compiler/CompilerFlags.h"
 #include <memory>
 #include <set>
 #include <vector>
@@ -30,6 +31,7 @@
 class Parser {
 
 private:
+    CompilerFlags *flags_;
     Scanner *scanner_;
     Logger *logger_;
     std::unique_ptr<const Token> token_;
@@ -38,7 +40,7 @@ private:
     std::unique_ptr<QualIdent> qualident();
     std::unique_ptr<Designator> designator();
     std::unique_ptr<Selector> selector();
-    bool maybeTypeguard();
+    bool maybe_typeguard();
     std::unique_ptr<IdentDef> identdef(bool checkAlphaNum = true);
     void ident_list(std::vector<std::unique_ptr<Ident>> &idents);
 
@@ -80,7 +82,7 @@ private:
     void resync(std::set<TokenType> types);
 
 public:
-    explicit Parser(Scanner *scanner, Logger *logger) : scanner_(scanner), logger_(logger), token_() { };
+    explicit Parser(CompilerFlags *flags, Scanner *scanner, Logger *logger) : flags_(flags), scanner_(scanner), logger_(logger), token_() { };
     ~Parser() = default;
 
     std::unique_ptr<ModuleNode> parse();

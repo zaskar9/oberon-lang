@@ -7,9 +7,9 @@
 #include <set>
 #include "SemanticAnalysis.h"
 
-SemanticAnalysis::SemanticAnalysis(SymbolTable *symbols, SymbolImporter *importer, SymbolExporter *exporter)
+SemanticAnalysis::SemanticAnalysis(CompilerFlags* flags, SymbolTable *symbols, SymbolImporter *importer, SymbolExporter *exporter)
         : Analysis(), NodeVisitor(),
-          symbols_(symbols), logger_(), parent_(), importer_(importer), exporter_(exporter), forwards_() {
+          flags_(flags), symbols_(symbols), logger_(), parent_(), importer_(importer), exporter_(exporter), forwards_() {
     tBoolean_ = dynamic_cast<TypeNode *>(symbols_->lookup(to_string(TypeKind::BOOLEAN)));
     tByte_ = dynamic_cast<TypeNode *>(symbols_->lookup(to_string(TypeKind::BYTE)));
     tChar_ = dynamic_cast<TypeNode *>(symbols_->lookup(to_string(TypeKind::CHAR)));
@@ -122,7 +122,7 @@ void SemanticAnalysis::visit(ImportNode &node) {
     if (module) {
         module_->addExternalModule(std::move(module));
     } else {
-        logger_->error(node.pos(), "Module " + node.getModule()->name() + " could not be imported.");
+        logger_->error(node.pos(), "module " + node.getModule()->name() + " could not be imported.");
     }
 }
 
@@ -164,7 +164,7 @@ void SemanticAnalysis::visit(TypeDeclarationNode &node) {
     auto it = forwards_.find(ident->name());
     if (it != forwards_.end()) {
         auto pointer_t = it->second;
-        logger_->debug({}, "resolving " + to_string(*ident));
+        logger_->debug("Resolving forward reference " + to_string(*ident));
         pointer_t->accept(*this);
         forwards_.erase(it);
     }
@@ -546,7 +546,7 @@ void SemanticAnalysis::visit(PointerTypeNode &node) {
             if (sym == nullptr) {
                 auto ident = type->getIdentifier();
                 forwards_[ident->name()] = &node;
-                logger_->debug({}, "possible forward type reference: " + to_string(*ident));
+                logger_->debug("Found possible forward type reference: " + to_string(*ident));
             } else {
                 type->accept(*this);
                 node.setBase(resolveType(type));

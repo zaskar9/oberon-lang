@@ -127,7 +127,7 @@ PROCEDURE InOrderTraversal(node: TreeNode);
     IF node # NIL THEN
       Out.String("(");
       InOrderTraversal(node.left);
-      Out.Int(node.key); (* Print the value *)
+      Out.Int(node.key, 0); (* Print the value *)
       InOrderTraversal(node.right);
       Out.String(")")
     END

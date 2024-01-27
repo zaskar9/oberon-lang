@@ -5,6 +5,7 @@
  */
 
 #include "Logger.h"
+#include "config.h"
 #include <iomanip>
 
 void Logger::log(const LogLevel level, const std::string &fileName, int lineNo, int charNo,
@@ -22,15 +23,12 @@ void Logger::log(const LogLevel level, const std::string &fileName, int lineNo, 
             }
             *out << ": ";
         }
-        *out << "[" ;
         switch (level) {
-            case LogLevel::DEBUG:   *out << "debug";   break;
-            case LogLevel::INFO:    *out << "info";    break;
-            case LogLevel::WARNING: *out << "warning"; break;
-            case LogLevel::ERROR:   *out << "error";   break;
+            case LogLevel::WARNING: *out << "\u001b[1m\u001b[95mwarning: \u001b[97m"; break;
+            case LogLevel::ERROR:   *out << "\u001b[1m\u001b[91merror: \u001b[97m";   break;
             default: break; // do nothing
         }
-        *out << "] " << msg << std::endl;
+        *out << msg << "\u001b[0m" << std::endl;
     }
 }
 
@@ -38,12 +36,21 @@ void Logger::log(const LogLevel level, const std::string &fileName, const std::s
     log(level, fileName, -1, -1, msg);
 }
 
+void Logger::log(const LogLevel level, const std::string &msg) {
+    log(level, {}, msg);
+}
+
 void Logger::error(const FilePos &pos, const std::string &msg) {
     log(LogLevel::ERROR, pos.fileName, pos.lineNo, pos.charNo, msg);
 }
 
 void Logger::error(const std::string &fileName, const std::string &msg) {
-    log(LogLevel::ERROR, fileName, msg);
+    if (fileName.empty()) {
+        log(LogLevel::ERROR, PROJECT_NAME, msg);
+    } else {
+        log(LogLevel::ERROR, fileName, msg);
+    }
+
 }
 
 void Logger::warning(const FilePos &pos, const std::string &msg) {
@@ -51,15 +58,19 @@ void Logger::warning(const FilePos &pos, const std::string &msg) {
 }
 
 void Logger::warning(const std::string &fileName, const std::string &msg) {
-    log(LogLevel::WARNING, fileName, msg);
+    if (fileName.empty()) {
+        log(LogLevel::WARNING, PROJECT_NAME, msg);
+    } else {
+        log(LogLevel::WARNING, fileName, msg);
+    }
 }
 
-void Logger::info(const std::string &fileName, const std::string &msg) {
-    log(LogLevel::INFO, fileName, msg);
+void Logger::info(const std::string &msg) {
+    log(LogLevel::INFO, msg);
 }
 
-void Logger::debug(const std::string &fileName, const std::string &msg) {
-    log(LogLevel::DEBUG, fileName, msg);
+void Logger::debug(const std::string &msg) {
+    log(LogLevel::DEBUG, msg);
 }
 
 int Logger::getDebugCount() const {

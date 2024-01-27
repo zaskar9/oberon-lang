@@ -11,10 +11,10 @@ BEGIN
     l := 0;
     INC(i, 10);
     INC(l);
-    Out.String("["); Out.Int(i); Out.String(","); Out.Long(l); Out.String("]"); Out.Ln;
+    Out.String("["); Out.Int(i, 0); Out.String(","); Out.Long(l, 0); Out.String("]"); Out.Ln;
     DEC(i, 5);
     DEC(l);
-    Out.String("["); Out.Int(i); Out.String(","); Out.Long(l); Out.String("]"); Out.Ln
+    Out.String("["); Out.Int(i, 0); Out.String(","); Out.Long(l, 0); Out.String("]"); Out.Ln
 END IncDec;
 
 PROCEDURE NewFree;
@@ -39,8 +39,8 @@ VAR x, n: LONGINT;
 BEGIN
     x := 32;
     n := 2;
-    Out.Long(LSL(x, n)); Out.String(",");
-    Out.Long(ASR(x, n)); Out.Ln
+    Out.Long(LSL(x, n), 0); Out.String(",");
+    Out.Long(ASR(x, n), 0); Out.Ln
 END LslAsr;
 
 PROCEDURE RolRor;
@@ -48,13 +48,13 @@ VAR x, n: LONGINT;
 BEGIN
     x := -32;
     n := 2;
-    Out.Long(ROL(x, n)); Out.String(",");
-    Out.Long(ROR(x, n)); Out.Ln
+    Out.Long(ROL(x, n), 0); Out.String(",");
+    Out.Long(ROR(x, n), 0); Out.Ln
 END RolRor;
 
 PROCEDURE Odd(x: INTEGER);
 BEGIN
-    Out.Int(x);
+    Out.Int(x, 0);
     IF ODD(x) THEN
         Out.String(" is odd.")
     ELSE

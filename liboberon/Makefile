@@ -18,7 +18,7 @@ endif
 LIB = ../test/oberon/lib
 INC = ../test/oberon/include
 O7C = ../cmake-build-release/src/oberon-lang
-O7CFLAGS = -q -O3 --reloc=pic # -fenable-extern -fenable-varargs # --target $(TGT)
+O7CFLAGS = -q -O3 --reloc=pic -fenable-extern -fenable-varargs # --target $(TGT)
 LDFLAGS =
 
 # Library settings

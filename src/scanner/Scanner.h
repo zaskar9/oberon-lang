@@ -19,10 +19,12 @@
 #include <string>
 #include <unordered_map>
 
+namespace fs = boost::filesystem;
+
 class Scanner {
 
 private:
-    std::string filename_;
+    const fs::path &path_;
     Logger *logger_;
     std::queue<const Token*> tokens_;
     int lineNo_, charNo_;
@@ -41,7 +43,7 @@ private:
     void scanComment();
 
 public:
-    explicit Scanner(const boost::filesystem::path& path, Logger *logger);
+    Scanner(const fs::path &path, Logger *logger);
     ~Scanner();
     const Token* peek(bool advance = false);
     std::unique_ptr<const Token> next();

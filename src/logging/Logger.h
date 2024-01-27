@@ -23,6 +23,7 @@ private:
 
     void log(LogLevel level, const std::string &fileName, int lineNo, int charNo, const std::string &msg);
     void log(LogLevel level, const std::string &fileName, const std::string &msg);
+    void log(LogLevel level, const std::string &msg);
 
 public:
 
@@ -36,8 +37,8 @@ public:
     void error(const std::string &fileName, const std::string &msg);
     void warning(const FilePos &pos, const std::string &msg);
     void warning(const std::string &fileName, const std::string &msg);
-    void info(const std::string &fileName, const std::string &msg);
-    void debug(const std::string &fileName, const std::string &msg);
+    void info(const std::string &msg);
+    void debug(const std::string &msg);
 
     [[nodiscard]] int getDebugCount() const;
     [[nodiscard]] int getInfoCount() const;
