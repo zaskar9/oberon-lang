@@ -18,7 +18,6 @@
 class SemanticAnalysis final : public Analysis, private NodeVisitor {
 
 private:
-    [[maybe_unused]] CompilerFlags *flags_;
     Logger *logger_;
     SymbolTable *symbols_;
     ModuleNode *module_;
@@ -88,7 +87,7 @@ private:
     TypeNode *resolveType(TypeNode *type);
 
 public:
-    explicit SemanticAnalysis(CompilerFlags *flags, SymbolTable *symbols, SymbolImporter *importer, SymbolExporter *exporter);
+    explicit SemanticAnalysis(SymbolTable *symbols, SymbolImporter *importer, SymbolExporter *exporter);
     ~SemanticAnalysis() override = default;
 
     void run(Logger *logger, Node *node) override;
