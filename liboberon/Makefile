@@ -18,7 +18,7 @@ endif
 LIB = ../test/oberon/lib
 INC = ../test/oberon/include
 O7C = ../cmake-build-release/src/oberon-lang
-O7CFLAGS = -q -O3 --reloc=pic # --target $(TGT)
+O7CFLAGS = -q -O3 --reloc=pic # -fenable-extern -fenable-varargs # --target $(TGT)
 LDFLAGS =
 
 # Library settings
@@ -37,16 +37,18 @@ endif
 .PHONY: all clean dist install
 .DEFAULT_GOAL = dist
 
-all : dist install
+all : dist install clean
 
 clean :
 	@rm -f *.o *.smb *.$(EXT)
 
 %.o : %.c
 	@$(CXX) -c $<
+	@llvm-objcopy --redefine-sym _main=_$(basename $<)_main $@
 
 %.o : %.Mod
 	@$(O7C) $(O7CFLAGS) $<
+	@llvm-objcopy --redefine-sym _main=_$(basename $<)_main $@
 
 %.smb : %.Mod
 	@$(O7C) $(O7CFLAGS) $<
@@ -54,7 +56,7 @@ clean :
 dist : runtime.o Oberon.o Out.o Random.o Math.o
 	@echo -n Building library...
 	@$(CXX) $(LDFLAGS) -o $(LIBNAME).$(EXT) runtime.o Oberon.o Out.o Random.o Math.o
-	ar rcs $(LIBNAME).a runtime.o Oberon.o Out.o Random.o Math.o
+	@ar rcs $(LIBNAME).a runtime.o Oberon.o Out.o Random.o Math.o
 	@echo ' done.'
 
 install : dist Oberon.smb Out.smb Random.smb Math.smb

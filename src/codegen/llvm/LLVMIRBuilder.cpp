@@ -33,8 +33,8 @@ void LLVMIRBuilder::visit(ModuleNode &node) {
         auto variable = node.getVariable(i);
         auto type = getLLVMType(variable->getType());
         auto value = new GlobalVariable(*module_, type, false,
-                                        (variable->getIdentifier()->isExported() ? GlobalValue::ExternalLinkage
-                                                                            : GlobalValue::PrivateLinkage),
+                                        (variable->getIdentifier()->isExported() ?
+                                            GlobalValue::ExternalLinkage : GlobalValue::PrivateLinkage),
                                         Constant::getNullValue(type), variable->getIdentifier()->name());
         value->setAlignment(getLLVMAlign(variable->getType()));
         values_[variable] = value;
@@ -51,70 +51,87 @@ void LLVMIRBuilder::visit(ModuleNode &node) {
     for (size_t i = 0; i < node.getProcedureCount(); i++) {
         node.getProcedure(i)->accept(*this);
     }
-    if (node.getStatements()->getStatementCount() > 0) {
-        // generate code for main
-        auto main = module_->getOrInsertFunction("main", builder_.getInt32Ty());
-        function_ = ::cast<Function>(main.getCallee());
-        auto entry = BasicBlock::Create(builder_.getContext(), "entry", function_);
-        builder_.SetInsertPoint(entry);
-        level_ = node.getLevel() + 1;
-        node.getStatements()->accept(*this);
-        if (builder_.GetInsertBlock()->getTerminator() == nullptr) {
-            builder_.CreateRet(builder_.getInt32(0));
-        }
+    // generate code for main
+    auto main = module_->getOrInsertFunction("main", builder_.getInt32Ty());
+    function_ = ::cast<Function>(main.getCallee());
+    auto entry = BasicBlock::Create(builder_.getContext(), "entry", function_);
+    builder_.SetInsertPoint(entry);
+    level_ = node.getLevel() + 1;
+    // generate code to initialize imports
+    for (size_t i = 0; i < node.getImportCount(); ++i) {
+        node.getImport(i)->accept(*this);
     }
+    // generate code for statements
+    if (node.getStatements()->getStatementCount() > 0) {
+        node.getStatements()->accept(*this);
+    }
+    // generate code for exit code
+    if (builder_.GetInsertBlock()->getTerminator() == nullptr) {
+        builder_.CreateRet(builder_.getInt32(0));
+    }
+
     // verify the module
     verifyModule(*module_, &errs());
 }
 
 void LLVMIRBuilder::visit(ProcedureNode &node) {
+    if (node.isExtern()) {
+        return;
+    }
     if (node.getProcedureCount() > 0) {
         logger_->error(node.pos(), "found unsupported nested procedures in " + to_string(node.getIdentifier()) + ".");
     }
-    if (!node.isExtern()) {
-        function_ = functions_[&node];
-        function_->addFnAttrs(attrs_);
-        // function_->addFnAttr(Attribute::AttrKind::NoInline);
-        auto entry = BasicBlock::Create(builder_.getContext(), "entry", function_);
-        builder_.SetInsertPoint(entry);
-        Function::arg_iterator args = function_->arg_begin();
-        for (size_t i = 0; i < node.getFormalParameterCount(); i++) {
-            auto arg = args++;
-            auto param = node.getFormalParameter(i);
-            arg->setName(param->getIdentifier()->name());
-            if (param->isVar()) {
-                values_[param] = arg;
-            } else {
-                auto value = builder_.CreateAlloca(getLLVMType(param->getType()), nullptr);
-                builder_.CreateStore(arg, value);
-                values_[param] = value;
-            }
-            // function_->addParamAttr(i, Attribute::AttrKind::NoUndef);
+    function_ = functions_[&node];
+    function_->addFnAttrs(attrs_);
+    // function_->addFnAttr(Attribute::AttrKind::NoInline);
+    auto entry = BasicBlock::Create(builder_.getContext(), "entry", function_);
+    builder_.SetInsertPoint(entry);
+    Function::arg_iterator args = function_->arg_begin();
+    for (size_t i = 0; i < node.getFormalParameterCount(); i++) {
+        auto arg = args++;
+        auto param = node.getFormalParameter(i);
+        arg->setName(param->getIdentifier()->name());
+        if (param->isVar()) {
+            values_[param] = arg;
+        } else {
+            auto value = builder_.CreateAlloca(getLLVMType(param->getType()), nullptr);
+            builder_.CreateStore(arg, value);
+            values_[param] = value;
         }
-        for (size_t i = 0; i < node.getVariableCount(); i++) {
-            auto var = node.getVariable(i);
-            auto value = builder_.CreateAlloca(getLLVMType(var->getType()), nullptr, var->getIdentifier()->name());
-            values_[var] = value;
-        }
-        level_ = node.getLevel() + 1;
-        node.getStatements()->accept(*this);
-        if (node.getReturnType() == nullptr) {
-            builder_.CreateRetVoid();
-        }
-        auto block = builder_.GetInsertBlock();
-        if (block->getTerminator() == nullptr) {
-            if (node.getReturnType() != nullptr && !block->empty()) {
-                logger_->error(node.pos(),
-                               "function \"" + to_string(node.getIdentifier()) + "\" has no return statement.");
-            } else {
-                builder_.CreateUnreachable();
-            }
-        }
-        verifyFunction(*function_, &errs());
+        // function_->addParamAttr(i, Attribute::AttrKind::NoUndef);
     }
+    for (size_t i = 0; i < node.getVariableCount(); i++) {
+        auto var = node.getVariable(i);
+        auto value = builder_.CreateAlloca(getLLVMType(var->getType()), nullptr, var->getIdentifier()->name());
+        values_[var] = value;
+    }
+    level_ = node.getLevel() + 1;
+    node.getStatements()->accept(*this);
+    if (node.getReturnType() == nullptr) {
+        builder_.CreateRetVoid();
+    }
+    auto block = builder_.GetInsertBlock();
+    if (block->getTerminator() == nullptr) {
+        if (node.getReturnType() != nullptr && !block->empty()) {
+            logger_->error(node.pos(),
+                           "function \"" + to_string(node.getIdentifier()) + "\" has no return statement.");
+        } else {
+            builder_.CreateUnreachable();
+        }
+    }
+    verifyFunction(*function_, &errs());
 }
 
-void LLVMIRBuilder::visit([[maybe_unused]] ImportNode &node) { }
+void LLVMIRBuilder::visit(ImportNode &node) {
+    std::string name = node.getModule()->name() + "_main";
+    auto type = FunctionType::get(builder_.getInt64Ty(), {});
+    auto fun = module_->getOrInsertFunction(name, type);
+    if (fun) {
+        value_ = builder_.CreateCall(fun, {});
+    } else {
+        logger_->error(node.pos(), "undefined procedure: " + name + ".");
+    }
+}
 
 void LLVMIRBuilder::visit(ValueReferenceNode &node) {
     if (node.getNodeType() == NodeType::procedure_call) {

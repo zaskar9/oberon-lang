@@ -16,7 +16,7 @@ endif
 # TGT = aarch64-linux-gnu
 # TGT = x86_64-linux-gnu
 LIB = ./lib
-INC = ".;./include"
+INC = .:./include
 O7C = ../../cmake-build-release/src/oberon-lang
 O7CFLAGS = -O3 -I$(INC) # --target $(TGT)
 LDFLAGS = -loberon

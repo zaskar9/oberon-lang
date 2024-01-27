@@ -7,6 +7,8 @@ LINK = link.exe
 LIB = ..\test\oberon\lib
 INC = ..\test\oberon\include
 
+O7CFLAGS = -q -O3 --reloc=pic # -fenable-extern -fenable-varargs
+
 # Library settings
 NAME = oberon
 EXT = lib
@@ -23,10 +25,10 @@ clean:
 	@$(CXX) /nologo /c $< >nul
 
 .Mod.obj:
-	@$(O7C) -q -O3 $<
+	@$(O7C) $(O7CFLAGS) $<
 
 .smb.Mod:
-	@$(O7C) -q -O3 $<
+	@$(O7C) $(O7CFLAGS) $<
 
 lib: runtime.obj Oberon.obj Out.obj Random.obj Math.obj
 	@$(LIBX) /nologo /machine:$(CPU_ARCH) /out:$(LIB)\$(NAME).$(EXT) runtime.obj Oberon.obj Out.obj Random.obj Math.obj

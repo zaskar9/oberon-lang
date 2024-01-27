@@ -83,10 +83,16 @@ int main(const int argc, const char **argv) {
         if (vm.count("verbose")) {
             logger->setLevel(LogLevel::DEBUG);
         }
+#if defined(_WIN32) || defined(_WIN64)
+        // Windows uses a semicolon to separate multiple paths
+        std::string separator = ";"
+#else
+        std::string separator = ":";
+#endif
         if (vm.count("-I")) {
             auto param = vm["-I"].as<std::string>();
             std::vector<std::string> includes;
-            boost::algorithm::split(includes, param, boost::is_any_of(";"));
+            boost::algorithm::split(includes, param, boost::is_any_of(separator));
             for (const auto& include : includes) {
                 flags->addIncludeDirectory(include);
                 logger->debug(PROJECT_NAME, "adding include search path: \"" + include + "\".");
@@ -95,7 +101,7 @@ int main(const int argc, const char **argv) {
         if (vm.count("-L")) {
             auto param = vm["-L"].as<std::string>();
             std::vector<std::string> libraries;
-            boost::algorithm::split(libraries, param, boost::is_any_of(";"));
+            boost::algorithm::split(libraries, param, boost::is_any_of(separator));
             for (const auto& library : libraries) {
                 flags->addLibraryDirectory(library);
                 logger->debug(PROJECT_NAME, "adding library search path: \"" + library + "\".");
