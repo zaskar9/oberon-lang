@@ -23,6 +23,7 @@
 #include "data/ast/StatementSequenceNode.h"
 #include "data/ast/NodeReference.h"
 #include "data/symtab/SymbolTable.h"
+#include "compiler/CompilerFlags.h"
 #include <memory>
 #include <set>
 #include <vector>
@@ -30,15 +31,16 @@
 class Parser {
 
 private:
-    Scanner *scanner_;
+    CompilerFlags *flags_;
     Logger *logger_;
+    Scanner *scanner_;
     std::unique_ptr<const Token> token_;
 
     std::unique_ptr<Ident> ident();
     std::unique_ptr<QualIdent> qualident();
     std::unique_ptr<Designator> designator();
     std::unique_ptr<Selector> selector();
-    bool maybeTypeguard();
+    bool maybe_typeguard();
     std::unique_ptr<IdentDef> identdef(bool checkAlphaNum = true);
     void ident_list(std::vector<std::unique_ptr<Ident>> &idents);
 
@@ -54,6 +56,7 @@ private:
     std::unique_ptr<ExpressionNode> simple_expression();
     std::unique_ptr<ExpressionNode> term();
     std::unique_ptr<ExpressionNode> factor();
+    std::unique_ptr<ExpressionNode> basic_factor();
     TypeNode* type(BlockNode *block, Ident* identifier = nullptr);
     ArrayTypeNode* array_type(BlockNode *block, Ident* identifier = nullptr);
     RecordTypeNode* record_type(BlockNode *block, Ident* identifier = nullptr);
@@ -80,7 +83,8 @@ private:
     void resync(std::set<TokenType> types);
 
 public:
-    explicit Parser(Scanner *scanner, Logger *logger) : scanner_(scanner), logger_(logger), token_() { };
+    explicit Parser(CompilerFlags *flags, Logger *logger, Scanner *scanner) :
+            flags_(flags), logger_(logger), scanner_(scanner), token_() { };
     ~Parser() = default;
 
     std::unique_ptr<ModuleNode> parse();

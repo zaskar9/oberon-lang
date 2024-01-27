@@ -12,9 +12,9 @@ VAR f1, f2: REAL;
     l1, l2: LONGINT;
 
 BEGIN
-    i1 := 1; Out.Int(i1); Out.Ln;
-    i2 := 2; Out.Int(i2); Out.Ln;
-    l1 := i1; Out.Long(l1); Out.Ln;
+    i1 := 1; Out.Int(i1, 0); Out.Ln;
+    i2 := 2; Out.Int(i2, 0); Out.Ln;
+    l1 := i1; Out.Long(l1, 0); Out.Ln;
     d1 := f1;
     f1 := Math.pi; Out.Real(f1); Out.Ln;
     f1 := i1; Out.Real(f1); Out.Ln;
@@ -28,11 +28,11 @@ BEGIN
     Out.Real(Math.sin(Math.pi)); Out.Ln;
     Out.Real(Math.cos(Math.pi)); Out.Ln;
     Out.Real(Math.arctan(Math.pi)); Out.Ln;
-    Out.Int(Math.entier(Math.pi)); Out.Ln;
+    Out.Int(Math.entier(Math.pi), 0); Out.Ln;
     Out.Real(Math.real(3)); Out.Ln;
     f1 := 0.1;
     f2 := 0.2;
     Out.Real(f1 + f2); Out.Ln;
     Out.Real(9 / 5); Out.Ln;
-    Out.String("["); Out.Long(MAXINTEGER); Out.String(", "); Out.Long(MININTEGER); Out.String("]"); Out.Ln
+    Out.String("["); Out.Long(MAXINTEGER, 0); Out.String(", "); Out.Long(MININTEGER, 0); Out.String("]"); Out.Ln
 END Floats.

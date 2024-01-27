@@ -33,8 +33,9 @@ int mingw_noop_main(void) {
   return 0;
 }
 
-LLVMCodeGen::LLVMCodeGen(Logger *logger)
-        : logger_(logger), type_(OutputFileType::ObjectFile), ctx_(), pb_(), lvl_(llvm::OptimizationLevel::O0) {
+LLVMCodeGen::LLVMCodeGen(CompilerFlags *flags, Logger *logger) :
+        flags_(flags), logger_(logger), type_(OutputFileType::ObjectFile), ctx_(), pb_(),
+        lvl_(llvm::OptimizationLevel::O0) {
     // Initialize LLVM
     // TODO some can be skipped when running JIT
     InitializeAllTargetInfos();
@@ -73,7 +74,7 @@ void LLVMCodeGen::configure(CompilerFlags *flags) {
         // Use default target triple of host as fallback
         triple = sys::getDefaultTargetTriple();
     }
-    logger_->debug(PROJECT_NAME, "using target triple: " + triple + ".");
+    logger_->debug("Using target triple: " + triple + ".");
     // Set up target
     std::string error;
     auto target = TargetRegistry::lookupTarget(triple, error);
@@ -116,22 +117,22 @@ void LLVMCodeGen::configure(CompilerFlags *flags) {
         }
         // Load libraries
         for (const auto& name : flags->getLibraries()) {
-            logger_->debug(PROJECT_NAME, "Searching for library: " + name );
+            logger_->debug("Searching for library: '" + name + "'.");
             auto lib = flags->findLibrary(getLibName(name, true, jit_->getTargetTriple()));
             if (lib) {
                 const std::string value(lib.value().string());
-                logger_->debug(PROJECT_NAME, "Loading dynamic library: " + value);
+                logger_->debug("Loading dynamic library: '" + value + "'.");
                 sys::DynamicLibrary::LoadLibraryPermanently(value.c_str());
             } else {
                 lib = flags->findLibrary(getLibName(name, false, jit_->getTargetTriple()));
                 if (lib) {
                     const std::string value(lib.value().string());
-                    logger_->debug(PROJECT_NAME, "Loading static library: " + value);
+                    logger_->debug("Loading static library: '" + value + "'.");
                     auto &dylib = exitOnErr_(jit_->createJITDylib("name"));
                     exitOnErr_(jit_->linkStaticLibraryInto(dylib, value.c_str()));
                     jit_->getMainJITDylib().addToLinkOrder(dylib);
                 } else {
-                    logger_->error(PROJECT_NAME, "Library not found: " + name);
+                    logger_->error(PROJECT_NAME, "library not found: '" + name + "'.");
                 }
             }
         }
@@ -155,17 +156,17 @@ std::string LLVMCodeGen::getLibName(const std::string &name, bool dylib, const l
 
 void LLVMCodeGen::generate(Node *ast, boost::filesystem::path path) {
     // Set up the LLVM module
-    logger_->debug(PROJECT_NAME, "Generating LLVM code...");
+    logger_->debug("Generating LLVM code...");
     auto name = path.filename().string();
     auto module = std::make_unique<Module>(path.filename().string(), ctx_);
     module->setSourceFileName(path.string());
     module->setDataLayout(tm_->createDataLayout());
     module->setTargetTriple(tm_->getTargetTriple().getTriple());
     // Generate LLVM intermediate representation
-    auto builder = std::make_unique<LLVMIRBuilder>(logger_, ctx_, module.get());
+    auto builder = std::make_unique<LLVMIRBuilder>(flags_, logger_, ctx_, module.get());
     builder->build(ast);
     if (lvl_ != llvm::OptimizationLevel::O0) {
-        logger_->debug(PROJECT_NAME, "Optimizing...");
+        logger_->debug("Optimizing...");
         // Create basic analyses
         LoopAnalysisManager lam;
         FunctionAnalysisManager fam;
@@ -181,17 +182,17 @@ void LLVMCodeGen::generate(Node *ast, boost::filesystem::path path) {
         mpm.run(*module.get(), mam);
     }
     if (module && logger_->getErrorCount() == 0) {
-        logger_->debug(PROJECT_NAME, "Emitting code...");
+        logger_->debug("Emitting code...");
         emit(module.get(), path, type_);
     } else {
-        logger_->debug(PROJECT_NAME, "Code generation failed.");
+        logger_->error(path.filename().string(), "code generation failed.");
     }
 }
 
 #ifndef _LLVM_LEGACY
 int LLVMCodeGen::jit(Node *ast, boost::filesystem::path path) {
     // Set up the LLVM module
-    logger_->debug(PROJECT_NAME, "Generating LLVM code...");
+    logger_->debug("Generating LLVM code...");
     // TODO second context created as LLVMIRBuilder needs std::make_unique
     auto context = std::make_unique<llvm::LLVMContext>();
     auto name = path.filename().string();
@@ -200,22 +201,23 @@ int LLVMCodeGen::jit(Node *ast, boost::filesystem::path path) {
     module->setDataLayout(tm_->createDataLayout());
     module->setTargetTriple(tm_->getTargetTriple().getTriple());
     // Generate LLVM intermediate representation
-    auto builder = std::make_unique<LLVMIRBuilder>(logger_, *context.get(), module.get());
+    auto builder = std::make_unique<LLVMIRBuilder>(flags_, logger_, *context.get(), module.get());
     builder->build(ast);
     // TODO run optimizer?
     if (module && logger_->getErrorCount() == 0) {
-        logger_->debug(PROJECT_NAME, "Running JIT...");
+        logger_->debug("Running JIT...");
         exitOnErr_(jit_->addIRModule(orc::ThreadSafeModule(std::move(module), std::move(context))));
 
         // TODO link with other imported modules (*.o and *.obj files)
 
-        auto mainAddr = exitOnErr_(jit_->lookup("main"));
+        std:: string entry = dynamic_cast<ModuleNode*>(ast)->getIdentifier()->name();
+        auto mainAddr = exitOnErr_(jit_->lookup(entry));
         auto mainFn = mainAddr.toPtr<int(void)>();
         int result = mainFn();
-        logger_->debug(PROJECT_NAME, "Return code: " + to_string(result));
+        logger_->debug("Process finished with exit code " + to_string(result) + ".");
         return result;
     } else {
-        logger_->debug(PROJECT_NAME, "Code generation failed.");
+        logger_->error(path.filename().string(), "code generation failed.");
     }
     return EXIT_FAILURE;
 }

@@ -8,6 +8,7 @@
 #define OBERON0C_LLVMCODEGEN_H
 
 
+#include "compiler/CompilerFlags.h"
 #include "data/ast/NodeVisitor.h"
 #include "logging/Logger.h"
 #include <llvm/IR/DataLayout.h>
@@ -21,6 +22,7 @@ using namespace llvm;
 class LLVMIRBuilder final : private NodeVisitor {
 
 private:
+    CompilerFlags *flags_;
     Logger *logger_;
     IRBuilder<> builder_;
     Module *module_;
@@ -91,7 +93,7 @@ private:
     void visit(ReturnNode &node) override;
 
 public:
-    explicit LLVMIRBuilder(Logger *logger, LLVMContext &context, Module *module);
+    LLVMIRBuilder(CompilerFlags *flags, Logger *logger, LLVMContext &context, Module *module);
     ~LLVMIRBuilder() = default;
 
     void build(Node *node);

@@ -27,13 +27,13 @@ VAR x, y, z, i: INTEGER;
 (* Writes an integer tuple to standard out. *)
 PROCEDURE WriteTuple(x, y: INTEGER);
 BEGIN
-    Out.String("("); Out.Int(x); Out.String(", "); Out.Int(y); Out.String(")")
+    Out.String("("); Out.Int(x, 0); Out.String(", "); Out.Int(y, 0); Out.String(")")
 END WriteTuple;
 
 (* Writes an integer triple to standard out. *)
 PROCEDURE WriteTriple(x, y, z: INTEGER);
 BEGIN
-    Out.String("("); Out.Int(x); Out.String(", "); Out.Int(y); Out.String(", "); Out.Int(z); Out.String(")")
+    Out.String("("); Out.Int(x, 0); Out.String(", "); Out.Int(y, 0); Out.String(", "); Out.Int(z, 0); Out.String(")")
 END WriteTriple;
 
 (* Computes the maximum of two numbers. *)
@@ -128,7 +128,7 @@ BEGIN
     Out.String("[");
     i := 0;
     WHILE i < Dim DO
-        Out.Int(a[i]);
+        Out.Int(a[i], 0);
         IF i + 1 < Dim THEN Out.String(", ") END;
         i := i + 1
     END;
@@ -235,13 +235,13 @@ BEGIN
     WriteTuple(x, y); Out.Ln;
     Swap(x, y);
     WriteTuple(x, y); Out.Ln;
-    Out.Int(gcd(x, y)); Out.Ln;
-    Out.Int(max(x, y)); Out.Ln;
-    Out.Int(compare(x, y)); Out.Ln;
-    Out.Int(compare(y, x)); Out.Ln;
-    Out.Int(rFib(x)); Out.Ln;
-    Out.Int(rFac(z)); Out.Ln;
-    Out.Int(iFac(z)); Out.Ln;
+    Out.Int(gcd(x, y), 0); Out.Ln;
+    Out.Int(max(x, y), 0); Out.Ln;
+    Out.Int(compare(x, y), 0); Out.Ln;
+    Out.Int(compare(y, x), 0); Out.Ln;
+    Out.Int(rFib(x), 0); Out.Ln;
+    Out.Int(rFac(z), 0); Out.Ln;
+    Out.Int(iFac(z), 0); Out.Ln;
     poly3d := CreatePoly3D(x, y, z);
     WritePoints(poly3d.points);
     Init;
@@ -249,7 +249,7 @@ BEGIN
     BubbleSort;
     Print;
     FOR x := 5 TO 0 BY -1 DO
-        Out.Int(x); Out.Ln
+        Out.Int(x, 0); Out.Ln
     END
-    (* Out.Int(parent(x, y)) *)
+    (* Out.Int(parent(x, y), 0) *)
 END CodeGen.

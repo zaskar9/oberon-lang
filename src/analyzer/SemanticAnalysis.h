@@ -18,8 +18,8 @@
 class SemanticAnalysis final : public Analysis, private NodeVisitor {
 
 private:
-    SymbolTable *symbols_;
     Logger *logger_;
+    SymbolTable *symbols_;
     ModuleNode *module_;
     BlockNode *parent_;
     SymbolImporter *importer_;
