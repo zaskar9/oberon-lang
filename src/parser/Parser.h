@@ -31,7 +31,7 @@
 class Parser {
 
 private:
-    [[maybe_unused]] CompilerFlags *flags_;
+    CompilerFlags *flags_;
     Scanner *scanner_;
     Logger *logger_;
     std::unique_ptr<const Token> token_;
