@@ -24,8 +24,8 @@ namespace fs = boost::filesystem;
 class Scanner {
 
 private:
-    const fs::path &path_;
     Logger *logger_;
+    const fs::path &path_;
     std::queue<const Token*> tokens_;
     int lineNo_, charNo_;
     char ch_;
@@ -43,7 +43,7 @@ private:
     void scanComment();
 
 public:
-    Scanner(const fs::path &path, Logger *logger);
+    Scanner(Logger *logger, const fs::path &path);
     ~Scanner();
     const Token* peek(bool advance = false);
     std::unique_ptr<const Token> next();

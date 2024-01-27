@@ -8,9 +8,9 @@
 #include "system/PredefinedProcedure.h"
 #include <llvm/IR/Verifier.h>
 
-LLVMIRBuilder::LLVMIRBuilder(Logger *logger, LLVMContext &context, Module *module) : NodeVisitor(),
-        logger_(logger), builder_(context), module_(module), value_(), values_(), types_(), functions_(), strings_(),
-        deref_ctx(), level_(0), function_(), attrs_(AttrBuilder(context)) {
+LLVMIRBuilder::LLVMIRBuilder(CompilerFlags *flags, Logger *logger, LLVMContext &context, Module *module) :
+        NodeVisitor(), flags_(flags), logger_(logger), builder_(context), module_(module), value_(), values_(),
+        types_(), functions_(), strings_(), deref_ctx(), level_(0), function_(), attrs_(AttrBuilder(context)) {
     attrs_
         .addAttribute(Attribute::NoInline)
         .addAttribute(Attribute::NoUnwind)
@@ -51,9 +51,9 @@ void LLVMIRBuilder::visit(ModuleNode &node) {
     for (size_t i = 0; i < node.getProcedureCount(); i++) {
         node.getProcedure(i)->accept(*this);
     }
-    // generate code for main
-    auto main = module_->getOrInsertFunction(node.getIdentifier()->name(), builder_.getInt32Ty());
-    function_ = ::cast<Function>(main.getCallee());
+    // generate code for body
+    auto body = module_->getOrInsertFunction(node.getIdentifier()->name(), builder_.getInt32Ty());
+    function_ = ::cast<Function>(body.getCallee());
     auto entry = BasicBlock::Create(builder_.getContext(), "entry", function_);
     builder_.SetInsertPoint(entry);
     level_ = node.getLevel() + 1;
@@ -69,7 +69,15 @@ void LLVMIRBuilder::visit(ModuleNode &node) {
     if (builder_.GetInsertBlock()->getTerminator() == nullptr) {
         builder_.CreateRet(builder_.getInt32(0));
     }
-
+    // generate main to enable linking of executable
+    if (flags_->hasFlag(Flag::ENABLE_MAIN)) {
+        auto main = module_->getOrInsertFunction("main", builder_.getInt32Ty());
+        function_ = ::cast<Function>(main.getCallee());
+        entry = BasicBlock::Create(builder_.getContext(), "entry", function_);
+        builder_.SetInsertPoint(entry);
+        value_ = builder_.CreateCall(body, {});
+        builder_.CreateRet(value_);
+    }
     // verify the module
     verifyModule(*module_, &errs());
 }

@@ -14,8 +14,8 @@ unique_ptr<Node> Compiler::run(const boost::filesystem::path &file) {
     // Scan and parse the input file
     logger_->debug("Parsing...");
     auto errors = logger_->getErrorCount();
-    auto scanner = std::make_unique<Scanner>(file, logger_);
-    auto parser = std::make_unique<Parser>(flags_, scanner.get(), logger_);
+    auto scanner = std::make_unique<Scanner>(logger_, file);
+    auto parser = std::make_unique<Parser>(flags_, logger_, scanner.get());
     auto ast = parser->parse();
     if (ast && ast->getNodeType() == NodeType::module) {
         // Check if file name matches module name

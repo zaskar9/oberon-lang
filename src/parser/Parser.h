@@ -32,8 +32,8 @@ class Parser {
 
 private:
     CompilerFlags *flags_;
-    Scanner *scanner_;
     Logger *logger_;
+    Scanner *scanner_;
     std::unique_ptr<const Token> token_;
 
     std::unique_ptr<Ident> ident();
@@ -82,7 +82,8 @@ private:
     void resync(std::set<TokenType> types);
 
 public:
-    explicit Parser(CompilerFlags *flags, Scanner *scanner, Logger *logger) : flags_(flags), scanner_(scanner), logger_(logger), token_() { };
+    explicit Parser(CompilerFlags *flags, Logger *logger, Scanner *scanner) :
+            flags_(flags), logger_(logger), scanner_(scanner), token_() { };
     ~Parser() = default;
 
     std::unique_ptr<ModuleNode> parse();

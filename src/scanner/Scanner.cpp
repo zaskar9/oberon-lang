@@ -16,8 +16,8 @@
 
 namespace fs = boost::filesystem;
 
-Scanner::Scanner(const fs::path &path, Logger *logger) :
-        path_(path), logger_(logger), tokens_(), lineNo_(1), charNo_(0), ch_{}, eof_(false) {
+Scanner::Scanner(Logger *logger, const fs::path &path) :
+        logger_(logger), path_(path), tokens_(), lineNo_(1), charNo_(0), ch_{}, eof_(false) {
     init();
     file_.open(path_.string(), std::ios::in);
     if (!file_.is_open()) {

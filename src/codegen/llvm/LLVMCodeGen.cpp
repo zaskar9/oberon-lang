@@ -33,8 +33,9 @@ int mingw_noop_main(void) {
   return 0;
 }
 
-LLVMCodeGen::LLVMCodeGen(Logger *logger)
-        : logger_(logger), type_(OutputFileType::ObjectFile), ctx_(), pb_(), lvl_(llvm::OptimizationLevel::O0) {
+LLVMCodeGen::LLVMCodeGen(CompilerFlags *flags, Logger *logger) :
+        flags_(flags), logger_(logger), type_(OutputFileType::ObjectFile), ctx_(), pb_(),
+        lvl_(llvm::OptimizationLevel::O0) {
     // Initialize LLVM
     // TODO some can be skipped when running JIT
     InitializeAllTargetInfos();
@@ -162,7 +163,7 @@ void LLVMCodeGen::generate(Node *ast, boost::filesystem::path path) {
     module->setDataLayout(tm_->createDataLayout());
     module->setTargetTriple(tm_->getTargetTriple().getTriple());
     // Generate LLVM intermediate representation
-    auto builder = std::make_unique<LLVMIRBuilder>(logger_, ctx_, module.get());
+    auto builder = std::make_unique<LLVMIRBuilder>(flags_, logger_, ctx_, module.get());
     builder->build(ast);
     if (lvl_ != llvm::OptimizationLevel::O0) {
         logger_->debug("Optimizing...");
@@ -200,7 +201,7 @@ int LLVMCodeGen::jit(Node *ast, boost::filesystem::path path) {
     module->setDataLayout(tm_->createDataLayout());
     module->setTargetTriple(tm_->getTargetTriple().getTriple());
     // Generate LLVM intermediate representation
-    auto builder = std::make_unique<LLVMIRBuilder>(logger_, *context.get(), module.get());
+    auto builder = std::make_unique<LLVMIRBuilder>(flags_, logger_, *context.get(), module.get());
     builder->build(ast);
     // TODO run optimizer?
     if (module && logger_->getErrorCount() == 0) {

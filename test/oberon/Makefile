@@ -18,7 +18,7 @@ endif
 LIB = ./lib
 INC = .:./include
 O7C = ../../cmake-build-release/src/oberon-lang
-O7CFLAGS = -O3 -I$(INC) -L$(LIB) -loberon  # --target $(TGT)
+O7CFLAGS = -O3 -I$(INC) -L$(LIB) -loberon -fenable-main # --target $(TGT)
 LDFLAGS = -loberon
 PFX =
 ifeq ($(OS), macos)
@@ -44,7 +44,7 @@ else ifeq ($(OS), linux)
 endif
 
 % : %.o
-	@$(CXX) $(CXXFLAGS) $< -o $@ -L$(LIB) $(LDFLAGS) -Wl,-e,$(PFX)$(basename $<)
+	@$(CXX) $(CXXFLAGS) $< -o $@ -L$(LIB) $(LDFLAGS) # -Wl,-e,$(PFX)$(basename $<)
 
 %.o : %.Mod
 	@$(O7C) $(O7CFLAGS) $<

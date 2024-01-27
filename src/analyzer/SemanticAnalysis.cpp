@@ -7,9 +7,10 @@
 #include <set>
 #include "SemanticAnalysis.h"
 
-SemanticAnalysis::SemanticAnalysis(CompilerFlags* flags, SymbolTable *symbols, SymbolImporter *importer, SymbolExporter *exporter)
-        : Analysis(), NodeVisitor(),
-          flags_(flags), symbols_(symbols), logger_(), parent_(), importer_(importer), exporter_(exporter), forwards_() {
+SemanticAnalysis::SemanticAnalysis(CompilerFlags* flags, SymbolTable *symbols,
+                                   SymbolImporter *importer, SymbolExporter *exporter) :
+          Analysis(), NodeVisitor(), flags_(flags), logger_(), symbols_(symbols), module_(), parent_(),
+          importer_(importer), exporter_(exporter), forwards_() {
     tBoolean_ = dynamic_cast<TypeNode *>(symbols_->lookup(to_string(TypeKind::BOOLEAN)));
     tByte_ = dynamic_cast<TypeNode *>(symbols_->lookup(to_string(TypeKind::BYTE)));
     tChar_ = dynamic_cast<TypeNode *>(symbols_->lookup(to_string(TypeKind::CHAR)));

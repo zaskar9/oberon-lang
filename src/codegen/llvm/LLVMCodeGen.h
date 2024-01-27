@@ -18,12 +18,12 @@
 #include <llvm/Target/TargetMachine.h>
 
 
-
 int mingw_noop_main(void);
 
 class LLVMCodeGen final : public CodeGen {
 
 private:
+    CompilerFlags *flags_;
     Logger *logger_;
     OutputFileType type_;
     llvm::LLVMContext ctx_;
@@ -37,7 +37,7 @@ private:
     static std::string getLibName(const std::string &name, bool dylib, const llvm::Triple &triple);
 
 public:
-    explicit LLVMCodeGen(Logger *logger);
+    LLVMCodeGen(CompilerFlags *flags, Logger *logger);
     ~LLVMCodeGen() override = default;
 
     std::string getDescription() final;

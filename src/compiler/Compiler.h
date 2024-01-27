@@ -20,16 +20,16 @@ using boost::filesystem::path;
 class Compiler {
 
 private:
-    Logger *logger_;
     CompilerFlags *flags_;
+    Logger *logger_;
     CodeGen *codegen_;
     unique_ptr<OberonSystem> system_;
 
     unique_ptr<Node> run(const path&);
 
 public:
-    explicit Compiler(Logger *logger, CompilerFlags *flags, CodeGen *codegen) :
-            logger_(logger), flags_(flags), codegen_(codegen), system_(std::make_unique<Oberon07>()) {};
+    explicit Compiler(CompilerFlags *flags, Logger *logger, CodeGen *codegen) :
+            flags_(flags), logger_(logger), codegen_(codegen), system_(std::make_unique<Oberon07>()) {};
     ~Compiler() = default;
 
     void compile(const path&);
