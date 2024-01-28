@@ -1,19 +1,19 @@
 (*
-  RUN: %oberon --run %s | filecheck %s
+  RUN: %oberon -I "%S;%inc" -L "%S;%lib" -l oberon --run %s | filecheck %s
 *)
 MODULE Arithmetic2;
 
-PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
+IMPORT Out;
 
 PROCEDURE Test;
 VAR a, b : INTEGER;
 BEGIN
   a := 2147483646;
   b := a + 1;
-  printf("%d\n", b);
+  Out.Int(b, 0);  Out.Ln;
   a := -2147483647;
   b := a - 1;
-  printf("%d\n", b)
+  Out.Int(b, 0);  Out.Ln
 END Test;
 
 BEGIN

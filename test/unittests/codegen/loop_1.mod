@@ -1,11 +1,11 @@
 (*
-  RUN: %oberon --run %s | filecheck %s
+  RUN: %oberon -I "%S;%inc" -L "%S;%lib" -l oberon --run %s | filecheck %s
   UNSUPPORTED: *
   Goes into a infinite loop on EXIT statment
 *)
 MODULE Loop1;
 
-PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
+IMPORT Out;
 
 PROCEDURE Test;
 VAR x : INTEGER;
@@ -23,7 +23,7 @@ BEGIN
     END;
     EXIT
   END;
-  printf("PASS")
+  Out.String("PASS"); Out.Ln
 END Test;
 
 BEGIN

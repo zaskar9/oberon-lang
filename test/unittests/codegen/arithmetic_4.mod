@@ -1,22 +1,22 @@
 (*
-  RUN: %oberon --run %s | filecheck %s
+  RUN: %oberon -I "%S;%inc" -L "%S;%lib" -l oberon --run %s | filecheck %s
 *)
 MODULE Arithmetic4;
 
-PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
+IMPORT Out;
 
 PROCEDURE Test;
 VAR a, b, c : INTEGER;
 BEGIN
   c := 10 DIV 3;
-  printf("%d\n", c);
+  Out.Int(c, 0);  Out.Ln;
   c := 10 MOD 3;
-  printf("%d\n", c);
+  Out.Int(c, 0);  Out.Ln;
   a := 10; b := 3;
   c := a DIV b;
-  printf("%d\n", c);
+  Out.Int(c, 0);  Out.Ln;
   c := a MOD b;
-  printf("%d\n", c)
+  Out.Int(c, 0);  Out.Ln
 END Test;
 
 BEGIN

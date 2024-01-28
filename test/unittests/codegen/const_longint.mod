@@ -1,22 +1,21 @@
 (*
-  RUN: %oberon --run %s | filecheck %s
-  UNSUPPORTED: *
+  RUN: %oberon -I "%S;%inc" -L "%S;%lib" -l oberon --run %s | filecheck %s
   Valid 64bit integers not correctly parsed.
   Is there need to mark constant as LONGINT like C/C++?
   Maybe LONG(0)?
 *)
 MODULE ConstLongInt;
 
+IMPORT Out;
+
 CONST
   longintmax = 9223372036854775807;
   longintmin = -9223372036854775808;
 
-PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
-
 PROCEDURE Test;
 BEGIN
-  printf("%lld\n", longintmax);
-  printf("%lld\n", longintmin)
+  Out.Int(longintmax, 0); Out.Ln;
+  Out.Int(longintmin, 0); Out.Ln
 END Test;
 
 BEGIN

@@ -1,11 +1,11 @@
 (*
-  RUN: %oberon --run %s | filecheck %s
+  RUN: %oberon -I "%S;%inc" -L "%S;%lib" -l oberon --run %s | filecheck %s
 *)
 MODULE Procedure2;
 
-VAR c : INTEGER;
+IMPORT Out;
 
-PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
+VAR c : INTEGER;
 
 PROCEDURE Test(a, b : INTEGER; VAR c : INTEGER);
 BEGIN c := a + b
@@ -13,7 +13,7 @@ END Test;
 
 BEGIN
     Test(1, 2, c);
-    printf("%d", c)
+    Out.Int(c, 0); Out.Ln
 END Procedure2.
 (*
     CHECK: 3

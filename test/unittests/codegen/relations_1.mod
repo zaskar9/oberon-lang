@@ -1,26 +1,27 @@
 (*
-  RUN: %oberon --run %s | filecheck %s
+  RUN: %oberon -I "%S;%inc" -L "%S;%lib" -l oberon --run %s | filecheck %s
 *)
 MODULE Relations1;
 
-PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
+IMPORT Out;
 
 PROCEDURE Test;
 BEGIN
   IF 2 = 2 THEN
     IF 2 > 1 THEN
       IF 1 < 2 THEN
-        printf("PASS");
+        Out.String("PASS");
         RETURN
       END
     END
   END;
-  printf("FAIL")
+  Out.String("FAIL")
 END Test;
 
 BEGIN
     Test
 END Relations1.
 (*
+    CHECK-NOT: FAIL
     CHECK: PASS
 *)

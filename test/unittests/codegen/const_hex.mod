@@ -1,6 +1,5 @@
 (*
-  RUN: %oberon --run %s | filecheck %s
-  UNSUPPORTED: *
+  RUN: %oberon -fenable-extern -fenable-varargs --run %s | filecheck %s
   32bit hex constants not correctly parsed
 *)
 MODULE ConstHex;

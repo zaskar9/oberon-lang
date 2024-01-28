@@ -2,11 +2,10 @@
   RUN: %oberon --run %s
   XFAIL: *
   UNSUPPORTED: *
-  Note does not complain about overflow with constant expression
+  Segmentation fault
+  Does not complain about overflow with constant expression
 *)
 MODULE ArrayOverflowConstantExpr;
-
-PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
 
 PROCEDURE Test;
 VAR x : ARRAY 3 OF INTEGER;

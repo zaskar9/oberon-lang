@@ -6,8 +6,6 @@
 *)
 MODULE Array6;
 
-PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
-
 PROCEDURE Test;
 VAR
   i : INTEGER;

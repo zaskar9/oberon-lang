@@ -1,6 +1,5 @@
 (*
-  RUN: %oberon --run %s | filecheck %s
-  UNSUPPORTED: *
+  RUN: %oberon -fenable-extern -fenable-varargs --run %s | filecheck %s
   64bit hex constants not correctly parsed
   Is there need to mark constant as 64bit like C/C++?
   Maybe LONG(00H)?

@@ -1,7 +1,9 @@
 (*
-  RUN: %oberon --run %s | filecheck %s
+  RUN: %oberon -I "%S;%inc" -L "%S;%lib" -l oberon --run %s | filecheck %s
 *)
 MODULE Const1;
+
+IMPORT Out;
 
 CONST
   A = 1;
@@ -11,18 +13,24 @@ CONST
   SSTR = S + STR + S;
   F = 12.3;
 
-PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
-
 PROCEDURE Test;
-VAR r : LONGREAL;
 BEGIN
-    r := F;
-    printf("%d %d %s %s %s %g\n", A, B, S, STR, SSTR, r)
+    Out.Int(A, 0); Out.Ln;
+    Out.Int(B, 0); Out.Ln;
+    Out.String(S); Out.Ln;
+    Out.String(STR); Out.Ln;
+    Out.String(SSTR); Out.Ln;
+    Out.Real(F); Out.Ln
 END Test;
 
 BEGIN
     Test()
 END Const1.
 (*
-    CHECK: 1 3 ' Oberon 'Oberon' 12.3
+    CHECK: 1
+    CHECK: 3
+    CHECK: '
+    CHECK: Oberon
+    CHECK: 'Oberon'
+    CHECK: 12.3
 *)

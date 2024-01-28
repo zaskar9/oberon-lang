@@ -7,8 +7,6 @@
 *)
 MODULE Arithmetic3;
 
-PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
-
 PROCEDURE Test;
 VAR a, b : INTEGER;
 BEGIN

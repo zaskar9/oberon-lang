@@ -1,11 +1,11 @@
 (*
-  RUN: %oberon --run %s | filecheck %s
-  Oberon-07 support BYTE with INTEGER type.
+  RUN: %oberon -I "%S;%inc" -L "%S;%lib" -l oberon --run %s | filecheck %s
+  Oberon-07 support mixing BYTE with INTEGER type.
   It seems BYTE type is not yet supported.
 *)
 MODULE Arithmetic12;
 
-PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
+IMPORT Out;
 
 PROCEDURE Test;
 VAR 
@@ -15,7 +15,7 @@ BEGIN
   i := 7;
   l := 15;
   r := l + i;
-  printf("%d", r)
+  Out.Int(r, 0);  Out.Ln
 END Test;
 
 BEGIN

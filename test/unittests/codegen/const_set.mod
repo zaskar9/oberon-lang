@@ -1,6 +1,5 @@
 (*
-  RUN: %oberon --run %s | filecheck %s
-  UNSUPPORTED: *
+  RUN: %oberon -fenable-extern -fenable-varargs --run %s | filecheck %s
   SET type not supported yet
 *)
 MODULE ConstSet;

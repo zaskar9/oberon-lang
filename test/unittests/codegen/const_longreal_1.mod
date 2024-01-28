@@ -1,5 +1,5 @@
 (*
-  RUN: %oberon --run %s | filecheck %s
+  RUN: %oberon -fenable-extern -fenable-varargs --run %s | filecheck %s
   D exponent symbol for LONGREAL not supported.
   This is needed due to difference in rounding when parsing constants.
 *)

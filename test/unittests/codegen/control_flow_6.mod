@@ -1,9 +1,9 @@
 (*
-  RUN: %oberon --run %s | filecheck %s
+  RUN: %oberon -I "%S;%inc" -L "%S;%lib" -l oberon --run %s | filecheck %s
 *)
 MODULE ControlFlow6;
 
-PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
+IMPORT Out;
 
 PROCEDURE Test;
 VAR x : INTEGER;
@@ -18,7 +18,7 @@ BEGIN
   ELSE
     RETURN
   END;
-  printf("PASS")
+  Out.String("PASS"); Out.Ln
 END Test;
 
 BEGIN

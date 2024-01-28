@@ -1,16 +1,16 @@
 (*
-  RUN: %oberon --run %s | filecheck %s
+  RUN: %oberon -I "%S;%inc" -L "%S;%lib" -l oberon --run %s | filecheck %s
 *)
 MODULE Procedure1;
 
-PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
+IMPORT Out;
 
 PROCEDURE Test(a, b : INTEGER) : INTEGER;
 BEGIN RETURN a + b
 END Test;
 
 BEGIN
-    printf("%d", Test(1, 2))
+    Out.Int(Test(1, 2), 0); Out.Ln
 END Procedure1.
 (*
     CHECK: 3

@@ -1,11 +1,9 @@
 (*
-  RUN: %oberon --run %s | filecheck %s
-  Fails due to REAL not promoted when passed as argument.
-  Ref : https://en.cppreference.com/w/cpp/language/variadic_arguments
+  RUN: %oberon -I "%S;%inc" -L "%S;%lib" -l oberon --run %s | filecheck %s
 *)
 MODULE Array2;
 
-PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
+IMPORT Out;
 
 PROCEDURE Test;
 VAR
@@ -15,12 +13,16 @@ BEGIN
   FOR i := 0 TO 2 DO
     a[i] := i + 1.5
   END;
-  printf("%.1f %.1f %.1f", a[0], a[1], a[2])
+  Out.Real(a[0]); Out.Ln;
+  Out.Real(a[1]); Out.Ln;
+  Out.Real(a[2]); Out.Ln
 END Test;
 
 BEGIN
     Test
 END Array2.
 (*
-    CHECK: 1.5 2.5 3.5
+    CHECK: 1.5
+    CHECK: 2.5
+    CHECK: 3.5
 *)

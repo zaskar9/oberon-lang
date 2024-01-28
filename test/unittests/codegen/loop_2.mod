@@ -1,24 +1,23 @@
 (*
-  RUN: %oberon --run %s | filecheck %s
-  UNSUPPORTED: *
-  Print "NOPASS" which should not be reached
+  RUN: %oberon -I "%S;%inc" -L "%S;%lib" -l oberon --run %s | filecheck %s
+  Print "NOPASS" first which should not be reached
 *)
 MODULE Loop1;
 
-PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
+IMPORT Out;
 
 PROCEDURE Test;
 BEGIN
   LOOP
     RETURN
   END;
-  printf("NOPASS")
+  Out.String("NOPASS")
 END Test;
 
 BEGIN
     Test;
-    printf("PASS")
+    Out.String("PASS")
 END Loop1.
 (*
-    CHECK: PASS
+    CHECK-NOT: NOPASS
 *)

@@ -1,26 +1,23 @@
 (*
-  RUN: %oberon --run %s | filecheck %s
-  Not sure what is happening here.
+  RUN: %oberon -I "%S;%inc" -L "%S;%lib" -l oberon --run %s | filecheck %s
+  Segmentation fault. Not sure what is happening here.
 *)
 MODULE ConstReal1;
+
+IMPORT Out;
 
 CONST
   min = 1.1754939E-38;
   max = 3.4028235E38;
 
-PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
-
 PROCEDURE Test;
 VAR
-  val : LONGREAL;
   rval : REAL;
 BEGIN
   rval := min;
-  val := rval;
-  printf("%.9g\n", val);
+  Out.Real(rval); Out.Ln;
   rval := max;
-  val := rval;
-  printf("%.9g\n", val)
+  Out.Real(rval); Out.Ln
 END Test;
 
 BEGIN

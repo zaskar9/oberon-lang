@@ -1,7 +1,9 @@
 (*
-  RUN: %oberon --run %s | filecheck %s
+  RUN: %oberon -I "%S;%inc" -L "%S;%lib" -l oberon --run %s | filecheck %s
 *)
 MODULE Record3;
+
+IMPORT Out;
 
 TYPE
   Date = POINTER TO DateDesc;
@@ -10,12 +12,12 @@ TYPE
 VAR
   d : Date;
 
-PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
-
 PROCEDURE Test(d : Date);
 BEGIN
   d^.day := d^.day - 1;
-  printf("%04d.%02d.%02d\n", d.year, d.month, d.day)
+  Out.Int(d.year, 0); Out.Ln;
+  Out.Int(d.month, 0); Out.Ln;
+  Out.Int(d.day, 0); Out.Ln
 END Test;
 
 BEGIN
@@ -24,10 +26,16 @@ BEGIN
     d.month := 1;
     d.year := 2024;
     Test(d);
-    printf("%04d.%02d.%02d\n", d.year, d.month, d.day);
+    Out.Int(d.year, 0); Out.Ln;
+    Out.Int(d.month, 0); Out.Ln;
+    Out.Int(d.day, 0); Out.Ln;
     FREE(d)
 END Record3.
 (*
-    CHECK: 2024.01.25
-    CHECK: 2024.01.25
+    CHECK: 2024
+    CHECK: 1
+    CHECK: 25
+    CHECK: 2024
+    CHECK: 1
+    CHECK: 25
 *)

@@ -1,28 +1,28 @@
 (*
-  RUN: %oberon --run %s | filecheck %s
-  UNSUPPORTED: *
+  RUN: %oberon -I "%S;%inc" -L "%S;%lib" -l oberon --run %s | filecheck %s
   Illegal instruction
 *)
 MODULE Relations5;
 
-PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
+IMPORT Out;
 
 PROCEDURE Test;
 BEGIN
   IF 2.5 = 2.5 THEN
     IF 2.5 > -1.5 THEN
       IF -1.5 < 2.5 THEN
-        printf("PASS");
+        Out.String("PASS");
         RETURN
       END
     END
   END;
-  printf("FAIL")
+  Out.String("FAIL")
 END Test;
 
 BEGIN
     Test
 END Relations5.
 (*
+    CHECK-NOT: FAIL
     CHECK: PASS
 *)

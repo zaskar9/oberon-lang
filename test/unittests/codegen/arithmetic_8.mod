@@ -1,20 +1,18 @@
 (*
-  RUN: %oberon --run %s | filecheck %s
-  UNSUPPORTED: *
-  Expression is not parsed correctly?
+  RUN: %oberon -I "%S;%inc" -L "%S;%lib" -l oberon --run %s | filecheck %s
 *)
 MODULE Arithmetic8;
 
-PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
+IMPORT Out;
 
 PROCEDURE Test;
 VAR a, b, c : INTEGER;
 BEGIN
   c := 3 * -5;
-  printf("%d\n", c);
+  Out.Int(c, 0);  Out.Ln;
   a := 3; b := -5;
   c := a * b;
-  printf("%d\n", c)
+  Out.Int(c, 0);  Out.Ln
 END Test;
 
 BEGIN

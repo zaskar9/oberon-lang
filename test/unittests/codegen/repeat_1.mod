@@ -1,9 +1,9 @@
 (*
-  RUN: %oberon --run %s | filecheck %s
+  RUN: %oberon -I "%S;%inc" -L "%S;%lib" -l oberon --run %s | filecheck %s
 *)
-MODULE RepeatUntil1;
+MODULE Repeat1;
 
-PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
+IMPORT Out;
 
 PROCEDURE Test;
 VAR x, y, z : INTEGER;
@@ -20,12 +20,16 @@ BEGIN
       UNTIL y > 2;
       x := x + 1
     UNTIL x > 2;
-    printf("%d %d %d\n", x, y, z)
+    Out.Int(x, 0); Out.Ln;
+    Out.Int(y, 0); Out.Ln;
+    Out.Int(z, 0); Out.Ln
 END Test;
 
 BEGIN
     Test
-END RepeatUntil1.
+END Repeat1.
 (*
-    CHECK: 3 3 3
+    CHECK: 3
+    CHECK: 3
+    CHECK: 3
 *)

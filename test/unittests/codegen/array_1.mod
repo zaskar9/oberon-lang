@@ -1,9 +1,9 @@
 (*
-  RUN: %oberon --run %s | filecheck %s
+  RUN: %oberon -I "%S;%inc" -L "%S;%lib" -l oberon --run %s | filecheck %s
 *)
 MODULE Array1;
 
-PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
+IMPORT Out;
 
 PROCEDURE Test;
 VAR
@@ -13,12 +13,16 @@ BEGIN
   FOR i := 0 TO 2 DO
     a[i] := i + 1
   END;
-  printf("%d %d %d", a[0], a[1], a[2])
+  Out.Int(a[0], 0); Out.Ln;
+  Out.Int(a[1], 0); Out.Ln;
+  Out.Int(a[2], 0); Out.Ln
 END Test;
 
 BEGIN
     Test
 END Array1.
 (*
-    CHECK: 1 2 3
+    CHECK: 1
+    CHECK: 2
+    CHECK: 3
 *)

@@ -1,12 +1,12 @@
 (*
   RUN: %oberon --run %s
   XFAIL: *
-  UNSUPPORTED: *
   Note does not complain about end in first IF statment
 *)
 MODULE IfWithTrailingEnd;
 
-PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
+VAR
+  ret : INTEGER;
 
 PROCEDURE Test : INTEGER;
 BEGIN
@@ -16,5 +16,5 @@ BEGIN
 END Test;
 
 BEGIN
-    printf("%d", Test())
+    ret := Test()
 END IfWithTrailingEnd.

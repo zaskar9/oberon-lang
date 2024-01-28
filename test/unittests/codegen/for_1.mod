@@ -1,14 +1,14 @@
 (*
-  RUN: %oberon --run %s | filecheck %s
+  RUN: %oberon -I "%S;%inc" -L "%S;%lib" -l oberon --run %s | filecheck %s
 *)
 MODULE For1;
 
-PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
+IMPORT Out;
 
 PROCEDURE Test;
 VAR x : INTEGER;
 BEGIN
-    FOR x := 0 TO 3 DO printf("%d\n", x) END
+    FOR x := 0 TO 3 DO Out.Int(x, 0); Out.Ln END
 END Test;
 
 BEGIN

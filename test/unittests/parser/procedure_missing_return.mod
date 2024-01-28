@@ -1,12 +1,12 @@
 (*
   RUN: %oberon --run %s
   XFAIL: *
-  UNSUPPORTED: *
-  Note does not complain about return not reachable and missing
+  Does not complain about return not reachable and missing
 *)
 MODULE ProcedureMissingReturn;
 
-PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
+VAR
+  ret : INTEGER;
 
 PROCEDURE Test : INTEGER;
 BEGIN
@@ -14,5 +14,5 @@ BEGIN
 END Test;
 
 BEGIN
-    printf("%d", Test())
+   ret := Test()
 END ProcedureMissingReturn.

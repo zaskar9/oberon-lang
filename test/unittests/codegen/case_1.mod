@@ -1,19 +1,19 @@
 (*
-  RUN: %oberon --run %s | filecheck %s
+  RUN: %oberon -I "%S;%inc" -L "%S;%lib" -l oberon --run %s | filecheck %s
   UNSUPPORTED: *
   CASE not supported
 *)
 MODULE Case1;
 
-PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
+IMPORT Out;
 
 PROCEDURE Test;
 VAR i : INTEGER;
 BEGIN
   i := 2;
   CASE i OF
-    | 1 : printf("FAIL");
-    | 2 : printf("PASS")
+    | 1 : Out.String("FAIL"); Out.Ln;
+    | 2 : Out.String("PASS"); Out.Ln;
   END
 END Test;
 

@@ -1,20 +1,20 @@
 (*
-  RUN: %oberon --run %s | filecheck %s
+  RUN: %oberon -I "%S;%inc" -L "%S;%lib" -l oberon --run %s | filecheck %s
 *)
 MODULE Arithmetic1;
 
-PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
+IMPORT Out;
 
 PROCEDURE Test;
 VAR a, b, c, d : INTEGER;
 BEGIN
   a := -1 ; b := 3 ; c := 7;
   d := a + b + c;
-  printf("%d\n", d);
+  Out.Int(d, 0); Out.Ln;
   d := c + (-b + a);
-  printf("%d\n", d);
+  Out.Int(d, 0); Out.Ln;
   d := (+a - b) + c;
-  printf("%d\n", d)
+  Out.Int(d, 0);  Out.Ln
 END Test;
 
 BEGIN

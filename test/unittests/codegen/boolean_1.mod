@@ -1,9 +1,9 @@
 (*
-  RUN: %oberon --run %s | filecheck %s
+  RUN: %oberon -I "%S;%inc" -L "%S;%lib" -l oberon --run %s | filecheck %s
 *)
 MODULE Boolean1;
 
-PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
+IMPORT Out;
 
 PROCEDURE Test;
 BEGIN
@@ -11,13 +11,13 @@ BEGIN
     IF TRUE = TRUE THEN
       IF ~FALSE THEN
         IF TRUE # FALSE THEN
-          printf("PASS");
+          Out.String("PASS"); Out.Ln;
           RETURN
         END
       END
     END
   END;
-  printf("FAIL")
+  Out.String("FAIL"); Out.Ln
 END Test;
 
 BEGIN

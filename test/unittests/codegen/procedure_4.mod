@@ -1,10 +1,11 @@
 (*
-  RUN: %oberon --run %s | filecheck %s
+  RUN: %oberon -I "%S;%inc" -L "%S;%lib" -l oberon --run %s | filecheck %s
+  XFAIL: *
   Note : Access to outer scope as here is i believe not alowed in Oberon-07.
 *)
 MODULE Procedure4;
 
-PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
+IMPORT Out;
 
 PROCEDURE Test(a, b : INTEGER) : INTEGER;
     PROCEDURE Inner : INTEGER;
@@ -14,7 +15,7 @@ BEGIN RETURN Inner()
 END Test;
 
 BEGIN
-    printf("%d", Test(1, 2))
+    Out.Int(Test(1, 2), 0); Out.Ln
 END Procedure4.
 (*
     CHECK: 3

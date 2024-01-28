@@ -1,25 +1,27 @@
 (*
-  RUN: %oberon --run %s | filecheck %s
+  RUN: %oberon -I "%S;%inc" -L "%S;%lib" -l oberon --run %s | filecheck %s
 *)
 MODULE BuiltinDec;
 
-PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
+IMPORT Out;
 
 PROCEDURE Test;
 VAR i : INTEGER;
 BEGIN
   i := 10;
   DEC(i);
-  printf("%d ", i);
+  Out.Int(i, 0); Out.Ln;
   DEC(i, 10);
-  printf("%d ", i);
+  Out.Int(i, 0); Out.Ln;
   DEC(i, -10);
-  printf("%d ", i)
+  Out.Int(i, 0); Out.Ln
 END Test;
 
 BEGIN
     Test
 END BuiltinDec.
 (*
-    CHECK: 9 -1 9
+    CHECK: 9
+    CHECK: -1
+    CHECK: 9
 *)
