@@ -94,7 +94,7 @@ int main(const int argc, const char **argv) {
         }
 #if defined(_WIN32) || defined(_WIN64)
         // Windows uses a semicolon to separate multiple paths
-        std::string separator = ";"
+        std::string separator = ";";
 #else
         std::string separator = ":";
 #endif
