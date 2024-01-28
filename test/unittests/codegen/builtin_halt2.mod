@@ -1,7 +1,7 @@
 (*
   RUN: %oberon --run %s
   XFAIL: *
-  UNSUPPORTED: *
+  REQUIRES: revision
   Message : Terminator found in the middle of a basic block!
 *)
 MODULE BuiltinHalt2;

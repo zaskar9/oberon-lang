@@ -1,6 +1,6 @@
 (*
   RUN: %oberon -I "%S;%inc" -L "%S;%lib" -l oberon --run %s | filecheck %s
-  UNSUPPORTED: *
+  REQUIRES: revision
   Goes into a infinite loop on EXIT statment
 *)
 MODULE Loop1;

@@ -1,7 +1,7 @@
 (*
   RUN: %oberon --run %s
   XFAIL: *
-  UNSUPPORTED: *
+  REQUIRES: revision
   Should trigger overflow as the number is outside positive range of 32bit integer.
 *)
 MODULE Arithmetic9;

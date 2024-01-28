@@ -1,7 +1,7 @@
 (*
   RUN: %oberon --run %s
   XFAIL: *
-  UNSUPPORTED: *
+  REQUIRES: revision
   Should trigger overflow as the number is outside positive range.
   Note : The max negative 32bit integer is not parsed as expected.
 *)

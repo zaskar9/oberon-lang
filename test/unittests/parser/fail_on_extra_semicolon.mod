@@ -5,9 +5,7 @@
 MODULE FailOnMissingSemicolon;
 
 PROCEDURE Test;
-BEGIN
-  printf("PASS");
-END Test;
+BEGIN; END Test;
 
 BEGIN
     Test

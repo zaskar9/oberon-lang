@@ -1,7 +1,7 @@
 (*
   RUN: %oberon --run %s
   XFAIL: *
-  UNSUPPORTED: *
+  REQUIRES: revision
   Should mixed arithmetics with integers be supported?
   Oberon-2 have the LONG and SHORT procedure to solve this explicit.
 *)

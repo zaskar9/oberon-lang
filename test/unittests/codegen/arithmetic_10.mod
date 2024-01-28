@@ -1,7 +1,7 @@
 (*
   RUN: %oberon --run %s
   XFAIL: *
-  UNSUPPORTED: *
+  REQUIRES: revision
   Crash, but should trigger UBSAN routine __ubsan_handle_divrem_overflow.
 *)
 MODULE Arithmetic10;
