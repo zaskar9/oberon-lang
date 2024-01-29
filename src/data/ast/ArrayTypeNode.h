@@ -16,15 +16,14 @@
 class ArrayTypeNode final : public TypeNode {
 
 private:
-    std::unique_ptr<ExpressionNode> expr_;
-    unsigned int dim_;
+    unsigned int dimension_;
     TypeNode *memberType_;
 
 public:
-    explicit ArrayTypeNode() : ArrayTypeNode(EMPTY_POS, nullptr, nullptr, nullptr) {};
-    explicit ArrayTypeNode(const FilePos &pos, Ident *ident, std::unique_ptr<ExpressionNode> expr, TypeNode *memberType) :
+    ArrayTypeNode() : ArrayTypeNode(EMPTY_POS, nullptr, 0, nullptr) {};
+    ArrayTypeNode(const FilePos &pos, Ident *ident, unsigned int dimension, TypeNode *memberType) :
             TypeNode(NodeType::array_type, pos, ident, TypeKind::ARRAY, 0),
-            expr_(std::move(expr)), dim_(0), memberType_(memberType) {};
+            dimension_(dimension), memberType_(memberType) {};
     ~ArrayTypeNode() final = default;
 
     [[nodiscard]] ExpressionNode *getExpression() const;
@@ -34,6 +33,8 @@ public:
 
     void setMemberType(TypeNode *memberType);
     [[nodiscard]] TypeNode *getMemberType() const;
+
+    [[nodiscard]] bool isOpen() const;
 
     void accept(NodeVisitor &visitor) final;
 

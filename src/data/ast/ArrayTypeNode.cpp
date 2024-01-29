@@ -7,16 +7,12 @@
 #include "ArrayTypeNode.h"
 #include "NodeVisitor.h"
 
-ExpressionNode *ArrayTypeNode::getExpression() const {
-    return expr_.get();
-}
-
 void ArrayTypeNode::setDimension(unsigned int dim) {
-    dim_ = dim;
+    dimension_ = dim;
 }
 
 unsigned int ArrayTypeNode::getDimension() const {
-    return dim_;
+    return dimension_;
 }
 
 void ArrayTypeNode::setMemberType(TypeNode *memberType) {
@@ -27,13 +23,17 @@ TypeNode *ArrayTypeNode::getMemberType() const {
     return memberType_;
 }
 
+bool ArrayTypeNode::isOpen() const {
+    return dimension_ == 0;
+}
+
 void ArrayTypeNode::accept(NodeVisitor &visitor) {
     visitor.visit(*this);
 }
 
 void ArrayTypeNode::print(std::ostream &out) const {
     if (this->isAnonymous()) {
-        out << "ARRAY " << dim_ << " OF " << *memberType_;
+        out << "ARRAY " << dimension_ << " OF " << *memberType_;
     } else {
         out << *this->getIdentifier();
     }

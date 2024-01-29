@@ -158,6 +158,7 @@ void SemanticAnalysis::visit(TypeDeclarationNode &node) {
     auto type = node.getType();
     if (type) {
         type->accept(*this);
+        // TODO check for infinite recursive type
         node.setType(resolveType(type));
     } else {
         logger_->error(node.pos(), "undefined type");
@@ -477,40 +478,40 @@ void SemanticAnalysis::visit(BinaryExpressionNode &node) {
     }
 }
 
-void SemanticAnalysis::visit(ArrayTypeNode &node) {
-    auto expr = node.getExpression();
-    if (expr) {
-        expr->accept(*this);
-        if (expr->isConstant()) {
-            auto type = expr->getType();
-            if (type && type->kind() == TypeKind::INTEGER) {
-                auto dim = foldInteger(expr);
-                if (dim > 0) {
-                    node.setDimension((unsigned int) dim);
-                } else {
-                    logger_->error(expr->pos(), "array dimension must be a positive value.");
-                }
-            } else {
-                logger_->error(expr->pos(), "integer expression expected.");
-            }
-        } else {
-            logger_->error(expr->pos(), "constant expression expected.");
-        }
-    } else {
-        logger_->error(node.pos(), "undefined array type.");
-    }
-    auto type = node.getMemberType();
-    if (type) {
-        type->accept(*this);
-        node.setMemberType(resolveType(type));
-    } else {
-        logger_->error(node.pos(), "undefined type.");
-    }
-    if (type && type->getSize() > 0 && node.getDimension() > 0) {
-        node.setSize(node.getDimension() * type->getSize());
-    } else {
-        logger_->error(node.pos(), "undefined array dimension.");
-    }
+void SemanticAnalysis::visit([[maybe_unused]] ArrayTypeNode &node) {
+//    auto expr = node.getExpression();
+//    if (expr) {
+//        expr->accept(*this);
+//        if (expr->isConstant()) {
+//            auto type = expr->getType();
+//            if (type && type->kind() == TypeKind::INTEGER) {
+//                auto dim = foldInteger(expr);
+//                if (dim > 0) {
+//                    node.setDimension((unsigned int) dim);
+//                } else {
+//                    logger_->error(expr->pos(), "array dimension must be a positive value.");
+//                }
+//            } else {
+//                logger_->error(expr->pos(), "integer expression expected.");
+//            }
+//        } else {
+//            logger_->error(expr->pos(), "constant expression expected.");
+//        }
+//    } else {
+//        logger_->error(node.pos(), "undefined array type.");
+//    }
+//    auto type = node.getMemberType();
+//    if (type) {
+//        type->accept(*this);
+//        node.setMemberType(resolveType(type));
+//    } else {
+//        logger_->error(node.pos(), "undefined type.");
+//    }
+//    if (type && type->getSize() > 0 && node.getDimension() > 0) {
+//        node.setSize(node.getDimension() * type->getSize());
+//    } else {
+//        logger_->error(node.pos(), "undefined array dimension.");
+//    }
 }
 
 void SemanticAnalysis::visit([[maybe_unused]] BasicTypeNode &node) {}
@@ -825,6 +826,7 @@ bool SemanticAnalysis::assertCompatible(const FilePos &pos, TypeNode *expected, 
         auto expectedId = expected->getIdentifier();
         auto actualId = actual->getIdentifier();
         if (assertEqual(expectedId, actualId)) {
+            // the two types are the same type
             return true;
         } else if ((expected->isInteger() && actual->isInteger()) ||
                    (expected->isReal() && actual->isNumeric())) {
@@ -834,6 +836,21 @@ bool SemanticAnalysis::assertCompatible(const FilePos &pos, TypeNode *expected, 
                 return false;
             }
             return true;
+        } else if (expected->isArray() && actual->isArray()) {
+            auto exp_array = dynamic_cast<ArrayTypeNode *>(expected);
+            auto act_array = dynamic_cast<ArrayTypeNode *>(actual);
+            if ((exp_array->isOpen() || exp_array->getDimension() == act_array->getDimension())) {
+                if (exp_array->getMemberType()->kind() == TypeKind::ANYTYPE) {
+                    return true;
+                }
+                auto exp_mem_t = exp_array->getMemberType();
+                auto act_mem_t = act_array->getMemberType();
+                if (exp_mem_t && act_mem_t &&
+                    assertEqual(exp_mem_t->getIdentifier(), act_mem_t->getIdentifier())) {
+                    return true;
+                }
+            }
+            std::cerr << ">>>>>>>" << std::endl;
         } else if (expected->isPointer()) {
             if (actual->isPointer()) {
                 auto exp_ptr = dynamic_cast<PointerTypeNode *>(expected);

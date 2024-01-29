@@ -157,7 +157,7 @@ void NodePrettyPrinter::visit(ValueReferenceNode &node) {
             stream_ << "]";
         } else if (type == NodeType::record_type) {
             stream_ << ".";
-            dynamic_cast<RecordField *>(selector)->getField()->accept(*this);
+            stream_ << dynamic_cast<RecordField *>(selector)->getField()->getIdentifier()->name();
         } else if (type == NodeType::pointer_type) {
             stream_ << "^";
         }
@@ -165,7 +165,7 @@ void NodePrettyPrinter::visit(ValueReferenceNode &node) {
 }
 
 void NodePrettyPrinter::visit(TypeReferenceNode &node) {
-    stream_ << "->" << *node.getIdentifier();
+    stream_ << "(* -> *)" << *node.getIdentifier();
 }
 
 void NodePrettyPrinter::visit(ConstantDeclarationNode &node) {

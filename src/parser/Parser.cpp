@@ -327,26 +327,13 @@ TypeNode* Parser::type(BlockNode *block, Ident* identifier) {
     logger_->debug("type");
     auto token = scanner_->peek();
     if (token->type() == TokenType::const_ident) {
-        auto referenced = qualident();
-        auto node = std::make_unique<TypeReferenceNode>(token->start(), std::move(referenced));
-        auto res = node.get();
-        block->registerType(std::move(node));
-        return res;
+        return context_->getOrInsertTypeReference(qualident());
     } else if (token->type() == TokenType::kw_array) {
-        std::unique_ptr<ArrayTypeNode> node(array_type(block, identifier));
-        auto res = node.get();
-        block->registerType(std::move(node));
-        return res;
+        return array_type(block, identifier);
     } else if (token->type() == TokenType::kw_record) {
-        std::unique_ptr<RecordTypeNode> node(record_type(block, identifier));
-        auto res = node.get();
-        block->registerType(std::move(node));
-        return res;
+        return record_type(block, identifier);
     } else if (token->type() == TokenType::kw_pointer) {
-        std::unique_ptr<PointerTypeNode> node(pointer_type(block, identifier));
-        auto res = node.get();
-        block->registerType(std::move(node));
-        return res;
+        return pointer_type(block, identifier);
     } else {
         logger_->error(token->start(), "unexpected token: " + to_string(token->type()) + ".");
     }
@@ -357,13 +344,13 @@ TypeNode* Parser::type(BlockNode *block, Ident* identifier) {
 
 // TODO array_type = "ARRAY" expression { "," expression } "OF" type .
 // array_type = "ARRAY" expression "OF" type .
-ArrayTypeNode* Parser::array_type(BlockNode *block, Ident* identifier) {
+ArrayTypeNode* Parser::array_type(BlockNode *block, [[maybe_unused]] Ident* identifier) {
     logger_->debug("array_type");
     FilePos pos = scanner_->next()->start(); // skip ARRAY keyword and get its position
     auto expr = expression();
     if (assertToken(scanner_->peek(), TokenType::kw_of)) {
         scanner_->next(); // skip OF keyword
-        return new ArrayTypeNode(pos, identifier, std::move(expr), type(block));
+        return sema_->onArrayType(pos, EMPTY_POS, std::move(expr), type(block));
     }
     // [<)>, <;>, <END>]
     resync({ TokenType::semicolon, TokenType::rparen, TokenType::kw_end });
@@ -372,25 +359,25 @@ ArrayTypeNode* Parser::array_type(BlockNode *block, Ident* identifier) {
 
 // TODO record_type = "RECORD" [ "(" qualident ")" ] [ field_list { ";" field_list } ] END.
 // record_type = "RECORD" field_list { ";" field_list } "END" .
-RecordTypeNode* Parser::record_type(BlockNode *block, Ident* identifier) {
+RecordTypeNode* Parser::record_type(BlockNode *block, [[maybe_unused]] Ident* identifier) {
     logger_->debug("record_type");
     FilePos pos = scanner_->next()->start(); // skip RECORD keyword and get its position
-    auto node = new RecordTypeNode(pos, identifier);
-    field_list(block, node);
+    std::vector<std::unique_ptr<FieldNode>> fields;
+    field_list(block, fields);
     while (scanner_->peek()->type() == TokenType::semicolon) {
         scanner_->next();
-        field_list(block, node);
+        field_list(block, fields);
     }
     if (assertToken(scanner_->peek(), TokenType::kw_end)) {
         scanner_->next();
     }
     // [<)>, <;>, <END>]
-    resync({ TokenType::semicolon, TokenType::rparen, TokenType::kw_end });
-    return node;
+    // resync({ TokenType::semicolon, TokenType::rparen, TokenType::kw_end });
+    return context_->getOrInsertRecordType(std::move(fields));
 }
 
 // field_list = ident_list ":" type .
-void Parser::field_list(BlockNode *block, RecordTypeNode *record) {
+void Parser::field_list(BlockNode *block, std::vector<std::unique_ptr<FieldNode>> &fields) {
     logger_->debug("field_list");
     std::vector<std::unique_ptr<Ident>> idents;
     auto next = scanner_->peek();
@@ -402,7 +389,7 @@ void Parser::field_list(BlockNode *block, RecordTypeNode *record) {
                 auto node = type(block);
                 int index = 0;
                 for (auto &&ident: idents) {
-                    record->addField(std::make_unique<FieldNode>(ident->pos(), std::move(ident), node, index++));
+                    fields.push_back(std::make_unique<FieldNode>(ident->pos(), std::move(ident), node, index++));
                 }
             }
         }
@@ -418,12 +405,12 @@ void Parser::field_list(BlockNode *block, RecordTypeNode *record) {
 }
 
 // pointer_type = "POINTER" "TO" type .
-PointerTypeNode* Parser::pointer_type(BlockNode *block, Ident *identifier) {
+PointerTypeNode* Parser::pointer_type(BlockNode *block, [[maybe_unused]] Ident *identifier) {
     logger_->debug("pointer_type");
     FilePos pos = scanner_->next()->start(); // skip POINTER keyword and get its position
     if (assertToken(scanner_->peek(), TokenType::kw_to)) {
         scanner_->next(); // skip TO keyword
-        return new PointerTypeNode(pos, identifier, type(block));
+        context_->getOrInsertPointerType(type(block));
     }
     // [<)>, <;>, <END>]
     resync({ TokenType::semicolon, TokenType::rparen, TokenType::kw_end });
@@ -541,17 +528,26 @@ void Parser::formal_parameters(ProcedureNode *proc) {
     auto token = scanner_->next(); // skip left parenthesis
     if (token->type() == TokenType::lparen) {
         TokenType type = scanner_->peek()->type();
-        if (type == TokenType::kw_var || type == TokenType::const_ident || type == TokenType::varargs) {
+        while (type == TokenType::kw_var || type == TokenType::const_ident || type == TokenType::varargs) {
             fp_section(proc);
-            while (scanner_->peek()->type() == TokenType::semicolon) {
+            if (scanner_->peek()->type() == TokenType::rparen) {
+                token = scanner_->next();
+                break;
+            }
+            if (scanner_->peek()->type() == TokenType::semicolon) {
                 token = scanner_->next(); // skip semicolon
                 if (proc->hasVarArgs()) {
                     logger_->error(token->start(), "varargs must be last formal parameter.");
                 }
-                fp_section(proc);
+                type = scanner_->peek()->type();
+                continue;
             }
+            token = scanner_->next();
+            logger_->error(token->start(), "; or ) expected, found " + to_string(token->type()) + ".");
         }
-        token = scanner_->next();
+        if (type == TokenType::rparen) {
+            token = scanner_->next();
+        }
         if (token->type() != TokenType::rparen) {
             logger_->error(token->start(), ") expected, found " + to_string(token->type()) + ".");
         }
@@ -604,7 +600,7 @@ void Parser::fp_section(ProcedureNode *proc) {
         }
     }
     // [<;>, <)>]
-    resync({ TokenType::semicolon, TokenType::rparen });
+    // resync({ TokenType::semicolon, TokenType::rparen });
 }
 
 // statement_sequence = statement { ";" statement } .
@@ -859,7 +855,7 @@ std::unique_ptr<ExpressionNode> Parser::simple_expression() {
         expr = term();
     } else if (token == TokenType::op_minus) {
         token_ = scanner_->next();
-        expr = std::make_unique<UnaryExpressionNode>(token_->start(), OperatorType::NEG, term());
+        expr = sema_->onUnaryExpression(token_->start(), EMPTY_POS, OperatorType::NEG, term());
     } else {
         expr = term();
     }
@@ -901,10 +897,10 @@ std::unique_ptr<ExpressionNode> Parser::factor() {
         scanner_->next();   // skip plus sign
     } else if (token->type() == TokenType::op_minus) {
         auto op = scanner_->next();
-        return std::make_unique<UnaryExpressionNode>(op->start(), OperatorType::NEG, basic_factor());
+        return sema_->onUnaryExpression(op->start(), EMPTY_POS, OperatorType::NEG, basic_factor());
     } else if (token->type() == TokenType::op_not) {
         auto op = scanner_->next();
-        return std::make_unique<UnaryExpressionNode>(op->start(), OperatorType::NOT, factor());
+        return sema_->onUnaryExpression(op->start(), EMPTY_POS, OperatorType::NOT, basic_factor());
     }
     return basic_factor();
 }
@@ -921,24 +917,24 @@ std::unique_ptr<ExpressionNode> Parser::basic_factor() {
     auto tmp = scanner_->next();
     if (token->type() == TokenType::int_literal) {
         auto number = dynamic_cast<const IntLiteralToken *>(tmp.get());
-        return std::make_unique<IntegerLiteralNode>(number->start(), number->value());
+        return sema_->onIntegerLiteral(number->start(), number->end(), number->value());
     } else if (token->type() == TokenType::long_literal) {
         auto number = dynamic_cast<const LongLiteralToken *>(tmp.get());
-        return std::make_unique<IntegerLiteralNode>(number->start(), number->value());
+        return sema_->onIntegerLiteral(number->start(), number->end(), number->value(), true);
     } else if (token->type() == TokenType::float_literal) {
         auto number = dynamic_cast<const FloatLiteralToken *>(tmp.get());
-        return std::make_unique<RealLiteralNode>(number->start(), number->value());
+        return sema_->onRealLiteral(number->start(), number->end(), number->value());
     } else if (token->type() == TokenType::double_literal) {
         auto number = dynamic_cast<const DoubleLiteralToken *>(tmp.get());
-        return std::make_unique<RealLiteralNode>(number->start(), number->value());
+        return sema_->onRealLiteral(number->start(), number->end(), number->value(), true);
     } else if (token->type() == TokenType::string_literal) {
         auto string = dynamic_cast<const StringLiteralToken *>(tmp.get());
-        return std::make_unique<StringLiteralNode>(string->start(), string->value());
+        return sema_->onStringLiteral(string->start(), string->end(), string->value());
     } else if (token->type() == TokenType::boolean_literal) {
         auto boolean = dynamic_cast<const BooleanLiteralToken *>(tmp.get());
-        return std::make_unique<BooleanLiteralNode>(boolean->start(), boolean->value());
+        return sema_->onBooleanLiteral(boolean->start(), boolean->end(), boolean->value());
     } else if (token->type() == TokenType::kw_nil) {
-        return std::make_unique<NilLiteralNode>(tmp->start());
+        return sema_->onNilLiteral(tmp->start(), tmp->end());
     } else if (token->type() == TokenType::lparen) {
         auto expr = expression();
         token = scanner_->peek();

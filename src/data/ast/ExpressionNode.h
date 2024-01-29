@@ -203,8 +203,8 @@ public:
 class NilLiteralNode final : public LiteralNode {
 
 public:
-    explicit NilLiteralNode(const FilePos &pos) :
-            LiteralNode(NodeType::pointer, pos, TypeKind::POINTER, nullptr, nullptr) {};
+    explicit NilLiteralNode(const FilePos &pos, TypeNode *type = nullptr) :
+            LiteralNode(NodeType::pointer, pos, TypeKind::POINTER, type, nullptr) {};
 
     void accept(NodeVisitor &visitor) final;
     void print(std::ostream &stream) const final;

@@ -94,7 +94,7 @@ private:
 
 public:
     LLVMIRBuilder(CompilerFlags *flags, Logger *logger, LLVMContext &context, Module *module);
-    ~LLVMIRBuilder() = default;
+    ~LLVMIRBuilder() override = default;
 
     void build(Node *node);
 

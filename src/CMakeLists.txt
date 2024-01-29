@@ -18,28 +18,29 @@ set(SCANNER_SOURCES
         scanner/UndefinedToken.cpp scanner/UndefinedToken.h)
 
 set(DATA_SOURCES
+        data/ast/ASTContext.cpp data/ast/ASTContext.h
         data/ast/Ident.cpp data/ast/Ident.h
         data/ast/Selector.cpp data/ast/Selector.h
-        data/ast/NodeVisitor.cpp data/ast/NodeVisitor.h
         data/ast/Node.cpp data/ast/Node.h
         data/ast/ExpressionNode.cpp data/ast/ExpressionNode.h
         data/ast/TypeNode.cpp data/ast/TypeNode.h
         data/ast/ArrayTypeNode.cpp data/ast/ArrayTypeNode.h
         data/ast/BasicTypeNode.cpp data/ast/BasicTypeNode.h
+        data/ast/PointerTypeNode.cpp data/ast/PointerTypeNode.h
         data/ast/ProcedureTypeNode.cpp data/ast/ProcedureTypeNode.h
         data/ast/RecordTypeNode.cpp data/ast/RecordTypeNode.h
-        data/ast/PointerTypeNode.cpp data/ast/PointerTypeNode.h
         data/ast/BlockNode.cpp data/ast/BlockNode.h
         data/ast/ModuleNode.cpp data/ast/ModuleNode.h
+        data/ast/ImportNode.cpp data/ast/ImportNode.h
         data/ast/ProcedureNode.cpp data/ast/ProcedureNode.h
         data/ast/DeclarationNode.cpp data/ast/DeclarationNode.h
-        data/ast/NodeReference.cpp data/ast/NodeReference.h
         data/ast/StatementNode.cpp data/ast/StatementNode.h
         data/ast/AssignmentNode.cpp data/ast/AssignmentNode.h
         data/ast/IfThenElseNode.cpp data/ast/IfThenElseNode.h
         data/ast/LoopNode.cpp data/ast/LoopNode.h
         data/ast/StatementSequenceNode.cpp data/ast/StatementSequenceNode.h
-        data/ast/ImportNode.cpp data/ast/ImportNode.h
+        data/ast/NodeReference.cpp data/ast/NodeReference.h
+        data/ast/NodeVisitor.cpp data/ast/NodeVisitor.h
         data/ast/NodePrettyPrinter.cpp data/ast/NodePrettyPrinter.h)
 
 set(SYMTAB_SOURCES
@@ -51,6 +52,9 @@ set(SYMTAB_SOURCES
 
 set(PARSER_SOURCES
         parser/Parser.cpp parser/Parser.h)
+
+set(SEMA_SOURCES
+        sema/Sema.cpp sema/Sema.h)
 
 set(SYSTEM_SOURCES
         system/OberonSystem.cpp system/OberonSystem.h
@@ -78,6 +82,7 @@ set(ALL_SOURCES
         ${DATA_SOURCES}
         ${SYMTAB_SOURCES}
         ${PARSER_SOURCES}
+        ${SEMA_SOURCES}
         ${SYSTEM_SOURCES}
         ${ANALYZER_SOURCES}
         ${CODEGEN_SOURCES}

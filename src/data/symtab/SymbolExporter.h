@@ -17,8 +17,8 @@
 class SymbolExporter {
 
 private:
-    Logger *logger_;
     boost::filesystem::path path_;
+    Logger *logger_;
     int ref_;
 
     void writeDeclaration(SymbolFile *file, DeclarationNode *decl);
@@ -29,8 +29,8 @@ private:
     void writeParameter(SymbolFile *file, ParameterNode *param);
 
 public:
-    explicit SymbolExporter(Logger *logger, boost::filesystem::path &path) :
-            logger_(logger), path_(std::move(path)), ref_() {};
+    explicit SymbolExporter(boost::filesystem::path &path, Logger *logger) :
+            path_(std::move(path)), logger_(logger), ref_() {};
     ~SymbolExporter() = default;
 
     void write(const std::string &module, SymbolTable *symbols);

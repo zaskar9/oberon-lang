@@ -44,6 +44,14 @@ PointerTypeNode *OberonSystem::createPointerType(TypeNode *base) {
     return ptr;
 }
 
+ArrayTypeNode *OberonSystem::createArrayType(TypeNode *memberType, unsigned int dimension) {
+    auto type = std::make_unique<ArrayTypeNode>(EMPTY_POS, nullptr, dimension, memberType);
+    auto ptr = type.get();
+    predefines_.push_back(std::move(type));
+    symbols_->setRef((char) TypeKind::ARRAY, ptr);
+    return ptr;
+}
+
 void OberonSystem::createProcedure(ProcType type, std::string name, std::vector<std::pair<TypeNode *, bool>> params,
                                    TypeNode *ret, bool hasVarArgs, bool toSymbols) {
     auto proc = std::make_unique<PredefinedProcedure>(type, name, params, ret);
@@ -89,4 +97,5 @@ void Oberon07::initSymbolTable(SymbolTable *symbols) {
     this->createProcedure(ProcType::ODD, "ODD", {{longType, false}}, boolType, false, true);
     this->createProcedure(ProcType::HALT, "HALT", {{ intType, false}}, nullptr, false, true);
     this->createProcedure(ProcType::ASSERT, "ASSERT", {{boolType, false}}, nullptr, false, true);
+    this->createProcedure(ProcType::LEN, "LEN", {{this->createArrayType(anyType, 0), true}}, longType, false, true);
 }

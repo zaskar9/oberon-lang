@@ -12,14 +12,16 @@
 #include "data/ast/TypeNode.h"
 #include "SymbolTable.h"
 #include "SymbolFile.h"
+#include "data/ast/ASTContext.h"
 #include <boost/filesystem.hpp>
 
 class SymbolImporter {
 
 private:
-    Logger *logger_;
     CompilerFlags *flags_;
+    ASTContext *context_;
     boost::filesystem::path path_;
+    Logger *logger_;
     std::vector<TypeNode*> types_;
     SymbolTable *symbols_;
     std::unique_ptr<ModuleNode> module_;
@@ -32,8 +34,8 @@ private:
     TypeNode *readParameter(SymbolFile *file);
 
 public:
-    explicit SymbolImporter(Logger *logger, CompilerFlags *flags, boost::filesystem::path &path) :
-            logger_(logger), flags_(flags), path_(std::move(path)), types_(), symbols_(), module_() {};
+    explicit SymbolImporter(CompilerFlags *flags, ASTContext *context, boost::filesystem::path &path, Logger *logger) :
+            flags_(flags), context_(context), path_(std::move(path)), logger_(logger), types_(), symbols_(), module_() {};
     ~SymbolImporter() = default;
 
     std::unique_ptr<ModuleNode> read(const std::string &module, SymbolTable *symbols);

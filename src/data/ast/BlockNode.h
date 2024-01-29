@@ -18,8 +18,6 @@ class ProcedureNode;
 class BlockNode {
 
 private:
-    std::vector<std::unique_ptr<TypeNode>> types_;
-
     std::vector<std::unique_ptr<ConstantDeclarationNode>> constants_;
     std::vector<std::unique_ptr<TypeDeclarationNode>> type_declarations_;
     std::vector<std::unique_ptr<VariableDeclarationNode>> variables_;
@@ -30,8 +28,6 @@ private:
 public:
     explicit BlockNode(const FilePos &pos);
     virtual ~BlockNode();
-
-    void registerType(std::unique_ptr<TypeNode> type);
 
     [[nodiscard]] virtual NodeType getNodeType() const = 0;
 

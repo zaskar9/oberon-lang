@@ -6,6 +6,7 @@
 #define OBERON_LANG_OBERONSYSTEM_H
 
 
+#include "data/ast/ArrayTypeNode.h"
 #include "data/symtab/SymbolTable.h"
 #include "PredefinedProcedure.h"
 
@@ -28,6 +29,7 @@ public:
     BasicTypeNode *createBasicType(TypeKind kind, unsigned int size);
     BasicTypeNode *getBasicType(TypeKind kind);
     PointerTypeNode *createPointerType(TypeNode *base);
+    ArrayTypeNode *createArrayType(TypeNode *memberType, unsigned int dimension);
     void createProcedure(ProcType type, std::string name, std::vector<std::pair<TypeNode *, bool>> params,
                          TypeNode *ret, bool hasVarArgs, bool toSymbols);
 

@@ -9,11 +9,13 @@
 
 
 #include "Analyzer.h"
+#include "data/ast/ASTContext.h"
 #include "data/ast/NodeVisitor.h"
 
 class LambdaLifter final : public Analysis, private NodeVisitor {
 
 private:
+    ASTContext *context_;
     ModuleNode *module_;
     DeclarationNode *env_;
     unsigned int level_;
@@ -67,7 +69,7 @@ private:
     static bool envFieldResolver(ValueReferenceNode *var, const std::string &field_name, TypeNode *field_type) ;
 
 public:
-    explicit LambdaLifter() : module_(), env_(), level_() { };
+    explicit LambdaLifter(ASTContext *context) : context_(context), module_(), env_(), level_() { };
     ~LambdaLifter() override = default;
 
     void run(Logger *logger, Node* node) override;

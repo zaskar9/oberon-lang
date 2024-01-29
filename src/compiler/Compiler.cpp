@@ -15,7 +15,9 @@ unique_ptr<Node> Compiler::run(const boost::filesystem::path &file) {
     logger_->debug("Parsing...");
     auto errors = logger_->getErrorCount();
     auto scanner = std::make_unique<Scanner>(logger_, file);
-    auto parser = std::make_unique<Parser>(flags_, logger_, scanner.get());
+    auto context = std::make_unique<ASTContext>();
+    auto sema = std::make_unique<Sema>(context.get(), system_->getSymbolTable(), logger_);
+    auto parser = std::make_unique<Parser>(flags_, scanner.get(), context.get(), sema.get(), logger_);
     auto ast = parser->parse();
     if (ast && ast->getNodeType() == NodeType::module) {
         // Check if file name matches module name
@@ -28,10 +30,10 @@ unique_ptr<Node> Compiler::run(const boost::filesystem::path &file) {
         logger_->debug("Analyzing...");
         auto analyzer = std::make_unique<Analyzer>(logger_);
         auto path = file.parent_path();
-        auto importer = std::make_unique<SymbolImporter>(logger_, flags_, path);
-        auto exporter = std::make_unique<SymbolExporter>(logger_, path);
+        auto importer = std::make_unique<SymbolImporter>(flags_, context.get(), path, logger_);
+        auto exporter = std::make_unique<SymbolExporter>(path, logger_);
         analyzer->add(std::make_unique<SemanticAnalysis>(system_->getSymbolTable(), importer.get(), exporter.get()));
-        analyzer->add(std::make_unique<LambdaLifter>());
+        analyzer->add(std::make_unique<LambdaLifter>(context.get()));
         analyzer->run(ast.get());
         if (logger_->getErrorCount() == errors) {
 #ifdef _DEBUG

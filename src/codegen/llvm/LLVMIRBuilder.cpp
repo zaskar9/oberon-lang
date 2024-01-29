@@ -61,6 +61,15 @@ void LLVMIRBuilder::visit(ModuleNode &node) {
     for (size_t i = 0; i < node.getImportCount(); ++i) {
         node.getImport(i)->accept(*this);
     }
+    // initialize array sizes
+    for (size_t i = 0; i < node.getVariableCount(); ++i) {
+        auto variable = node.getVariable(i);
+        if (variable->getType()->isArray()) {
+            auto array_t = dynamic_cast<ArrayTypeNode*>(variable->getType());
+            value_ = values_[variable];
+            value_ = builder_.CreateStore(builder_.getInt64(array_t->getDimension()), value_);
+        }
+    }
     // generate code for statements
     if (node.getStatements()->getStatementCount() > 0) {
         node.getStatements()->accept(*this);
@@ -163,21 +172,13 @@ void LLVMIRBuilder::visit(ValueReferenceNode &node) {
         type->getNodeType() == NodeType::pointer_type) {
         auto selector_t = type;
         auto base = value_;
-//        if (ref->getNodeType() == NodeType::parameter && type->getNodeType() != NodeType::pointer_type) {
-//            auto param = dynamic_cast<ParameterNode*>(ref);
-//            // create a base address within the stack frame of the current procedure for
-//            // array and record parameters that are passed by value
-//            if (!param->isVar()) {
-//                base = builder_.CreateAlloca(getLLVMType(type));
-//                builder_.CreateStore(value_, base);
-//            }
-//        }
         std::vector<Value *> indices;
         indices.push_back(builder_.getInt32(0));
         for (size_t i = 0; i < node.getSelectorCount(); i++) {
             auto sel = node.getSelector(i);
             if (selector_t->getNodeType() == NodeType::array_type) {
                 // handle array index access
+                indices.push_back(builder_.getInt32(1));   // the array is the second field in the struct
                 setRefMode(true);
                 dynamic_cast<ArrayIndex*>(sel)->getExpression()->accept(*this);
                 indices.push_back(value_);
@@ -219,18 +220,6 @@ void LLVMIRBuilder::visit(ValueReferenceNode &node) {
     }
     if (deref()) {
         value_ = builder_.CreateLoad(getLLVMType(type), value_);
-//        if (ref->getNodeType() == NodeType::variable) {
-//            value_ = builder_.CreateLoad(getLLVMType(type), value_);
-//        } else if (ref->getNodeType() == NodeType::parameter) {
-//            auto param = dynamic_cast<ParameterNode*>(ref);
-//            // load value of parameter that is either passed by reference or is an array or
-//            // record parameter since getelementptr only computes the address
-//            if (param->isVar() || param->getType()->getNodeType() == NodeType::array_type ||
-//                                  param->getType()->getNodeType() == NodeType::record_type ||
-//                                  param->getType()->getNodeType() == NodeType::pointer_type) {
-//                value_ = builder_.CreateLoad(getLLVMType(type), value_);
-//            }
-//        }
     }
 }
 
@@ -747,6 +736,9 @@ Value *LLVMIRBuilder::callPredefined(ProcedureNodeReference &node, std::vector<V
         value_ = builder_.CreateUnreachable();
         builder_.SetInsertPoint(tail);
         return value_;
+    } else if (ptype == ProcType::LEN) {
+        value_ = builder_.CreateLoad(builder_.getInt64Ty(), params[0]);
+        return value_;
     } else {
         logger_->error(node.pos(), "unsupported predefined procedure: " + to_string(*proc->getIdentifier()) + ".");
         // to generate correct LLVM IR, the current value is returned (no-op).
@@ -810,8 +802,10 @@ Type* LLVMIRBuilder::getLLVMType(TypeNode *type) {
     } else if (types_[type] != nullptr) {
         result = types_[type];
     } else if (type->getNodeType() == NodeType::array_type) {
+        // create a struct that stores the size and the elements of the array
         auto array_t = dynamic_cast<ArrayTypeNode *>(type);
         result = ArrayType::get(getLLVMType(array_t->getMemberType()), array_t->getDimension());
+        result = StructType::create(builder_.getContext(), { builder_.getInt64Ty(), result });
         types_[type] = result;
     } else if (type->getNodeType() == NodeType::record_type) {
         // create an empty struct and add it to the lookup table immediately to support recursive records
@@ -858,28 +852,25 @@ Type* LLVMIRBuilder::getLLVMType(TypeNode *type) {
 MaybeAlign LLVMIRBuilder::getLLVMAlign(TypeNode *type) {
     auto layout = module_->getDataLayout();
     if (type->getNodeType() == NodeType::array_type) {
-        auto align = layout.getStackAlignment();
-        if (type->getSize() >= align.value()) {
-            return MaybeAlign(align);
-        }
         auto array_t = dynamic_cast<ArrayTypeNode*>(type);
-        return getLLVMAlign(array_t->getMemberType());
+        auto int_align = layout.getPrefTypeAlign(builder_.getInt64Ty());
+        auto mem_align = getLLVMAlign(array_t->getMemberType());
+        if (int_align.value() > mem_align->value()) {
+            return int_align;
+        }
+        return mem_align;
     } else if (type->getNodeType() == NodeType::record_type) {
         auto record_t = dynamic_cast<RecordTypeNode *>(type);
         uint64_t size = 0;
         for (size_t i = 0; i < record_t->getFieldCount(); i++) {
             auto field_t = record_t->getField(i)->getType();
-            if (field_t->getNodeType() == NodeType::array_type) {
-                auto array_t = dynamic_cast<ArrayTypeNode *>(field_t);
-                field_t = array_t->getMemberType();
-            }
             size = std::max(size, getLLVMAlign(field_t)->value());
         }
         return MaybeAlign(size);
     } else if (type->getNodeType() == NodeType::pointer_type) {
-        return MaybeAlign(layout.getPointerPrefAlignment());
+        return { layout.getPointerPrefAlignment() };
     } else if (type->getNodeType() == NodeType::basic_type) {
-        return MaybeAlign(layout.getPrefTypeAlign(getLLVMType(type)));
+        return { layout.getPrefTypeAlign(getLLVMType(type)) };
     }
     return MaybeAlign();
 }

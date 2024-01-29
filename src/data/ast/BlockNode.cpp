@@ -7,14 +7,10 @@
 #include "BlockNode.h"
 #include "ProcedureNode.h"
 
-BlockNode::BlockNode(const FilePos &pos) : types_(), constants_(), type_declarations_(), variables_(), procedures_(),
+BlockNode::BlockNode(const FilePos &pos) : constants_(), type_declarations_(), variables_(), procedures_(),
         statements_(std::make_unique<StatementSequenceNode>(pos)) { }
 
 BlockNode::~BlockNode() = default;
-
-void BlockNode::registerType(std::unique_ptr<TypeNode> type) {
-    types_.push_back(std::move(type));
-}
 
 void BlockNode::addConstant(std::unique_ptr<ConstantDeclarationNode> constant) {
     constants_.push_back(std::move(constant));

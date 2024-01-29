@@ -152,65 +152,62 @@ TypeNode *SymbolImporter::readType(SymbolFile *file) {
 }
 
 TypeNode *SymbolImporter::readArrayType(SymbolFile *file) {
-    auto tmp = std::make_unique<ArrayTypeNode>();
-    auto res = tmp.get();
-    module_->registerType(std::move(tmp));
-    // read in member res
-    res->setMemberType(readType(file));
-    // read in dimension
-    res->setDimension((unsigned) file->readInt());
+    // read member type
+    TypeNode *member_t = readType(file);
+    // read dimension
+    auto dimension = (unsigned) file->readInt();
+    auto res = context_->getOrInsertArrayType(dimension, member_t);
     // read in size
     res->setSize((unsigned) file->readInt());
     return res;
 }
 
 TypeNode *SymbolImporter::readProcedureType(SymbolFile *file) {
-    auto tmp = std::make_unique<ProcedureTypeNode>();
-    auto res = tmp.get();
-    module_->registerType(std::move(tmp));
-    // read in return res
-    res->setReturnType(readType(file));
-    // read in parameters
+    // read return type
+    TypeNode *return_t = readType(file);
+    // read parameters
+    std::vector<std::unique_ptr<ParameterNode>> params;
     auto ch = file->readChar();
     while (ch != 0) {
         auto var = file->readChar();
         auto ptype = readType(file);
         auto param = std::make_unique<ParameterNode>(EMPTY_POS, std::make_unique<Ident>("_"), ptype, (var == 0));
         param->setLevel(SymbolTable::MODULE_LEVEL);
-        res->addFormalParameter(std::move(param));
+        params.push_back(std::move(param));
         // check for terminator
         ch = file->readChar();
     }
-    return res;
+    return context_->getOrInsertProcedureNode(std::move(params), return_t);
 }
 
 TypeNode *SymbolImporter::readRecordType(SymbolFile *file) {
-    auto tmp = std::make_unique<RecordTypeNode>();
-    auto res = tmp.get();
-    module_->registerType(std::move(tmp));
-    // for extended records, read in base res of record res (or TypeKind::NOTYPE)
-    res->setBaseType(dynamic_cast<RecordTypeNode*>(readType(file)));
-    // read in export number
+    // TODO add sanity checks based on the currently unused information
+    // for extended records, read base type of record type (or TypeKind::NOTYPE)
+    auto *base_t = dynamic_cast<RecordTypeNode*>(readType(file));
+    // read export number
     [[maybe_unused]] auto exno = file->readInt();
-    // read in the number of fields in this record
+    // read the number of fields in this record
     [[maybe_unused]] auto fld_cnt = file->readInt();
-    // read in the size of the res, i.e., sum of the sizes of the res of all fields
-    res->setSize((unsigned) file->readInt());
-    // read in fields
+    // read the size of the type, i.e., sum of the sizes of the types of all fields
+    auto size = (unsigned) file->readInt();
+    // read fields
+    std::vector<std::unique_ptr<FieldNode>> fields;
     auto ch = file->readChar();
     while (ch != 0) {
-        // read in field number
+        // read field number
         [[maybe_unused]] auto num = file->readInt();
-        // read in field name
+        // read field name
         auto name = file->readString();
-        // read in field res
+        // read field res
         auto type = readType(file);
-        // read in field offset
+        // read field offset
         [[maybe_unused]] auto offset = file->readInt();
-        auto field = std::make_unique<FieldNode>(EMPTY_POS, std::make_unique<Ident>(name), type);
-        res->addField(std::move(field));
+        fields.push_back(std::make_unique<FieldNode>(EMPTY_POS, std::make_unique<Ident>(name), type));
         // check for terminator
         ch = file->readChar();
     }
+    auto res = context_->getOrInsertRecordType(std::move(fields));
+    res->setBaseType(base_t);
+    res->setSize(size);
     return res;
 }
