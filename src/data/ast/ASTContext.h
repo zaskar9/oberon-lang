@@ -24,6 +24,7 @@ private:
     vector<unique_ptr<RecordTypeNode>> record_ts_;
     vector<unique_ptr<PointerTypeNode>> pointer_ts_;
     vector<unique_ptr<ProcedureTypeNode>> procedure_ts;
+    vector<unique_ptr<TypeReferenceNode>> references_;
 
 public:
     ArrayTypeNode *getOrInsertArrayType(unsigned int, TypeNode *);

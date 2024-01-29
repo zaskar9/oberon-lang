@@ -66,6 +66,15 @@ ArrayTypeNode *Sema::onArrayType(const FilePos &start, [[maybe_unused]] const Fi
     return nullptr;
 }
 
+TypeNode *Sema::onTypeReference([[maybe_unused]] const FilePos &start, [[maybe_unused]] const FilePos &end, unique_ptr<QualIdent> ident) {
+    auto type = symbols_->lookup(ident.get());
+    if (type) {
+        return dynamic_cast<TypeNode*>(type);   // TODO Yolo!
+    }
+    // TODO
+    return nullptr;
+}
+
 unique_ptr<ExpressionNode>
 Sema::onUnaryExpression(const FilePos &start, [[maybe_unused]] const FilePos &end,
                         OperatorType op, unique_ptr<ExpressionNode> expr) {

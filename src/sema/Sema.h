@@ -55,6 +55,7 @@ public:
 //    RecordTypeNode* onRecordType(FilePos start, FilePos end, vector<unique_ptr<FieldNode> fields);
 //    unique_ptr<FieldNode> onRecordField(FilePos start, FilePos end, unique_ptr<IdentDef>, TypeNode* ref, int index);
 //    PointerTypeNode* onPointerType(FilePos start, FilePos end, TypeNode* ref);
+    TypeNode* onTypeReference(const FilePos&, const FilePos&, unique_ptr<QualIdent>);
 //
 //    unique_ptr<VariableDeclarationNode> onVariable(FilePos start, FilePos end, unique_ptr<IdentDef>, TypeNode* ref, int index);
 //

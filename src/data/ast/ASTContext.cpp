@@ -33,5 +33,8 @@ ProcedureTypeNode *ASTContext::getOrInsertProcedureNode([[maybe_unused]] vector<
 }
 
 TypeReferenceNode *ASTContext::getOrInsertTypeReference([[maybe_unused]] unique_ptr<QualIdent> ident) {
-    return nullptr;
+    auto ref = std::make_unique<TypeReferenceNode>(EMPTY_POS, std::move(ident));
+    auto res = ref.get();
+    references_.push_back(std::move(ref));
+    return res;
 }
