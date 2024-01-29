@@ -141,7 +141,10 @@ void LLVMCodeGen::configure(CompilerFlags *flags) {
 
 std::string LLVMCodeGen::getLibName(const std::string &name, bool dylib, const llvm::Triple &triple) {
     std::stringstream ss;
-    if (triple.isOSWindows()) {
+    if (triple.isOSCygMing()) {
+        ss << "lib" << name;
+        ss << (dylib ? ".dll" : ".a");
+    } else if (triple.isOSWindows()) {
         ss << name << (dylib ? ".dll" : ".lib");
     } else {
         ss << "lib" << name;
@@ -236,7 +239,7 @@ void LLVMCodeGen::emit(Module *module, boost::filesystem::path path, OutputFileT
             ext = "ll";
             break;
         default:
-#if defined(_WIN32) || defined(_WIN64)
+#if (defined(_WIN32) || defined(_WIN64)) && !defined(__MINGW32__)
             ext = "obj";
 #else
             ext = "o";
