@@ -2,8 +2,9 @@ MODULE Arrays;
 IMPORT Out;
 
 TYPE List = ARRAY 10 OF INTEGER;
+     Point = RECORD x, y: INTEGER END;
 
-VAR l: ARRAY 10 OF INTEGER;
+VAR l: List;
 
 PROCEDURE Init(VAR l: List; val: INTEGER);
 VAR i: INTEGER;

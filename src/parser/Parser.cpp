@@ -12,8 +12,9 @@
 
 static OperatorType token_to_operator(TokenType token);
 
-std::unique_ptr<ModuleNode> Parser::parse() {
-    return module();
+ModuleNode *Parser::parse() {
+    context_->setTranslationUnit(module());
+    return dynamic_cast<ModuleNode*>(context_->getTranslationUnit());
 }
 
 // ident = letter { letter | digit } .
@@ -23,7 +24,7 @@ std::unique_ptr<Ident> Parser::ident() {
         token_ = scanner_->next();
         auto ident = dynamic_cast<const IdentToken*>(token_.get());
         logger_->debug(to_string(*ident));
-        return std::make_unique<Ident>(ident->start(), ident->value());
+        return std::make_unique<Ident>(ident->start(), ident->end(), ident->value());
     }
     // [<END>, <ELSE>, <ELSIF>, <THEN>, <UNTIL>, <BY>, <DO>, <TO>, <OF>, <MOD>, <DIV>, <OR>,
     // <<=>, <<>, <=>, <#>, <>=>, <>>, <+>, <->, <*>, <&>, <:=>, <[>, <]>, <(>, <)>, <;>, <,>, <:>, <.>]
@@ -34,7 +35,7 @@ std::unique_ptr<Ident> Parser::ident() {
              TokenType::op_plus, TokenType::op_minus, TokenType::op_times, TokenType::op_and, TokenType::op_becomes,
              TokenType::rbrack, TokenType::lbrack, TokenType::rparen, TokenType::lparen,
              TokenType::semicolon, TokenType::colon, TokenType::comma, TokenType::period });
-    return std::make_unique<Ident>(token->start(), to_string(TokenType::undef));
+    return std::make_unique<Ident>(token->start(), token->end(), to_string(TokenType::undef));
 }
 
 // qualident = [ ident "." ] ident .
@@ -45,10 +46,10 @@ std::unique_ptr<QualIdent> Parser::qualident() {
         scanner_->next(); // skip the period
         if (assertToken(scanner_->peek(), TokenType::const_ident)) {
             auto identifier = ident();
-            return std::make_unique<QualIdent>(qualifier->pos(), qualifier->name(), identifier->name());
+            return std::make_unique<QualIdent>(qualifier->start(), identifier->end(), qualifier->name(), identifier->name());
         }
     }
-    return std::make_unique<QualIdent>(qualifier->pos(), qualifier->name());
+    return std::make_unique<QualIdent>(qualifier->start(), qualifier->end(), qualifier->name());
 }
 
 // identdef = ident [ "*" ] .
@@ -63,7 +64,7 @@ std::unique_ptr<IdentDef> Parser::identdef(bool checkAlphaNum) {
         scanner_->next(); // skip the asterisk
         exp = true;
     }
-    return std::make_unique<IdentDef>(identifier->pos(), identifier->name(), exp);
+    return std::make_unique<IdentDef>(identifier->start(), identifier->end(), identifier->name(), exp);
 }
 
 // designator = qualident { selector } .
@@ -247,10 +248,10 @@ void Parser::import(ModuleNode *module) {
             scanner_->next(); // skip := operator
             if (assertToken(scanner_->peek(), TokenType::const_ident)) {
                 auto name = ident();
-                module->addImport(std::make_unique<ImportNode>(identifier->pos(), std::move(identifier), std::move(name)));
+                module->addImport(std::make_unique<ImportNode>(identifier->start(), std::move(identifier), std::move(name)));
             }
         } else {
-            module->addImport(std::make_unique<ImportNode>(identifier->pos(), nullptr, std::move(identifier)));
+            module->addImport(std::make_unique<ImportNode>(identifier->start(), nullptr, std::move(identifier)));
         }
     }
 }
@@ -327,7 +328,9 @@ TypeNode* Parser::type(BlockNode *block, Ident* identifier) {
     logger_->debug("type");
     auto token = scanner_->peek();
     if (token->type() == TokenType::const_ident) {
-        return context_->getOrInsertTypeReference(qualident());
+        FilePos start = token->start();
+        FilePos end = token->end();
+        return sema_->onTypeReference(start, end, qualident());
     } else if (token->type() == TokenType::kw_array) {
         return array_type(block, identifier);
     } else if (token->type() == TokenType::kw_record) {
@@ -389,7 +392,7 @@ void Parser::field_list(BlockNode *block, std::vector<std::unique_ptr<FieldNode>
                 auto node = type(block);
                 int index = 0;
                 for (auto &&ident: idents) {
-                    fields.push_back(std::make_unique<FieldNode>(ident->pos(), std::move(ident), node, index++));
+                    fields.push_back(std::make_unique<FieldNode>(ident->start(), std::move(ident), node, index++));
                 }
             }
         }
@@ -425,12 +428,12 @@ void Parser::var_declarations(BlockNode *block) {
         std::vector<std::unique_ptr<Ident>> idents;
         ident_list(idents);
         auto token = scanner_->next();
-        // auto pos = token->start();
+        // auto start = token->start();
         if (assertToken(token.get(), TokenType::colon)) {
             auto node = type(block);
             int index = 0;
             for (auto &&ident : idents) {
-                auto variable = std::make_unique<VariableDeclarationNode>(ident->pos(), std::move(ident), node, index++);
+                auto variable = std::make_unique<VariableDeclarationNode>(ident->start(), std::move(ident), node, index++);
                 block->addVariable(std::move(variable));
             }
             token = scanner_->next();
@@ -772,7 +775,7 @@ std::unique_ptr<StatementNode> Parser::for_statement() {
     token_ = scanner_->next(); // skip FOR keyword
     auto start = token_->start();
     auto ident = this->ident();
-    auto pos = ident->pos();
+    auto pos = ident->start();
     auto counter = std::make_unique<ValueReferenceNode>(pos, std::make_unique<Designator>(std::move(ident)));
     token_ = scanner_->next();
     std::unique_ptr<ExpressionNode> low = nullptr;
@@ -958,7 +961,7 @@ bool Parser::assertToken(const Token *token, TokenType expected) {
 
 bool Parser::assertOberonIdent(const Ident *ident) {
     if (ident->name().find('_') != std::string::npos) {
-        logger_->error(ident->pos(), "illegal identifier: " + to_string(*ident) + ".");
+        logger_->error(ident->start(), "illegal identifier: " + to_string(*ident) + ".");
         return false;
     }
     return true;

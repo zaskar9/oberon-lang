@@ -10,7 +10,7 @@
 #include "analyzer/LambdaLifter.h"
 #include "data/ast/NodePrettyPrinter.h"
 
-unique_ptr<Node> Compiler::run(const boost::filesystem::path &file) {
+unique_ptr<ASTContext> Compiler::run(const boost::filesystem::path &file) {
     // Scan and parse the input file
     logger_->debug("Parsing...");
     auto errors = logger_->getErrorCount();
@@ -18,13 +18,12 @@ unique_ptr<Node> Compiler::run(const boost::filesystem::path &file) {
     auto context = std::make_unique<ASTContext>();
     auto sema = std::make_unique<Sema>(context.get(), system_->getSymbolTable(), logger_);
     auto parser = std::make_unique<Parser>(flags_, scanner.get(), context.get(), sema.get(), logger_);
-    auto ast = parser->parse();
-    if (ast && ast->getNodeType() == NodeType::module) {
+    auto module = parser->parse();
+    if (module) {
         // Check if file name matches module name
-        if (file.filename().replace_extension("").string() != ast->getIdentifier()->name()) {
-            std::string name = ast->getIdentifier()->name();
-            logger_->warning(ast->pos(), "module " + name + " should be declared in a file named " + name +
-                                            ".Mod.");
+        if (file.filename().replace_extension("").string() != module->getIdentifier()->name()) {
+            std::string name = module->getIdentifier()->name();
+            logger_->warning(module->pos(), "module " + name + " should be declared in a file named " + name + ".Mod.");
         }
         // Run the analyzer
         logger_->debug("Analyzing...");
@@ -34,13 +33,13 @@ unique_ptr<Node> Compiler::run(const boost::filesystem::path &file) {
         auto exporter = std::make_unique<SymbolExporter>(path, logger_);
         analyzer->add(std::make_unique<SemanticAnalysis>(system_->getSymbolTable(), importer.get(), exporter.get()));
         analyzer->add(std::make_unique<LambdaLifter>(context.get()));
-        analyzer->run(ast.get());
+        analyzer->run(module);
         if (logger_->getErrorCount() == errors) {
 #ifdef _DEBUG
             auto printer = std::make_unique<NodePrettyPrinter>(std::cout);
-            printer->print(ast.get());
+            printer->print(module);
 #endif
-            return ast;
+            return context;
         }
     }
     return nullptr;
@@ -50,7 +49,7 @@ void Compiler::compile(const boost::filesystem::path &file) {
     auto path = absolute(file);
     auto ast = run(file);
     if (ast) {
-        codegen_->generate(ast.get(), path.string());
+        codegen_->generate(ast->getTranslationUnit(), path.string());
     }
 }
 
@@ -59,7 +58,7 @@ int Compiler::jit(const boost::filesystem::path &file) {
     auto path = absolute(file);
     auto ast = run(path);
     if (ast) {
-        return codegen_->jit(ast.get(), path.string());
+        return codegen_->jit(ast->getTranslationUnit(), path.string());
     }
     return EXIT_FAILURE;
 }

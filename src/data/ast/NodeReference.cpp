@@ -79,10 +79,10 @@ size_t Designator::getSelectorCount() const {
 void Designator::disqualify() {
     if (ident_->isQualified()) {
         auto qual = dynamic_cast<QualIdent *>(ident_.get());
-        auto pos = ident_->pos();
+        auto pos = ident_->start();
         pos.charNo += ((int) qual->qualifier().size()) + 1;
-        auto field = std::make_unique<QualIdent>(pos, qual->name());
-        this->insertSelector(0, std::make_unique<RecordField>(field->pos(), std::move(field)));
+        auto field = std::make_unique<QualIdent>(pos, EMPTY_POS, qual->name());
+        this->insertSelector(0, std::make_unique<RecordField>(field->start(), std::move(field)));
         ident_ = std::make_unique<QualIdent>(qual->qualifier());
     }
 }
@@ -103,7 +103,7 @@ void ProcedureNodeReference::initActualParameters() {
             if (proc->getFormalParameterCount() == 1) {
                 auto typeguard = dynamic_cast<Typeguard *>(selector);
                 auto ident = typeguard->ident();
-                auto ref = std::make_unique<ValueReferenceNode>(ident->pos(),
+                auto ref = std::make_unique<ValueReferenceNode>(ident->start(),
                                                   std::make_unique<Designator>(std::make_unique<QualIdent>(ident)));
                 parameters_.push_back(std::move(ref));
                 this->removeSelector(0);

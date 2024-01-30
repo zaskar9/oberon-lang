@@ -9,10 +9,11 @@
 #include <vector>
 #include "TypeNode.h"
 #include "ArrayTypeNode.h"
-#include "RecordTypeNode.h"
+#include "ModuleNode.h"
+#include "NodeReference.h"
 #include "PointerTypeNode.h"
 #include "ProcedureTypeNode.h"
-#include "NodeReference.h"
+#include "RecordTypeNode.h"
 
 using std::unique_ptr;
 using std::vector;
@@ -20,6 +21,7 @@ using std::vector;
 class ASTContext {
 
 private:
+    unique_ptr<Node> unit_;
     vector<unique_ptr<ArrayTypeNode>> array_ts_;
     vector<unique_ptr<RecordTypeNode>> record_ts_;
     vector<unique_ptr<PointerTypeNode>> pointer_ts_;
@@ -27,11 +29,26 @@ private:
     vector<unique_ptr<TypeReferenceNode>> references_;
 
 public:
+    [[nodiscard]] Node *getTranslationUnit();
+    [[deprecated]]
+    void setTranslationUnit(unique_ptr<Node>);
+
+//    ModuleNode *createModule(const FilePos &, const FilePos &,
+//                             unique_ptr<Ident> ident,
+//                             vector<unique_ptr<ImportNode>> imports,
+//                             vector<unique_ptr<ConstantDeclarationNode> consts,
+//                             vector<unique_ptr<TypeDeclarationNode>> types,
+//                             vector<unique_ptr<VariableDeclarationNode>> vars,
+//                             vector<unique_ptr<ProcedureNode>> procs,
+//                             unique_ptr<StatementSequenceNode> stmts);
+
+
     ArrayTypeNode *getOrInsertArrayType(unsigned int, TypeNode *);
     RecordTypeNode *getOrInsertRecordType(vector<unique_ptr<FieldNode>>);
     PointerTypeNode *getOrInsertPointerType(TypeNode *);
     ProcedureTypeNode *getOrInsertProcedureNode(vector<unique_ptr<ParameterNode>>, TypeNode *);
 
+    [[deprecated]]
     TypeReferenceNode *getOrInsertTypeReference(unique_ptr<QualIdent>);
 
 };

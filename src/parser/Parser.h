@@ -96,7 +96,7 @@ public:
             flags_(flags), scanner_(scanner), context_(context), sema_(sema), logger_(logger), token_() { };
     ~Parser() = default;
 
-    unique_ptr<ModuleNode> parse();
+    ModuleNode *parse();
 
 };
 

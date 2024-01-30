@@ -478,41 +478,7 @@ void SemanticAnalysis::visit(BinaryExpressionNode &node) {
     }
 }
 
-void SemanticAnalysis::visit([[maybe_unused]] ArrayTypeNode &node) {
-//    auto expr = node.getExpression();
-//    if (expr) {
-//        expr->accept(*this);
-//        if (expr->isConstant()) {
-//            auto type = expr->getType();
-//            if (type && type->kind() == TypeKind::INTEGER) {
-//                auto dim = foldInteger(expr);
-//                if (dim > 0) {
-//                    node.setDimension((unsigned int) dim);
-//                } else {
-//                    logger_->error(expr->pos(), "array dimension must be a positive value.");
-//                }
-//            } else {
-//                logger_->error(expr->pos(), "integer expression expected.");
-//            }
-//        } else {
-//            logger_->error(expr->pos(), "constant expression expected.");
-//        }
-//    } else {
-//        logger_->error(node.pos(), "undefined array type.");
-//    }
-//    auto type = node.getMemberType();
-//    if (type) {
-//        type->accept(*this);
-//        node.setMemberType(resolveType(type));
-//    } else {
-//        logger_->error(node.pos(), "undefined type.");
-//    }
-//    if (type && type->getSize() > 0 && node.getDimension() > 0) {
-//        node.setSize(node.getDimension() * type->getSize());
-//    } else {
-//        logger_->error(node.pos(), "undefined array dimension.");
-//    }
-}
+void SemanticAnalysis::visit([[maybe_unused]] ArrayTypeNode &node) {}
 
 void SemanticAnalysis::visit([[maybe_unused]] BasicTypeNode &node) {}
 
@@ -576,12 +542,6 @@ void SemanticAnalysis::visit(AssignmentNode &node) {
         lvalue->accept(*this);
         auto decl = lvalue->dereference();
         if (decl) {
-//            if (decl->getNodeType() == NodeType::parameter) {
-//                auto param = dynamic_cast<ParameterNode *>(lvalue->dereference());
-//                if (!param->isVar()) {
-//                    logger_->error(lvalue->pos(), "cannot assign non-var parameter.");
-//                }
-//            }
             if (lvalue->dereference()->getNodeType() == NodeType::constant) {
                 logger_->error(lvalue->pos(), "cannot assign constant.");
             }
@@ -805,13 +765,13 @@ bool SemanticAnalysis::assertEqual(Ident *aIdent, Ident *bIdent) const {
 
 void SemanticAnalysis::assertUnique(Ident *ident, Node &node) {
     if (ident->isQualified()) {
-        logger_->error(ident->pos(), "cannot use qualified identifier here.");
+        logger_->error(ident->start(), "cannot use qualified identifier here.");
     }
     if (symbols_->isDuplicate(ident->name())) {
-        logger_->error(ident->pos(), "duplicate definition: " + ident->name() + ".");
+        logger_->error(ident->start(), "duplicate definition: " + ident->name() + ".");
     }
     if (symbols_->isGlobal(ident->name())) {
-        logger_->error(ident->pos(), "predefined identifier: " + ident->name() + ".");
+        logger_->error(ident->start(), "predefined identifier: " + ident->name() + ".");
     }
     symbols_->insert(ident->name(), &node);
 }
@@ -872,7 +832,7 @@ bool SemanticAnalysis::assertCompatible(const FilePos &pos, TypeNode *expected, 
 
 void SemanticAnalysis::checkExport(DeclarationNode &node) {
     if (node.getLevel() != SymbolTable::MODULE_LEVEL && node.getIdentifier()->isExported()) {
-        logger_->error(node.getIdentifier()->pos(), "only top-level declarations can be exported.");
+        logger_->error(node.getIdentifier()->start(), "only top-level declarations can be exported.");
     }
 }
 

@@ -75,10 +75,10 @@ public:
     unique_ptr<ExpressionNode> onUnaryExpression(const FilePos&, const FilePos&,
                                                  OperatorType,
                                                  unique_ptr<ExpressionNode>);
-    unique_ptr<ExpressionNode> onBinaryExpression(const FilePos&, const FilePos&,
-                                                  OperatorType,
-                                                  unique_ptr<ExpressionNode>,
-                                                  unique_ptr<ExpressionNode>);
+//    unique_ptr<ExpressionNode> onBinaryExpression(const FilePos&, const FilePos&,
+//                                                  OperatorType,
+//                                                  unique_ptr<ExpressionNode>,
+//                                                  unique_ptr<ExpressionNode>);
 
     unique_ptr<BooleanLiteralNode> onBooleanLiteral(const FilePos&, const FilePos&, bool);
     unique_ptr<IntegerLiteralNode> onIntegerLiteral(const FilePos&, const FilePos&, long, bool = false);

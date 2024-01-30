@@ -66,12 +66,24 @@ ArrayTypeNode *Sema::onArrayType(const FilePos &start, [[maybe_unused]] const Fi
     return nullptr;
 }
 
-TypeNode *Sema::onTypeReference([[maybe_unused]] const FilePos &start, [[maybe_unused]] const FilePos &end, unique_ptr<QualIdent> ident) {
-    auto type = symbols_->lookup(ident.get());
-    if (type) {
-        return dynamic_cast<TypeNode*>(type);   // TODO Yolo!
+TypeNode *Sema::onTypeReference(const FilePos &start, [[maybe_unused]] const FilePos &end, unique_ptr<QualIdent> ident) {
+    auto sym = symbols_->lookup(ident.get());
+    if (!sym) {
+        // TODO on completion of new Sema: activate error and return nullptr
+        // logger_->error(start, "undefined type: " + to_string(*ident) + ".");
+        return context_->getOrInsertTypeReference(std::move(ident));
     }
-    // TODO
+    if (sym->getNodeType() == NodeType::array_type ||
+        sym->getNodeType() == NodeType::basic_type ||
+        sym->getNodeType() == NodeType::record_type ||
+        sym->getNodeType() == NodeType::pointer_type) {
+        return dynamic_cast<TypeNode *>(sym);
+    }
+    if (sym->getNodeType() == NodeType::type_declaration) {
+        auto type = dynamic_cast<TypeDeclarationNode *>(sym);
+        return type->getType();
+    }
+    logger_->error(start, to_string(*ident) + " is not a type.");
     return nullptr;
 }
 

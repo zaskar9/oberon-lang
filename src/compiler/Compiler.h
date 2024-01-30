@@ -6,13 +6,14 @@
 #define OBERON_LANG_COMPILER_H
 
 
-#include "CompilerFlags.h"
-#include "codegen/CodeGen.h"
-#include "data/symtab/SymbolExporter.h"
-#include "logging/Logger.h"
-#include "system/OberonSystem.h"
 #include <memory>
 #include <boost/filesystem.hpp>
+
+#include "CompilerFlags.h"
+#include "codegen/CodeGen.h"
+#include "logging/Logger.h"
+#include "system/OberonSystem.h"
+#include "data/ast/ASTContext.h"
 
 using std::unique_ptr;
 using boost::filesystem::path;
@@ -25,7 +26,7 @@ private:
     CodeGen *codegen_;
     unique_ptr<OberonSystem> system_;
 
-    unique_ptr<Node> run(const path&);
+    unique_ptr<ASTContext> run(const path&);
 
 public:
     explicit Compiler(CompilerFlags *flags, Logger *logger, CodeGen *codegen) :
