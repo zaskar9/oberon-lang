@@ -43,10 +43,10 @@ public:
 //                             unique_ptr<StatementSequenceNode> stmts);
 
 
-    ArrayTypeNode *getOrInsertArrayType(unsigned int, TypeNode *);
-    RecordTypeNode *getOrInsertRecordType(vector<unique_ptr<FieldNode>>);
-    PointerTypeNode *getOrInsertPointerType(TypeNode *);
-    ProcedureTypeNode *getOrInsertProcedureNode(vector<unique_ptr<ParameterNode>>, TypeNode *);
+    ArrayTypeNode *getOrInsertArrayType(Ident *, unsigned int, TypeNode *);
+    RecordTypeNode *getOrInsertRecordType(Ident *, vector<unique_ptr<FieldNode>>);
+    PointerTypeNode *getOrInsertPointerType(Ident *, TypeNode *);
+    ProcedureTypeNode *getOrInsertProcedureNode(Ident *, vector<unique_ptr<ParameterNode>>, TypeNode *);
 
     [[deprecated]]
     TypeReferenceNode *getOrInsertTypeReference(unique_ptr<QualIdent>);

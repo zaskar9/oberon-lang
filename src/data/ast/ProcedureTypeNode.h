@@ -29,8 +29,8 @@ public:
     ProcedureTypeNode(const FilePos &pos, Ident *ident) :
             TypeNode(NodeType::procedure_type, pos, ident, TypeKind::PROCEDURE, 0),
             parameters_(), varargs_(false), type_(nullptr) {};
-    ProcedureTypeNode(const FilePos &pos, vector<unique_ptr<ParameterNode>> params, TypeNode *type) :
-            TypeNode(NodeType::procedure_type, pos, nullptr, TypeKind::PROCEDURE, 0),
+    ProcedureTypeNode(Ident *ident, vector<unique_ptr<ParameterNode>> params, TypeNode *type) :
+            TypeNode(NodeType::procedure_type, EMPTY_POS, ident, TypeKind::PROCEDURE, 0),
             parameters_(std::move(params)), varargs_(false), type_(type) {};
     ~ProcedureTypeNode() override = default;
 

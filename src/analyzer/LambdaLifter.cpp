@@ -44,7 +44,6 @@ void LambdaLifter::visit(ProcedureNode &node) {
     if (is_super) /* super procedure */ {
         if (node.getFormalParameterCount() > 0 || node.getVariableCount() > 0) {
             auto identifier = std::make_unique<Ident>("_T" + node.getIdentifier()->name());
-            // auto record_t = std::make_unique<RecordTypeNode>(EMPTY_POS, identifier.get());
             std::vector<std::unique_ptr<FieldNode>> fields;
             for (size_t i = 0; i < node.getFormalParameterCount(); i++) {
                 auto param = node.getFormalParameter(i);
@@ -54,8 +53,7 @@ void LambdaLifter::visit(ProcedureNode &node) {
                 auto var = node.getVariable(i);
                 fields.push_back(std::make_unique<FieldNode>(EMPTY_POS, std::make_unique<Ident>(var->getIdentifier()->name()), var->getType()));
             }
-            auto type = context_->getOrInsertRecordType(std::move(fields));
-            // module_->registerType(std::move(record_t));
+            auto type = context_->getOrInsertRecordType(identifier.get(), std::move(fields));
             auto decl = std::make_unique<TypeDeclarationNode>(EMPTY_POS, std::move(identifier), type);
             decl->setLevel(module_->getLevel() + 1);
             module_->addTypeDeclaration(std::move(decl));

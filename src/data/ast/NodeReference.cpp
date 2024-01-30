@@ -96,7 +96,7 @@ void ProcedureNodeReference::initActualParameters() {
         auto selector = this->getSelector(0);
         if (selector->getType() == NodeType::parameter) {
             auto parameters = dynamic_cast<ActualParameters *>(selector);
-            parameters->moveActuralParameters(parameters_);
+            parameters->moveActualParameters(parameters_);
             this->removeSelector(0);
         } else if (selector->getType() == NodeType::type_declaration) {
             auto proc = dynamic_cast<ProcedureNode *>(this->dereference());

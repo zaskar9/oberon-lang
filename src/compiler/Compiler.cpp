@@ -17,8 +17,8 @@ unique_ptr<ASTContext> Compiler::run(const boost::filesystem::path &file) {
     auto scanner = std::make_unique<Scanner>(logger_, file);
     auto context = std::make_unique<ASTContext>();
     auto sema = std::make_unique<Sema>(context.get(), system_->getSymbolTable(), logger_);
-    auto parser = std::make_unique<Parser>(flags_, scanner.get(), context.get(), sema.get(), logger_);
-    auto module = parser->parse();
+    auto parser = std::make_unique<Parser>(flags_, scanner.get(), sema.get(), logger_);
+    auto module = parser->parse(context.get());
     if (module) {
         // Check if file name matches module name
         if (file.filename().replace_extension("").string() != module->getIdentifier()->name()) {

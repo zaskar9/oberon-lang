@@ -1,12 +1,19 @@
 MODULE Arrays;
 IMPORT Out;
 
-TYPE List = ARRAY 10 OF INTEGER;
-     Point = RECORD x, y: INTEGER END;
+TYPE Array = ARRAY 10 * 6 / 2 OF INTEGER;
+     Node = POINTER TO NodeDesc;
+     NodeDesc = RECORD
+                   val: INTEGER;
+                   next: Node
+                END;
+     List = RECORD
+               first, last: Node
+            END;
 
-VAR l: List;
+VAR l: Array;
 
-PROCEDURE Init(VAR l: List; val: INTEGER);
+PROCEDURE Init(VAR l: Array; val: INTEGER);
 VAR i: INTEGER;
 BEGIN
     FOR i := 0 TO 9 DO
@@ -14,10 +21,10 @@ BEGIN
     END
 END Init;
 
-PROCEDURE Print(l: List);
+PROCEDURE Print(l: Array);
 VAR i: INTEGER;
 BEGIN
-    Out.String("List<"); Out.Long(LEN(l), 0); Out.String(">[");
+    Out.String("Array<"); Out.Long(LEN(l), 0); Out.String(">[");
     FOR i := 9 TO 0 BY -1 DO
         Out.Int(l[i], 0);
         IF i > 0 THEN Out.String(", ") ELSE Out.String("]") END
@@ -26,7 +33,7 @@ BEGIN
 END Print;
 
 PROCEDURE Run();
-VAR l: List;
+VAR l: Array;
 BEGIN
     Init(l, 10);
     Print(l)

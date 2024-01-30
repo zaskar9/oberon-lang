@@ -161,7 +161,7 @@ void SemanticAnalysis::visit(TypeDeclarationNode &node) {
         // TODO check for infinite recursive type
         node.setType(resolveType(type));
     } else {
-        logger_->error(node.pos(), "undefined type");
+        logger_->error(node.pos(), "undefined type.");
     }
     auto it = forwards_.find(ident->name());
     if (it != forwards_.end()) {
@@ -523,7 +523,7 @@ void SemanticAnalysis::visit(PointerTypeNode &node) {
             type->accept(*this);
         }
     } else {
-        logger_->error(node.pos(), "undefined type.");
+        logger_->error(node.pos(), "undefined pointer base type.");
     }
 }
 
@@ -851,7 +851,7 @@ std::unique_ptr<LiteralNode> SemanticAnalysis::fold(const ExpressionNode *expr) 
         }
         logger_->error(expr->pos(), "incompatible types.");
     } else {
-        logger_->error(expr->pos(), "undefined type.");
+        logger_->error(expr->pos(), "undefined expression type.");
     }
     return nullptr;
 }

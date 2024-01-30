@@ -24,6 +24,9 @@ public:
     ArrayTypeNode(const FilePos &pos, Ident *ident, unsigned int dimension, TypeNode *memberType) :
             TypeNode(NodeType::array_type, pos, ident, TypeKind::ARRAY, 0),
             dimension_(dimension), memberType_(memberType) {};
+    ArrayTypeNode(Ident *ident, unsigned int dimension, TypeNode *memberType) :
+            TypeNode(NodeType::array_type, EMPTY_POS, ident, TypeKind::ARRAY, 0),
+            dimension_(dimension), memberType_(memberType) {};
     ~ArrayTypeNode() final = default;
 
     [[nodiscard]] ExpressionNode *getExpression() const;

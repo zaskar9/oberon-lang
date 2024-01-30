@@ -15,29 +15,34 @@ void ASTContext::setTranslationUnit(unique_ptr<Node> unit) {
     unit_ = std::move(unit);
 }
 
-ArrayTypeNode *ASTContext::getOrInsertArrayType(unsigned int dimension, TypeNode *memberType) {
+ArrayTypeNode *ASTContext::getOrInsertArrayType(Ident *ident, unsigned int dimension, TypeNode *memberType) {
     for (auto &type : array_ts_) {
         if (type->getMemberType() == memberType && type->getDimension() == dimension) {
             return type.get();
         }
     }
-    auto type = make_unique<ArrayTypeNode>(EMPTY_POS, nullptr, dimension, memberType);
+    auto type = make_unique<ArrayTypeNode>(ident, dimension, memberType);
     auto res = type.get();
     array_ts_.push_back(std::move(type));
     return res;
 }
 
-RecordTypeNode *ASTContext::getOrInsertRecordType([[maybe_unused]] vector<unique_ptr<FieldNode>> fields) {
-    return nullptr;
+RecordTypeNode *ASTContext::getOrInsertRecordType(Ident *ident, vector<unique_ptr<FieldNode>> fields) {
+    auto type = make_unique<RecordTypeNode>(ident, std::move(fields));
+    auto res = type.get();
+    record_ts_.push_back(std::move(type));
+    return res;
 }
 
-PointerTypeNode *ASTContext::getOrInsertPointerType([[maybe_unused]] TypeNode *memberType) {
-    return nullptr;
+PointerTypeNode *ASTContext::getOrInsertPointerType(Ident *ident, TypeNode *base) {
+    auto type = make_unique<PointerTypeNode>(ident, base);
+    auto res = type.get();
+    pointer_ts_.push_back(std::move(type));
+    return res;
 }
 
-ProcedureTypeNode *ASTContext::getOrInsertProcedureNode(vector<unique_ptr<ParameterNode>> params,
-                                                        TypeNode *returnType) {
-    auto type = make_unique<ProcedureTypeNode>(EMPTY_POS, std::move(params), returnType);
+ProcedureTypeNode *ASTContext::getOrInsertProcedureNode(Ident *ident, vector<unique_ptr<ParameterNode>> params, TypeNode *ret) {
+    auto type = make_unique<ProcedureTypeNode>(ident, std::move(params), ret);
     auto res = type.get();
     procedure_ts.push_back(std::move(type));
     return res;

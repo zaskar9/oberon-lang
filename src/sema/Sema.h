@@ -51,10 +51,11 @@ public:
 //
 //    unique_ptr<TypeDeclarationNode> onType(FilePos start, FilePos end, unique_ptr<IdentDef> ident, TypeNode* ref);
 //    TypeNode* onQualifiedType(string qualifier, string ident);
-    ArrayTypeNode* onArrayType(const FilePos&, const FilePos&, unique_ptr<ExpressionNode>, TypeNode*);
-//    RecordTypeNode* onRecordType(FilePos start, FilePos end, vector<unique_ptr<FieldNode> fields);
-//    unique_ptr<FieldNode> onRecordField(FilePos start, FilePos end, unique_ptr<IdentDef>, TypeNode* ref, int index);
-//    PointerTypeNode* onPointerType(FilePos start, FilePos end, TypeNode* ref);
+    ArrayTypeNode* onArrayType(const FilePos&, const FilePos&, Ident*, unique_ptr<ExpressionNode>, TypeNode*);
+    PointerTypeNode* onPointerType(const FilePos&, const FilePos&, Ident*, TypeNode*);
+    ProcedureTypeNode* onProcedureType(const FilePos&, const FilePos&, Ident*, vector<unique_ptr<ParameterNode>>, TypeNode*);
+    RecordTypeNode* onRecordType(const FilePos&, const FilePos&, Ident*, vector<unique_ptr<FieldNode>>);
+//    unique_ptr<FieldNode> onRecordField(const FilePos&, FilePos&, unique_ptr<IdentDef>, TypeNode*, unsigned int);
     TypeNode* onTypeReference(const FilePos&, const FilePos&, unique_ptr<QualIdent>);
 //
 //    unique_ptr<VariableDeclarationNode> onVariable(FilePos start, FilePos end, unique_ptr<IdentDef>, TypeNode* ref, int index);
@@ -75,10 +76,10 @@ public:
     unique_ptr<ExpressionNode> onUnaryExpression(const FilePos&, const FilePos&,
                                                  OperatorType,
                                                  unique_ptr<ExpressionNode>);
-//    unique_ptr<ExpressionNode> onBinaryExpression(const FilePos&, const FilePos&,
-//                                                  OperatorType,
-//                                                  unique_ptr<ExpressionNode>,
-//                                                  unique_ptr<ExpressionNode>);
+    unique_ptr<ExpressionNode> onBinaryExpression(const FilePos&, const FilePos&,
+                                                  OperatorType,
+                                                  unique_ptr<ExpressionNode>,
+                                                  unique_ptr<ExpressionNode>);
 
     unique_ptr<BooleanLiteralNode> onBooleanLiteral(const FilePos&, const FilePos&, bool);
     unique_ptr<IntegerLiteralNode> onIntegerLiteral(const FilePos&, const FilePos&, long, bool = false);

@@ -8,27 +8,38 @@
 #define OBERON0C_RECORDTYPESYMBOL_H
 
 
+#include <iostream>
+#include <memory>
+#include <string>
+#include <vector>
 #include "TypeNode.h"
 #include "DeclarationNode.h"
-#include <memory>
-#include <vector>
+
+using std::ostream;
+using std::string;
+using std::unique_ptr;
+using std::vector;
+
 
 class RecordTypeNode final : public TypeNode {
 
 private:
-    std::vector<std::unique_ptr<FieldNode>> fields_;
+    vector<unique_ptr<FieldNode>> fields_;
     RecordTypeNode *base_;
 
 public:
-    explicit RecordTypeNode() : RecordTypeNode(EMPTY_POS, nullptr) {};
-    explicit RecordTypeNode(const FilePos &pos, Ident *ident) :
+    RecordTypeNode() : RecordTypeNode(EMPTY_POS, nullptr) {};
+    RecordTypeNode(const FilePos &pos, Ident *ident) :
             TypeNode(NodeType::record_type, pos, ident, TypeKind::RECORD, 0), fields_(), base_() {};
+    explicit RecordTypeNode(Ident *ident, vector<unique_ptr<FieldNode>> fields) :
+            TypeNode(NodeType::record_type, EMPTY_POS, ident, TypeKind::RECORD, 0),
+            fields_(std::move(fields)), base_() {};
     ~RecordTypeNode() final = default;
 
     [[nodiscard]] unsigned int getSize() const final;
 
-    void addField(std::unique_ptr<FieldNode> field);
-    [[nodiscard]] FieldNode *getField(const std::string &name) const;
+    void addField(unique_ptr<FieldNode> field);
+    [[nodiscard]] FieldNode *getField(const string &name) const;
     [[nodiscard]] FieldNode *getField(size_t num) const;
     [[nodiscard]] size_t getFieldCount();
 
@@ -36,7 +47,7 @@ public:
     [[nodiscard]] RecordTypeNode *getBaseType() const;
 
     void accept(NodeVisitor &visitor) final;
-    void print(std::ostream &out) const final;
+    void print(ostream &out) const final;
 
 };
 

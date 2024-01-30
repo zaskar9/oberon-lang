@@ -21,8 +21,9 @@ Sema::Sema(ASTContext *context, SymbolTable *symbols, Logger *logger) :
     tString_ = dynamic_cast<TypeNode *>(symbols_->lookup(to_string(TypeKind::STRING)));
 }
 
-ArrayTypeNode *Sema::onArrayType(const FilePos &start, [[maybe_unused]] const FilePos &end,
-                                 unique_ptr<ExpressionNode> expr, TypeNode *type) {
+ArrayTypeNode *
+Sema::onArrayType(const FilePos &start, [[maybe_unused]] const FilePos &end,
+                  Ident *ident, unique_ptr<ExpressionNode> expr, TypeNode *type) {
     if (!expr) {
         logger_->error(start, "undefined array dimension.");
         return nullptr;
@@ -55,7 +56,7 @@ ArrayTypeNode *Sema::onArrayType(const FilePos &start, [[maybe_unused]] const Fi
     }
     auto mem_t = resolveType(type);
     if (mem_t) {
-        auto res = context_->getOrInsertArrayType((unsigned int) dim->value(), mem_t);
+        auto res = context_->getOrInsertArrayType(ident, (unsigned int) dim->value(), mem_t);
         if (mem_t->getSize() > 0 && dim->value() > 0) {
             res->setSize(dim->value() * mem_t->getSize());
         } else {
@@ -66,7 +67,26 @@ ArrayTypeNode *Sema::onArrayType(const FilePos &start, [[maybe_unused]] const Fi
     return nullptr;
 }
 
-TypeNode *Sema::onTypeReference(const FilePos &start, [[maybe_unused]] const FilePos &end, unique_ptr<QualIdent> ident) {
+PointerTypeNode *
+Sema::onPointerType([[maybe_unused]] const FilePos &start, [[maybe_unused]] const FilePos &end,
+                                     Ident *ident, TypeNode *base) {
+    return context_->getOrInsertPointerType(ident, base);
+}
+
+ProcedureTypeNode *
+Sema::onProcedureType([[maybe_unused]] const FilePos &start, [[maybe_unused]] const FilePos &end,
+                      Ident *ident, vector<unique_ptr<ParameterNode>> params, TypeNode *ret) {
+    return context_->getOrInsertProcedureNode(ident, std::move(params), ret);
+}
+
+RecordTypeNode *
+Sema::onRecordType([[maybe_unused]] const FilePos &start, [[maybe_unused]] const FilePos &end,
+                  Ident *ident, vector<unique_ptr<FieldNode>> fields) {
+    return context_->getOrInsertRecordType(ident, std::move(fields));
+}
+
+TypeNode *
+Sema::onTypeReference(const FilePos &start, [[maybe_unused]] const FilePos &end, unique_ptr<QualIdent> ident) {
     auto sym = symbols_->lookup(ident.get());
     if (!sym) {
         // TODO on completion of new Sema: activate error and return nullptr
@@ -120,7 +140,7 @@ Sema::onUnaryExpression(const FilePos &start, [[maybe_unused]] const FilePos &en
         } else if (expr->getNodeType() == NodeType::boolean) {
             auto boolean = dynamic_cast<const BooleanLiteralNode*>(expr.get());
             switch (op) {
-                case OperatorType::NOT: return make_unique<RealLiteralNode>(start, !boolean->value(), type, cast);
+                case OperatorType::NOT: return make_unique<BooleanLiteralNode>(start, !boolean->value(), type, cast);
                 default:
                     logger_->error(start, "operator " + to_string(op) + " cannot be applied to real values.");
             }
@@ -129,29 +149,43 @@ Sema::onUnaryExpression(const FilePos &start, [[maybe_unused]] const FilePos &en
     return make_unique<UnaryExpressionNode>(start, op, std::move(expr));
 }
 
-unique_ptr<BooleanLiteralNode> Sema::onBooleanLiteral(const FilePos &start, [[maybe_unused]] const FilePos &end, bool value) {
+unique_ptr<ExpressionNode>
+Sema::onBinaryExpression([[maybe_unused]] const FilePos &start, [[maybe_unused]] const FilePos &end,
+                         [[maybe_unused]] OperatorType op,
+                         [[maybe_unused]] unique_ptr<ExpressionNode> lhs,
+                         [[maybe_unused]] unique_ptr<ExpressionNode> rhs) {
+    return nullptr;
+}
+
+unique_ptr<BooleanLiteralNode>
+Sema::onBooleanLiteral(const FilePos &start, [[maybe_unused]] const FilePos &end, bool value) {
     return make_unique<BooleanLiteralNode>(start, value, this->tBoolean_);
 }
 
-unique_ptr<IntegerLiteralNode> Sema::onIntegerLiteral(const FilePos &start, [[maybe_unused]] const FilePos &end, long value, bool ext) {
+unique_ptr<IntegerLiteralNode>
+Sema::onIntegerLiteral(const FilePos &start, [[maybe_unused]] const FilePos &end, long value, bool ext) {
     TypeNode *type = ext ? this->tLongInt_ : this->tInteger_;
     return make_unique<IntegerLiteralNode>(start, value, type);
 }
 
-unique_ptr<RealLiteralNode> Sema::onRealLiteral(const FilePos &start, [[maybe_unused]] const FilePos &end, double value, bool ext) {
+unique_ptr<RealLiteralNode>
+Sema::onRealLiteral(const FilePos &start, [[maybe_unused]] const FilePos &end, double value, bool ext) {
     TypeNode *type = ext ? this->tLongReal_ : this->tReal_;
     return make_unique<RealLiteralNode>(start, value, type);
 }
 
-unique_ptr<StringLiteralNode> Sema::onStringLiteral(const FilePos &start, [[maybe_unused]] const FilePos &end, const string &value) {
+unique_ptr<StringLiteralNode>
+Sema::onStringLiteral(const FilePos &start, [[maybe_unused]] const FilePos &end, const string &value) {
     return make_unique<StringLiteralNode>(start, value, this->tString_);
 }
 
-unique_ptr<NilLiteralNode> Sema::onNilLiteral(const FilePos &start, [[maybe_unused]] const FilePos &end) {
+unique_ptr<NilLiteralNode>
+Sema::onNilLiteral(const FilePos &start, [[maybe_unused]] const FilePos &end) {
     return make_unique<NilLiteralNode>(start, symbols_->getNilType());
 }
 
-TypeNode *Sema::resolveType(TypeNode *type) {
+TypeNode *
+Sema::resolveType(TypeNode *type) {
     if (type == nullptr) {
         return type;
     }

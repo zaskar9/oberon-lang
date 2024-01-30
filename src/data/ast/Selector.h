@@ -91,7 +91,7 @@ public:
     ~ActualParameters() override;
 
     void addActualParameter(std::unique_ptr<ExpressionNode> parameter);
-    void moveActuralParameters(std::vector<std::unique_ptr<ExpressionNode>> &target);
+    void moveActualParameters(std::vector<std::unique_ptr<ExpressionNode>> &target);
 };
 
 

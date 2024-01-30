@@ -40,7 +40,6 @@ class Parser {
 private:
     CompilerFlags *flags_;
     Scanner *scanner_;
-    ASTContext *context_;
     Sema *sema_;
     Logger *logger_;
     unique_ptr<const Token> token_;
@@ -66,11 +65,11 @@ private:
     unique_ptr<ExpressionNode> term();
     unique_ptr<ExpressionNode> factor();
     unique_ptr<ExpressionNode> basic_factor();
-    TypeNode* type(BlockNode *block, Ident* identifier = nullptr);
-    ArrayTypeNode* array_type(BlockNode *block, Ident* identifier = nullptr);
-    RecordTypeNode* record_type(BlockNode *block, Ident* identifier = nullptr);
-    void field_list(BlockNode *block, vector<unique_ptr<FieldNode>> &fields);
-    PointerTypeNode* pointer_type(BlockNode *block, Ident* identifier = nullptr);
+    TypeNode* type(Ident* identifier = nullptr);
+    ArrayTypeNode* array_type(Ident* identifier = nullptr);
+    RecordTypeNode* record_type(Ident* identifier = nullptr);
+    void field_list(vector<unique_ptr<FieldNode>> &fields);
+    PointerTypeNode* pointer_type(Ident* identifier = nullptr);
     unique_ptr<ProcedureNode> procedure_heading();
     void procedure_body(ProcedureNode *proc);
     void formal_parameters(ProcedureNode *proc);
@@ -92,11 +91,11 @@ private:
     void resync(set<TokenType> types);
 
 public:
-    explicit Parser(CompilerFlags *flags, Scanner *scanner, ASTContext *context, Sema *sema, Logger *logger) :
-            flags_(flags), scanner_(scanner), context_(context), sema_(sema), logger_(logger), token_() { };
+    explicit Parser(CompilerFlags *flags, Scanner *scanner, Sema *sema, Logger *logger) :
+            flags_(flags), scanner_(scanner), sema_(sema), logger_(logger), token_() { };
     ~Parser() = default;
 
-    ModuleNode *parse();
+    ModuleNode *parse(ASTContext *context);
 
 };
 
