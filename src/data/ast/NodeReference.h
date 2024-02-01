@@ -30,7 +30,7 @@ public:
 class TypeReferenceNode final : public TypeNode, public NodeReference {
 
 private:
-    std::unique_ptr<Ident> ident_; // required for memory management
+    std::unique_ptr<Ident> ident_;  // required for memory management
     TypeNode *node_;
 
 public:
@@ -117,7 +117,7 @@ private:
 
 public:
     explicit ValueReferenceNode(const FilePos &pos, std::unique_ptr<Designator> designator) :
-            ExpressionNode(NodeType::value_reference, pos),
+            ExpressionNode(NodeType::value_reference, pos, nullptr),
             ProcedureNodeReference(std::move(designator)),
             node_() {};
     explicit ValueReferenceNode(const FilePos &pos, DeclarationNode *node);

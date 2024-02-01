@@ -130,7 +130,7 @@ size_t ProcedureNodeReference::getActualParameterCount() const {
 
 
 ValueReferenceNode::ValueReferenceNode(const FilePos &pos, DeclarationNode *node)  :
-        ExpressionNode(NodeType::value_reference, pos),
+        ExpressionNode(NodeType::value_reference, pos, nullptr),
         ProcedureNodeReference(std::make_unique<Designator>(std::make_unique<QualIdent>(node->getIdentifier()))),
         node_() {
     this->resolve(node);

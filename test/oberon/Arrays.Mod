@@ -1,15 +1,18 @@
 MODULE Arrays;
 IMPORT Out;
 
-TYPE Array = ARRAY 10 * 6 / 2 OF INTEGER;
-     Node = POINTER TO NodeDesc;
-     NodeDesc = RECORD
-                   val: INTEGER;
-                   next: Node
-                END;
-     List = RECORD
-               first, last: Node
-            END;
+CONST Five = 5;
+
+TYPE
+    Array = ARRAY 10 * Five DIV 2 OF INTEGER;
+    Node = POINTER TO NodeDesc;
+    NodeDesc = RECORD
+       val: INTEGER;
+       next: Node
+    END;
+    List = RECORD
+        first, last: Node
+    END;
 
 VAR l: Array;
 

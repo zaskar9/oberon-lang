@@ -86,7 +86,6 @@ private:
 
     bool assertToken(const Token *token, TokenType expected);
     bool assertOberonIdent(const Ident *ident);
-    void moveSelectors(vector<unique_ptr<Selector>> &selectors, Designator *designator);
 
     void resync(set<TokenType> types);
 

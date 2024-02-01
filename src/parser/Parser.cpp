@@ -215,7 +215,7 @@ std::unique_ptr<ModuleNode> Parser::module() {
     return nullptr;
 }
 
-// import_list = IMPORT import {"," import} ";" .
+// import_list = IMPORT import { "," import } ";" .
 void Parser::import_list(ModuleNode *module) {
     logger_->debug("import_list");
     scanner_->next(); // skip IMPORT keyword
@@ -311,9 +311,6 @@ void Parser::type_declarations(BlockNode *block) {
         auto token = scanner_->next();
         if (assertToken(token.get(), TokenType::op_eq)) {
             auto node = std::make_unique<TypeDeclarationNode>(pos, std::move(identifier), type(identifier.get()));
-            if (!node->getType()) {
-                logger_->error(node->pos(), "Uiuiuiui.");
-            }
             block->addTypeDeclaration(std::move(node));
             token = scanner_->next();
             if (token->type() != TokenType::semicolon) {
@@ -840,7 +837,7 @@ std::unique_ptr<ExpressionNode> Parser::expression() {
         token_ = scanner_->next();
         OperatorType op = token_to_operator(token_->type());
         auto rhs = simple_expression();
-        result = std::make_unique<BinaryExpressionNode>(token_->start(), op, std::move(result), std::move(rhs));
+        result = sema_->onBinaryExpression(token_->start(), EMPTY_POS, op, std::move(result), std::move(rhs));
     }
     if (!result) {
         // [<END>, <ELSE>, <TO>, <THEN>, <UNTIL>, <ELSIF>, <BY>, <DO>, <OF>, <)>, <]>, <,>, <;>]
@@ -871,7 +868,7 @@ std::unique_ptr<ExpressionNode> Parser::simple_expression() {
            || token == TokenType::op_or) {
         token_ = scanner_->next();
         OperatorType op = token_to_operator(token_->type());
-        expr = std::make_unique<BinaryExpressionNode>(token_->start(), op, std::move(expr), term());
+        expr = sema_->onBinaryExpression(token_->start(), EMPTY_POS, op, std::move(expr), term());
         token = scanner_->peek()->type();
     }
     return expr;
@@ -889,7 +886,7 @@ std::unique_ptr<ExpressionNode> Parser::term() {
            || token == TokenType::op_and) {
         token_ = scanner_->next();
         OperatorType op = token_to_operator(token_->type());
-        expr = std::make_unique<BinaryExpressionNode>(token_->start(), op, std::move(expr), factor());
+        expr = sema_->onBinaryExpression(token_->start(), EMPTY_POS, op, std::move(expr), factor());
         token = scanner_->peek()->type();
     }
     return expr;
@@ -968,12 +965,6 @@ bool Parser::assertOberonIdent(const Ident *ident) {
         return false;
     }
     return true;
-}
-
-void Parser::moveSelectors(std::vector<std::unique_ptr<Selector>> &selectors, Designator *designator) {
-    for (auto& selector: selectors) {
-        designator->addSelector(std::move(selector));
-    }
 }
 
 void Parser::resync(std::set<TokenType> types) {
