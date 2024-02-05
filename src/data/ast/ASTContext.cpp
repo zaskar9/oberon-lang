@@ -41,7 +41,7 @@ PointerTypeNode *ASTContext::getOrInsertPointerType(Ident *ident, TypeNode *base
     return res;
 }
 
-ProcedureTypeNode *ASTContext::getOrInsertProcedureNode(Ident *ident, vector<unique_ptr<ParameterNode>> params, TypeNode *ret) {
+ProcedureTypeNode *ASTContext::getOrInsertProcedureType(Ident *ident, vector<unique_ptr<ParameterNode>> params, TypeNode *ret) {
     auto type = make_unique<ProcedureTypeNode>(ident, std::move(params), ret);
     auto res = type.get();
     procedure_ts.push_back(std::move(type));

@@ -8,21 +8,25 @@
 #define OBERON0C_IFTHENELSENODE_H
 
 
+#include <memory>
+#include <vector>
+
 #include "StatementNode.h"
 #include "ExpressionNode.h"
 #include "StatementSequenceNode.h"
-#include <vector>
+
+using std::unique_ptr;
+using std::vector;
 
 class ElseIfNode final : public Node {
 
 private:
-    std::unique_ptr<ExpressionNode> condition_;
-    std::unique_ptr<StatementSequenceNode> statements_;
+    unique_ptr<ExpressionNode> condition_;
+    unique_ptr<StatementSequenceNode> statements_;
 
 public:
-    explicit ElseIfNode(const FilePos &pos, std::unique_ptr<ExpressionNode> condition) :
-            Node(NodeType::else_if, pos), condition_(std::move(condition)),
-            statements_(std::make_unique<StatementSequenceNode>(pos)) { };
+    ElseIfNode(const FilePos &pos, unique_ptr<ExpressionNode> condition, unique_ptr<StatementSequenceNode> stmts) :
+            Node(NodeType::else_if, pos), condition_(std::move(condition)), statements_(std::move(stmts)) { };
     ~ElseIfNode() override = default;
 
     [[nodiscard]] ExpressionNode* getCondition() const;
@@ -39,21 +43,23 @@ class IfThenElseNode final : public StatementNode {
 
 private:
 
-    std::unique_ptr<ExpressionNode> condition_;
-    std::unique_ptr<StatementSequenceNode> thenStatements_;
-    std::vector<std::unique_ptr<ElseIfNode>> elseIfs_;
-    std::unique_ptr<StatementSequenceNode> elseStatements_;
+    unique_ptr<ExpressionNode> condition_;
+    unique_ptr<StatementSequenceNode> thenStatements_;
+    vector<unique_ptr<ElseIfNode>> elseIfs_;
+    unique_ptr<StatementSequenceNode> elseStatements_;
 
 public:
-    explicit IfThenElseNode(const FilePos &pos, std::unique_ptr<ExpressionNode> condition) :
-            StatementNode(NodeType::if_then_else, pos), condition_(std::move(condition)), elseIfs_() { };
+    IfThenElseNode(const FilePos &pos, unique_ptr<ExpressionNode> condition, unique_ptr<StatementSequenceNode> thenStmts,
+                   vector<unique_ptr<ElseIfNode>> elseIfs, unique_ptr<StatementSequenceNode> elseStmts) :
+            StatementNode(NodeType::if_then_else, pos), condition_(std::move(condition)),
+            thenStatements_(std::move(thenStmts)), elseIfs_(std::move(elseIfs)), elseStatements_(std::move(elseStmts)) {};
     ~IfThenElseNode() override = default;
 
     [[nodiscard]] ExpressionNode* getCondition() const;
-    [[nodiscard]] StatementSequenceNode* addThenStatements(FilePos pos);
+//    [[nodiscard]] StatementSequenceNode* addThenStatements(FilePos pos);
     [[nodiscard]] StatementSequenceNode* getThenStatements() const;
 
-    [[nodiscard]] StatementSequenceNode* addElseIf(FilePos pos, std::unique_ptr<ExpressionNode> condition);
+//    [[nodiscard]] StatementSequenceNode* addElseIf(FilePos pos, std::unique_ptr<ExpressionNode> condition);
     [[nodiscard]] ElseIfNode* getElseIf(size_t num) const;
     [[nodiscard]] size_t getElseIfCount() const;
     [[nodiscard]] bool hasElseIf() const;

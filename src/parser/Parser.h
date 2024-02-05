@@ -53,30 +53,45 @@ private:
     void ident_list(vector<unique_ptr<Ident>> &idents);
 
     unique_ptr<ModuleNode> module();
-    void import_list(ModuleNode *module);
-    void import(ModuleNode *module);
-    void declarations(BlockNode *block);
-    void const_declarations(BlockNode *block);
-    void type_declarations(BlockNode *block);
-    void var_declarations(BlockNode *block);
-    void procedure_declaration(BlockNode *block);
+
+    void import_list(vector<unique_ptr<ImportNode>> &);
+    void import(vector<unique_ptr<ImportNode>> &);
+
+    void declarations(vector<unique_ptr<ConstantDeclarationNode>> &,
+                      vector<unique_ptr<TypeDeclarationNode>> &,
+                      vector<unique_ptr<VariableDeclarationNode>> &,
+                      vector<unique_ptr<ProcedureNode>> &);
+    void const_declarations(vector<unique_ptr<ConstantDeclarationNode>> &);
+    void type_declarations(vector<unique_ptr<TypeDeclarationNode>> &);
+    void var_declarations(vector<unique_ptr<VariableDeclarationNode>> &);
+    void procedure_declaration(vector<unique_ptr<ProcedureNode>> &);
+
     unique_ptr<ExpressionNode> expression();
     unique_ptr<ExpressionNode> simple_expression();
     unique_ptr<ExpressionNode> term();
     unique_ptr<ExpressionNode> factor();
     unique_ptr<ExpressionNode> basic_factor();
-    TypeNode* type(Ident* identifier = nullptr);
-    ArrayTypeNode* array_type(Ident* identifier = nullptr);
-    RecordTypeNode* record_type(Ident* identifier = nullptr);
-    void field_list(vector<unique_ptr<FieldNode>> &fields);
-    PointerTypeNode* pointer_type(Ident* identifier = nullptr);
-    unique_ptr<ProcedureNode> procedure_heading();
-    void procedure_body(ProcedureNode *proc);
-    void formal_parameters(ProcedureNode *proc);
-    void fp_section(ProcedureNode *proc);
-    void statement_sequence(StatementSequenceNode* statements);
+
+    TypeNode* type(Ident * = nullptr);
+
+    ArrayTypeNode* array_type(Ident * = nullptr);
+
+    RecordTypeNode* record_type(Ident * = nullptr);
+    void field_list(vector<unique_ptr<FieldNode>> &);
+
+    PointerTypeNode* pointer_type(Ident * = nullptr);
+
+    ProcedureTypeNode* procedure_signature(Ident * = nullptr);
+    unique_ptr<StatementSequenceNode> procedure_body(vector<unique_ptr<ConstantDeclarationNode>> &,
+                                                     vector<unique_ptr<TypeDeclarationNode>> &,
+                                                     vector<unique_ptr<VariableDeclarationNode>> &,
+                                                     vector<unique_ptr<ProcedureNode>> &);
+    void formal_parameters(vector<std::unique_ptr<ParameterNode>> &, bool &);
+    void fp_section(vector<std::unique_ptr<ParameterNode>> &, bool &);
+
+    unique_ptr<StatementSequenceNode> statement_sequence();
     unique_ptr<StatementNode> statement();
-    unique_ptr<StatementNode> assignment(unique_ptr<ValueReferenceNode> lvalue);
+    unique_ptr<StatementNode> assignment(unique_ptr<ValueReferenceNode>);
     unique_ptr<StatementNode> if_statement();
     unique_ptr<StatementNode> loop_statement();
     unique_ptr<StatementNode> while_statement();

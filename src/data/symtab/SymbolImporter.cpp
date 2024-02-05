@@ -3,16 +3,24 @@
 //
 
 #include "SymbolImporter.h"
+
+#include <memory>
+#include <string>
+
 #include "SymbolFile.h"
 #include "data/ast/ProcedureNode.h"
 #include "data/ast/NodePrettyPrinter.h"
 
-std::unique_ptr<ModuleNode> SymbolImporter::read(const std::string &module, SymbolTable *symbols) {
+using std::make_unique;
+using std::string;
+using std::unique_ptr;
+
+std::unique_ptr<ModuleNode> SymbolImporter::read(const string &module, SymbolTable *symbols) {
     return read(module, module, symbols);
 }
 
-std::unique_ptr<ModuleNode> SymbolImporter::read(const std::string &alias, const std::string &module, SymbolTable *symbols) {
-    auto include = boost::filesystem::path(module).replace_extension("smb");
+unique_ptr<ModuleNode> SymbolImporter::read(const string &alias, const std::string &name, SymbolTable *symbols) {
+    auto include = boost::filesystem::path(name).replace_extension("smb");
     auto fp = path_ / include;
     if (!boost::filesystem::exists(fp)) {
         logger_->debug("Symbol file not found: '" + fp.string() + "'.");
@@ -30,7 +38,7 @@ std::unique_ptr<ModuleNode> SymbolImporter::read(const std::string &alias, const
 
     // read symbol file header
     [[maybe_unused]] auto key = file->readLong();
-    auto name = file->readString();
+    [[maybe_unused]] auto ident = file->readString();
     auto version = file->readChar();
     if (version != SymbolFile::VERSION) {
         logger_->error(fp.string(), "Wrong symbol file version.");
@@ -40,15 +48,19 @@ std::unique_ptr<ModuleNode> SymbolImporter::read(const std::string &alias, const
     std::cout << std::endl;
 #endif
 
-    // create namespace for module
+    // create namespace for name
     symbols_ = symbols;
     symbols_->createNamespace(alias);
-    module_ = std::make_unique<ModuleNode>(EMPTY_POS, std::make_unique<Ident>(module));
-    module_->setAlias(alias);
+    // module_ = std::make_unique<ModuleNode>(EMPTY_POS, std::make_unique<Ident>(name));
+    // module_->setAlias(alias);
+    vector<unique_ptr<ConstantDeclarationNode>> consts;
+    vector<unique_ptr<TypeDeclarationNode>> types;
+    vector<unique_ptr<VariableDeclarationNode>> vars;
+    vector<unique_ptr<ProcedureNode>> procs;
     auto ch = file->readChar();
     while (ch != 0 && !file->eof()) {
         auto nodeType = (NodeType) ch;
-        readDeclaration(file.get(), nodeType);
+        readDeclaration(file.get(), nodeType, alias, name, consts, types, vars, procs);
 #ifdef _DEBUG
         std::cout << std::endl;
 #endif
@@ -61,17 +73,26 @@ std::unique_ptr<ModuleNode> SymbolImporter::read(const std::string &alias, const
     file->flush();
     file->close();
 
+    auto module = make_unique<ModuleNode>(std::make_unique<Ident>(name),
+                                          std::move(consts), std::move(types), std::move(vars), std::move(procs));
+    module->setAlias(alias);
+
 #ifdef _DEBUG
     auto printer = std::make_unique<NodePrettyPrinter>(std::cout);
-    printer->print(module_.get());
+    printer->print(module.get());
 #endif
 
-    return std::move(module_);
+    return module;
 }
 
-void SymbolImporter::readDeclaration(SymbolFile *file, NodeType nodeType) {
+void SymbolImporter::readDeclaration(SymbolFile *file, NodeType nodeType,
+                                     const string &alias, const string &module,
+                                     vector<unique_ptr<ConstantDeclarationNode>> &consts,
+                                     vector<unique_ptr<TypeDeclarationNode>> &types,
+                                     vector<unique_ptr<VariableDeclarationNode>> &vars,
+                                     vector<unique_ptr<ProcedureNode>> &procs) {
     auto name = file->readString();
-    auto ident = std::make_unique<QualIdent>(module_->getIdentifier()->name(), name);
+    auto ident = std::make_unique<QualIdent>(module, name);
     auto type = readType(file);
     if (nodeType == NodeType::constant) {
         auto kind = type->kind();
@@ -101,26 +122,24 @@ void SymbolImporter::readDeclaration(SymbolFile *file, NodeType nodeType) {
             }
             if (expr) {
                 auto decl = std::make_unique<ConstantDeclarationNode>(EMPTY_POS, std::move(ident), std::move(expr));
-                symbols_->import(module_->getAlias(), name, decl.get());
-                module_->addConstant(std::move(decl));
+                symbols_->import(alias, name, decl.get());
+                consts.push_back(std::move(decl));
             }
         }
     } else if (nodeType == NodeType::type_declaration) {
         auto decl = std::make_unique<TypeDeclarationNode>(EMPTY_POS, std::move(ident), type);
-        symbols_->import(module_->getAlias(), name, decl.get());
-        module_->addTypeDeclaration(std::move(decl));
+        symbols_->import(alias, name, decl.get());
+        types.push_back(std::move(decl));
     } else if (nodeType == NodeType::variable) {
         // read in export number
         [[maybe_unused]] auto exno = file->readInt();
         auto decl = std::make_unique<VariableDeclarationNode>(EMPTY_POS, std::move(ident), type);
-        symbols_->import(module_->getAlias(), name, decl.get());
-        module_->addVariable(std::move(decl));
+        symbols_->import(alias, name, decl.get());
+        vars.push_back(std::move(decl));
     } else if (nodeType == NodeType::procedure) {
-        auto decl = std::make_unique<ProcedureNode>(EMPTY_POS, std::move(ident));
-        decl->setType(type);
-        decl->setExtern(true);
-        symbols_->import(module_->getAlias(), name, decl.get());
-        module_->addProcedure(std::move(decl));
+        auto decl = std::make_unique<ProcedureNode>(std::move(ident), dynamic_cast<ProcedureTypeNode *>(type), true);
+        symbols_->import(alias, name, decl.get());
+        procs.push_back(std::move(decl));
     }
 }
 
@@ -177,7 +196,7 @@ TypeNode *SymbolImporter::readProcedureType(SymbolFile *file) {
         // check for terminator
         ch = file->readChar();
     }
-    return context_->getOrInsertProcedureNode(nullptr, std::move(params), return_t);
+    return context_->getOrInsertProcedureType(nullptr, std::move(params), return_t);
 }
 
 TypeNode *SymbolImporter::readRecordType(SymbolFile *file) {

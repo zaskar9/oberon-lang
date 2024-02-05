@@ -8,25 +8,36 @@
 #define OBERON0C_BLOCKNODE_H
 
 
-#include "DeclarationNode.h"
-#include "StatementSequenceNode.h"
 #include <memory>
 #include <vector>
+
+#include "DeclarationNode.h"
+#include "StatementSequenceNode.h"
+
+using std::unique_ptr;
+using std::vector;
 
 class ProcedureNode;
 
 class BlockNode {
 
 private:
-    std::vector<std::unique_ptr<ConstantDeclarationNode>> constants_;
-    std::vector<std::unique_ptr<TypeDeclarationNode>> type_declarations_;
-    std::vector<std::unique_ptr<VariableDeclarationNode>> variables_;
-    std::vector<std::unique_ptr<ProcedureNode>> procedures_;
+    vector<unique_ptr<ConstantDeclarationNode>> constants_;
+    vector<unique_ptr<TypeDeclarationNode>> type_declarations_;
+    vector<unique_ptr<VariableDeclarationNode>> variables_;
+    vector<unique_ptr<ProcedureNode>> procedures_;
 
-    std::unique_ptr<StatementSequenceNode> statements_;
+    unique_ptr<StatementSequenceNode> statements_;
+
+protected:
+    BlockNode(vector<unique_ptr<ConstantDeclarationNode>> consts,
+              vector<unique_ptr<TypeDeclarationNode>> types,
+              vector<unique_ptr<VariableDeclarationNode>> vars,
+              vector<unique_ptr<ProcedureNode>> procs,
+              unique_ptr<StatementSequenceNode> stmts);
+    BlockNode();
 
 public:
-    explicit BlockNode(const FilePos &pos);
     virtual ~BlockNode();
 
     [[nodiscard]] virtual NodeType getNodeType() const = 0;

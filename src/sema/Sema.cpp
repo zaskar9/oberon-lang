@@ -5,12 +5,14 @@
 #include "Sema.h"
 
 #include <memory>
+#include <string>
 
 using std::make_unique;
 using std::unique_ptr;
+using std::string;
 
-Sema::Sema(ASTContext *context, SymbolTable *symbols, Logger *logger) :
-        context_(context), symbols_(symbols), logger_(logger) {
+Sema::Sema(ASTContext *context, SymbolTable *symbols, SymbolImporter *importer, SymbolExporter *exporter, Logger *logger) :
+        context_(context), symbols_(symbols), importer_(importer), exporter_(exporter), logger_(logger) {
     tBoolean_ = dynamic_cast<TypeNode *>(symbols_->lookup(to_string(TypeKind::BOOLEAN)));
     tByte_ = dynamic_cast<TypeNode *>(symbols_->lookup(to_string(TypeKind::BYTE)));
     tChar_ = dynamic_cast<TypeNode *>(symbols_->lookup(to_string(TypeKind::CHAR)));
@@ -19,6 +21,52 @@ Sema::Sema(ASTContext *context, SymbolTable *symbols, Logger *logger) :
     tReal_ = dynamic_cast<TypeNode *>(symbols_->lookup(to_string(TypeKind::REAL)));
     tLongReal_ = dynamic_cast<TypeNode *>(symbols_->lookup(to_string(TypeKind::LONGREAL)));
     tString_ = dynamic_cast<TypeNode *>(symbols_->lookup(to_string(TypeKind::STRING)));
+}
+
+void
+Sema::onTranslationUnitStart(const string &name) {
+    symbols_->createNamespace(name, true);
+}
+
+void
+Sema::onTranslationUnitEnd(const string &name) {
+    if (logger_->getErrorCount() == 0) {
+        exporter_->write(name, symbols_);
+    }
+}
+
+unique_ptr<ModuleNode>
+Sema::onModule(const FilePos &start, [[maybe_unused]] const FilePos &end,
+               unique_ptr<Ident> ident,
+               vector<unique_ptr<ImportNode>> imports,
+               vector<unique_ptr<ConstantDeclarationNode>> consts, vector<unique_ptr<TypeDeclarationNode>> types,
+               vector<unique_ptr<VariableDeclarationNode>> vars, vector<unique_ptr<ProcedureNode>> procs,
+               unique_ptr<StatementSequenceNode> stmts) {
+    return make_unique<ModuleNode>(start, std::move(ident), std::move(imports),
+                                   std::move(consts), std::move(types), std::move(vars), std::move(procs),
+                                   std::move(stmts));
+}
+
+unique_ptr<ConstantDeclarationNode>
+Sema::onConstant(const FilePos &start, [[maybe_unused]] const FilePos &end,
+                 unique_ptr<IdentDef> ident, unique_ptr<ExpressionNode> expr) {
+    if (!expr) {
+        logger_->error(start, "undefined constant.");
+        return nullptr;
+    }
+    if (!expr->isConstant()) {
+        logger_->error(expr->pos(), "value must be constant.");
+        return nullptr;
+    }
+    if (!expr->isLiteral()) {
+        logger_->error(expr->pos(), "undefined constant.");
+        return nullptr;
+    }
+    auto node = make_unique<ConstantDeclarationNode>(start, std::move(ident), std::move(expr));
+    assertUnique(node->getIdentifier(), node.get());
+    node->setLevel(symbols_->getLevel());
+    checkExport(node.get());
+    return node;
 }
 
 ArrayTypeNode *
@@ -76,7 +124,7 @@ Sema::onPointerType([[maybe_unused]] const FilePos &start, [[maybe_unused]] cons
 ProcedureTypeNode *
 Sema::onProcedureType([[maybe_unused]] const FilePos &start, [[maybe_unused]] const FilePos &end,
                       Ident *ident, vector<unique_ptr<ParameterNode>> params, TypeNode *ret) {
-    return context_->getOrInsertProcedureNode(ident, std::move(params), ret);
+    return context_->getOrInsertProcedureType(ident, std::move(params), ret);
 }
 
 RecordTypeNode *
@@ -105,6 +153,64 @@ Sema::onTypeReference(const FilePos &start, [[maybe_unused]] const FilePos &end,
     }
     logger_->error(start, to_string(*ident) + " is not a type.");
     return nullptr;
+}
+
+unique_ptr<ProcedureNode>
+Sema::onProcedure(const FilePos &start, [[maybe_unused]] const FilePos &end,
+                  unique_ptr<IdentDef> ident,
+                  ProcedureTypeNode *type,
+                  vector<unique_ptr<ConstantDeclarationNode>> consts,
+                  vector<unique_ptr<TypeDeclarationNode>> types,
+                  vector<unique_ptr<VariableDeclarationNode>> vars,
+                  vector<unique_ptr<ProcedureNode>> procs,
+                  unique_ptr<StatementSequenceNode> stmts) {
+    return make_unique<ProcedureNode>(start, std::move(ident), type, std::move(consts), std::move(types),
+                                      std::move(vars), std::move(procs), std::move(stmts));
+}
+
+unique_ptr<IfThenElseNode>
+Sema::onIfStatement(const FilePos &start, [[maybe_unused]] const FilePos &end,
+                    unique_ptr<ExpressionNode> condition,
+                    unique_ptr<StatementSequenceNode> thenStmts,
+                    vector<unique_ptr<ElseIfNode>> elseIfs,
+                    unique_ptr<StatementSequenceNode> elseStmts) {
+    return make_unique<IfThenElseNode>(start, std::move(condition), std::move(thenStmts),
+                                       std::move(elseIfs), std::move(elseStmts));
+}
+
+unique_ptr<ElseIfNode>
+Sema::onElseIf(const FilePos &start, [[maybe_unused]] const FilePos &end,
+               unique_ptr<ExpressionNode> condition,
+               unique_ptr<StatementSequenceNode> stmts) {
+    return make_unique<ElseIfNode>(start, std::move(condition), std::move(stmts));
+}
+
+unique_ptr<LoopNode>
+Sema::onLoop(const FilePos &start, [[maybe_unused]] const FilePos &end,
+             unique_ptr<StatementSequenceNode> stmts) {
+    return make_unique<LoopNode>(start, std::move(stmts));
+}
+
+unique_ptr<RepeatLoopNode>
+Sema::onRepeatLoop(const FilePos &start, [[maybe_unused]] const FilePos &end,
+                   unique_ptr<ExpressionNode> cond, unique_ptr<StatementSequenceNode> stmts) {
+    return make_unique<RepeatLoopNode>(start, std::move(cond), std::move(stmts));
+}
+
+unique_ptr<WhileLoopNode>
+Sema::onWhileLoop(const FilePos &start, [[maybe_unused]] const FilePos &end,
+                  unique_ptr<ExpressionNode> cond, unique_ptr<StatementSequenceNode> stmts) {
+    return make_unique<WhileLoopNode>(start, std::move(cond), std::move(stmts));
+}
+
+unique_ptr<ForLoopNode>
+Sema::onForLoop(const FilePos &start, [[maybe_unused]] const FilePos &end,
+                unique_ptr<Ident> var,
+                unique_ptr<ExpressionNode> low, unique_ptr<ExpressionNode> high, unique_ptr<ExpressionNode> step,
+                unique_ptr<StatementSequenceNode> stmts) {
+    auto counter = make_unique<ValueReferenceNode>(var->start(), make_unique<Designator>(std::move(var)));
+    return make_unique<ForLoopNode>(start, std::move(counter), std::move(low), std::move(high), std::move(step),
+                                    std::move(stmts));
 }
 
 unique_ptr<ExpressionNode>
@@ -426,6 +532,27 @@ Sema::assertEqual(Ident *aIdent, Ident *bIdent) const {
         return false;
     }
     return false;
+}
+
+void
+Sema::assertUnique(Ident *ident, Node *node) {
+    if (ident->isQualified()) {
+        logger_->error(ident->start(), "cannot use qualified identifier here.");
+    }
+    if (symbols_->isDuplicate(ident->name())) {
+        logger_->error(ident->start(), "duplicate definition: " + ident->name() + ".");
+    }
+    if (symbols_->isGlobal(ident->name())) {
+        logger_->error(ident->start(), "predefined identifier: " + ident->name() + ".");
+    }
+    symbols_->insert(ident->name(), node);
+}
+
+void
+Sema::checkExport(DeclarationNode *node) {
+    if (node->getLevel() != SymbolTable::MODULE_LEVEL && node->getIdentifier()->isExported()) {
+        logger_->error(node->getIdentifier()->start(), "only top-level declarations can be exported.");
+    }
 }
 
 TypeNode *

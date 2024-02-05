@@ -46,7 +46,7 @@ public:
     ArrayTypeNode *getOrInsertArrayType(Ident *, unsigned int, TypeNode *);
     RecordTypeNode *getOrInsertRecordType(Ident *, vector<unique_ptr<FieldNode>>);
     PointerTypeNode *getOrInsertPointerType(Ident *, TypeNode *);
-    ProcedureTypeNode *getOrInsertProcedureNode(Ident *, vector<unique_ptr<ParameterNode>>, TypeNode *);
+    ProcedureTypeNode *getOrInsertProcedureType(Ident *, vector<unique_ptr<ParameterNode>>, TypeNode *);
 
     [[deprecated]]
     TypeReferenceNode *getOrInsertTypeReference(unique_ptr<QualIdent>);

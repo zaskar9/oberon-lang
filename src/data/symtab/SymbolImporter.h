@@ -5,6 +5,10 @@
 #ifndef OBERON_LANG_SYMBOLIMPORTER_H
 #define OBERON_LANG_SYMBOLIMPORTER_H
 
+#include <memory>
+#include <string>
+#include <vector>
+#include <boost/filesystem.hpp>
 
 #include "logging/Logger.h"
 #include "compiler/CompilerFlags.h"
@@ -13,33 +17,42 @@
 #include "SymbolTable.h"
 #include "SymbolFile.h"
 #include "data/ast/ASTContext.h"
-#include <boost/filesystem.hpp>
+
+using boost::filesystem::path;
+using std::string;
+using std::vector;
+using std::unique_ptr;
 
 class SymbolImporter {
 
 private:
     CompilerFlags *flags_;
     ASTContext *context_;
-    boost::filesystem::path path_;
+    path path_;
     Logger *logger_;
-    std::vector<TypeNode*> types_;
+    vector<TypeNode*> types_;
     SymbolTable *symbols_;
-    std::unique_ptr<ModuleNode> module_;
+    // std::unique_ptr<ModuleNode> module_;
 
-    void readDeclaration(SymbolFile *file, NodeType nodeType);
-    TypeNode *readType(SymbolFile *file);
-    TypeNode *readArrayType(SymbolFile *file);
-    TypeNode *readProcedureType(SymbolFile *file);
-    TypeNode *readRecordType(SymbolFile *file);
-    TypeNode *readParameter(SymbolFile *file);
+    void readDeclaration(SymbolFile *, NodeType,
+                         const string &, const string &,
+                         vector<unique_ptr<ConstantDeclarationNode>> &,
+                         vector<unique_ptr<TypeDeclarationNode>> &,
+                         vector<unique_ptr<VariableDeclarationNode>> &,
+                         vector<unique_ptr<ProcedureNode>> &);
+    TypeNode *readType(SymbolFile *);
+    TypeNode *readArrayType(SymbolFile *);
+    TypeNode *readProcedureType(SymbolFile *);
+    TypeNode *readRecordType(SymbolFile *);
+    TypeNode *readParameter(SymbolFile *);
 
 public:
-    explicit SymbolImporter(CompilerFlags *flags, ASTContext *context, boost::filesystem::path &path, Logger *logger) :
-            flags_(flags), context_(context), path_(std::move(path)), logger_(logger), types_(), symbols_(), module_() {};
+    explicit SymbolImporter(CompilerFlags *flags, ASTContext *context, path &path, Logger *logger) :
+            flags_(flags), context_(context), path_(std::move(path)), logger_(logger), types_(), symbols_() {};
     ~SymbolImporter() = default;
 
-    std::unique_ptr<ModuleNode> read(const std::string &module, SymbolTable *symbols);
-    std::unique_ptr<ModuleNode> read(const std::string &alias, const std::string &module, SymbolTable *symbols);
+    unique_ptr<ModuleNode> read(const string &module, SymbolTable *symbols);
+    unique_ptr<ModuleNode> read(const string &alias, const string &name, SymbolTable *symbols);
 
 };
 

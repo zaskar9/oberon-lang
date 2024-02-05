@@ -28,21 +28,21 @@ ExpressionNode* IfThenElseNode::getCondition() const {
     return condition_.get();
 }
 
-StatementSequenceNode* IfThenElseNode::addThenStatements(const FilePos pos) {
-    thenStatements_ = std::make_unique<StatementSequenceNode>(pos);
-    return thenStatements_.get();
-}
+//StatementSequenceNode* IfThenElseNode::addThenStatements(const FilePos pos) {
+//    thenStatements_ = std::make_unique<StatementSequenceNode>(pos);
+//    return thenStatements_.get();
+//}
 
 StatementSequenceNode* IfThenElseNode::getThenStatements() const {
     return thenStatements_.get();
 }
 
-StatementSequenceNode* IfThenElseNode::addElseIf(const FilePos pos, std::unique_ptr<ExpressionNode> condition) {
-    auto elseIf = std::make_unique<ElseIfNode>(pos, std::move(condition));
-    auto statements = elseIf->getStatements();
-    elseIfs_.push_back(std::move(elseIf));
-    return statements;
-}
+//StatementSequenceNode* IfThenElseNode::addElseIf(const FilePos pos, std::unique_ptr<ExpressionNode> condition) {
+//    auto elseIf = std::make_unique<ElseIfNode>(pos, std::move(condition));
+//    auto statements = elseIf->getStatements();
+//    elseIfs_.push_back(std::move(elseIf));
+//    return statements;
+//}
 
 ElseIfNode* IfThenElseNode::getElseIf(size_t num) const {
     return elseIfs_.at(num).get();

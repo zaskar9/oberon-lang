@@ -30,7 +30,7 @@ public:
     BasicTypeNode *getBasicType(TypeKind kind);
     PointerTypeNode *createPointerType(TypeNode *base);
     ArrayTypeNode *createArrayType(TypeNode *memberType, unsigned int dimension);
-    void createProcedure(ProcType type, std::string name, std::vector<std::pair<TypeNode *, bool>> params,
+    void createProcedure(ProcKind type, std::string name, std::vector<std::pair<TypeNode *, bool>> params,
                          TypeNode *ret, bool hasVarArgs, bool toSymbols);
 
     SymbolTable *getSymbolTable();

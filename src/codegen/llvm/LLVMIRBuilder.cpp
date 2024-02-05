@@ -629,8 +629,8 @@ void LLVMIRBuilder::cast(ExpressionNode &node) {
 
 Value *LLVMIRBuilder::callPredefined(ProcedureNodeReference &node, std::vector<Value *> &params) {
     auto proc = dynamic_cast<PredefinedProcedure *>(node.dereference());
-    auto ptype = proc->getProcType();
-    if (ptype == ProcType::NEW) {
+    auto ptype = proc->getKind();
+    if (ptype == ProcKind::NEW) {
         auto fun = module_->getFunction("malloc");
         if (!fun) {
             auto type = FunctionType::get(builder_.getPtrTy(), {builder_.getInt64Ty()}, false);
@@ -647,7 +647,7 @@ Value *LLVMIRBuilder::callPredefined(ProcedureNodeReference &node, std::vector<V
         // TODO remove next line (bit-cast) once non-opaque pointers are no longer supported
         value_ = builder_.CreateBitCast(value_, getLLVMType(ptr));
         return builder_.CreateStore(value_, params[0]);
-    } else if (ptype == ProcType::FREE) {
+    } else if (ptype == ProcKind::FREE) {
         auto fun = module_->getFunction("free");
 #ifdef _LLVM_LEGACY
         auto void_t = PointerType::get(builder_.getVoidTy(), 0);
@@ -667,7 +667,7 @@ Value *LLVMIRBuilder::callPredefined(ProcedureNodeReference &node, std::vector<V
         void_t = (PointerType*) getLLVMType(ptr);
 #endif
         return builder_.CreateStore(ConstantPointerNull::get(void_t), params[0]);
-    } else if (ptype == ProcType::INC || ptype == ProcType::DEC) {
+    } else if (ptype == ProcKind::INC || ptype == ProcKind::DEC) {
         auto target = getLLVMType(node.getActualParameter(0)->getType());
         Value *delta;
         if (params.size() > 2) {
@@ -686,31 +686,31 @@ Value *LLVMIRBuilder::callPredefined(ProcedureNodeReference &node, std::vector<V
             delta = ConstantInt::get(target, 1);
         }
         Value *value = builder_.CreateLoad(target, params[0]);
-        if (ptype == ProcType::INC) {
+        if (ptype == ProcKind::INC) {
             value = builder_.CreateAdd(value, delta);
         } else {
             value = builder_.CreateSub(value, delta);
         }
         return builder_.CreateStore(value, params[0]);
-    } else if (ptype == ProcType::LSL) {
+    } else if (ptype == ProcKind::LSL) {
         return builder_.CreateShl(params[0], params[1]);
-    } else if (ptype == ProcType::ASR) {
+    } else if (ptype == ProcKind::ASR) {
         return builder_.CreateAShr(params[0], params[1]);
-    } else if (ptype == ProcType::ROL) {
+    } else if (ptype == ProcKind::ROL) {
         Value *lhs = builder_.CreateShl(params[0], params[1]);
         Value *delta = builder_.CreateSub(builder_.getInt64(64), params[1]);
         Value *rhs = builder_.CreateLShr(params[0], delta);
         return builder_.CreateOr(lhs, rhs);
-    } else if (ptype == ProcType::ROR) {
+    } else if (ptype == ProcKind::ROR) {
         Value *lhs = builder_.CreateLShr(params[0], params[1]);
         Value *delta = builder_.CreateSub(builder_.getInt64(64), params[1]);
         Value *rhs = builder_.CreateShl(params[0], delta);
         return builder_.CreateOr(lhs, rhs);
-    } else if (ptype == ProcType::ODD) {
+    } else if (ptype == ProcKind::ODD) {
         auto type = params[0]->getType();
         value_ = builder_.CreateSRem(params[0], ConstantInt::get(type, 2));
         return builder_.CreateICmpEQ(value_, ConstantInt::get(type, 1));
-    } else if (ptype == ProcType::HALT) {
+    } else if (ptype == ProcKind::HALT) {
         auto fun = module_->getFunction("exit");
         if (!fun) {
             auto type = FunctionType::get(builder_.getVoidTy(), {builder_.getInt32Ty()}, false);
@@ -720,7 +720,7 @@ Value *LLVMIRBuilder::callPredefined(ProcedureNodeReference &node, std::vector<V
         }
         builder_.CreateCall(FunctionCallee(fun), {params[0]});
         return builder_.CreateUnreachable();
-    } else if (ptype == ProcType::ASSERT) {
+    } else if (ptype == ProcKind::ASSERT) {
         auto fun = module_->getFunction("abort");
         if (!fun) {
             auto type = FunctionType::get(builder_.getVoidTy(), {}, false);
@@ -736,7 +736,7 @@ Value *LLVMIRBuilder::callPredefined(ProcedureNodeReference &node, std::vector<V
         value_ = builder_.CreateUnreachable();
         builder_.SetInsertPoint(tail);
         return value_;
-    } else if (ptype == ProcType::LEN) {
+    } else if (ptype == ProcKind::LEN) {
         value_ = builder_.CreateLoad(builder_.getInt64Ty(), params[0]);
         return value_;
     } else {

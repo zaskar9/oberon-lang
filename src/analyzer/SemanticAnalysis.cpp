@@ -97,7 +97,8 @@ void SemanticAnalysis::call(ProcedureNodeReference &node) {
 
 void SemanticAnalysis::visit(ModuleNode &node) {
     auto name = node.getIdentifier()->name();
-    symbols_->createNamespace(name, true);
+    // use `getNamespace` in legacy sema as new sema creates the namespace
+    symbols_->setNamespace(name);
     assertUnique(node.getIdentifier(), node);
     node.setLevel(symbols_->getLevel());
     module_ = &node;
@@ -810,7 +811,6 @@ bool SemanticAnalysis::assertCompatible(const FilePos &pos, TypeNode *expected, 
                     return true;
                 }
             }
-            std::cerr << ">>>>>>>" << std::endl;
         } else if (expected->isPointer()) {
             if (actual->isPointer()) {
                 auto exp_ptr = dynamic_cast<PointerTypeNode *>(expected);

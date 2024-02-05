@@ -52,7 +52,7 @@ ArrayTypeNode *OberonSystem::createArrayType(TypeNode *memberType, unsigned int 
     return ptr;
 }
 
-void OberonSystem::createProcedure(ProcType type, std::string name, std::vector<std::pair<TypeNode *, bool>> params,
+void OberonSystem::createProcedure(ProcKind type, std::string name, std::vector<std::pair<TypeNode *, bool>> params,
                                    TypeNode *ret, bool hasVarArgs, bool toSymbols) {
     auto proc = std::make_unique<PredefinedProcedure>(type, name, params, ret);
     proc->setVarArgs(hasVarArgs);
@@ -86,16 +86,16 @@ void Oberon07::initSymbolTable(SymbolTable *symbols) {
     auto intType = this->getBasicType(TypeKind::INTEGER);
     auto longType = this->getBasicType(TypeKind::LONGINT);
 
-    this->createProcedure(ProcType::NEW, "NEW", {{this->createPointerType(anyType), true}}, nullptr, false, true);
-    this->createProcedure(ProcType::FREE, "FREE", {{this->createPointerType(anyType), true}}, nullptr, false, true);
-    this->createProcedure(ProcType::INC, "INC", {{longType, true}}, nullptr, true, true);
-    this->createProcedure(ProcType::DEC, "DEC", {{longType, true}}, nullptr, true, true);
-    this->createProcedure(ProcType::LSL, "LSL", {{longType, false}, {longType, false}}, longType, false, true);
-    this->createProcedure(ProcType::ASR, "ASR", {{longType, false}, {longType, false}}, longType, false, true);
-    this->createProcedure(ProcType::ROL, "ROL", {{longType, false}, {longType, false}}, longType, false, true);
-    this->createProcedure(ProcType::ROR, "ROR", {{longType, false}, {longType, false}}, longType, false, true);
-    this->createProcedure(ProcType::ODD, "ODD", {{longType, false}}, boolType, false, true);
-    this->createProcedure(ProcType::HALT, "HALT", {{ intType, false}}, nullptr, false, true);
-    this->createProcedure(ProcType::ASSERT, "ASSERT", {{boolType, false}}, nullptr, false, true);
-    this->createProcedure(ProcType::LEN, "LEN", {{this->createArrayType(anyType, 0), true}}, longType, false, true);
+    this->createProcedure(ProcKind::NEW, "NEW", {{this->createPointerType(anyType), true}}, nullptr, false, true);
+    this->createProcedure(ProcKind::FREE, "FREE", {{this->createPointerType(anyType), true}}, nullptr, false, true);
+    this->createProcedure(ProcKind::INC, "INC", {{longType, true}}, nullptr, true, true);
+    this->createProcedure(ProcKind::DEC, "DEC", {{longType, true}}, nullptr, true, true);
+    this->createProcedure(ProcKind::LSL, "LSL", {{longType, false}, {longType, false}}, longType, false, true);
+    this->createProcedure(ProcKind::ASR, "ASR", {{longType, false}, {longType, false}}, longType, false, true);
+    this->createProcedure(ProcKind::ROL, "ROL", {{longType, false}, {longType, false}}, longType, false, true);
+    this->createProcedure(ProcKind::ROR, "ROR", {{longType, false}, {longType, false}}, longType, false, true);
+    this->createProcedure(ProcKind::ODD, "ODD", {{longType, false}}, boolType, false, true);
+    this->createProcedure(ProcKind::HALT, "HALT", {{intType, false}}, nullptr, false, true);
+    this->createProcedure(ProcKind::ASSERT, "ASSERT", {{boolType, false}}, nullptr, false, true);
+    this->createProcedure(ProcKind::LEN, "LEN", {{this->createArrayType(anyType, 0), true}}, longType, false, true);
 }
