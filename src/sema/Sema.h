@@ -38,11 +38,17 @@ private:
 
     void assertUnique(Ident *, Node *);
 
+    void call(ProcedureNodeReference *);
+
     void checkExport(DeclarationNode *);
+
+    bool assertCompatible(const FilePos &, TypeNode *, TypeNode *, bool = false);
 
     TypeNode *commonType(TypeNode *, TypeNode *) const;
 
     TypeNode *resolveType(TypeNode *);
+
+    string format(const TypeNode *, bool = false) const;
 
     bool foldBoolean(const FilePos &, const FilePos &, ExpressionNode *);
 
@@ -65,7 +71,7 @@ public:
 
     void onTranslationUnitEnd(const string &);
 
-    unique_ptr<ModuleNode> onModule(const FilePos&, const FilePos&,
+    unique_ptr<ModuleNode> onModule(const FilePos &, const FilePos &,
                                     unique_ptr<Ident>,
                                     vector<unique_ptr<ImportNode>>,
                                     vector<unique_ptr<ConstantDeclarationNode>>,
@@ -76,7 +82,7 @@ public:
 
 //    unique_ptr<ImportNode> onImport(const FilePos&, const FilePos&, unique_ptr<Ident> ident, unique_ptr<Ident> alias);
 
-    unique_ptr<ConstantDeclarationNode> onConstant(const FilePos&, const FilePos&,
+    unique_ptr<ConstantDeclarationNode> onConstant(const FilePos &, const FilePos &,
                                                    unique_ptr<IdentDef>, unique_ptr<ExpressionNode>);
 
     ArrayTypeNode *onArrayType(const FilePos &, const FilePos &, Ident *, unique_ptr<ExpressionNode>, TypeNode *);
@@ -96,7 +102,7 @@ public:
 
     unique_ptr<ProcedureNode> onProcedure(const FilePos &, const FilePos &,
                                           unique_ptr<IdentDef>,
-                                          ProcedureTypeNode*,
+                                          ProcedureTypeNode *,
                                           vector<unique_ptr<ConstantDeclarationNode>>,
                                           vector<unique_ptr<TypeDeclarationNode>>,
                                           vector<unique_ptr<VariableDeclarationNode>>,
@@ -133,6 +139,8 @@ public:
                                       unique_ptr<ExpressionNode>,
                                       unique_ptr<StatementSequenceNode>);
 
+    unique_ptr<ProcedureCallNode> onProcedureCall(const FilePos &, const FilePos &, unique_ptr<Designator>);
+
     unique_ptr<ExpressionNode> onUnaryExpression(const FilePos &, const FilePos &,
                                                  OperatorType,
                                                  unique_ptr<ExpressionNode>);
@@ -142,8 +150,7 @@ public:
                                                   unique_ptr<ExpressionNode>,
                                                   unique_ptr<ExpressionNode>);
 
-
-    Node *onDesignator(const FilePos &, const FilePos &, unique_ptr<Designator>);
+    unique_ptr<ValueReferenceNode> onValueReference(const FilePos &, const FilePos &, unique_ptr<Designator>);
 
     unique_ptr<BooleanLiteralNode> onBooleanLiteral(const FilePos &, const FilePos &, bool);
 

@@ -54,3 +54,21 @@ TypeReferenceNode *ASTContext::getOrInsertTypeReference(unique_ptr<QualIdent> id
     references_.push_back(std::move(ref));
     return res;
 }
+
+void ASTContext::addExternalModule(std::unique_ptr<ModuleNode> module) {
+    ext_modules_.push_back(std::move(module));
+}
+
+void ASTContext::addExternalProcedure(ProcedureNode *proc) {
+    if (std::find(ext_procedures_.begin(), ext_procedures_.end(), proc) == ext_procedures_.end()) {
+        ext_procedures_.push_back(proc);
+    }
+}
+
+ProcedureNode *ASTContext::getExternalProcedure(size_t num) const {
+    return ext_procedures_.at(num);
+}
+
+size_t ASTContext::getExternalProcedureCount() const {
+    return ext_procedures_.size();
+}

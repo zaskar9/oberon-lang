@@ -255,113 +255,113 @@ void SemanticAnalysis::visit(FieldNode &node) {
     }
 }
 
-void SemanticAnalysis::visit(ValueReferenceNode &node) {
-    auto ident = node.ident();
-    auto sym = symbols_->lookup(ident);
-    if (!sym && ident->isQualified()) {
-        // addresses the fact that 'ident.ident' is ambiguous: 'qual.ident' vs. 'ident.field'.
-        auto qual = dynamic_cast<QualIdent *>(ident);
-        sym = symbols_->lookup(qual->qualifier());
-        if (sym) {
-            node.disqualify();
-        }
-    }
-    if (sym) {
-        if (sym->getNodeType() == NodeType::constant ||
-            sym->getNodeType() == NodeType::parameter ||
-            sym->getNodeType() == NodeType::variable ||
-            sym->getNodeType() == NodeType::procedure) {
-            auto decl = dynamic_cast<DeclarationNode *>(sym);
-            node.resolve(decl);
-            if (node.getNodeType() == NodeType::procedure_call) {
-                call(node);
-            }
-            auto type = decl->getType();
-            if (!type) {
-                if (sym->getNodeType() == NodeType::procedure) {
-                    logger_->error(node.pos(), "function expected, found procedure.");
-                    return;
-                }
-                logger_->error(node.pos(), "type undefined for " + to_string(*node.ident()) + ".");
-                return;
-            }
-            size_t pos = 0;
-            size_t last = node.getSelectorCount();
-            while (pos < last) {
-                auto sel = node.getSelector(pos);
-                if (type->getNodeType() != sel->getType()) {
-                    if (type->getNodeType() == NodeType::pointer_type &&
-                                (sel->getType() == NodeType::array_type || sel->getType() == NodeType::record_type)) {
-                        // perform implicit pointer dereferencing
-                        auto caret = std::make_unique<Dereference>(EMPTY_POS);
-                        sel = caret.get();
-                        node.insertSelector(pos, std::move(caret));
-                        last++;
-                    } else if (sel->getType() == NodeType::type_declaration) {
-                        // handle type-guard or clean up parsing ambiguity
-                        auto guard = dynamic_cast<Typeguard *>(sel);
-                        sym = symbols_->lookup(guard->ident());
-                        if (sym) {
-                            if (sym->getNodeType() == NodeType::type_declaration) {
-                                type = dynamic_cast<TypeDeclarationNode *>(sym)->getType();
-                            } else if (sym->getNodeType() == NodeType::basic_type ||
-                                       sym->getNodeType() == NodeType::array_type ||
-                                       sym->getNodeType() == NodeType::record_type ||
-                                       sym->getNodeType() == NodeType::pointer_type) {
-                                type = dynamic_cast<TypeNode*>(sym);
-                            } else {
-                                logger_->error(sel->pos(), "oh, oh, parser has mistaken function call as type-guard.");
-                            }
-                        } else {
-                            logger_->error(node.pos(), "undefined identifier: " + to_string(*guard->ident()) + ".");
-                        }
-                    } else {
-                        logger_->error(sel->pos(), "selector type mismatch.");
-                    }
-                }
-                if (sel->getType() == NodeType::array_type && type->isArray()) {
-                    auto array_t = dynamic_cast<ArrayTypeNode *>(type);
-                    auto expr = dynamic_cast<ArrayIndex*>(sel)->getExpression();
-                    expr->accept(*this);
-                    auto sel_type = expr->getType();
-                    if (sel_type && sel_type->kind() != TypeKind::INTEGER) {
-                        logger_->error(sel->pos(), "integer expression expected.");
-                    }
-                    if (expr->isConstant()) {
-                        auto value = fold(expr);
-                        if (value) {
-                            node.setSelector(pos, std::make_unique<ArrayIndex>(EMPTY_POS, std::move(value)));
-                        }
-                    }
-                    type = array_t->getMemberType();
-                } else if (sel->getType() == NodeType::record_type && type->isRecord()) {
-                    auto record_t = dynamic_cast<RecordTypeNode *>(type);
-                    auto ref = dynamic_cast<RecordField *>(sel);
-                    auto field = record_t->getField(ref->ident()->name());
-                    if (field) {
-                        ref->setField(field);
-                        type = field->getType();
-                    } else {
-                        logger_->error(ref->pos(),
-                                       "unknown record field: " + to_string(*ref->ident()) + ".");
-                    }
-                } else if (sel->getType() == NodeType::pointer_type && type->isPointer()) {
-                    auto pointer_t = dynamic_cast<PointerTypeNode *>(type);
-                    type = pointer_t->getBase();
-                } else if (sel->getType() == NodeType::type_declaration) {
-                    // nothing to do here as type-guard is handled above
-                } else {
-                    logger_->error(sel->pos(), "unexpected selector.");
-                }
-                pos++;
-            }
-            node.setType(resolveType(type));
-        } else {
-            logger_->error(node.pos(), "constant, parameter, variable, function call expected.");
-        }
-    } else {
-        logger_->error(node.pos(), "undefined identifier: " + to_string(*node.ident()) + ".");
-    }
+void SemanticAnalysis::visit([[maybe_unused]] ValueReferenceNode &node) {
+//    auto ident = node.ident();
+//    auto sym = symbols_->lookup(ident);
+//    if (!sym && ident->isQualified()) {
+//        // addresses the fact that 'ident.ident' is ambiguous: 'qual.ident' vs. 'ident.field'.
+//        auto qual = dynamic_cast<QualIdent *>(ident);
+//        sym = symbols_->lookup(qual->qualifier());
+//        if (sym) {
+//            node.disqualify();
+//        }
+//    }
+//    if (sym) {
+//        if (sym->getNodeType() == NodeType::constant ||
+//            sym->getNodeType() == NodeType::parameter ||
+//            sym->getNodeType() == NodeType::variable ||
+//            sym->getNodeType() == NodeType::procedure) {
+//            auto decl = dynamic_cast<DeclarationNode *>(sym);
+//            node.resolve(decl);
+//            if (node.getNodeType() == NodeType::procedure_call) {
+//                call(node);
+//            }
+//            auto type = decl->getType();
+//            if (!type) {
+//                if (sym->getNodeType() == NodeType::procedure) {
+//                    logger_->error(node.pos(), "function expected, found procedure.");
+//                    return;
+//                }
+//                logger_->error(node.pos(), "type undefined for " + to_string(*node.ident()) + ".");
+//                return;
+//            }
+//            size_t pos = 0;
+//            size_t last = node.getSelectorCount();
+//            while (pos < last) {
+//                auto sel = node.getSelector(pos);
+//                if (type->getNodeType() != sel->getType()) {
+//                    if (type->getNodeType() == NodeType::pointer_type &&
+//                                (sel->getType() == NodeType::array_type || sel->getType() == NodeType::record_type)) {
+//                        // perform implicit pointer dereferencing
+//                        auto caret = std::make_unique<Dereference>(EMPTY_POS);
+//                        sel = caret.get();
+//                        node.insertSelector(pos, std::move(caret));
+//                        last++;
+//                    } else if (sel->getType() == NodeType::type_declaration) {
+//                        // handle type-guard or clean up parsing ambiguity
+//                        auto guard = dynamic_cast<Typeguard *>(sel);
+//                        sym = symbols_->lookup(guard->ident());
+//                        if (sym) {
+//                            if (sym->getNodeType() == NodeType::type_declaration) {
+//                                type = dynamic_cast<TypeDeclarationNode *>(sym)->getType();
+//                            } else if (sym->getNodeType() == NodeType::basic_type ||
+//                                       sym->getNodeType() == NodeType::array_type ||
+//                                       sym->getNodeType() == NodeType::record_type ||
+//                                       sym->getNodeType() == NodeType::pointer_type) {
+//                                type = dynamic_cast<TypeNode*>(sym);
+//                            } else {
+//                                logger_->error(sel->pos(), "oh, oh, parser has mistaken function call as type-guard.");
+//                            }
+//                        } else {
+//                            logger_->error(node.pos(), "undefined identifier: " + to_string(*guard->ident()) + ".");
+//                        }
+//                    } else {
+//                        logger_->error(sel->pos(), "selector type mismatch.");
+//                    }
+//                }
+//                if (sel->getType() == NodeType::array_type && type->isArray()) {
+//                    auto array_t = dynamic_cast<ArrayTypeNode *>(type);
+//                    auto expr = dynamic_cast<ArrayIndex*>(sel)->getExpression();
+//                    expr->accept(*this);
+//                    auto sel_type = expr->getType();
+//                    if (sel_type && sel_type->kind() != TypeKind::INTEGER) {
+//                        logger_->error(sel->pos(), "integer expression expected.");
+//                    }
+//                    if (expr->isConstant()) {
+//                        auto value = fold(expr);
+//                        if (value) {
+//                            node.setSelector(pos, std::make_unique<ArrayIndex>(EMPTY_POS, std::move(value)));
+//                        }
+//                    }
+//                    type = array_t->getMemberType();
+//                } else if (sel->getType() == NodeType::record_type && type->isRecord()) {
+//                    auto record_t = dynamic_cast<RecordTypeNode *>(type);
+//                    auto ref = dynamic_cast<RecordField *>(sel);
+//                    auto field = record_t->getField(ref->ident()->name());
+//                    if (field) {
+//                        ref->setField(field);
+//                        type = field->getType();
+//                    } else {
+//                        logger_->error(ref->pos(),
+//                                       "unknown record field: " + to_string(*ref->ident()) + ".");
+//                    }
+//                } else if (sel->getType() == NodeType::pointer_type && type->isPointer()) {
+//                    auto pointer_t = dynamic_cast<PointerTypeNode *>(type);
+//                    type = pointer_t->getBase();
+//                } else if (sel->getType() == NodeType::type_declaration) {
+//                    // nothing to do here as type-guard is handled above
+//                } else {
+//                    logger_->error(sel->pos(), "unexpected selector.");
+//                }
+//                pos++;
+//            }
+//            node.setType(resolveType(type));
+//        } else {
+//            logger_->error(node.pos(), "constant, parameter, variable, function call expected.");
+//        }
+//    } else {
+//        logger_->error(node.pos(), "undefined identifier: " + to_string(*node.ident()) + ".");
+//    }
 }
 
 

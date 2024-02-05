@@ -27,6 +27,8 @@ private:
     vector<unique_ptr<PointerTypeNode>> pointer_ts_;
     vector<unique_ptr<ProcedureTypeNode>> procedure_ts;
     vector<unique_ptr<TypeReferenceNode>> references_;
+    vector<unique_ptr<ModuleNode>> ext_modules_;
+    vector<ProcedureNode*> ext_procedures_;
 
 public:
     [[nodiscard]] Node *getTranslationUnit();
@@ -50,6 +52,13 @@ public:
 
     [[deprecated]]
     TypeReferenceNode *getOrInsertTypeReference(unique_ptr<QualIdent>);
+
+    // mainly for memory management as an anchor for smart pointers
+    void addExternalModule(unique_ptr<ModuleNode> module);
+
+    void addExternalProcedure(ProcedureNode *proc);
+    [[nodiscard]] ProcedureNode *getExternalProcedure(size_t num) const;
+    [[nodiscard]] size_t getExternalProcedureCount() const;
 
 };
 
