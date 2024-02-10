@@ -4,19 +4,25 @@
  * Created by Michael Grossniklaus on 2/8/18.
  */
 
-#include <iostream>
 #include "SymbolTable.h"
+
+#include <iostream>
+#include <memory>
+#include <string>
+
+using std::make_unique;
+using std::string;
 
 const unsigned int SymbolTable::GLOBAL_LEVEL = 0;
 const unsigned int SymbolTable::MODULE_LEVEL = 1;
 
 SymbolTable::SymbolTable() : scopes_(), scope_(), references_() {
-    universe_ = std::make_unique<Scope>(GLOBAL_LEVEL, nullptr);
+    universe_ = make_unique<Scope>(GLOBAL_LEVEL, nullptr);
 }
 
 SymbolTable::~SymbolTable() = default;
 
-void SymbolTable::import(const std::string &module, const std::string &name, DeclarationNode *node) {
+void SymbolTable::import(const string &module, const string &name, DeclarationNode *node) {
     auto scope = getNamespace(module);
     if (scope) {
         node->setLevel(MODULE_LEVEL);
@@ -41,26 +47,38 @@ TypeNode *SymbolTable::getRef(char ref) const {
     return references_[idx];
 }
 
-void SymbolTable::insert(const std::string &name, Node *node) {
+void SymbolTable::insert(const string &name, DeclarationNode *node) {
+#ifdef _DEBUG
+    if (name.empty() || node == nullptr) {
+        std::cerr << "Illegal symbol table state: trying to insert anonymous or null declaration." << std::endl;
+        exit(1);
+    }
+#endif
     scope_->insert(name, node);
 }
 
-void SymbolTable::insertGlobal(const std::string &name, Node *node) {
+void SymbolTable::insertGlobal(const string &name, DeclarationNode *node) {
+#ifdef _DEBUG
+    if (name.empty() || node == nullptr) {
+        std::cerr << "Illegal symbol table state: trying to insert anonymous or null declaration." << std::endl;
+        exit(1);
+    }
+#endif
     universe_->insert(name, node);
 }
 
-Node *SymbolTable::lookup(Ident *ident) const {
+DeclarationNode *SymbolTable::lookup(Ident *ident) const {
     if (ident->isQualified()) {
         return this->lookup(dynamic_cast<QualIdent*>(ident)->qualifier(), ident->name());
     }
     return this->lookup({}, ident->name());
 }
 
-Node *SymbolTable::lookup(const std::string &name) const {
+DeclarationNode *SymbolTable::lookup(const string &name) const {
     return this->lookup({}, name);
 }
 
-Node *SymbolTable::lookup(const std::string &qualifier, const std::string &name) const {
+DeclarationNode *SymbolTable::lookup(const string &qualifier, const string &name) const {
     if (!qualifier.empty()) {
         auto it = scopes_.find(qualifier);
         if (it != scopes_.end()) {
@@ -76,12 +94,21 @@ Node *SymbolTable::lookup(const std::string &qualifier, const std::string &name)
     return universe_->lookup(name, true);
 }
 
-bool SymbolTable::isDuplicate(const std::string &name) const {
+bool SymbolTable::isDuplicate(const string &name) const {
     return scope_->lookup(name, true) != nullptr;
 }
 
-bool SymbolTable::isGlobal(const std::string &name) const {
+bool SymbolTable::isGlobal(const string &name) const {
     return universe_->lookup(name, true) != nullptr;
+}
+
+BasicTypeNode *SymbolTable::getBasicType(const string &name) const {
+    auto sym = universe_->lookup(name, true);
+    if (sym && sym->getNodeType() == NodeType::type) {
+        auto decl = dynamic_cast<TypeDeclarationNode *>(sym);
+        return dynamic_cast<BasicTypeNode *>(decl->getType());
+    }
+    return nullptr;
 }
 
 TypeNode *SymbolTable::getNilType() const {
@@ -92,20 +119,20 @@ void SymbolTable::setNilType(TypeNode *nilType) {
     nilType_ = nilType;
 }
 
-void SymbolTable::createNamespace(const std::string &module, bool activate) {
+void SymbolTable::createNamespace(const string &module, bool activate) {
     if (getNamespace(module)) {
         // TODO throw exception
         std::cerr << "Illegal symbol table state: namespace " + module + " already exists." << std::endl;
         exit(1);
     }
-    auto scope = std::make_unique<Scope>(GLOBAL_LEVEL, nullptr);
+    auto scope = make_unique<Scope>(GLOBAL_LEVEL, nullptr);
     if (activate) {
         scope_ = scope.get();
     }
     scopes_[module] = std::move(scope);
 }
 
-Scope *SymbolTable::getNamespace(const std::string &module) {
+Scope *SymbolTable::getNamespace(const string &module) {
     auto itr = scopes_.find(module);
     if (itr != scopes_.end()) {
         return itr->second.get();
@@ -113,7 +140,7 @@ Scope *SymbolTable::getNamespace(const std::string &module) {
     return nullptr;
 }
 
-void SymbolTable::setNamespace(const std::string &module) {
+void SymbolTable::setNamespace(const string &module) {
     auto scope = getNamespace(module);
     if (scope) {
         scope_ = scope;
@@ -125,7 +152,7 @@ void SymbolTable::setNamespace(const std::string &module) {
 }
 
 void SymbolTable::openScope() {
-    auto child = std::make_unique<Scope>(scope_->getLevel() + 1, scope_);
+    auto child = make_unique<Scope>(scope_->getLevel() + 1, scope_);
     scope_->setChild(std::move(child));
     scope_ = scope_->getChild();
 }

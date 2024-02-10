@@ -8,22 +8,23 @@
 #include "system/PredefinedProcedure.h"
 #include <llvm/IR/Verifier.h>
 
-LLVMIRBuilder::LLVMIRBuilder(CompilerFlags *flags, Logger *logger, LLVMContext &context, Module *module) :
-        NodeVisitor(), flags_(flags), logger_(logger), builder_(context), module_(module), value_(), values_(),
-        types_(), functions_(), strings_(), deref_ctx(), level_(0), function_(), attrs_(AttrBuilder(context)) {
+LLVMIRBuilder::LLVMIRBuilder(CompilerFlags *flags, Logger *logger, LLVMContext &builder, Module *module) :
+        NodeVisitor(), flags_(flags), logger_(logger), builder_(builder), module_(module), value_(), values_(),
+        types_(), functions_(), strings_(), deref_ctx(), level_(0), function_(), attrs_(AttrBuilder(builder)) {
     attrs_
         .addAttribute(Attribute::NoInline)
         .addAttribute(Attribute::NoUnwind)
         .addAttribute(Attribute::OptimizeNone)
         .addAttribute(Attribute::StackProtect)
 #ifndef _LLVM_LEGACY
-        .addAttribute(Attribute::getWithUWTableKind(context, UWTableKind::Default))
+        .addAttribute(Attribute::getWithUWTableKind(builder, UWTableKind::Default))
 #endif
         ;
 }
 
-void LLVMIRBuilder::build(Node *node) {
-    node->accept(*this);
+void LLVMIRBuilder::build(ASTContext *ast) {
+    ast_ = ast;
+    ast->getTranslationUnit()->accept(*this);
 }
 
 void LLVMIRBuilder::visit(ModuleNode &node) {
@@ -40,8 +41,8 @@ void LLVMIRBuilder::visit(ModuleNode &node) {
         values_[variable] = value;
     }
     // generate external procedure signatures
-    for (size_t i = 0; i < node.getExternalProcedureCount(); i++) {
-        proc(*node.getExternalProcedure(i));
+    for (size_t i = 0; i < ast_->getExternalProcedureCount(); i++) {
+        proc(*ast_->getExternalProcedure(i));
     }
     // generate procedure signatures
     for (size_t i = 0; i < node.getProcedureCount(); i++) {
@@ -71,8 +72,8 @@ void LLVMIRBuilder::visit(ModuleNode &node) {
         }
     }
     // generate code for statements
-    if (node.getStatements()->getStatementCount() > 0) {
-        node.getStatements()->accept(*this);
+    if (node.statements()->getStatementCount() > 0) {
+        node.statements()->accept(*this);
     }
     // generate code for exit code
     if (builder_.GetInsertBlock()->getTerminator() == nullptr) {
@@ -123,7 +124,7 @@ void LLVMIRBuilder::visit(ProcedureNode &node) {
         values_[var] = value;
     }
     level_ = node.getLevel() + 1;
-    node.getStatements()->accept(*this);
+    node.statements()->accept(*this);
     if (node.getReturnType() == nullptr) {
         builder_.CreateRetVoid();
     }

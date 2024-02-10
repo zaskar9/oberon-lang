@@ -72,7 +72,7 @@ class TypeDeclarationNode final : public DeclarationNode {
 
 public:
     explicit TypeDeclarationNode(const FilePos &pos, std::unique_ptr<Ident> ident, TypeNode *type) :
-            DeclarationNode(NodeType::type_declaration, pos, std::move(ident), type, 0) { };
+            DeclarationNode(NodeType::type, pos, std::move(ident), type, 0) { };
     ~TypeDeclarationNode() final = default;
 
     void accept(NodeVisitor& visitor) override;

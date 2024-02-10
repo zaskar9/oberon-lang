@@ -8,19 +8,13 @@
 #include "ProcedureNode.h"
 #include "NodeVisitor.h"
 
-ProcedureNode::ProcedureNode(const FilePos &pos, std::unique_ptr<Ident> ident,
-                             ProcedureTypeNode *type,
-                             vector<unique_ptr<ConstantDeclarationNode>> consts,
-                             vector<unique_ptr<TypeDeclarationNode>> types,
-                             vector<unique_ptr<VariableDeclarationNode>> vars,
-                             vector<unique_ptr<ProcedureNode>> procs,
-                             unique_ptr<StatementSequenceNode> stmts) :
-        DeclarationNode(NodeType::procedure, pos, std::move(ident), type),
-        BlockNode(std::move(consts), std::move(types), std::move(vars), std::move(procs), std::move(stmts)),
-        extern_(false) {}
+ProcedureNode::ProcedureNode(const FilePos &pos, std::unique_ptr<Ident> ident, bool external) :
+        DeclarationNode(NodeType::procedure, pos, std::move(ident), nullptr),
+        BlockNode(),
+        extern_(external) {}
 
 ProcedureNode::ProcedureNode(unique_ptr<Ident> ident, ProcedureTypeNode *type, bool external) :
-        DeclarationNode(NodeType::procedure_type, EMPTY_POS, std::move(ident), type),
+        DeclarationNode(NodeType::procedure, EMPTY_POS, std::move(ident), type),
         BlockNode(),
         extern_(external) {}
 

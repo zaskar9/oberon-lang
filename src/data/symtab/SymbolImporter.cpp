@@ -126,7 +126,7 @@ void SymbolImporter::readDeclaration(SymbolFile *file, NodeType nodeType,
                 consts.push_back(std::move(decl));
             }
         }
-    } else if (nodeType == NodeType::type_declaration) {
+    } else if (nodeType == NodeType::type) {
         auto decl = std::make_unique<TypeDeclarationNode>(EMPTY_POS, std::move(ident), type);
         symbols_->import(alias, name, decl.get());
         types.push_back(std::move(decl));

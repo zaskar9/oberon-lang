@@ -154,7 +154,7 @@ std::string LLVMCodeGen::getLibName(const std::string &name, bool dylib, const l
     return ss.str();
 }
 
-void LLVMCodeGen::generate(Node *ast, boost::filesystem::path path) {
+void LLVMCodeGen::generate(ASTContext *ast, boost::filesystem::path path) {
     // Set up the LLVM module
     logger_->debug("Generating LLVM code...");
     auto name = path.filename().string();
@@ -190,7 +190,7 @@ void LLVMCodeGen::generate(Node *ast, boost::filesystem::path path) {
 }
 
 #ifndef _LLVM_LEGACY
-int LLVMCodeGen::jit(Node *ast, boost::filesystem::path path) {
+int LLVMCodeGen::jit(ASTContext *ast, boost::filesystem::path path) {
     // Set up the LLVM module
     logger_->debug("Generating LLVM code...");
     // TODO second context created as LLVMIRBuilder needs std::make_unique
@@ -210,7 +210,7 @@ int LLVMCodeGen::jit(Node *ast, boost::filesystem::path path) {
 
         // TODO link with other imported modules (*.o and *.obj files)
 
-        std:: string entry = dynamic_cast<ModuleNode*>(ast)->getIdentifier()->name();
+        std:: string entry = ast->getTranslationUnit()->getIdentifier()->name();
         auto mainAddr = exitOnErr_(jit_->lookup(entry));
         auto mainFn = mainAddr.toPtr<int(void)>();
         int result = mainFn();

@@ -28,13 +28,7 @@ private:
 
 public:
     // ctor for use in sema / parser
-    ProcedureNode(const FilePos &pos, unique_ptr<Ident> ident,
-                  ProcedureTypeNode *type,
-                  vector<unique_ptr<ConstantDeclarationNode>> consts,
-                  vector<unique_ptr<TypeDeclarationNode>> types,
-                  vector<unique_ptr<VariableDeclarationNode>> vars,
-                  vector<unique_ptr<ProcedureNode>> procs,
-                  unique_ptr<StatementSequenceNode> stmts);
+    ProcedureNode(const FilePos &, unique_ptr<Ident>, bool = false);
     // ctor for use in symbol importer
     explicit ProcedureNode(unique_ptr<Ident>, ProcedureTypeNode *, bool = false);
     ~ProcedureNode() override = default;

@@ -89,11 +89,11 @@ void NodePrettyPrinter::visit(ModuleNode& node) {
     }
     block(node, true);
     stream_ << std::endl;
-    if (node.getStatements()->getStatementCount() > 0) {
+    if (node.statements()->getStatementCount() > 0) {
         indent();
         stream_ << "BEGIN" << std::endl;
         indent_ += TAB_WIDTH;
-        node.getStatements()->accept(*this);
+        node.statements()->accept(*this);
         indent_ -= TAB_WIDTH;
     }
     indent();
@@ -123,11 +123,11 @@ void NodePrettyPrinter::visit(ProcedureNode& node) {
     } else {
         stream_ << std::endl;
         block(node, false);
-        if (node.getStatements()->getStatementCount() > 0) {
+        if (node.statements()->getStatementCount() > 0) {
             indent();
             stream_ << "BEGIN" << std::endl;
             indent_ += TAB_WIDTH;
-            node.getStatements()->accept(*this);
+            node.statements()->accept(*this);
             indent_ -= TAB_WIDTH;
         }
         indent();

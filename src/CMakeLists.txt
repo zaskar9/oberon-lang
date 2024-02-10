@@ -62,7 +62,6 @@ set(SYSTEM_SOURCES
 
 set(ANALYZER_SOURCES
         analyzer/Analyzer.cpp analyzer/Analyzer.h
-        analyzer/SemanticAnalysis.cpp analyzer/SemanticAnalysis.h
         analyzer/LambdaLifter.cpp analyzer/LambdaLifter.h)
 
 set(CODEGEN_SOURCES

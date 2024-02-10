@@ -42,26 +42,30 @@ public:
 
     [[nodiscard]] virtual NodeType getNodeType() const = 0;
 
+    [[nodiscard]] vector<unique_ptr<ConstantDeclarationNode>> &constants();
     void addConstant(std::unique_ptr<ConstantDeclarationNode> constant);
     [[nodiscard]] ConstantDeclarationNode* getConstant(size_t num) const;
     [[nodiscard]] size_t getConstantCount() const;
 
+    [[nodiscard]] vector<unique_ptr<TypeDeclarationNode>> &types();
     void addTypeDeclaration(std::unique_ptr<TypeDeclarationNode> type_declaration);
     [[nodiscard]] TypeDeclarationNode* getTypeDeclaration(size_t num) const;
     [[nodiscard]] size_t getTypeDeclarationCount() const;
 
+    [[nodiscard]] vector<unique_ptr<VariableDeclarationNode>> &variables();
     void addVariable(std::unique_ptr<VariableDeclarationNode> variable);
     void insertVariable(size_t pos, std::unique_ptr<VariableDeclarationNode> variable);
     [[nodiscard]] VariableDeclarationNode* getVariable(size_t num) const;
     [[nodiscard]] size_t getVariableCount() const;
     void removeVariables(size_t from, size_t to);
 
+    [[nodiscard]] vector<unique_ptr<ProcedureNode>> &procedures();
     void addProcedure(std::unique_ptr<ProcedureNode> procedure);
     [[nodiscard]] ProcedureNode* getProcedure(size_t num) const;
     [[nodiscard]] size_t getProcedureCount() const;
     [[nodiscard]] std::unique_ptr<ProcedureNode> removeProcedure(size_t num);
 
-    StatementSequenceNode* getStatements();
+    StatementSequenceNode* statements();
 
 };
 

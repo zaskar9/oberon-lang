@@ -50,7 +50,7 @@ private:
     unique_ptr<Selector> selector();
     bool maybe_typeguard();
     unique_ptr<IdentDef> identdef(bool checkAlphaNum = true);
-    void ident_list(vector<unique_ptr<Ident>> &idents);
+    void ident_list(vector<unique_ptr<IdentDef>> &idents);
 
     unique_ptr<ModuleNode> module();
 
@@ -82,14 +82,11 @@ private:
     PointerTypeNode* pointer_type(Ident * = nullptr);
 
     ProcedureTypeNode* procedure_signature(Ident * = nullptr);
-    unique_ptr<StatementSequenceNode> procedure_body(vector<unique_ptr<ConstantDeclarationNode>> &,
-                                                     vector<unique_ptr<TypeDeclarationNode>> &,
-                                                     vector<unique_ptr<VariableDeclarationNode>> &,
-                                                     vector<unique_ptr<ProcedureNode>> &);
+    void procedure_body(ProcedureNode *);
     void formal_parameters(vector<std::unique_ptr<ParameterNode>> &, bool &);
     void fp_section(vector<std::unique_ptr<ParameterNode>> &, bool &);
 
-    unique_ptr<StatementSequenceNode> statement_sequence();
+    void statement_sequence(StatementSequenceNode *);
     unique_ptr<StatementNode> statement();
     unique_ptr<StatementNode> assignment(unique_ptr<ValueReferenceNode>);
     unique_ptr<StatementNode> if_statement();
@@ -109,7 +106,7 @@ public:
             flags_(flags), scanner_(scanner), sema_(sema), logger_(logger), token_() { };
     ~Parser() = default;
 
-    ModuleNode *parse(ASTContext *context);
+    void parse(ASTContext *context);
 
 };
 

@@ -23,13 +23,13 @@ Scope *Scope::getChild() const {
     return child_.get();
 }
 
-void Scope::insert(const std::string &name, Node *symbol) {
+void Scope::insert(const std::string &name, DeclarationNode *symbol) {
     symbols_.push_back(symbol);
     auto idx = symbols_.size() - 1;
     indices_.insert(std::make_pair(name, idx));
 }
 
-Node *Scope::lookup(const std::string &name, bool local) const {
+DeclarationNode *Scope::lookup(const std::string &name, bool local) const {
     auto itr = indices_.find(name);
     if (itr != indices_.end()) {
         auto idx = itr->second;
@@ -44,7 +44,7 @@ Node *Scope::lookup(const std::string &name, bool local) const {
 void Scope::getExportedSymbols(std::vector<DeclarationNode *> &exports) const {
     for (const auto& symbol: symbols_) {
         auto type = symbol->getNodeType();
-        if (type == NodeType::constant || type == NodeType::variable || type == NodeType::type_declaration ||
+        if (type == NodeType::constant || type == NodeType::variable || type == NodeType::type ||
             type == NodeType::field || type == NodeType::procedure) {
             auto decl = dynamic_cast<DeclarationNode *>(symbol);
             if (decl->getIdentifier()->isExported()) {

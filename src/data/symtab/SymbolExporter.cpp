@@ -48,7 +48,7 @@ void SymbolExporter::writeDeclaration(SymbolFile *file, DeclarationNode *decl) {
     file->writeString(decl->getIdentifier()->name());
     // write out type
     writeType(file, decl->getType());
-    if (nodeType == NodeType::type_declaration) {
+    if (nodeType == NodeType::type) {
         // TODO check if this is the base type of a previously declared pointer type
     } else if (nodeType == NodeType::constant) {
         auto kind = decl->getType()->kind();

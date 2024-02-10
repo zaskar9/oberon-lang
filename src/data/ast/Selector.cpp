@@ -55,7 +55,7 @@ Dereference::~Dereference() = default;
 
 
 Typeguard::Typeguard(const FilePos &pos, std::unique_ptr<QualIdent> ident)  :
-        Selector(NodeType::type_declaration, pos), ident_(std::move(ident)) { }
+        Selector(NodeType::type, pos), ident_(std::move(ident)) { }
 
 Typeguard::~Typeguard() = default;
 

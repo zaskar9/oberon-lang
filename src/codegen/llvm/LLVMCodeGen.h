@@ -8,15 +8,15 @@
 #define OBERON_LANG_LLVMCODEGEN_H
 
 
-#include "analyzer/Analyzer.h"
-#include "codegen/CodeGen.h"
-#include "logging/Logger.h"
 #include <string>
 #include <boost/filesystem.hpp>
 #include <llvm/ExecutionEngine/Orc/LLJIT.h>
 #include <llvm/Passes/PassBuilder.h>
 #include <llvm/Target/TargetMachine.h>
 
+#include "data/ast/ASTContext.h"
+#include "codegen/CodeGen.h"
+#include "logging/Logger.h"
 
 int mingw_noop_main(void);
 
@@ -44,9 +44,9 @@ public:
 
     void configure(CompilerFlags *flags) final;
 
-    void generate(Node *ast, boost::filesystem::path path) final;
+    void generate(ASTContext *ast, boost::filesystem::path path) final;
 #ifndef _LLVM_LEGACY
-    int jit(Node *ast, boost::filesystem::path path) final;
+    int jit(ASTContext *ast, boost::filesystem::path path) final;
 #endif
 
 };

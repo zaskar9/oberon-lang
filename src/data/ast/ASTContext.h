@@ -21,7 +21,7 @@ using std::vector;
 class ASTContext {
 
 private:
-    unique_ptr<Node> unit_;
+    unique_ptr<ModuleNode> module_;
     vector<unique_ptr<ArrayTypeNode>> array_ts_;
     vector<unique_ptr<RecordTypeNode>> record_ts_;
     vector<unique_ptr<PointerTypeNode>> pointer_ts_;
@@ -31,18 +31,8 @@ private:
     vector<ProcedureNode*> ext_procedures_;
 
 public:
-    [[nodiscard]] Node *getTranslationUnit();
-    [[deprecated]]
-    void setTranslationUnit(unique_ptr<Node>);
-
-//    ModuleNode *createModule(const FilePos &, const FilePos &,
-//                             unique_ptr<Ident> ident,
-//                             vector<unique_ptr<ImportNode>> imports,
-//                             vector<unique_ptr<ConstantDeclarationNode> consts,
-//                             vector<unique_ptr<TypeDeclarationNode>> types,
-//                             vector<unique_ptr<VariableDeclarationNode>> vars,
-//                             vector<unique_ptr<ProcedureNode>> procs,
-//                             unique_ptr<StatementSequenceNode> stmts);
+    [[nodiscard]] ModuleNode *getTranslationUnit();
+    void setTranslationUnit(unique_ptr<ModuleNode>);
 
 
     ArrayTypeNode *getOrInsertArrayType(Ident *, unsigned int, TypeNode *);

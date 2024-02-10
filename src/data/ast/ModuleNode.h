@@ -23,14 +23,13 @@ using std::vector;
 class ModuleNode final : public DeclarationNode, public BlockNode {
 
 private:
-    vector<unique_ptr<ImportNode>> imports_;
-    vector<unique_ptr<ModuleNode>> modules_;
-    vector<ProcedureNode*> extprocs_;
     std::string alias_;
+    vector<unique_ptr<ImportNode>> imports_;
 
 public:
     // ctor for use in sema / parser
-    ModuleNode(const FilePos &pos, unique_ptr<Ident> name,
+    ModuleNode(const FilePos &pos,
+               unique_ptr<Ident> name,
                vector<unique_ptr<ImportNode>> imports,
                vector<unique_ptr<ConstantDeclarationNode>> consts,
                vector<unique_ptr<TypeDeclarationNode>> types,
@@ -39,39 +38,31 @@ public:
                unique_ptr<StatementSequenceNode> stmts) :
             DeclarationNode(NodeType::module, pos, std::move(name), nullptr),
             BlockNode(std::move(consts), std::move(types), std::move(vars), std::move(procs), std::move(stmts)),
-            imports_(std::move(imports)), modules_(), extprocs_(), alias_() {};
+            alias_(), imports_(std::move(imports)) {};
     // ctor for use in symbol importer
-    ModuleNode(unique_ptr<Ident> name,
-               vector<unique_ptr<ConstantDeclarationNode>> consts,
-               vector<unique_ptr<TypeDeclarationNode>> types,
-               vector<unique_ptr<VariableDeclarationNode>> vars,
-               vector<unique_ptr<ProcedureNode>> procs) :
+    explicit ModuleNode(unique_ptr<Ident> name,
+                        vector<unique_ptr<ConstantDeclarationNode>> consts,
+                        vector<unique_ptr<TypeDeclarationNode>> types,
+                        vector<unique_ptr<VariableDeclarationNode>> vars,
+                        vector<unique_ptr<ProcedureNode>> procs) :
             DeclarationNode(NodeType::module, EMPTY_POS, std::move(name), nullptr),
-            BlockNode(std::move(consts), std::move(types), std::move(vars), std::move(procs),
-                      make_unique<StatementSequenceNode>(EMPTY_POS)),
-            imports_(), modules_(), extprocs_(), alias_() {};
+            BlockNode(std::move(consts), std::move(types), std::move(vars), std::move(procs), make_unique<StatementSequenceNode>(EMPTY_POS)),
+            alias_(), imports_() {};
     ~ModuleNode() override = default;
 
     [[nodiscard]] NodeType getNodeType() const override {
         return DeclarationNode::getNodeType();
     }
 
+    void setAlias(string alias);
+    [[nodiscard]] string getAlias() const;
+
     void addImport(unique_ptr<ImportNode> import);
     [[nodiscard]] ImportNode* getImport(size_t num) const;
     [[nodiscard]] size_t getImportCount() const;
 
-    // mainly for memory management as an anchor for smart pointers
-    void addExternalModule(unique_ptr<ModuleNode> module);
-
-    void addExternalProcedure(ProcedureNode *proc);
-    [[nodiscard]] ProcedureNode *getExternalProcedure(size_t num) const;
-    [[nodiscard]] size_t getExternalProcedureCount() const;
-
-    void setAlias(string alias);
-    [[nodiscard]] string getAlias() const;
 
     void accept(NodeVisitor& visitor) override;
-
     void print(std::ostream &stream) const override;
 
 };

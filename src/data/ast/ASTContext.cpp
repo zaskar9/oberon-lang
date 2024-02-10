@@ -7,12 +7,12 @@
 
 using std::make_unique;
 
-Node *ASTContext::getTranslationUnit() {
-    return unit_.get();
+ModuleNode *ASTContext::getTranslationUnit() {
+    return module_.get();
 }
 
-void ASTContext::setTranslationUnit(unique_ptr<Node> unit) {
-    unit_ = std::move(unit);
+void ASTContext::setTranslationUnit(unique_ptr<ModuleNode> module) {
+    module_ = std::move(module);
 }
 
 ArrayTypeNode *ASTContext::getOrInsertArrayType(Ident *ident, unsigned int dimension, TypeNode *memberType) {

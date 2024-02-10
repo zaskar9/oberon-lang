@@ -14,23 +14,29 @@ class OberonSystem {
 
 private:
     std::unique_ptr<SymbolTable> symbols_;
-    std::vector<std::unique_ptr<Node>> predefines_;
+    std::vector<std::unique_ptr<DeclarationNode>> decls_;
+    std::vector<std::unique_ptr<TypeNode>> types_;
     std::unordered_map<std::string, BasicTypeNode *> baseTypes_;
-    std::unordered_map<std::string, BasicTypeNode *> procedures_;
+
+    TypeDeclarationNode *createTypeDeclaration(TypeNode *);
+
 
 protected:
     virtual void initSymbolTable(SymbolTable *symbols) = 0;
 
 public:
-    explicit OberonSystem() : symbols_(), predefines_(), baseTypes_() {};
+    explicit OberonSystem() : symbols_(), decls_(), types_(), baseTypes_() {};
     virtual ~OberonSystem();
 
     void createBasicTypes(std::vector<std::pair<std::pair<TypeKind, unsigned int>, bool>> types);
     BasicTypeNode *createBasicType(TypeKind kind, unsigned int size);
     BasicTypeNode *getBasicType(TypeKind kind);
+
     PointerTypeNode *createPointerType(TypeNode *base);
+
     ArrayTypeNode *createArrayType(TypeNode *memberType, unsigned int dimension);
-    void createProcedure(ProcKind type, std::string name, std::vector<std::pair<TypeNode *, bool>> params,
+
+    void createProcedure(ProcKind type, const std::string& name, std::vector<std::pair<TypeNode *, bool>> params,
                          TypeNode *ret, bool hasVarArgs, bool toSymbols);
 
     SymbolTable *getSymbolTable();

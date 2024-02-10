@@ -8,14 +8,17 @@
 #define OBERON0C_LLVMCODEGEN_H
 
 
-#include "compiler/CompilerFlags.h"
-#include "data/ast/NodeVisitor.h"
-#include "logging/Logger.h"
+#include <map>
+#include <stack>
+
 #include <llvm/IR/DataLayout.h>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
-#include <map>
-#include <stack>
+
+#include "data/ast/ASTContext.h"
+#include "compiler/CompilerFlags.h"
+#include "data/ast/NodeVisitor.h"
+#include "logging/Logger.h"
 
 using namespace llvm;
 
@@ -35,6 +38,7 @@ private:
     unsigned int level_;
     Function *function_;
     AttrBuilder attrs_;
+    ASTContext *ast_;
 
     Type* getLLVMType(TypeNode *type);
     MaybeAlign getLLVMAlign(TypeNode *type);
@@ -93,10 +97,10 @@ private:
     void visit(ReturnNode &node) override;
 
 public:
-    LLVMIRBuilder(CompilerFlags *flags, Logger *logger, LLVMContext &context, Module *module);
+    LLVMIRBuilder(CompilerFlags *flags, Logger *logger, LLVMContext &builder, Module *module);
     ~LLVMIRBuilder() override = default;
 
-    void build(Node *node);
+    void build(ASTContext *ast);
 
 };
 

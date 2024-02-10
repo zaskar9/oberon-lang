@@ -82,6 +82,7 @@ void Designator::disqualify() {
         auto pos = ident_->start();
         pos.charNo += ((int) qual->qualifier().size()) + 1;
         auto field = std::make_unique<QualIdent>(pos, EMPTY_POS, qual->name());
+        // TODO no AST node creation outside sema
         this->insertSelector(0, std::make_unique<RecordField>(field->start(), std::move(field)));
         ident_ = std::make_unique<QualIdent>(qual->qualifier());
     }
@@ -98,16 +99,6 @@ void ProcedureNodeReference::initActualParameters() {
             auto parameters = dynamic_cast<ActualParameters *>(selector);
             parameters->moveActualParameters(parameters_);
             this->removeSelector(0);
-        } else if (selector->getType() == NodeType::type_declaration) {
-            auto proc = dynamic_cast<ProcedureNode *>(this->dereference());
-            if (proc->getFormalParameterCount() == 1) {
-                auto typeguard = dynamic_cast<Typeguard *>(selector);
-                auto ident = typeguard->ident();
-                auto ref = std::make_unique<ValueReferenceNode>(ident->start(),
-                                                  std::make_unique<Designator>(std::make_unique<QualIdent>(ident)));
-                parameters_.push_back(std::move(ref));
-                this->removeSelector(0);
-            }
         }
     }
 }
@@ -135,11 +126,11 @@ ValueReferenceNode::ValueReferenceNode(const FilePos &pos, DeclarationNode *node
         node_() {
     this->resolve(node);
 }
+
 void ValueReferenceNode::resolve(DeclarationNode *node) {
     node_ = node;
     auto type = node->getType();
-    if (type && (type->getNodeType() == NodeType::procedure ||
-        type->getNodeType() == NodeType::procedure_type)) {
+    if (type && (type->getNodeType() == NodeType::procedure || type->getNodeType() == NodeType::procedure_type)) {
         this->initActualParameters();
         this->setNodeType(NodeType::procedure_call);
     }

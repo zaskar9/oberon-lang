@@ -4,29 +4,47 @@
 
 #include "OberonSystem.h"
 
+#include<memory>
+#include <string>
+#include <utility>
+#include <vector>
+
+using std::make_unique;
+using std::pair;
+using std::string;
+using std::vector;
+
 OberonSystem::~OberonSystem() = default;
 
 SymbolTable *OberonSystem::getSymbolTable() {
     if (symbols_ == nullptr) {
-        symbols_ = std::make_unique<SymbolTable>();
+        symbols_ = make_unique<SymbolTable>();
         this->initSymbolTable(symbols_.get());
     }
     return symbols_.get();
 }
 
-void OberonSystem::createBasicTypes(std::vector<std::pair<std::pair<TypeKind, unsigned int>, bool>> types) {
+TypeDeclarationNode *OberonSystem::createTypeDeclaration(TypeNode *type) {
+    auto decl = make_unique<TypeDeclarationNode>(EMPTY_POS, make_unique<Ident>(type->getIdentifier()->name()), type);
+    auto ptr = decl.get();
+    decls_.push_back(std::move(decl));
+    return ptr;
+}
+
+void OberonSystem::createBasicTypes(vector<pair<pair<TypeKind, unsigned int>, bool>> types) {
     for (auto pair: types) {
         auto type = createBasicType(pair.first.first, pair.first.second);
+        auto decl = createTypeDeclaration(type);
         if (pair.second) {
-            symbols_->insertGlobal(type->getIdentifier()->name(), type);
+            symbols_->insertGlobal(type->getIdentifier()->name(), decl);
         }
     }
 }
 
 BasicTypeNode *OberonSystem::createBasicType(TypeKind kind, unsigned int size) {
-    auto type = std::make_unique<BasicTypeNode>(std::make_unique<Ident>(to_string(kind)), kind, size);
+    auto type = make_unique<BasicTypeNode>(make_unique<Ident>(to_string(kind)), kind, size);
     auto ptr = type.get();
-    predefines_.push_back(std::move(type));
+    types_.push_back(std::move(type));
     symbols_->setRef((char) kind, ptr);
     baseTypes_[ptr->getIdentifier()->name()] = ptr;
     return ptr;
@@ -37,27 +55,27 @@ BasicTypeNode *OberonSystem::getBasicType(TypeKind kind) {
 }
 
 PointerTypeNode *OberonSystem::createPointerType(TypeNode *base) {
-    auto type = std::make_unique<PointerTypeNode>(EMPTY_POS, nullptr, base);
+    auto type = make_unique<PointerTypeNode>(EMPTY_POS, nullptr, base);
     auto ptr = type.get();
-    predefines_.push_back(std::move(type));
+    types_.push_back(std::move(type));
     symbols_->setRef((char) TypeKind::POINTER, ptr);
     return ptr;
 }
 
 ArrayTypeNode *OberonSystem::createArrayType(TypeNode *memberType, unsigned int dimension) {
-    auto type = std::make_unique<ArrayTypeNode>(EMPTY_POS, nullptr, dimension, memberType);
+    auto type = make_unique<ArrayTypeNode>(EMPTY_POS, nullptr, dimension, memberType);
     auto ptr = type.get();
-    predefines_.push_back(std::move(type));
+    types_.push_back(std::move(type));
     symbols_->setRef((char) TypeKind::ARRAY, ptr);
     return ptr;
 }
 
-void OberonSystem::createProcedure(ProcKind type, std::string name, std::vector<std::pair<TypeNode *, bool>> params,
+void OberonSystem::createProcedure(ProcKind type, const string& name, vector<pair<TypeNode *, bool>> params,
                                    TypeNode *ret, bool hasVarArgs, bool toSymbols) {
-    auto proc = std::make_unique<PredefinedProcedure>(type, name, params, ret);
+    auto proc = make_unique<PredefinedProcedure>(type, name, params, ret);
     proc->setVarArgs(hasVarArgs);
     auto ptr = proc.get();
-    predefines_.push_back(std::move(proc));
+    decls_.push_back(std::move(proc));
     if (toSymbols) {
         symbols_->insertGlobal(ptr->getIdentifier()->name(), ptr);
     }

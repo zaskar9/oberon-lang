@@ -17,7 +17,7 @@ class Scope {
 
 private:
     const unsigned int level_;
-    std::vector<Node *> symbols_;
+    std::vector<DeclarationNode *> symbols_;
     std::unordered_map<std::string, size_t> indices_;
     std::unique_ptr<Scope> child_;
     Scope *parent_;
@@ -33,8 +33,8 @@ public:
     void setChild(std::unique_ptr<Scope> child);
     [[nodiscard]] Scope *getChild() const;
 
-    void insert(const std::string &name, Node *symbol);
-    [[nodiscard]] Node *lookup(const std::string &name, bool local) const;
+    void insert(const std::string &name, DeclarationNode *symbol);
+    [[nodiscard]] DeclarationNode *lookup(const std::string &name, bool local) const;
 
     void getExportedSymbols(std::vector<DeclarationNode*> &exports) const;
 
