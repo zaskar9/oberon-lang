@@ -14,10 +14,10 @@
 #include "LiteralToken.h"
 #include "UndefinedToken.h"
 
-Scanner::Scanner(CompilerConfig &config, const path &path) :
-        config_(config), logger_(config_.logger()), path_(path), tokens_(), lineNo_(1), charNo_(0), ch_{}, eof_(false) {
+Scanner::Scanner(CompilerConfig &config, const path &path) : config_(config), logger_(config_.logger()), path_(path),
+        tokens_(), lineNo_(1), charNo_(0), ch_{}, eof_(false) {
     init();
-    file_.open(path_.string(), std::ios::in);
+    file_.open(path_.string(), std::ifstream::binary);
     if (!file_.is_open()) {
         logger_.error(PROJECT_NAME, "cannot open file: " + path_.string() + ".");
         exit(1);
@@ -75,6 +75,15 @@ std::unique_ptr<const Token> Scanner::next() {
         tokens_.pop();
     }
     return std::unique_ptr<const Token>(token);
+}
+
+void Scanner::seek(const FilePos &pos) {
+    file_.seekg(pos.offset - (streampos)1);
+    std::queue<const Token*> empty;
+    std::swap(tokens_, empty);
+    lineNo_ = pos.lineNo;
+    charNo_ = pos.charNo - 1;
+    ch_ = '\0';
 }
 
 const Token* Scanner::scanToken() {
@@ -246,11 +255,12 @@ void Scanner::read() {
 
 }
 
-FilePos Scanner::current() const {
+FilePos Scanner::current() {
     FilePos pos;
     pos.fileName = path_.string();
     pos.lineNo = lineNo_;
     pos.charNo = charNo_;
+    pos.offset = file_.tellg();
     return pos;
 }
 

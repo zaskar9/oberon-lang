@@ -37,7 +37,7 @@ private:
 
 public:
     explicit Token(const TokenType type, const FilePos &start) :
-            Token(type, start, { start.fileName, start.lineNo, start.charNo + 1 }) { };
+            Token(type, start, { start.fileName, start.lineNo, start.charNo + 1, start.offset }) { };
     explicit Token(const TokenType type, const FilePos &start, const FilePos &end) :
             type_(type), start_(start), end_(end) { };
     virtual ~Token();

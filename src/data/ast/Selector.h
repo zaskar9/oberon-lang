@@ -6,11 +6,15 @@
 #define OBERON_LANG_SELECTOR_H
 
 
-#include "Ident.h"
-#include "DeclarationNode.h"
 #include <memory>
 #include <string>
 #include <vector>
+
+#include "Ident.h"
+#include "DeclarationNode.h"
+
+using std::unique_ptr;
+using std::vector;
 
 class Selector {
 
@@ -31,24 +35,25 @@ class ExpressionNode;
 class ArrayIndex final : public Selector {
 
 private:
-    std::unique_ptr<ExpressionNode> expression_;
+    vector<unique_ptr<ExpressionNode>> indices_;
 
 public:
-    explicit ArrayIndex(const FilePos &pos, std::unique_ptr<ExpressionNode> expression);
+    explicit ArrayIndex(const FilePos &pos, vector<unique_ptr<ExpressionNode>> indices);
     ~ArrayIndex() override;
 
-    [[nodiscard]] ExpressionNode *getExpression() const;
+    [[nodiscard]] const vector<unique_ptr<ExpressionNode>> &indices() const;
+
 };
 
 
 class RecordField final : public Selector {
 
 private:
-    std::unique_ptr<Ident> ident_;
+    unique_ptr<Ident> ident_;
     FieldNode *field_;
 
 public:
-    explicit RecordField(const FilePos &pos, std::unique_ptr<Ident> field);
+    explicit RecordField(const FilePos &pos, unique_ptr<Ident> field);
     explicit RecordField(const FilePos &pos, FieldNode *field);
     ~RecordField() override;
 
@@ -74,7 +79,7 @@ private:
     std::unique_ptr<QualIdent> ident_;
 
 public:
-    explicit Typeguard(const FilePos &pos, std::unique_ptr<QualIdent> ident);
+    explicit Typeguard(const FilePos &pos, unique_ptr<QualIdent> ident);
     ~Typeguard() override;
 
     [[nodiscard]] QualIdent* ident() const;
@@ -84,14 +89,14 @@ public:
 class ActualParameters final : public Selector {
 
 private:
-    std::vector<std::unique_ptr<ExpressionNode>> parameters_;
+    vector<unique_ptr<ExpressionNode>> parameters_;
 
 public:
-    explicit ActualParameters(const FilePos &pos);
+    explicit ActualParameters(const FilePos &pos, vector<unique_ptr<ExpressionNode>> parameters_);
     ~ActualParameters() override;
 
-    void addActualParameter(std::unique_ptr<ExpressionNode> parameter);
-    void moveActualParameters(std::vector<std::unique_ptr<ExpressionNode>> &target);
+    [[nodiscard]] vector<unique_ptr<ExpressionNode>> &parameters();
+
 };
 
 

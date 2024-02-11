@@ -17,13 +17,13 @@ NodeType Selector::getType() const {
 }
 
 
-ArrayIndex::ArrayIndex(const FilePos &pos, std::unique_ptr<ExpressionNode> expression) :
-        Selector(NodeType::array_type, pos), expression_(std::move(expression)) { }
+ArrayIndex::ArrayIndex(const FilePos &pos, std::vector<std::unique_ptr<ExpressionNode>> indices) :
+        Selector(NodeType::array_type, pos), indices_(std::move(indices)) { }
 
 ArrayIndex::~ArrayIndex() = default;
 
-ExpressionNode *ArrayIndex::getExpression() const {
-    return expression_.get();
+const vector<unique_ptr<ExpressionNode>> &ArrayIndex::indices() const {
+    return indices_;
 }
 
 
@@ -64,17 +64,11 @@ QualIdent *Typeguard::ident() const {
 }
 
 
-ActualParameters::ActualParameters(const FilePos &pos) :
-        Selector(NodeType::parameter, pos), parameters_() { }
+ActualParameters::ActualParameters(const FilePos &pos, std::vector<std::unique_ptr<ExpressionNode>> parameters) :
+        Selector(NodeType::parameter, pos), parameters_(std::move(parameters)) { }
 
 ActualParameters::~ActualParameters() = default;
 
-void ActualParameters::addActualParameter(std::unique_ptr<ExpressionNode> parameter) {
-    parameters_.push_back(std::move(parameter));
-}
-
-void ActualParameters::moveActualParameters(std::vector<std::unique_ptr<ExpressionNode>> &target) {
-    for (auto& parameter: parameters_) {
-        target.push_back(std::move(parameter));
-    }
+vector<unique_ptr<ExpressionNode>> &ActualParameters::parameters() {
+    return parameters_;
 }

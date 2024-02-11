@@ -179,7 +179,10 @@ void LambdaLifter::visit(ValueReferenceNode &node) {
     for (size_t i = 0; i < node.getSelectorCount(); i++) {
         auto selector = node.getSelector(i);
         if (selector->getType() == NodeType::array_type) {
-            dynamic_cast<ArrayIndex *>(selector)->getExpression()->accept(*this);
+            auto indices = dynamic_cast<ArrayIndex *>(selector);
+            for (auto& index : indices->indices()) {
+                index->accept(*this);
+            }
         }
     }
     node.resolve(env_);

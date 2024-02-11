@@ -49,7 +49,7 @@ unique_ptr<Ident> Parser::ident() {
 unique_ptr<QualIdent> Parser::qualident() {
     logger_.debug("qualident");
     auto qualifier = ident();
-    if (scanner_.peek()->type() == TokenType::period) {
+    if (!sema_.isDefined(qualifier.get()) && scanner_.peek()->type() == TokenType::period) {
         scanner_.next(); // skip the period
         if (assertToken(scanner_.peek(), TokenType::const_ident)) {
             auto identifier = ident();
@@ -95,79 +95,59 @@ unique_ptr<Designator> Parser::designator() {
     return designator;
 }
 
-// TODO selector = "." ident | "[" exp_list "]" | "^" | "(" qualident ")" | actual_parameters .
-// selector = "." ident | "[" expression "]" | "^" | "(" qualident ")" | actual_parameters .
+// selector = "." ident | "[" expression_list "]" | "^" | "(" qualident | [ expression_list ] ")" .
 unique_ptr<Selector> Parser::selector() {
     logger_.debug("selector");
-    unique_ptr<Selector> sel = nullptr;
     auto token = scanner_.peek();
     if (token->type() == TokenType::period) {
         token_ = scanner_.next();
         auto pos = token_->start();
-        sel = make_unique<RecordField>(pos, ident());
+        return make_unique<RecordField>(pos, ident());
     } else if (token->type() == TokenType::lbrack) {
         auto pos = token->start();
         token_ = scanner_.next();
-        auto expr = expression();
-        if (expr) {
-            sel = make_unique<ArrayIndex>(pos, std::move(expr));
-        } else {
+        vector<unique_ptr<ExpressionNode>> expressions;
+        expression_list(expressions);
+        if (expressions.empty()) {
             logger_.error(token_->start(), "expression expected.");
         }
+        auto sel = make_unique<ArrayIndex>(pos, std::move(expressions));
         token_ = scanner_.next();
         if (token_->type() != TokenType::rbrack) {
             logger_.error(token_->start(), "] expected, found " + to_string(token_->type()) + ".");
         }
+        return sel;
     } else if (token->type() == TokenType::caret) {
         token_ = scanner_.next();
-        sel = make_unique<Dereference>(token_->start());
+        return make_unique<Dereference>(token_->start());
     } else if (token->type() == TokenType::lparen) {
-        if (maybe_typeguard()) {
-            token_ = scanner_.next(); // skip "("
+        token_ = scanner_.next(); // skip left parenthesis
+        FilePos start = token_->start();
+        unique_ptr<Selector> sel = nullptr;
+        if (scanner_.peek()->type() == TokenType::const_ident) {
             auto ident = qualident();
             if (sema_.isType(ident.get())) {
-                sel = make_unique<Typeguard>(token_->start(), std::move((ident)));
+                logger_.debug("typeguard");
+                sel = make_unique<Typeguard>(start, std::move(ident));
             } else {
-                sel = make_unique<ActualParameters>(token->start());
-                unique_ptr<ExpressionNode> param;
-                if (sema_.isConstant(ident.get())) {
-                    param = sema_.onConstantReference(ident->start(), ident->end(), make_unique<Designator>(std::move(ident)));
-                } else {
-                    param = sema_.onValueReference(ident->start(), ident->end(), make_unique<Designator>(std::move(ident)));
-                }
-                dynamic_cast<ActualParameters *>(sel.get())->addActualParameter(std::move(param));
-            }
-            token_ = scanner_.next(); // skip ")"
-        } else {
-            sel = make_unique<ActualParameters>(token->start());
-            actual_parameters(dynamic_cast<ActualParameters *>(sel.get()));
-        }
-    } else {
-        logger_.error(token_->start(), "selector expected.");
-    }
-    return sel;
-}
-
-bool Parser::maybe_typeguard() {
-    logger_.debug("maybe_typeguard");
-    // we need a look-ahead of 5 to check whether we have (ident) or (ident.ident)
-    auto peek = scanner_.peek(true);
-    if (peek->type() == TokenType::lparen) {
-        peek = scanner_.peek(true);
-        if (peek->type() == TokenType::const_ident) {
-            peek = scanner_.peek(true);
-            if (peek->type() == TokenType::rparen) {
-                return true;
-            } else if (peek->type() == TokenType::period) {
-                peek = scanner_.peek(true);
-                if (peek->type() == TokenType::const_ident) {
-                    peek = scanner_.peek(true);
-                    return peek->type() == TokenType::rparen;
-                }
+                scanner_.seek(ident->start());
             }
         }
+        if (!sel) {
+            vector<std::unique_ptr<ExpressionNode>> params;
+            auto debug = scanner_.peek()->type();
+            if (debug != TokenType::rparen) {
+                expression_list(params);
+            }
+            logger_.debug("actual_parameters");
+            sel = make_unique<ActualParameters>(start, std::move(params));
+        }
+        token_ = scanner_.next(); // skip right parenthesis
+        assertToken(token_.get(), TokenType::rparen);
+        return sel;
     }
-    return false;
+    logger_.error(token_->start(), "selector expected.");
+    return nullptr;
 }
 
 // ident_list = identdef { "," identdef } .
@@ -852,21 +832,13 @@ unique_ptr<StatementNode> Parser::for_statement() {
                             std::move(stmts));
 }
 
-// actual_parameters = "(" [ expression { "," expression } ] ")" .
-void Parser::actual_parameters(ActualParameters *params) {
-    logger_.debug("actual_parameters");
-    token_ = scanner_.next(); // skip left parenthesis
-    if (scanner_.peek()->type() == TokenType::rparen) {
-        token_ = scanner_.next();
-        return;
-    }
-    params->addActualParameter(expression());
+// expression_list = expression { "," expression } .
+void Parser::expression_list(vector<unique_ptr<ExpressionNode>> &expressions) {
+    expressions.push_back(expression());
     while (scanner_.peek()->type() == TokenType::comma) {
         token_ = scanner_.next(); // skip comma
-        params->addActualParameter(expression());
+        expressions.push_back(expression());
     }
-    token_ = scanner_.next(); // skip right parenthesis
-    assertToken(token_.get(), TokenType::rparen);
 }
 
 // expression = simple_expression [ ( "=" | "#" | "<" | "<=" | ">" | ">=" ) simple_expression ] .

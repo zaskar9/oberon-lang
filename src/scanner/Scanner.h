@@ -24,6 +24,7 @@
 using std::filesystem::path;
 using std::ifstream;
 using std::queue;
+using std::streampos;
 using std::string;
 using std::unique_ptr;
 using std::unordered_map;
@@ -43,7 +44,7 @@ private:
 
     void init();
     void read();
-    FilePos current() const;
+    FilePos current();
     const Token* scanToken();
     const Token* scanIdent();
     const Token* scanNumber();
@@ -53,8 +54,9 @@ private:
 public:
     Scanner(CompilerConfig &config, const path &path);
     ~Scanner();
-    const Token* peek(bool advance = false);
+    const Token* peek(bool = false);
     unique_ptr<const Token> next();
+    void seek(const FilePos &);
 
     static string escape(string str);
     static string unescape(string str);

@@ -178,15 +178,16 @@ void LLVMIRBuilder::visit(ValueReferenceNode &node) {
         indices.push_back(builder_.getInt32(0));
         for (size_t i = 0; i < node.getSelectorCount(); i++) {
             auto sel = node.getSelector(i);
-            if (selector_t->getNodeType() == NodeType::array_type) {
+            if (sel->getType() == NodeType::array_type) {
                 // handle array index access
                 indices.push_back(builder_.getInt32(1));   // the array is the second field in the struct
                 setRefMode(true);
-                dynamic_cast<ArrayIndex*>(sel)->getExpression()->accept(*this);
+                // TODO add support for multi-dimensional arrays
+                dynamic_cast<ArrayIndex*>(sel)->indices()[0]->accept(*this);
                 indices.push_back(value_);
                 restoreRefMode();
                 selector_t = dynamic_cast<ArrayTypeNode*>(selector_t)->getMemberType();
-            } else if (selector_t->getNodeType() == NodeType::record_type) {
+            } else if (sel->getType() == NodeType::record_type) {
                 // handle record field access
                 auto field = dynamic_cast<RecordField *>(sel)->getField();
                 auto record_t = dynamic_cast<RecordTypeNode*>(selector_t);
@@ -197,7 +198,7 @@ void LLVMIRBuilder::visit(ValueReferenceNode &node) {
                     }
                 }
                 selector_t = field->getType();
-            } else if (selector_t->getNodeType() == NodeType::pointer_type) {
+            } else if (sel->getType() == NodeType::pointer_type) {
                 // output the GEP up to the pointer
                 if (indices.size() > 1) {
                     base = builder_.CreateInBoundsGEP(getLLVMType(type), base, indices);
@@ -209,7 +210,7 @@ void LLVMIRBuilder::visit(ValueReferenceNode &node) {
                 selector_t = dynamic_cast<PointerTypeNode *>(selector_t)->getBase();
                 type = selector_t;
             } else {
-                logger_.error(sel->pos(), "unexpected selector.");
+                logger_.error(sel->pos(), "unsupported selector.");
             }
         }
         // clean up

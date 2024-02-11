@@ -48,7 +48,6 @@ private:
     unique_ptr<QualIdent> qualident();
     unique_ptr<Designator> designator();
     unique_ptr<Selector> selector();
-    bool maybe_typeguard();
     unique_ptr<IdentDef> identdef(bool checkAlphaNum = true);
     void ident_list(vector<unique_ptr<IdentDef>> &idents);
 
@@ -66,6 +65,7 @@ private:
     void var_declarations(vector<unique_ptr<VariableDeclarationNode>> &);
     void procedure_declaration(vector<unique_ptr<ProcedureNode>> &);
 
+    void expression_list(vector<unique_ptr<ExpressionNode>> &);
     unique_ptr<ExpressionNode> expression();
     unique_ptr<ExpressionNode> simple_expression();
     unique_ptr<ExpressionNode> term();
@@ -94,7 +94,6 @@ private:
     unique_ptr<StatementNode> while_statement();
     unique_ptr<StatementNode> repeat_statement();
     unique_ptr<StatementNode> for_statement();
-    void actual_parameters(ActualParameters *params);
 
     bool assertToken(const Token *token, TokenType expected);
     bool assertOberonIdent(const Ident *ident);

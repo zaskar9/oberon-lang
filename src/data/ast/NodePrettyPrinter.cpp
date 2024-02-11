@@ -154,14 +154,24 @@ void NodePrettyPrinter::visit(ValueReferenceNode &node) {
         auto selector = node.getSelector(i);
         auto type = selector->getType();
         if (type == NodeType::array_type) {
+            auto indices = dynamic_cast<ArrayIndex *>(selector);
             stream_ << "[";
-            dynamic_cast<ArrayIndex *>(selector)->getExpression()->accept(*this);
+            string sep = "";
+            for (auto& index : indices->indices()) {
+                stream_ << sep;
+                index->accept(*this);
+                sep = ", ";
+            }
             stream_ << "]";
         } else if (type == NodeType::record_type) {
             stream_ << ".";
-            stream_ << dynamic_cast<RecordField *>(selector)->getField()->getIdentifier()->name();
+            stream_ << *dynamic_cast<RecordField *>(selector)->getField()->getIdentifier();
         } else if (type == NodeType::pointer_type) {
             stream_ << "^";
+        } else if (type == NodeType::type) {
+            stream_ << "(";
+            stream_ << *dynamic_cast<Typeguard *>(selector)->ident();
+            stream_ << ")";
         }
     }
 }

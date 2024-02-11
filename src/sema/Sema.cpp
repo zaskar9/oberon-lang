@@ -589,14 +589,14 @@ Sema::onValueReference(const FilePos &start, [[maybe_unused]] const FilePos &end
     auto node = make_unique<ValueReferenceNode>(start, std::move(designator));
     auto ident = node->ident();
     DeclarationNode* sym = symbols_->lookup(ident);
-    if (!sym && ident->isQualified()) {
-        // addresses the fact that 'ident.ident' is ambiguous: 'qual.ident' vs. 'ident.field'.
-        auto qual = dynamic_cast<QualIdent *>(ident);
-        sym = symbols_->lookup(qual->qualifier());
-        if (sym) {
-            node->disqualify();
-        }
-    }
+//    if (!sym && ident->isQualified()) {
+//        // addresses the fact that 'ident.ident' is ambiguous: 'qual.ident' vs. 'ident.field'.
+//        auto qual = dynamic_cast<QualIdent *>(ident);
+//        sym = symbols_->lookup(qual->qualifier());
+//        if (sym) {
+//            node->disqualify();
+//        }
+//    }
     if (sym) {
         if (sym->getNodeType() == NodeType::constant ||
             sym->getNodeType() == NodeType::parameter ||
@@ -649,10 +649,15 @@ Sema::onValueReference(const FilePos &start, [[maybe_unused]] const FilePos &end
                 }
                 if (sel->getType() == NodeType::array_type && type->isArray()) {
                     auto array_t = dynamic_cast<ArrayTypeNode *>(type);
-                    auto expr = dynamic_cast<ArrayIndex*>(sel)->getExpression();
-                    auto sel_type = expr->getType();
-                    if (sel_type && sel_type->kind() != TypeKind::INTEGER) {
-                        logger_.error(sel->pos(), "integer expression expected.");
+                    auto indices = dynamic_cast<ArrayIndex*>(sel);
+                    if (indices->indices().size() > 1) {
+                        logger_.error(indices->pos(), "multi-dimensional arrays are not yet supported.");
+                    }
+                    for (auto& index : indices->indices()) {
+                        auto sel_type = index->getType();
+                        if (sel_type && sel_type->kind() != TypeKind::INTEGER) {
+                            logger_.error(sel->pos(), "integer expression expected.");
+                        }
                     }
                     type = array_t->getMemberType();
                 } else if (sel->getType() == NodeType::record_type && type->isRecord()) {
@@ -710,6 +715,10 @@ Sema::onStringLiteral(const FilePos &start, [[maybe_unused]] const FilePos &end,
 unique_ptr<NilLiteralNode>
 Sema::onNilLiteral(const FilePos &start, [[maybe_unused]] const FilePos &end) {
     return make_unique<NilLiteralNode>(start, symbols_->getNilType());
+}
+
+bool Sema::isDefined(Ident *ident) {
+    return symbols_->lookup(ident) != nullptr;
 }
 
 bool Sema::isConstant(QualIdent *ident) {

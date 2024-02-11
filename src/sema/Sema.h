@@ -152,6 +152,7 @@ public:
     unique_ptr<StringLiteralNode> onStringLiteral(const FilePos &, const FilePos &, const string &);
     unique_ptr<NilLiteralNode> onNilLiteral(const FilePos &, const FilePos &);
 
+    bool isDefined(Ident *);
     bool isConstant(QualIdent *);
     bool isType(QualIdent *);
     bool isVariable(QualIdent *);
