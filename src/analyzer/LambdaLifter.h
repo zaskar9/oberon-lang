@@ -37,7 +37,6 @@ private:
     void visit(TypeDeclarationNode &node) override;
     void visit(VariableDeclarationNode &node) override;
 
-    void visit(TypeReferenceNode &node) override;
     void visit(ValueReferenceNode &node) override;
 
     void visit(BooleanLiteralNode &node) override;

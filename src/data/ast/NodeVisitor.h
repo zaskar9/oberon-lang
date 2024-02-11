@@ -33,7 +33,6 @@ public:
     virtual void visit(VariableDeclarationNode &node) = 0;
 
     virtual void visit(ValueReferenceNode &node) = 0;
-    virtual void visit(TypeReferenceNode &node) = 0;
 
     virtual void visit(BooleanLiteralNode &node) = 0;
     virtual void visit(IntegerLiteralNode &node) = 0;

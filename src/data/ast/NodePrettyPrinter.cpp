@@ -147,7 +147,9 @@ void NodePrettyPrinter::visit(ValueReferenceNode &node) {
         call(node);
         return;
     }
-    stream_ << *node.ident();
+    // TODO Remove work-around once ValueReference::resolve() does update Designator
+    // stream_ << *node.ident();
+    stream_ << *node.dereference()->getIdentifier();
     for (size_t i = 0; i < node.getSelectorCount(); i++) {
         auto selector = node.getSelector(i);
         auto type = selector->getType();
@@ -162,10 +164,6 @@ void NodePrettyPrinter::visit(ValueReferenceNode &node) {
             stream_ << "^";
         }
     }
-}
-
-void NodePrettyPrinter::visit(TypeReferenceNode &node) {
-    stream_ << "(* -> *)" << *node.getIdentifier();
 }
 
 void NodePrettyPrinter::visit(ConstantDeclarationNode &node) {
@@ -309,7 +307,7 @@ void NodePrettyPrinter::visit(IfThenElseNode &node) {
         indent();
         node.getElseIf(i)->accept(*this);
     }
-    if (node.getElseStatements() != nullptr) {
+    if (node.hasElse()) {
         indent();
         stream_ << "ELSE" << std::endl;
         indent_ += TAB_WIDTH;

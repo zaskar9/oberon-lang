@@ -19,7 +19,7 @@ class TypeNode;
 class DeclarationNode : public Node {
 
 private:
-    std::unique_ptr<Ident> ident_;
+    std::unique_ptr<Ident> ident_;   // TODO IdentDef?
     TypeNode *type_;
     unsigned int index_;
     unsigned int level_;

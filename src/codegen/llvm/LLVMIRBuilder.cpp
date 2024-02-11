@@ -225,10 +225,6 @@ void LLVMIRBuilder::visit(ValueReferenceNode &node) {
     }
 }
 
-void LLVMIRBuilder::visit([[maybe_unused]] TypeReferenceNode &node) {
-    // Node does not need code generation.
-}
-
 void LLVMIRBuilder::visit([[maybe_unused]] ConstantDeclarationNode &node) {
     // Node does not need code generation.
 }

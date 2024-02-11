@@ -27,32 +27,6 @@ public:
 };
 
 
-class TypeReferenceNode final : public TypeNode, public NodeReference {
-
-private:
-    std::unique_ptr<Ident> ident_;  // required for memory management
-    TypeNode *node_;
-
-public:
-    explicit TypeReferenceNode(const FilePos &pos, std::unique_ptr<Ident> ident) :
-            TypeNode(NodeType::type_reference, pos, ident.get(), TypeKind::NOTYPE, 0),
-            NodeReference(), ident_(std::move(ident)), node_() {};
-    ~TypeReferenceNode() final = default;
-
-    [[nodiscard]] bool isResolved() const final;
-    [[nodiscard]] TypeNode *dereference() const final;
-
-    void resolve(TypeNode *node);
-
-    [[nodiscard]] TypeKind kind() const final;
-    [[nodiscard]] unsigned int getSize() const final;
-
-    void accept(NodeVisitor &visitor) final;
-    void print(std::ostream &stream) const final;
-
-};
-
-
 class Selector;
 
 class Designator {
@@ -116,11 +90,13 @@ private:
     DeclarationNode *node_;
 
 public:
-    explicit ValueReferenceNode(const FilePos &pos, std::unique_ptr<Designator> designator) :
+    // ctor for parser / sema
+    ValueReferenceNode(const FilePos &pos, std::unique_ptr<Designator> designator) :
             ExpressionNode(NodeType::value_reference, pos, nullptr),
             ProcedureNodeReference(std::move(designator)),
             node_() {};
-    explicit ValueReferenceNode(const FilePos &pos, DeclarationNode *node);
+    // ctor for transformer
+    ValueReferenceNode(const FilePos &pos, DeclarationNode *node);
     ~ValueReferenceNode() override = default;
 
     [[nodiscard]] FilePos pos() override { return ExpressionNode::pos(); };

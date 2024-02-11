@@ -11,41 +11,6 @@
 NodeReference::~NodeReference() = default;
 
 
-bool TypeReferenceNode::isResolved() const {
-    return (node_ != nullptr);
-}
-
-void TypeReferenceNode::resolve(TypeNode *node) {
-    node_ = node;
-}
-
-TypeNode *TypeReferenceNode::dereference() const {
-    return node_;
-}
-
-TypeKind TypeReferenceNode::kind() const {
-    if (node_) {
-        return node_->kind();
-    }
-    return TypeNode::kind();
-}
-
-unsigned int TypeReferenceNode::getSize() const {
-    if (node_) {
-        return node_->getSize();
-    }
-    return TypeNode::getSize();
-}
-
-void TypeReferenceNode::accept(NodeVisitor &visitor) {
-    visitor.visit(*this);
-}
-
-void TypeReferenceNode::print(std::ostream &stream) const {
-    stream << *dereference();
-}
-
-
 Designator::~Designator() = default;
 
 QualIdent *Designator::ident() const {
@@ -82,7 +47,7 @@ void Designator::disqualify() {
         auto pos = ident_->start();
         pos.charNo += ((int) qual->qualifier().size()) + 1;
         auto field = std::make_unique<QualIdent>(pos, EMPTY_POS, qual->name());
-        // TODO no AST node creation outside sema
+        // TODO no AST node creation outside sema!
         this->insertSelector(0, std::make_unique<RecordField>(field->start(), std::move(field)));
         ident_ = std::make_unique<QualIdent>(qual->qualifier());
     }
@@ -135,6 +100,7 @@ void ValueReferenceNode::resolve(DeclarationNode *node) {
         this->setNodeType(NodeType::procedure_call);
     }
     this->setType(type);
+    // TODO this method should also update the designator to match the new declaration
 }
 
 bool ValueReferenceNode::isResolved() const {

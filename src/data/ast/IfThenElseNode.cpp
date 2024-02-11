@@ -53,7 +53,7 @@ size_t IfThenElseNode::getElseIfCount() const {
 }
 
 bool IfThenElseNode::hasElseIf() const {
-    return elseIfs_.size() > 0;
+    return !elseIfs_.empty();
 }
 
 StatementSequenceNode* IfThenElseNode::addElseStatements(const FilePos pos) {
@@ -66,7 +66,7 @@ StatementSequenceNode* IfThenElseNode::getElseStatements() const {
 }
 
 bool IfThenElseNode::hasElse() const {
-    return elseStatements_ != nullptr;
+    return elseStatements_->getStatementCount() > 0;
 }
 
 void IfThenElseNode::accept(NodeVisitor& visitor) {

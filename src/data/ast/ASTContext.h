@@ -33,14 +33,13 @@ private:
     vector<unique_ptr<RecordTypeNode>> record_ts_;
     vector<unique_ptr<PointerTypeNode>> pointer_ts_;
     vector<unique_ptr<ProcedureTypeNode>> procedure_ts;
-    vector<unique_ptr<TypeReferenceNode>> references_;
     vector<unique_ptr<ModuleNode>> ext_modules_;
     vector<ProcedureNode*> ext_procedures_;
 
 public:
     explicit ASTContext(const path &file) : file_(file), module_(),
             array_ts_(), record_ts_(), pointer_ts_(), procedure_ts(),
-            references_(), ext_modules_(), ext_procedures_() {};
+            ext_modules_(), ext_procedures_() {};
     ~ASTContext() = default;
 
     [[nodiscard]] const path &getSourceFileName() const;
