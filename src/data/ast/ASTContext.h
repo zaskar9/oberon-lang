@@ -5,8 +5,12 @@
 #ifndef OBERON_LANG_ASTCONTEXT_H
 #define OBERON_LANG_ASTCONTEXT_H
 
+
+#include <filesystem>
 #include <memory>
+#include <string>
 #include <vector>
+
 #include "TypeNode.h"
 #include "ArrayTypeNode.h"
 #include "ModuleNode.h"
@@ -15,12 +19,15 @@
 #include "ProcedureTypeNode.h"
 #include "RecordTypeNode.h"
 
+using std::filesystem::path;
+using std::string;
 using std::unique_ptr;
 using std::vector;
 
 class ASTContext {
 
 private:
+    path file_;
     unique_ptr<ModuleNode> module_;
     vector<unique_ptr<ArrayTypeNode>> array_ts_;
     vector<unique_ptr<RecordTypeNode>> record_ts_;
@@ -31,17 +38,20 @@ private:
     vector<ProcedureNode*> ext_procedures_;
 
 public:
-    [[nodiscard]] ModuleNode *getTranslationUnit();
-    void setTranslationUnit(unique_ptr<ModuleNode>);
+    explicit ASTContext(const path &file) : file_(file), module_(),
+            array_ts_(), record_ts_(), pointer_ts_(), procedure_ts(),
+            references_(), ext_modules_(), ext_procedures_() {};
+    ~ASTContext() = default;
 
+    [[nodiscard]] const path &getSourceFileName() const;
+
+    [[nodiscard]] ModuleNode *getTranslationUnit() const;
+    void setTranslationUnit(unique_ptr<ModuleNode>);
 
     ArrayTypeNode *getOrInsertArrayType(Ident *, unsigned int, TypeNode *);
     RecordTypeNode *getOrInsertRecordType(Ident *, vector<unique_ptr<FieldNode>>);
     PointerTypeNode *getOrInsertPointerType(Ident *, TypeNode *);
     ProcedureTypeNode *getOrInsertProcedureType(Ident *, vector<unique_ptr<ParameterNode>>, TypeNode *);
-
-    [[deprecated]]
-    TypeReferenceNode *getOrInsertTypeReference(unique_ptr<QualIdent>);
 
     // mainly for memory management as an anchor for smart pointers
     void addExternalModule(unique_ptr<ModuleNode> module);

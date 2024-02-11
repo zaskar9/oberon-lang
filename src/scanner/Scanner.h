@@ -8,10 +8,7 @@
 #define OBERON0C_SCANNER_H
 
 
-#include "Token.h"
-#include "LiteralToken.h"
-#include "logging/Logger.h"
-#include <boost/filesystem.hpp>
+#include <filesystem>
 #include <fstream>
 #include <sstream>
 #include <memory>
@@ -19,19 +16,30 @@
 #include <string>
 #include <unordered_map>
 
-namespace fs = boost::filesystem;
+#include "Token.h"
+#include "LiteralToken.h"
+#include "compiler/CompilerConfig.h"
+#include "logging/Logger.h"
+
+using std::filesystem::path;
+using std::ifstream;
+using std::queue;
+using std::string;
+using std::unique_ptr;
+using std::unordered_map;
 
 class Scanner {
 
 private:
-    Logger *logger_;
-    const fs::path &path_;
-    std::queue<const Token*> tokens_;
+    CompilerConfig &config_;
+    Logger &logger_;
+    const path &path_;
+    queue<const Token*> tokens_;
     int lineNo_, charNo_;
     char ch_;
     bool eof_;
-    std::unordered_map<std::string, TokenType> keywords_;
-    std::ifstream file_;
+    unordered_map<string, TokenType> keywords_;
+    ifstream file_;
 
     void init();
     void read();
@@ -43,13 +51,13 @@ private:
     void scanComment();
 
 public:
-    Scanner(Logger *logger, const fs::path &path);
+    Scanner(CompilerConfig &config, const path &path);
     ~Scanner();
     const Token* peek(bool advance = false);
-    std::unique_ptr<const Token> next();
+    unique_ptr<const Token> next();
 
-    static std::string escape(std::string str);
-    static std::string unescape(std::string str);
+    static string escape(string str);
+    static string unescape(string str);
 
 };
 

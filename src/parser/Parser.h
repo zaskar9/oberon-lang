@@ -27,7 +27,7 @@
 #include "data/ast/StatementSequenceNode.h"
 #include "data/ast/NodeReference.h"
 #include "data/symtab/SymbolTable.h"
-#include "compiler/CompilerFlags.h"
+#include "compiler/CompilerConfig.h"
 #include "data/ast/ASTContext.h"
 #include "sema/Sema.h"
 
@@ -38,10 +38,10 @@ using std::vector;
 class Parser {
 
 private:
-    CompilerFlags *flags_;
-    Scanner *scanner_;
-    Sema *sema_;
-    Logger *logger_;
+    CompilerConfig &config_;
+    Scanner &scanner_;
+    Sema &sema_;
+    Logger &logger_;
     unique_ptr<const Token> token_;
 
     unique_ptr<Ident> ident();
@@ -102,8 +102,8 @@ private:
     void resync(set<TokenType> types);
 
 public:
-    explicit Parser(CompilerFlags *flags, Scanner *scanner, Sema *sema, Logger *logger) :
-            flags_(flags), scanner_(scanner), sema_(sema), logger_(logger), token_() { };
+    explicit Parser(CompilerConfig &config, Scanner &scanner, Sema &sema) :
+            config_(config), scanner_(scanner), sema_(sema), logger_(config_.logger()), token_() { };
     ~Parser() = default;
 
     void parse(ASTContext *context);

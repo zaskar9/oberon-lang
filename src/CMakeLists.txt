@@ -70,7 +70,7 @@ set(CODEGEN_SOURCES
         codegen/llvm/LLVMCodeGen.cpp codegen/llvm/LLVMCodeGen.h)
 
 set(COMPILER_SOURCES
-        compiler/CompilerFlags.cpp compiler/CompilerFlags.h
+        compiler/CompilerConfig.cpp compiler/CompilerConfig.h
         compiler/CompilationStatus.cpp compiler/CompilationStatus.h
         compiler/Compiler.cpp compiler/Compiler.h)
 
@@ -124,9 +124,10 @@ endif ()
 
 
 set(GRAMMAR_SOURCES
+        compiler/CompilerConfig.cpp compiler/CompilerConfig.h
         grammar/Grammar.cpp grammar/Grammar.h
         grammar/Validator.cpp grammar/Validator.h
-        grammar/Loader.cpp grammar/Loader.h codegen/CodeGen.h)
+        grammar/Loader.cpp grammar/Loader.h)
 
 add_executable(${GRAMMAR_TOOL} grammar/main.cpp ${GRAMMAR_SOURCES} ${SCANNER_SOURCES} ${LOGGING_SOURCES})
 

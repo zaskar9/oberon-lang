@@ -10,8 +10,8 @@
 const std::string LambdaLifter::THIS_ = "_this";
 const std::string LambdaLifter::SUPER_ = "_super";
 
-void LambdaLifter::run(Logger *logger, Node *node) {
-    if (logger->getErrorCount() == 0) {
+void LambdaLifter::run(Logger &logger, Node *node) {
+    if (logger.getErrorCount() == 0) {
         node->accept(*this);
     }
 }

@@ -16,7 +16,7 @@
 #include <llvm/IR/Module.h>
 
 #include "data/ast/ASTContext.h"
-#include "compiler/CompilerFlags.h"
+#include "compiler/CompilerConfig.h"
 #include "data/ast/NodeVisitor.h"
 #include "logging/Logger.h"
 
@@ -25,8 +25,8 @@ using namespace llvm;
 class LLVMIRBuilder final : private NodeVisitor {
 
 private:
-    CompilerFlags *flags_;
-    Logger *logger_;
+    CompilerConfig &config_;
+    Logger &logger_;
     IRBuilder<> builder_;
     Module *module_;
     Value *value_;
@@ -97,7 +97,7 @@ private:
     void visit(ReturnNode &node) override;
 
 public:
-    LLVMIRBuilder(CompilerFlags *flags, Logger *logger, LLVMContext &builder, Module *module);
+    LLVMIRBuilder(CompilerConfig &config, LLVMContext &builder, Module *module);
     ~LLVMIRBuilder() override = default;
 
     void build(ASTContext *ast);

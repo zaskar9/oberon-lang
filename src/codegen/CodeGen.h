@@ -9,7 +9,7 @@
 #include <boost/filesystem.hpp>
 
 #include "global.h"
-#include "compiler/CompilerFlags.h"
+#include "compiler/CompilerConfig.h"
 #include "data/ast/ASTContext.h"
 
 class CodeGen {
@@ -19,7 +19,7 @@ public:
 
     virtual std::string getDescription() = 0;
 
-    virtual void configure(CompilerFlags *flags) = 0;
+    virtual void configure() = 0;
 
     virtual void generate(ASTContext *ast, boost::filesystem::path path) = 0;
 #ifndef _LLVM_LEGACY

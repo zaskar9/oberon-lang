@@ -8,9 +8,10 @@
 #include "system/PredefinedProcedure.h"
 #include <llvm/IR/Verifier.h>
 
-LLVMIRBuilder::LLVMIRBuilder(CompilerFlags *flags, Logger *logger, LLVMContext &builder, Module *module) :
-        NodeVisitor(), flags_(flags), logger_(logger), builder_(builder), module_(module), value_(), values_(),
-        types_(), functions_(), strings_(), deref_ctx(), level_(0), function_(), attrs_(AttrBuilder(builder)) {
+LLVMIRBuilder::LLVMIRBuilder(CompilerConfig &config, LLVMContext &builder, Module *module) :
+        NodeVisitor(), config_(config), logger_(config_.logger()), builder_(builder), module_(module),
+        value_(), values_(), types_(), functions_(), strings_(), deref_ctx(), level_(0), function_(),
+        attrs_(AttrBuilder(builder)) {
     attrs_
         .addAttribute(Attribute::NoInline)
         .addAttribute(Attribute::NoUnwind)
@@ -80,7 +81,7 @@ void LLVMIRBuilder::visit(ModuleNode &node) {
         builder_.CreateRet(builder_.getInt32(0));
     }
     // generate main to enable linking of executable
-    if (flags_->hasFlag(Flag::ENABLE_MAIN)) {
+    if (config_.hasFlag(Flag::ENABLE_MAIN)) {
         auto main = module_->getOrInsertFunction("main", builder_.getInt32Ty());
         function_ = ::cast<Function>(main.getCallee());
         entry = BasicBlock::Create(builder_.getContext(), "entry", function_);
@@ -97,7 +98,7 @@ void LLVMIRBuilder::visit(ProcedureNode &node) {
         return;
     }
     if (node.getProcedureCount() > 0) {
-        logger_->error(node.pos(), "found unsupported nested procedures in " + to_string(node.getIdentifier()) + ".");
+        logger_.error(node.pos(), "found unsupported nested procedures in " + to_string(node.getIdentifier()) + ".");
     }
     function_ = functions_[&node];
     function_->addFnAttrs(attrs_);
@@ -131,7 +132,7 @@ void LLVMIRBuilder::visit(ProcedureNode &node) {
     auto block = builder_.GetInsertBlock();
     if (block->getTerminator() == nullptr) {
         if (node.getReturnType() != nullptr && !block->empty()) {
-            logger_->error(node.pos(),
+            logger_.error(node.pos(),
                            "function \"" + to_string(node.getIdentifier()) + "\" has no return statement.");
         } else {
             builder_.CreateUnreachable();
@@ -147,7 +148,7 @@ void LLVMIRBuilder::visit(ImportNode &node) {
     if (fun) {
         value_ = builder_.CreateCall(fun, {});
     } else {
-        logger_->error(node.pos(), "undefined procedure: " + name + ".");
+        logger_.error(node.pos(), "undefined procedure: " + name + ".");
     }
 }
 
@@ -163,9 +164,9 @@ void LLVMIRBuilder::visit(ValueReferenceNode &node) {
     } else if (level == level_) /* same procedure level */ {
         value_ = values_[ref];
     } else if (level > level_) /* parent procedure level */ {
-        logger_->error(ref->pos(), "referencing variables of parent procedures is not yet supported.");
+        logger_.error(ref->pos(), "referencing variables of parent procedures is not yet supported.");
     } else /* error */ {
-        logger_->error(ref->pos(), "cannot reference variable of child procedure.");
+        logger_.error(ref->pos(), "cannot reference variable of child procedure.");
     }
     auto type = ref->getType();
     if (type->getNodeType() == NodeType::array_type ||
@@ -208,7 +209,7 @@ void LLVMIRBuilder::visit(ValueReferenceNode &node) {
                 selector_t = dynamic_cast<PointerTypeNode *>(selector_t)->getBase();
                 type = selector_t;
             } else {
-                logger_->error(sel->pos(), "unexpected selector.");
+                logger_.error(sel->pos(), "unexpected selector.");
             }
         }
         // clean up
@@ -305,10 +306,10 @@ void LLVMIRBuilder::visit(UnaryExpressionNode &node) {
         case OperatorType::LEQ:
         case OperatorType::GEQ:
             value_ = nullptr;
-            logger_->error(node.pos(), "binary operator in unary expression.");
+            logger_.error(node.pos(), "binary operator in unary expression.");
             break;
         default: value_ = nullptr;
-            logger_->error(node.pos(), "unknown operator,");
+            logger_.error(node.pos(), "unknown operator,");
             break;
     }
 }
@@ -398,11 +399,11 @@ void LLVMIRBuilder::visit(BinaryExpressionNode &node) {
             case OperatorType::NOT:
             case OperatorType::NEG:
                 value_ = nullptr;
-                logger_->error(node.pos(), "unary operator in binary expression.");
+                logger_.error(node.pos(), "unary operator in binary expression.");
                 break;
             default:
                 value_ = nullptr;
-                logger_->error(node.pos(), "unknown operator.");
+                logger_.error(node.pos(), "unknown operator.");
                 break;
         }
     }
@@ -673,7 +674,7 @@ Value *LLVMIRBuilder::callPredefined(ProcedureNodeReference &node, std::vector<V
         Value *delta;
         if (params.size() > 2) {
             auto param = node.getActualParameter(2);
-            logger_->error(param->pos(), "more actual than formal parameters.");
+            logger_.error(param->pos(), "more actual than formal parameters.");
             return value_;
         } else if (params.size() > 1) {
             auto source = params[1]->getType();
@@ -741,7 +742,7 @@ Value *LLVMIRBuilder::callPredefined(ProcedureNodeReference &node, std::vector<V
         value_ = builder_.CreateLoad(builder_.getInt64Ty(), params[0]);
         return value_;
     } else {
-        logger_->error(node.pos(), "unsupported predefined procedure: " + to_string(*proc->getIdentifier()) + ".");
+        logger_.error(node.pos(), "unsupported predefined procedure: " + to_string(*proc->getIdentifier()) + ".");
         // to generate correct LLVM IR, the current value is returned (no-op).
         return value_;
     }
@@ -764,7 +765,7 @@ void LLVMIRBuilder::call(ProcedureNodeReference &node) {
         if (fun) {
             value_ = builder_.CreateCall(fun, params);
         } else {
-            logger_->error(node.pos(), "undefined procedure: " + to_string(*ident) + ".");
+            logger_.error(node.pos(), "undefined procedure: " + to_string(*ident) + ".");
         }
     }
 }
@@ -772,7 +773,7 @@ void LLVMIRBuilder::call(ProcedureNodeReference &node) {
 void LLVMIRBuilder::proc(ProcedureNode &node) {
     auto name = qualifiedName(node.getIdentifier(), node.isExtern());
     if (module_->getFunction(name)) {
-        logger_->error(node.pos(), "Function " + name + " already defined.");
+        logger_.error(node.pos(), "Function " + name + " already defined.");
         return;
     }
     std::vector<Type*> params;
@@ -844,7 +845,7 @@ Type* LLVMIRBuilder::getLLVMType(TypeNode *type) {
         types_[type] = result;
     }
     if (result == nullptr) {
-        logger_->error(type->pos(), "cannot map type to LLVM intermediate representation.");
+        logger_.error(type->pos(), "cannot map type to LLVM intermediate representation.");
         exit(1);
     }
     return result;

@@ -23,8 +23,8 @@ int mingw_noop_main(void);
 class LLVMCodeGen final : public CodeGen {
 
 private:
-    CompilerFlags *flags_;
-    Logger *logger_;
+    CompilerConfig &config_;
+    Logger &logger_;
     OutputFileType type_;
     llvm::LLVMContext ctx_;
     llvm::PassBuilder pb_;
@@ -37,12 +37,12 @@ private:
     static std::string getLibName(const std::string &name, bool dylib, const llvm::Triple &triple);
 
 public:
-    LLVMCodeGen(CompilerFlags *flags, Logger *logger);
+    LLVMCodeGen(CompilerConfig &config);
     ~LLVMCodeGen() override = default;
 
     std::string getDescription() final;
 
-    void configure(CompilerFlags *flags) final;
+    void configure() final;
 
     void generate(ASTContext *ast, boost::filesystem::path path) final;
 #ifndef _LLVM_LEGACY

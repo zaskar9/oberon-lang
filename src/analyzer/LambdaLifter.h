@@ -72,7 +72,7 @@ public:
     explicit LambdaLifter(ASTContext *context) : context_(context), module_(), env_(), level_() { };
     ~LambdaLifter() override = default;
 
-    void run(Logger *logger, Node* node) override;
+    void run(Logger &logger, Node* node) override;
 
 };
 

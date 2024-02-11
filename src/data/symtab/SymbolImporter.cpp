@@ -4,6 +4,7 @@
 
 #include "SymbolImporter.h"
 
+#include <filesystem>
 #include <memory>
 #include <string>
 
@@ -19,20 +20,21 @@ std::unique_ptr<ModuleNode> SymbolImporter::read(const string &module, SymbolTab
     return read(module, module, symbols);
 }
 
-unique_ptr<ModuleNode> SymbolImporter::read(const string &alias, const std::string &name, SymbolTable *symbols) {
-    auto include = boost::filesystem::path(name).replace_extension("smb");
-    auto fp = path_ / include;
-    if (!boost::filesystem::exists(fp)) {
-        logger_->debug("Symbol file not found: '" + fp.string() + "'.");
-        auto opt = flags_->findInclude(include);
+unique_ptr<ModuleNode> SymbolImporter::read(const string &alias, const string &name, SymbolTable *symbols) {
+    auto path = context_->getSourceFileName().parent_path();
+    auto fp = (path / name).replace_extension(".smb");
+    auto include = fp.filename();
+    if (!std::filesystem::exists(fp)) {
+        logger_.debug("Symbol file not found: '" + fp.string() + "'.");
+        auto opt = config_.findInclude(include);
         if (opt.has_value()) {
             fp = opt.value();
         } else {
-            logger_->debug("Symbol file not found: '" + include.string() + "'.");
+            logger_.debug("Symbol file not found: '" + include.string() + "'.");
             return nullptr;
         }
     }
-    logger_->debug("Symbol file found: '" + fp.string() + "'.");
+    logger_.debug("Symbol file found: '" + fp.string() + "'.");
     auto file = std::make_unique<SymbolFile>();
     file->open(fp.string(), std::ios::in);
 
@@ -41,26 +43,21 @@ unique_ptr<ModuleNode> SymbolImporter::read(const string &alias, const std::stri
     [[maybe_unused]] auto ident = file->readString();
     auto version = file->readChar();
     if (version != SymbolFile::VERSION) {
-        logger_->error(fp.string(), "Wrong symbol file version.");
+        logger_.error(fp.string(), "Wrong symbol file version.");
         return nullptr;
     }
 #ifdef _DEBUG
     std::cout << std::endl;
 #endif
-
     // create namespace for name
     symbols_ = symbols;
     symbols_->createNamespace(alias);
-    // module_ = std::make_unique<ModuleNode>(EMPTY_POS, std::make_unique<Ident>(name));
-    // module_->setAlias(alias);
-    vector<unique_ptr<ConstantDeclarationNode>> consts;
-    vector<unique_ptr<TypeDeclarationNode>> types;
-    vector<unique_ptr<VariableDeclarationNode>> vars;
-    vector<unique_ptr<ProcedureNode>> procs;
+    auto module = std::make_unique<ModuleNode>(std::make_unique<Ident>(name));
+    module->setAlias(alias);
     auto ch = file->readChar();
     while (ch != 0 && !file->eof()) {
         auto nodeType = (NodeType) ch;
-        readDeclaration(file.get(), nodeType, alias, name, consts, types, vars, procs);
+        readDeclaration(file.get(), nodeType, module.get());
 #ifdef _DEBUG
         std::cout << std::endl;
 #endif
@@ -72,27 +69,16 @@ unique_ptr<ModuleNode> SymbolImporter::read(const string &alias, const std::stri
 #endif
     file->flush();
     file->close();
-
-    auto module = make_unique<ModuleNode>(std::make_unique<Ident>(name),
-                                          std::move(consts), std::move(types), std::move(vars), std::move(procs));
-    module->setAlias(alias);
-
 #ifdef _DEBUG
     auto printer = std::make_unique<NodePrettyPrinter>(std::cout);
     printer->print(module.get());
 #endif
-
     return module;
 }
 
-void SymbolImporter::readDeclaration(SymbolFile *file, NodeType nodeType,
-                                     const string &alias, const string &module,
-                                     vector<unique_ptr<ConstantDeclarationNode>> &consts,
-                                     vector<unique_ptr<TypeDeclarationNode>> &types,
-                                     vector<unique_ptr<VariableDeclarationNode>> &vars,
-                                     vector<unique_ptr<ProcedureNode>> &procs) {
+void SymbolImporter::readDeclaration(SymbolFile *file, NodeType nodeType, ModuleNode *module) {
     auto name = file->readString();
-    auto ident = std::make_unique<QualIdent>(module, name);
+    auto ident = std::make_unique<QualIdent>(module->getIdentifier()->name(), name);
     auto type = readType(file);
     if (nodeType == NodeType::constant) {
         auto kind = type->kind();
@@ -118,28 +104,28 @@ void SymbolImporter::readDeclaration(SymbolFile *file, NodeType nodeType,
                     expr = std::make_unique<RealLiteralNode>(EMPTY_POS, file->readDouble(), type);
                     break;
                 default:
-                    logger_->error(file->path(), "Cannot import constant " + name + ".");
+                    logger_.error(file->path(), "Cannot import constant " + name + ".");
             }
             if (expr) {
                 auto decl = std::make_unique<ConstantDeclarationNode>(EMPTY_POS, std::move(ident), std::move(expr));
-                symbols_->import(alias, name, decl.get());
-                consts.push_back(std::move(decl));
+                symbols_->import(module->getAlias(), name, decl.get());
+                module->constants().push_back(std::move(decl));
             }
         }
     } else if (nodeType == NodeType::type) {
         auto decl = std::make_unique<TypeDeclarationNode>(EMPTY_POS, std::move(ident), type);
-        symbols_->import(alias, name, decl.get());
-        types.push_back(std::move(decl));
+        symbols_->import(module->getAlias(), name, decl.get());
+        module->types().push_back(std::move(decl));
     } else if (nodeType == NodeType::variable) {
         // read in export number
         [[maybe_unused]] auto exno = file->readInt();
         auto decl = std::make_unique<VariableDeclarationNode>(EMPTY_POS, std::move(ident), type);
-        symbols_->import(alias, name, decl.get());
-        vars.push_back(std::move(decl));
+        symbols_->import(module->getAlias(), name, decl.get());
+        module->variables().push_back(std::move(decl));
     } else if (nodeType == NodeType::procedure) {
         auto decl = std::make_unique<ProcedureNode>(std::move(ident), dynamic_cast<ProcedureTypeNode *>(type), true);
-        symbols_->import(alias, name, decl.get());
-        procs.push_back(std::move(decl));
+        symbols_->import(module->getAlias(), name, decl.get());
+        module->procedures().push_back(std::move(decl));
     }
 }
 
@@ -158,7 +144,7 @@ TypeNode *SymbolImporter::readType(SymbolFile *file) {
         type = readArrayType(file);
     } else if (kind == TypeKind::POINTER) {
         // TODO import pointer type
-        logger_->error(file->path(), "export of pointer type kind not yet supported.");
+        logger_.error(file->path(), "export of pointer type kind not yet supported.");
     } else if (kind == TypeKind::PROCEDURE) {
         type = readProcedureType(file);
     } else if (kind == TypeKind::RECORD) {

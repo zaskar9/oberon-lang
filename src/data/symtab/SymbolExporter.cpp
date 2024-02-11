@@ -6,7 +6,8 @@
 
 void SymbolExporter::write(const std::string &name, SymbolTable *symbols) {
     ref_ = ((int) TypeKind::STRING) + 1;
-    auto fp = (path_ / name).replace_extension(".smb");
+    auto path = context_->getSourceFileName().parent_path();
+    auto fp = (path / name).replace_extension(".smb");
     auto file = std::make_unique<SymbolFile>();
     file->open(fp.string(), std::ios::out);
     // write symbol file header
@@ -74,7 +75,7 @@ void SymbolExporter::writeDeclaration(SymbolFile *file, DeclarationNode *decl) {
                     file->writeDouble(dynamic_cast<RealLiteralNode*>(con->getValue())->value());
                     break;
                 default:
-                    logger_->error(file->path(), "Cannot export constant " + to_string(*decl->getIdentifier()) + ".");
+                    logger_.error(file->path(), "Cannot export constant " + to_string(*decl->getIdentifier()) + ".");
             }
         }
     } else if (nodeType == NodeType::variable) {
@@ -109,7 +110,7 @@ void SymbolExporter::writeType(SymbolFile *file, TypeNode *type) {
             break;
         case TypeKind::POINTER:
             // TODO export pointer type
-            logger_->error(type->pos(), "export of pointer type kind not yet supported.");
+            logger_.error(type->pos(), "export of pointer type kind not yet supported.");
             break;
         case TypeKind::PROCEDURE:
             writeProcedureType(file, dynamic_cast<ProcedureTypeNode*>(type));

@@ -28,25 +28,14 @@ private:
 
 public:
     // ctor for use in sema / parser
-    ModuleNode(const FilePos &pos,
-               unique_ptr<Ident> name,
-               vector<unique_ptr<ImportNode>> imports,
-               vector<unique_ptr<ConstantDeclarationNode>> consts,
-               vector<unique_ptr<TypeDeclarationNode>> types,
-               vector<unique_ptr<VariableDeclarationNode>> vars,
-               vector<unique_ptr<ProcedureNode>> procs,
-               unique_ptr<StatementSequenceNode> stmts) :
+    ModuleNode(const FilePos &pos, unique_ptr<Ident> name, vector<unique_ptr<ImportNode>> imports) :
             DeclarationNode(NodeType::module, pos, std::move(name), nullptr),
-            BlockNode(std::move(consts), std::move(types), std::move(vars), std::move(procs), std::move(stmts)),
+            BlockNode(),
             alias_(), imports_(std::move(imports)) {};
     // ctor for use in symbol importer
-    explicit ModuleNode(unique_ptr<Ident> name,
-                        vector<unique_ptr<ConstantDeclarationNode>> consts,
-                        vector<unique_ptr<TypeDeclarationNode>> types,
-                        vector<unique_ptr<VariableDeclarationNode>> vars,
-                        vector<unique_ptr<ProcedureNode>> procs) :
+    explicit ModuleNode(unique_ptr<Ident> name) :
             DeclarationNode(NodeType::module, EMPTY_POS, std::move(name), nullptr),
-            BlockNode(std::move(consts), std::move(types), std::move(vars), std::move(procs), make_unique<StatementSequenceNode>(EMPTY_POS)),
+            BlockNode(),
             alias_(), imports_() {};
     ~ModuleNode() override = default;
 
