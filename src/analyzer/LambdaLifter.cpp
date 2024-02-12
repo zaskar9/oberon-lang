@@ -54,15 +54,17 @@ void LambdaLifter::visit(ProcedureNode &node) {
     bool is_super = node.getProcedureCount();
     if (is_super) /* super procedure */ {
         if (node.getFormalParameterCount() > 0 || node.getVariableCount() > 0) {
-            auto identifier = make_unique<Ident>("_T" + node.getIdentifier()->name());
+            auto identifier = make_unique<IdentDef>("_T" + node.getIdentifier()->name());
             vector<unique_ptr<FieldNode>> fields;
             for (size_t i = 0; i < node.getFormalParameterCount(); i++) {
                 auto param = node.getFormalParameter(i);
-                fields.push_back(make_unique<FieldNode>(EMPTY_POS, make_unique<Ident>(param->getIdentifier()->name()), param->getType()));
+                auto ident = make_unique<IdentDef>(param->getIdentifier()->name());
+                fields.push_back(make_unique<FieldNode>(EMPTY_POS, std::move(ident), param->getType()));
             }
             for (size_t i = 0; i < node.getVariableCount(); i++) {
                 auto var = node.getVariable(i);
-                fields.push_back(make_unique<FieldNode>(EMPTY_POS, make_unique<Ident>(var->getIdentifier()->name()), var->getType()));
+                auto ident = make_unique<IdentDef>(var->getIdentifier()->name());
+                fields.push_back(make_unique<FieldNode>(EMPTY_POS, std::move(ident), var->getType()));
             }
             auto type = context_->getOrInsertRecordType(identifier.get(), std::move(fields));
             auto decl = make_unique<TypeDeclarationNode>(EMPTY_POS, std::move(identifier), type);
@@ -75,7 +77,7 @@ void LambdaLifter::visit(ProcedureNode &node) {
                 proc->addFormalParameter(std::move(param));
             }
             // create local variable to manage for the procedure's environment (this)
-            auto var = make_unique<VariableDeclarationNode>(EMPTY_POS, make_unique<Ident>(THIS_), type);
+            auto var = make_unique<VariableDeclarationNode>(EMPTY_POS, make_unique<IdentDef>(THIS_), type);
             var->setLevel(level_ + 1);
             env_ = var.get();
             // initialize the procedure's environment (this)
@@ -118,7 +120,7 @@ void LambdaLifter::visit(ProcedureNode &node) {
         // rename and move the procedure to the module scope
         for (size_t i = 0; i < node.getProcedureCount(); i++) {
             auto proc = node.getProcedure(i);
-            proc->setIdentifier(make_unique<Ident>("_" + proc->getIdentifier()->name()));
+            proc->setIdentifier(make_unique<IdentDef>("_" + proc->getIdentifier()->name()));
             module_->addProcedure(node.removeProcedure(i));
         }
         // TODO remove unnecessary local variables

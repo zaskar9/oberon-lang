@@ -14,6 +14,7 @@
 #include "BlockNode.h"
 #include "DeclarationNode.h"
 #include "ProcedureTypeNode.h"
+#include "ModuleNode.h"
 
 using std::make_unique;
 using std::unique_ptr;
@@ -28,9 +29,9 @@ private:
 
 public:
     // ctor for use in sema / parser
-    ProcedureNode(const FilePos &, unique_ptr<Ident>, bool = false);
+    ProcedureNode(const FilePos &, unique_ptr<IdentDef>, bool = false);
     // ctor for use in symbol importer
-    explicit ProcedureNode(unique_ptr<Ident>, ProcedureTypeNode *, bool = false);
+    ProcedureNode(unique_ptr<IdentDef>, ProcedureTypeNode *, bool = false);
     ~ProcedureNode() override = default;
 
     [[nodiscard]] NodeType getNodeType() const override {

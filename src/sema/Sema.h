@@ -45,7 +45,7 @@ private:
     TypeNode *tBoolean_, *tByte_, *tChar_, *tInteger_, *tLongInt_, *tReal_, *tLongReal_, *tString_;
 
     bool assertEqual(Ident *, Ident *) const;
-    void assertUnique(Ident *, DeclarationNode *);
+    void assertUnique(IdentDef *, DeclarationNode *);
 
     void call(ProcedureNodeReference *);
 

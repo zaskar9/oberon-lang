@@ -758,7 +758,7 @@ void LLVMIRBuilder::call(ProcedureNodeReference &node) {
         value_ = callPredefined(node, params);
     } else {
         auto ident = proc->getIdentifier();
-        auto fun = module_->getFunction(qualifiedName(ident, proc->isExtern()));
+        auto fun = module_->getFunction(qualifiedName(proc));
         if (fun) {
             value_ = builder_.CreateCall(fun, params);
         } else {
@@ -768,7 +768,7 @@ void LLVMIRBuilder::call(ProcedureNodeReference &node) {
 }
 
 void LLVMIRBuilder::proc(ProcedureNode &node) {
-    auto name = qualifiedName(node.getIdentifier(), node.isExtern());
+    auto name = qualifiedName(&node);
     if (module_->getFunction(name)) {
         logger_.error(node.pos(), "Function " + name + " already defined.");
         return;
@@ -784,14 +784,8 @@ void LLVMIRBuilder::proc(ProcedureNode &node) {
     functions_[&node] = ::cast<Function>(callee.getCallee());
 }
 
-std::string LLVMIRBuilder::qualifiedName(Ident *ident, bool external) const {
-    if (ident->isQualified()) {
-        return dynamic_cast<QualIdent *>(ident)->qualifier() + "_" + ident->name();
-    }
-    if (external) {
-        return ident->name();
-    }
-    return module_->getModuleIdentifier() + "_" + ident->name();
+std::string LLVMIRBuilder::qualifiedName(DeclarationNode *node) const {
+    return node->getModule()->getIdentifier()->name() + "_" + node->getIdentifier()->name();
 }
 
 Type* LLVMIRBuilder::getLLVMType(TypeNode *type) {

@@ -78,7 +78,8 @@ unique_ptr<ModuleNode> SymbolImporter::read(const string &alias, const string &n
 
 void SymbolImporter::readDeclaration(SymbolFile *file, NodeType nodeType, ModuleNode *module) {
     auto name = file->readString();
-    auto ident = std::make_unique<QualIdent>(module->getIdentifier()->name(), name);
+    // auto ident = std::make_unique<QualIdent>(module->getIdentifier()->name(), name);
+    auto ident = make_unique<IdentDef>(name);
     auto type = readType(file);
     if (nodeType == NodeType::constant) {
         auto kind = type->kind();
@@ -109,22 +110,26 @@ void SymbolImporter::readDeclaration(SymbolFile *file, NodeType nodeType, Module
             if (expr) {
                 auto decl = std::make_unique<ConstantDeclarationNode>(EMPTY_POS, std::move(ident), std::move(expr));
                 symbols_->import(module->getAlias(), name, decl.get());
+                decl->setModule(module);
                 module->constants().push_back(std::move(decl));
             }
         }
     } else if (nodeType == NodeType::type) {
         auto decl = std::make_unique<TypeDeclarationNode>(EMPTY_POS, std::move(ident), type);
         symbols_->import(module->getAlias(), name, decl.get());
+        decl->setModule(module);
         module->types().push_back(std::move(decl));
     } else if (nodeType == NodeType::variable) {
         // read in export number
         [[maybe_unused]] auto exno = file->readInt();
         auto decl = std::make_unique<VariableDeclarationNode>(EMPTY_POS, std::move(ident), type);
         symbols_->import(module->getAlias(), name, decl.get());
+        decl->setModule(module);
         module->variables().push_back(std::move(decl));
     } else if (nodeType == NodeType::procedure) {
         auto decl = std::make_unique<ProcedureNode>(std::move(ident), dynamic_cast<ProcedureTypeNode *>(type), true);
         symbols_->import(module->getAlias(), name, decl.get());
+        decl->setModule(module);
         module->procedures().push_back(std::move(decl));
     }
 }
@@ -176,7 +181,7 @@ TypeNode *SymbolImporter::readProcedureType(SymbolFile *file) {
     while (ch != 0) {
         auto var = file->readChar();
         auto ptype = readType(file);
-        auto param = std::make_unique<ParameterNode>(EMPTY_POS, std::make_unique<Ident>("_"), ptype, (var == 0));
+        auto param = make_unique<ParameterNode>(EMPTY_POS, make_unique<Ident>("_"), ptype, (var == 0));
         param->setLevel(SymbolTable::MODULE_LEVEL);
         params.push_back(std::move(param));
         // check for terminator
@@ -196,7 +201,7 @@ TypeNode *SymbolImporter::readRecordType(SymbolFile *file) {
     // read the size of the type, i.e., sum of the sizes of the types of all fields
     auto size = (unsigned) file->readInt();
     // read fields
-    std::vector<std::unique_ptr<FieldNode>> fields;
+    vector<unique_ptr<FieldNode>> fields;
     auto ch = file->readChar();
     while (ch != 0) {
         // read field number
@@ -207,7 +212,7 @@ TypeNode *SymbolImporter::readRecordType(SymbolFile *file) {
         auto type = readType(file);
         // read field offset
         [[maybe_unused]] auto offset = file->readInt();
-        fields.push_back(std::make_unique<FieldNode>(EMPTY_POS, std::make_unique<Ident>(name), type));
+        fields.push_back(make_unique<FieldNode>(EMPTY_POS, make_unique<IdentDef>(name), type));
         // check for terminator
         ch = file->readChar();
     }

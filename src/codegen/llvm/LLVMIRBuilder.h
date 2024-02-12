@@ -43,7 +43,7 @@ private:
     Type* getLLVMType(TypeNode *type);
     MaybeAlign getLLVMAlign(TypeNode *type);
 
-    std::string qualifiedName(Ident *ident, bool external) const;
+    std::string qualifiedName(DeclarationNode *) const;
 
     void setRefMode(bool deref);
     void restoreRefMode();

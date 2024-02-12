@@ -8,12 +8,12 @@
 #include "ProcedureNode.h"
 #include "NodeVisitor.h"
 
-ProcedureNode::ProcedureNode(const FilePos &pos, std::unique_ptr<Ident> ident, bool external) :
+ProcedureNode::ProcedureNode(const FilePos &pos, std::unique_ptr<IdentDef> ident, bool external) :
         DeclarationNode(NodeType::procedure, pos, std::move(ident), nullptr),
         BlockNode(),
         extern_(external) {}
 
-ProcedureNode::ProcedureNode(unique_ptr<Ident> ident, ProcedureTypeNode *type, bool external) :
+ProcedureNode::ProcedureNode(unique_ptr<IdentDef> ident, ProcedureTypeNode *type, bool external) :
         DeclarationNode(NodeType::procedure, EMPTY_POS, std::move(ident), type),
         BlockNode(),
         extern_(external) {}

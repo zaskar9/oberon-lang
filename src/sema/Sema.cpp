@@ -107,6 +107,7 @@ Sema::onConstant(const FilePos &start, [[maybe_unused]] const FilePos &end,
     auto node = make_unique<ConstantDeclarationNode>(start, std::move(ident), std::move(expr));
     assertUnique(node->getIdentifier(), node.get());
     node->setLevel(symbols_->getLevel());
+    node->setModule(module_.get());
     checkExport(node.get());
     return node;
 }
@@ -117,6 +118,7 @@ Sema::onType(const FilePos &start, [[maybe_unused]] const FilePos &end,
     auto node = make_unique<TypeDeclarationNode>(start, std::move(ident), type);
     assertUnique(node->getIdentifier(), node.get());
     node->setLevel(symbols_->getLevel());
+    node->setModule(module_.get());
     checkExport(node.get());
     if (type) {
         auto it = forwards_.find(node->getIdentifier()->name());
@@ -271,6 +273,7 @@ Sema::onVariable(const FilePos &start, [[maybe_unused]] const FilePos &end,
     auto node = make_unique<VariableDeclarationNode>(start, std::move(ident), type, index);
     assertUnique(node->getIdentifier(), node.get());
     node->setLevel(symbols_->getLevel());
+    node->setModule(module_.get());
     checkExport(node.get());
     return node;
 }
@@ -281,6 +284,7 @@ Sema::onProcedureStart(const FilePos &start, unique_ptr<IdentDef> ident) {
     auto proc = procs_.top().get();
     assertUnique(proc->getIdentifier(), proc);
     proc->setLevel(symbols_->getLevel());
+    proc->setModule(module_.get());
     checkExport(proc);
     onBlockStart();
     return proc;
@@ -984,10 +988,7 @@ Sema::assertEqual(Ident *aIdent, Ident *bIdent) const {
 }
 
 void
-Sema::assertUnique(Ident *ident, DeclarationNode *node) {
-    if (ident->isQualified()) {
-        logger_.error(ident->start(), "cannot use qualified identifier here.");
-    }
+Sema::assertUnique(IdentDef *ident, DeclarationNode *node) {
     if (symbols_->isDuplicate(ident->name())) {
         logger_.error(ident->start(), "duplicate definition: " + ident->name() + ".");
     }

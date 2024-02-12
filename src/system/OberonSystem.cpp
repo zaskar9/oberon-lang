@@ -25,13 +25,13 @@ SymbolTable *OberonSystem::getSymbolTable() {
 }
 
 TypeDeclarationNode *OberonSystem::createTypeDeclaration(TypeNode *type) {
-    auto decl = make_unique<TypeDeclarationNode>(EMPTY_POS, make_unique<Ident>(type->getIdentifier()->name()), type);
+    auto decl = make_unique<TypeDeclarationNode>(EMPTY_POS, make_unique<IdentDef>(type->getIdentifier()->name()), type);
     auto ptr = decl.get();
     decls_.push_back(std::move(decl));
     return ptr;
 }
 
-void OberonSystem::createBasicTypes(vector<pair<pair<TypeKind, unsigned int>, bool>> types) {
+void OberonSystem::createBasicTypes(const vector<pair<pair<TypeKind, unsigned int>, bool>>& types) {
     for (auto pair: types) {
         auto type = createBasicType(pair.first.first, pair.first.second);
         auto decl = createTypeDeclaration(type);

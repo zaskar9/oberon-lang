@@ -28,7 +28,7 @@ public:
     explicit OberonSystem() : symbols_(), decls_(), types_(), baseTypes_() {};
     virtual ~OberonSystem();
 
-    void createBasicTypes(std::vector<std::pair<std::pair<TypeKind, unsigned int>, bool>> types);
+    void createBasicTypes(const std::vector<std::pair<std::pair<TypeKind, unsigned int>, bool>>& types);
     BasicTypeNode *createBasicType(TypeKind kind, unsigned int size);
     BasicTypeNode *getBasicType(TypeKind kind);
 

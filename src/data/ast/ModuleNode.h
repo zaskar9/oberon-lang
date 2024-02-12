@@ -29,12 +29,12 @@ private:
 public:
     // ctor for use in sema / parser
     ModuleNode(const FilePos &pos, unique_ptr<Ident> name, vector<unique_ptr<ImportNode>> imports) :
-            DeclarationNode(NodeType::module, pos, std::move(name), nullptr),
+            DeclarationNode(NodeType::module, pos, make_unique<IdentDef>(name->start(), name->end(), name->name()), nullptr),
             BlockNode(),
             alias_(), imports_(std::move(imports)) {};
     // ctor for use in symbol importer
     explicit ModuleNode(unique_ptr<Ident> name) :
-            DeclarationNode(NodeType::module, EMPTY_POS, std::move(name), nullptr),
+            DeclarationNode(NodeType::module, EMPTY_POS, make_unique<IdentDef>(name->start(), name->end(), name->name()), nullptr),
             BlockNode(),
             alias_(), imports_() {};
     ~ModuleNode() override = default;

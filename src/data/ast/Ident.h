@@ -50,9 +50,9 @@ private:
 
 public:
     explicit IdentDef(const string &name, bool exported = false) :
-            Ident(name), exported_(exported) { };
-    explicit IdentDef(const FilePos &start, const FilePos &end, const string &name, bool exported = false) :
-            Ident(start, end, name), exported_(exported) { };
+            Ident(name), exported_(exported) {};
+    IdentDef(const FilePos &start, const FilePos &end, const string &name, bool exported = false) :
+            Ident(start, end, name), exported_(exported) {};
     ~IdentDef() override;
 
     [[nodiscard]] bool isExported() const override;

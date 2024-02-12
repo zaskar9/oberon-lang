@@ -8,41 +8,50 @@
 #define OBERON0C_DECLARATIONNODE_H
 
 
-#include "Node.h"
-#include "TypeNode.h"
-#include "ExpressionNode.h"
-#include "Ident.h"
+#include <memory>
 #include <utility>
 
+#include "Ident.h"
+#include "Node.h"
+#include "ExpressionNode.h"
+
+using std::make_unique;
+using std::unique_ptr;
+
+class ModuleNode;
 class TypeNode;
 
 class DeclarationNode : public Node {
 
 private:
-    std::unique_ptr<Ident> ident_;   // TODO IdentDef?
+    ModuleNode *module_;
+    unique_ptr<IdentDef> ident_;
     TypeNode *type_;
     unsigned int index_;
     unsigned int level_;
 
 public:
-    explicit DeclarationNode(const NodeType nodeType, const FilePos &pos, std::unique_ptr<Ident> ident, TypeNode *type, unsigned int index = 0) :
-            Node(nodeType, pos), ident_(std::move(ident)), type_(type), index_(index), level_() { };
+    explicit DeclarationNode(const NodeType nodeType, const FilePos &pos, unique_ptr<IdentDef> ident, TypeNode *type, unsigned int index = 0) :
+            Node(nodeType, pos), module_(), ident_(std::move(ident)), type_(type), index_(index), level_() { };
     ~DeclarationNode() override = default;
 
-    void setIdentifier(std::unique_ptr<Ident> name);
-    [[nodiscard]] Ident * getIdentifier() const;
+    void setModule(ModuleNode *);
+    [[nodiscard]] ModuleNode *getModule() const;
 
-    void setType(TypeNode *type);
-    [[nodiscard]] TypeNode * getType() const;
+    void setIdentifier(unique_ptr<IdentDef>);
+    [[nodiscard]] IdentDef *getIdentifier() const;
+
+    void setType(TypeNode *);
+    [[nodiscard]] TypeNode *getType() const;
 
     [[nodiscard]] unsigned int index() const;
 
     void setLevel(unsigned int level);
     [[nodiscard]] unsigned int getLevel() const;
 
-    void accept(NodeVisitor& visitor) override = 0;
+    void accept(NodeVisitor &) override = 0;
 
-    void print(std::ostream &stream) const override;
+    void print(std::ostream &) const override;
 
 };
 
@@ -50,15 +59,15 @@ public:
 class ConstantDeclarationNode final : public DeclarationNode {
 
 private:
-    std::unique_ptr<ExpressionNode> value_;
+    unique_ptr<ExpressionNode> value_;
 
 public:
-    explicit ConstantDeclarationNode(const FilePos &pos, std::unique_ptr<Ident> ident, std::unique_ptr<ExpressionNode> value) :
+    explicit ConstantDeclarationNode(const FilePos &pos, unique_ptr<IdentDef> ident, unique_ptr<ExpressionNode> value) :
             DeclarationNode(NodeType::constant, pos, std::move(ident), value->getType(), 0),
             value_(std::move(value)) { };
     ~ConstantDeclarationNode() final = default;
 
-    void setValue(std::unique_ptr<ExpressionNode> value);
+    void setValue(unique_ptr<ExpressionNode> value);
     [[nodiscard]] ExpressionNode * getValue() const;
 
     void accept(NodeVisitor& visitor) final;
@@ -71,7 +80,7 @@ public:
 class TypeDeclarationNode final : public DeclarationNode {
 
 public:
-    explicit TypeDeclarationNode(const FilePos &pos, std::unique_ptr<Ident> ident, TypeNode *type) :
+    explicit TypeDeclarationNode(const FilePos &pos, unique_ptr<IdentDef> ident, TypeNode *type) :
             DeclarationNode(NodeType::type, pos, std::move(ident), type, 0) { };
     ~TypeDeclarationNode() final = default;
 
@@ -85,7 +94,7 @@ public:
 class VariableDeclarationNode final : public DeclarationNode {
 
 public:
-    explicit VariableDeclarationNode(const FilePos &pos, std::unique_ptr<Ident> ident, TypeNode *type, unsigned int index = 0) :
+    explicit VariableDeclarationNode(const FilePos &pos, unique_ptr<IdentDef> ident, TypeNode *type, unsigned int index = 0) :
             DeclarationNode(NodeType::variable, pos, std::move(ident), type, index) { };
     ~VariableDeclarationNode() final = default;
 
@@ -97,7 +106,7 @@ public:
 class FieldNode final : public DeclarationNode {
 
 public:
-    explicit FieldNode(const FilePos &pos, std::unique_ptr<Ident> ident, TypeNode *type, unsigned int index = 0) :
+    explicit FieldNode(const FilePos &pos, unique_ptr<IdentDef> ident, TypeNode *type, unsigned int index = 0) :
             DeclarationNode(NodeType::field, pos, std::move(ident), type, index) { };
     ~FieldNode() final = default;
 
@@ -112,8 +121,8 @@ private:
     bool var_;
 
 public:
-    explicit ParameterNode(const FilePos &pos, std::unique_ptr<Ident> ident, TypeNode *type, bool var, unsigned int index = 0) :
-            DeclarationNode(NodeType::parameter, pos, std::move(ident), type, index), var_(var) { };
+    explicit ParameterNode(const FilePos &pos, unique_ptr<Ident> ident, TypeNode *type, bool var, unsigned int index = 0) :
+            DeclarationNode(NodeType::parameter, pos, make_unique<IdentDef>(ident->start(), ident->end(), ident->name()), type, index), var_(var) { };
     ~ParameterNode() final = default;
 
     [[nodiscard]] bool isVar() const;
