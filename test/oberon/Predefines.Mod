@@ -73,9 +73,11 @@ BEGIN
     RolRor;
     Odd(a);
     Odd(b);
+    ASSERT(~ODD(0));
+    ASSERT(ODD(1));
     ASSERT(a > b);
     Out.String("Passed assertion."); Out.Ln;
-    IF (a > b) THEN HALT(1) END;
+    IF (a < b) THEN HALT(1) END;
     Out.String("Passed halt."); Out.Ln;
     HALT(0);
     Out.String("Unreachable!")

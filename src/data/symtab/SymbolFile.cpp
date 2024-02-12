@@ -102,7 +102,6 @@ std::string SymbolFile::readString() {
 #endif
     char *buffer = new char[len];
     file_.read(buffer, (long) len);
-    // return {buffer, len};
     auto val = std::string(buffer, len);
 #ifdef _DEBUG
     std::cout << val << "|";

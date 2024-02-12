@@ -5,12 +5,6 @@
 #include "ImportNode.h"
 #include "NodeVisitor.h"
 
-//ImportNode::ImportNode(const FilePos &start, std::unique_ptr<Ident> alias, std::unique_ptr<Ident> module) :
-//        Node(NodeType::import, start),
-//        alias_(std::move(alias)), module_(std::move(module)) { }
-//
-//ImportNode::~ImportNode() = default;
-
 Ident* ImportNode::getAlias() const {
     return alias_.get();
 }

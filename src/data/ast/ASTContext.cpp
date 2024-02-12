@@ -53,13 +53,6 @@ ProcedureTypeNode *ASTContext::getOrInsertProcedureType(Ident *ident, vector<uni
     return res;
 }
 
-//TypeReferenceNode *ASTContext::getOrInsertTypeReference(unique_ptr<QualIdent> ident) {
-//    auto ref = make_unique<TypeReferenceNode>(EMPTY_POS, std::move(ident));
-//    auto res = ref.get();
-//    references_.push_back(std::move(ref));
-//    return res;
-//}
-
 void ASTContext::addExternalModule(std::unique_ptr<ModuleNode> module) {
     ext_modules_.push_back(std::move(module));
 }

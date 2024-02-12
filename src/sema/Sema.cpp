@@ -328,14 +328,7 @@ Sema::onAssignment(const FilePos &start, [[maybe_unused]] const FilePos &end,
     if (lvalue && rvalue) {
         // Type inference: check that types are compatible
         if (assertCompatible(lvalue->pos(), lvalue->getType(), rvalue->getType())) {
-            // Casting right-hand side to type expected by left-hand side
-            if (lvalue->getType() != rvalue->getType()) {
-                rvalue->setCast(lvalue->getType());
-            }
-            // Casting NIL to expected type
-            if (rvalue->getType()->kind() == TypeKind::NILTYPE) {
-                rvalue->setCast(lvalue->getType());
-            }
+            cast(rvalue.get(), lvalue->getType());
         }
     }
     return make_unique<AssignmentNode>(start, std::move(lvalue), std::move(rvalue));
@@ -485,7 +478,9 @@ Sema::onReturn(const FilePos &start, [[maybe_unused]] const FilePos &end, unique
             if (!proc->getReturnType()) {
                 logger_.error(expr->pos(), "procedure cannot return a value.");
             }
-            assertCompatible(expr->pos(), proc->getReturnType(), expr->getType());
+            if (assertCompatible(expr->pos(), proc->getReturnType(), expr->getType())) {
+                cast(expr.get(), proc->getReturnType());
+            }
         } else {
             if (proc->getReturnType()) {
                 logger_.error(proc->pos(), "function must return value.");
@@ -567,13 +562,10 @@ Sema::onBinaryExpression(const FilePos &start, [[maybe_unused]] const FilePos &e
     if (lhs->isConstant() && rhs->isConstant()) {
         return fold(start, end, op, lhs.get(), rhs.get(), type);
     }
-    // Casting
-    if (lhs->getType() != common) {
-        lhs->setCast(common);
-    }
-    if (rhs->getType() != common) {
-        rhs->setCast(common);
-    }
+    // Casting left-hand side to common type
+    cast(lhs.get(), common);
+    // Casting right-hand side to common type
+    cast(rhs.get(), common);
     return make_unique<BinaryExpressionNode>(start, op, std::move(lhs), std::move(rhs), type);
 }
 
@@ -593,14 +585,6 @@ Sema::onValueReference(const FilePos &start, [[maybe_unused]] const FilePos &end
     auto node = make_unique<ValueReferenceNode>(start, std::move(designator));
     auto ident = node->ident();
     DeclarationNode* sym = symbols_->lookup(ident);
-//    if (!sym && ident->isQualified()) {
-//        // addresses the fact that 'ident.ident' is ambiguous: 'qual.ident' vs. 'ident.field'.
-//        auto qual = dynamic_cast<QualIdent *>(ident);
-//        sym = symbols_->lookup(qual->qualifier());
-//        if (sym) {
-//            node->disqualify();
-//        }
-//    }
     if (sym) {
         if (sym->getNodeType() == NodeType::constant ||
             sym->getNodeType() == NodeType::parameter ||
@@ -1116,16 +1100,20 @@ Sema::call(ProcedureNodeReference *node) {
                     } else {
                         logger_.error(expr->pos(), "illegal actual parameter: cannot pass expression by reference.");
                     }
+                } else {
+                    cast(expr, parameter->getType());
                 }
-            }
-            // Casting
-            if (parameter->getType() != expr->getType()) {
-                expr->setCast(parameter->getType());
             }
         } else if (!proc->hasVarArgs()) {
             logger_.error(expr->pos(), "more actual than formal parameters.");
             break;
         }
+    }
+}
+
+void Sema::cast(ExpressionNode *expr, TypeNode *expected) const {
+    if (expr->getType() != expected) {
+        expr->setCast(expected);
     }
 }
 

@@ -56,10 +56,8 @@ public:
     ~IfThenElseNode() override = default;
 
     [[nodiscard]] ExpressionNode* getCondition() const;
-//    [[nodiscard]] StatementSequenceNode* addThenStatements(FilePos pos);
     [[nodiscard]] StatementSequenceNode* getThenStatements() const;
 
-//    [[nodiscard]] StatementSequenceNode* addElseIf(FilePos pos, std::unique_ptr<ExpressionNode> condition);
     [[nodiscard]] ElseIfNode* getElseIf(size_t num) const;
     [[nodiscard]] size_t getElseIfCount() const;
     [[nodiscard]] bool hasElseIf() const;

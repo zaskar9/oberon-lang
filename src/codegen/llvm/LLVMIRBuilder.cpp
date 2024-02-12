@@ -312,7 +312,6 @@ void LLVMIRBuilder::visit(UnaryExpressionNode &node) {
 }
 
 void LLVMIRBuilder::visit(BinaryExpressionNode &node) {
-    auto type = node.getType();
     node.getLeftExpression()->accept(*this);
     cast(*node.getLeftExpression());
     auto lhs = value_;
@@ -351,16 +350,17 @@ void LLVMIRBuilder::visit(BinaryExpressionNode &node) {
     } else {
         node.getRightExpression()->accept(*this);
         cast(*node.getRightExpression());
+        bool floating = node.getLeftExpression()->getType()->isReal() || node.getRightExpression()->getType()->isReal();
         auto rhs = value_;
         switch (node.getOperator()) {
             case OperatorType::PLUS:
-                value_ = type->isReal() ? builder_.CreateFAdd(lhs, rhs) : builder_.CreateAdd(lhs, rhs);
+                value_ = floating ? builder_.CreateFAdd(lhs, rhs) : builder_.CreateAdd(lhs, rhs);
                 break;
             case OperatorType::MINUS:
-                value_ = type->isReal() ? builder_.CreateFSub(lhs, rhs) : builder_.CreateSub(lhs, rhs);
+                value_ = floating ? builder_.CreateFSub(lhs, rhs) : builder_.CreateSub(lhs, rhs);
                 break;
             case OperatorType::TIMES:
-                value_ = type->isReal() ? builder_.CreateFMul(lhs, rhs) : builder_.CreateMul(lhs, rhs);
+                value_ = floating ? builder_.CreateFMul(lhs, rhs) : builder_.CreateMul(lhs, rhs);
                 break;
             case OperatorType::DIVIDE:
                 value_ = builder_.CreateFDiv(lhs, rhs);
@@ -372,22 +372,22 @@ void LLVMIRBuilder::visit(BinaryExpressionNode &node) {
                 value_ = builder_.CreateSRem(lhs, rhs);
                 break;
             case OperatorType::EQ:
-                value_ = type->isReal() ? builder_.CreateFCmpUEQ(lhs, rhs) : builder_.CreateICmpEQ(lhs, rhs);
+                value_ = floating ? builder_.CreateFCmpUEQ(lhs, rhs) : builder_.CreateICmpEQ(lhs, rhs);
                 break;
             case OperatorType::NEQ:
-                value_ = type->isReal() ? builder_.CreateFCmpUNE(lhs, rhs) : builder_.CreateICmpNE(lhs, rhs);
+                value_ = floating ? builder_.CreateFCmpUNE(lhs, rhs) : builder_.CreateICmpNE(lhs, rhs);
                 break;
             case OperatorType::LT:
-                value_ = type->isReal() ? builder_.CreateFCmpULT(lhs, rhs) :builder_.CreateICmpSLT(lhs, rhs);
+                value_ = floating ? builder_.CreateFCmpULT(lhs, rhs) :builder_.CreateICmpSLT(lhs, rhs);
                 break;
             case OperatorType::GT:
-                value_ = type->isReal() ? builder_.CreateFCmpUGT(lhs, rhs) : builder_.CreateICmpSGT(lhs, rhs);
+                value_ = floating ? builder_.CreateFCmpUGT(lhs, rhs) : builder_.CreateICmpSGT(lhs, rhs);
                 break;
             case OperatorType::LEQ:
-                value_ = type->isReal() ? builder_.CreateFCmpULE(lhs, rhs) : builder_.CreateICmpSLE(lhs, rhs);
+                value_ = floating ? builder_.CreateFCmpULE(lhs, rhs) : builder_.CreateICmpSLE(lhs, rhs);
                 break;
             case OperatorType::GEQ:
-                value_ = type->isReal() ? builder_.CreateFCmpUGE(lhs, rhs) : builder_.CreateICmpSGE(lhs, rhs);
+                value_ = floating ? builder_.CreateFCmpUGE(lhs, rhs) : builder_.CreateICmpSGE(lhs, rhs);
                 break;
             case OperatorType::AND:
             case OperatorType::OR:
@@ -593,6 +593,7 @@ void LLVMIRBuilder::visit(ReturnNode& node) {
     if (node.getValue()) {
         setRefMode(true);
         node.getValue()->accept(*this);
+        cast(*node.getValue());
         restoreRefMode();
         value_ = builder_.CreateRet(value_);
     } else {
@@ -751,6 +752,7 @@ void LLVMIRBuilder::call(ProcedureNodeReference &node) {
     for (size_t i = 0; i < node.getActualParameterCount(); i++) {
         setRefMode(i >= proc->getFormalParameterCount() || !proc->getFormalParameter(i)->isVar());
         node.getActualParameter(i)->accept(*this);
+        cast(*node.getActualParameter(i));
         params.push_back(value_);
         restoreRefMode();
     }

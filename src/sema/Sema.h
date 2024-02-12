@@ -49,6 +49,8 @@ private:
 
     void call(ProcedureNodeReference *);
 
+    void cast(ExpressionNode *, TypeNode *) const;
+
     void checkExport(DeclarationNode *);
 
     bool assertCompatible(const FilePos &, TypeNode *, TypeNode *, bool = false);

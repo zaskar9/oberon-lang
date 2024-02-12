@@ -53,8 +53,6 @@ public:
     [[nodiscard]] Selector *getSelector(size_t num) const;
     [[nodiscard]] size_t getSelectorCount() const;
 
-    // void disqualify();
-
 };
 
 

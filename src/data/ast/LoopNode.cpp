@@ -22,9 +22,6 @@ void LoopNode::print(std::ostream& stream) const {
 
 ConditionalLoopNode::~ConditionalLoopNode() = default;
 
-//void ConditionalLoopNode::setCondition(std::unique_ptr<ExpressionNode> condition) {
-//    condition_ = std::move(condition);
-//}
 
 ExpressionNode* ConditionalLoopNode::getCondition() const {
     return condition_.get();

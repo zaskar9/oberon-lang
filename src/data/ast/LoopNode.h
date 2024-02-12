@@ -52,7 +52,6 @@ protected:
 public:
     ~ConditionalLoopNode() override;
 
-    // void setCondition(std::unique_ptr<ExpressionNode> condition);
     [[nodiscard]] ExpressionNode * getCondition() const;
 
 };

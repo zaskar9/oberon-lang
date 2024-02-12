@@ -41,18 +41,6 @@ size_t Designator::getSelectorCount() const {
     return selectors_.size();
 }
 
-//void Designator::disqualify() {
-//    if (ident_->isQualified()) {
-//        auto qual = dynamic_cast<QualIdent *>(ident_.get());
-//        auto pos = ident_->start();
-//        pos.charNo += ((int) qual->qualifier().size()) + 1;
-//        auto field = std::make_unique<QualIdent>(pos, EMPTY_POS, qual->name());
-//        // TODO no AST node creation outside sema!
-//        this->insertSelector(0, std::make_unique<RecordField>(field->start(), std::move(field)));
-//        ident_ = std::make_unique<QualIdent>(qual->qualifier());
-//    }
-//}
-
 
 ProcedureNodeReference::~ProcedureNodeReference() = default;
 
