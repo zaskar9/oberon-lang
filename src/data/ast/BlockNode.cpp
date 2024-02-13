@@ -7,17 +7,6 @@
 #include "BlockNode.h"
 #include "ProcedureNode.h"
 
-BlockNode::BlockNode(vector<unique_ptr<ConstantDeclarationNode>> consts,
-                     vector<unique_ptr<TypeDeclarationNode>> types,
-                     vector<unique_ptr<VariableDeclarationNode>> vars,
-                     vector<unique_ptr<ProcedureNode>> procs,
-                     unique_ptr<StatementSequenceNode> stmts) :
-        constants_(std::move(consts)), type_declarations_(std::move(types)), variables_(std::move(vars)),
-        procedures_(std::move(procs)), statements_(std::move(stmts)) { }
-
-BlockNode::BlockNode() : constants_(), type_declarations_(), variables_(), procedures_(),
-        statements_(make_unique<StatementSequenceNode>(EMPTY_POS)) { }
-
 BlockNode::~BlockNode() = default;
 
 vector<unique_ptr<ConstantDeclarationNode>> &BlockNode::constants() {

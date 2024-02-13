@@ -19,28 +19,21 @@ using std::vector;
 
 class ProcedureNode;
 
-class BlockNode {
+class BlockNode : public DeclarationNode {
 
 private:
     vector<unique_ptr<ConstantDeclarationNode>> constants_;
     vector<unique_ptr<TypeDeclarationNode>> type_declarations_;
     vector<unique_ptr<VariableDeclarationNode>> variables_;
     vector<unique_ptr<ProcedureNode>> procedures_;
-
     unique_ptr<StatementSequenceNode> statements_;
 
-protected:
-    BlockNode(vector<unique_ptr<ConstantDeclarationNode>> consts,
-              vector<unique_ptr<TypeDeclarationNode>> types,
-              vector<unique_ptr<VariableDeclarationNode>> vars,
-              vector<unique_ptr<ProcedureNode>> procs,
-              unique_ptr<StatementSequenceNode> stmts);
-    BlockNode();
-
 public:
+    BlockNode(const NodeType nodeType, const FilePos &pos, unique_ptr<IdentDef> ident, TypeNode *type, unsigned int index = 0) :
+            DeclarationNode(nodeType, pos, std::move(ident), type, index),
+            constants_(), type_declarations_(), variables_(), procedures_(),
+            statements_(make_unique<StatementSequenceNode>(EMPTY_POS)) {};
     virtual ~BlockNode();
-
-    [[nodiscard]] virtual NodeType getNodeType() const = 0;
 
     [[nodiscard]] vector<unique_ptr<ConstantDeclarationNode>> &constants();
     void addConstant(std::unique_ptr<ConstantDeclarationNode> constant);

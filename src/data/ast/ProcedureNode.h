@@ -20,7 +20,7 @@ using std::make_unique;
 using std::unique_ptr;
 using std::vector;
 
-class ProcedureNode : public DeclarationNode, public BlockNode {
+class ProcedureNode : public BlockNode {
 
 private:
     bool extern_;
@@ -29,14 +29,14 @@ private:
 
 public:
     // ctor for use in sema / parser
-    ProcedureNode(const FilePos &, unique_ptr<IdentDef>, bool = false);
+    ProcedureNode(const FilePos &pos, unique_ptr<IdentDef> ident, bool external = false) :
+            BlockNode(NodeType::procedure, pos, std::move(ident), nullptr),
+            extern_(external) {};
     // ctor for use in symbol importer
-    ProcedureNode(unique_ptr<IdentDef>, ProcedureTypeNode *, bool = false);
+    ProcedureNode(unique_ptr<IdentDef> ident, ProcedureTypeNode *type, bool external = false) :
+            BlockNode(NodeType::procedure, EMPTY_POS, std::move(ident), type),
+            extern_(external) {};
     ~ProcedureNode() override = default;
-
-    [[nodiscard]] NodeType getNodeType() const override {
-        return DeclarationNode::getNodeType();
-    }
 
     void addFormalParameter(unique_ptr<ParameterNode> parameter);
     [[nodiscard]] ParameterNode *getFormalParameter(const std::string &name);

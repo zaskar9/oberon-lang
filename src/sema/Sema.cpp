@@ -955,7 +955,7 @@ Sema::fold(const FilePos &start, [[maybe_unused]] const FilePos &end,
 
 bool
 Sema::assertEqual(Ident *aIdent, Ident *bIdent) const {
-    if (aIdent == nullptr || bIdent == nullptr) {
+    if (!aIdent || !bIdent) {
         return false;
     }
     if (aIdent->name() == bIdent->name()) {
@@ -990,56 +990,65 @@ Sema::checkExport(DeclarationNode *node) {
 }
 
 bool
-Sema::assertCompatible(const FilePos &pos, TypeNode *expected, TypeNode *actual, bool isPtr) {
-    if (expected == actual) {
-        return true;
-    } else if (expected && actual) {
-        if (expected->kind() == TypeKind::ANYTYPE || expected->kind() == TypeKind::ANYTYPE) {
-            return true;
-        }
-        auto expectedId = expected->getIdentifier();
-        auto actualId = actual->getIdentifier();
-        if (assertEqual(expectedId, actualId)) {
-            // the two types are the same type
-            return true;
-        } else if ((expected->isInteger() && actual->isInteger()) ||
-                   (expected->isReal() && actual->isNumeric())) {
-            if (expected->getSize() < actual->getSize()) {
-                logger_.error(pos, "type mismatch: converting " + to_string(*actualId) +
-                                    " to " + to_string(*expectedId) + " may lose data.");
-                return false;
-            }
-            return true;
-        } else if (expected->isArray() && actual->isArray()) {
-            auto exp_array = dynamic_cast<ArrayTypeNode *>(expected);
-            auto act_array = dynamic_cast<ArrayTypeNode *>(actual);
-            if ((exp_array->isOpen() || exp_array->getDimension() == act_array->getDimension())) {
-                if (exp_array->getMemberType()->kind() == TypeKind::ANYTYPE) {
-                    return true;
-                }
-                auto exp_mem_t = exp_array->getMemberType();
-                auto act_mem_t = act_array->getMemberType();
-                if (exp_mem_t && act_mem_t &&
-                    assertEqual(exp_mem_t->getIdentifier(), act_mem_t->getIdentifier())) {
-                    return true;
-                }
-            }
-        } else if (expected->isPointer()) {
-            if (actual->isPointer()) {
-                auto exp_ptr = dynamic_cast<PointerTypeNode *>(expected);
-                auto act_ptr = dynamic_cast<PointerTypeNode *>(actual);
-                return assertCompatible(pos, exp_ptr->getBase(), act_ptr->getBase(), true);
-            } else if (actual->kind() == TypeKind::NILTYPE) {
-                return true;
-            }
-        }
-        // error logging
-        logger_.error(pos, "type mismatch: expected " + format(expected, isPtr) + ", found " + format(actual, isPtr) + ".");
-        return false;
-    } else {
+Sema::assertCompatible(const FilePos &pos, TypeNode *expected, TypeNode *actual, bool var, bool isPtr) {
+    if (!expected || !actual) {
         logger_.error(pos, "type mismatch.");
         return false;
     }
+    if (expected == actual) {
+        return true;
+    }
+    // Check `ANYTYPE`
+    if (expected->kind() == TypeKind::ANYTYPE || expected->kind() == TypeKind::ANYTYPE) {
+        return true;
+    }
+    // Check declared types
+    auto expectedId = expected->getIdentifier();
+    auto actualId = actual->getIdentifier();
+    if (assertEqual(expectedId, actualId)) {
+        // the two types are the same type
+        return true;
+    }
+    // Check numeric types
+    if (expected->isNumeric() && actual->isNumeric()) {
+        if (var) {
+            if (expected->kind() != actual->kind()) {
+                logger_.error(pos, "type mismatch: cannot pass " + to_string(*actualId) +
+                                   " to " + to_string(*expectedId) + " by reference.");
+                return false;
+            }
+            return true;
+        }
+        if ((expected->isInteger() && actual->isInteger()) || expected->isReal()) {
+            if (expected->getSize() < actual->getSize()) {
+                logger_.error(pos, "type mismatch: converting " + to_string(*actualId) +
+                                   " to " + to_string(*expectedId) + " may lose data.");
+                return false;
+            }
+            return true;
+        }
+    }
+    // Check array type
+    if (expected->isArray() && actual->isArray()) {
+        auto exp_array = dynamic_cast<ArrayTypeNode *>(expected);
+        auto act_array = dynamic_cast<ArrayTypeNode *>(actual);
+        if ((exp_array->isOpen() || exp_array->getDimension() == act_array->getDimension())) {
+            return assertCompatible(pos, exp_array->getMemberType(), act_array->getMemberType(), var);
+        }
+    }
+    // Check pointer type
+    if (expected->isPointer()) {
+        if (actual->isPointer()) {
+            auto exp_ptr = dynamic_cast<PointerTypeNode *>(expected);
+            auto act_ptr = dynamic_cast<PointerTypeNode *>(actual);
+            return assertCompatible(pos, exp_ptr->getBase(), act_ptr->getBase(), var, true);
+        } else if (actual->kind() == TypeKind::NILTYPE) {
+            return true;
+        }
+    }
+    // error logging
+    logger_.error(pos, "type mismatch: expected " + format(expected, isPtr) + ", found " + format(actual, isPtr) + ".");
+    return false;
 }
 
 TypeNode *
@@ -1089,7 +1098,7 @@ Sema::call(ProcedureNodeReference *node) {
         auto expr = node->getActualParameter(cnt);
         if (cnt < proc->getFormalParameterCount()) {
             auto parameter = proc->getFormalParameter(cnt);
-            if (assertCompatible(expr->pos(), parameter->getType(), expr->getType())) {
+            if (assertCompatible(expr->pos(), parameter->getType(), expr->getType(), parameter->isVar())) {
                 if (parameter->isVar()) {
                     if (expr->getNodeType() == NodeType::value_reference) {
                         auto reference = dynamic_cast<const ValueReferenceNode *>(expr);

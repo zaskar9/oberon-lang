@@ -116,7 +116,6 @@ BEGIN
     AssertPointerEqual(n, NIL);
     n := ReturnNilAsNode;
     AssertPointerEqual(n, NIL);
-    VarParameter(i);
     VarParameter(l);
     Out.String("All assertions passed."); Out.Ln
 END Conversion.

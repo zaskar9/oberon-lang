@@ -20,7 +20,7 @@ using std::string;
 using std::unique_ptr;
 using std::vector;
 
-class ModuleNode final : public DeclarationNode, public BlockNode {
+class ModuleNode final : public BlockNode {
 
 private:
     std::string alias_;
@@ -29,19 +29,13 @@ private:
 public:
     // ctor for use in sema / parser
     ModuleNode(const FilePos &pos, unique_ptr<Ident> name, vector<unique_ptr<ImportNode>> imports) :
-            DeclarationNode(NodeType::module, pos, make_unique<IdentDef>(name->start(), name->end(), name->name()), nullptr),
-            BlockNode(),
+            BlockNode(NodeType::module, pos, make_unique<IdentDef>(name->start(), name->end(), name->name()), nullptr),
             alias_(), imports_(std::move(imports)) {};
     // ctor for use in symbol importer
     explicit ModuleNode(unique_ptr<Ident> name) :
-            DeclarationNode(NodeType::module, EMPTY_POS, make_unique<IdentDef>(name->start(), name->end(), name->name()), nullptr),
-            BlockNode(),
+            BlockNode(NodeType::module, EMPTY_POS, make_unique<IdentDef>(name->start(), name->end(), name->name()), nullptr),
             alias_(), imports_() {};
     ~ModuleNode() override = default;
-
-    [[nodiscard]] NodeType getNodeType() const override {
-        return DeclarationNode::getNodeType();
-    }
 
     void setAlias(string alias);
     [[nodiscard]] string getAlias() const;

@@ -53,7 +53,7 @@ private:
 
     void checkExport(DeclarationNode *);
 
-    bool assertCompatible(const FilePos &, TypeNode *, TypeNode *, bool = false);
+    bool assertCompatible(const FilePos &, TypeNode *, TypeNode *, bool = false, bool = false);
     TypeNode *commonType(TypeNode *, TypeNode *) const;
 
     ExpressionNode *resolveReference(ExpressionNode *);
