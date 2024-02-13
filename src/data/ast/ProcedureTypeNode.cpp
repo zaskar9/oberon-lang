@@ -49,7 +49,7 @@ void ProcedureTypeNode::accept(NodeVisitor &visitor) {
 
 void ProcedureTypeNode::print(std::ostream &out) const {
     if (this->isAnonymous()) {
-        out << "PROCEDURE " << *this->getIdentifier() << ";";
+        out << "procedure type";
     } else {
         out << *this->getIdentifier();
     }

@@ -6,10 +6,13 @@ VAR a, b: INTEGER;
 PROCEDURE IncDec;
 VAR i: INTEGER;
     l: LONGINT;
+    a: ARRAY 10 OF INTEGER;
+    r: RECORD x: INTEGER END;
+    p: POINTER TO LONGINT;
 BEGIN
     i := 0;
     l := 0;
-    INC(i, 10);
+    INC(a[0], p^);
     INC(l);
     Out.String("["); Out.Int(i, 0); Out.String(","); Out.Long(l, 0); Out.String("]"); Out.Ln;
     DEC(i, 5);

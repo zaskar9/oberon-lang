@@ -87,6 +87,7 @@ void Oberon07::initSymbolTable(SymbolTable *symbols) {
                     {{TypeKind::ANYTYPE,  0}, false},
                     {{TypeKind::NOTYPE,   0}, false},
                     {{TypeKind::NILTYPE,  8}, false},
+                    {{TypeKind::ENTIRE,  0}, false},
                     {{TypeKind::BOOLEAN,  1}, true},
                     {{TypeKind::BYTE,     1}, true},
                     {{TypeKind::CHAR,     1}, true},
@@ -100,14 +101,15 @@ void Oberon07::initSymbolTable(SymbolTable *symbols) {
 
     symbols->setNilType(this->getBasicType(TypeKind::NILTYPE));
     auto anyType = this->getBasicType(TypeKind::ANYTYPE);
+    auto entireType = this->getBasicType(TypeKind::ENTIRE);
     auto boolType = this->getBasicType(TypeKind::BOOLEAN);
     auto intType = this->getBasicType(TypeKind::INTEGER);
     auto longType = this->getBasicType(TypeKind::LONGINT);
 
     this->createProcedure(ProcKind::NEW, "NEW", {{this->createPointerType(anyType), true}}, nullptr, false, true);
     this->createProcedure(ProcKind::FREE, "FREE", {{this->createPointerType(anyType), true}}, nullptr, false, true);
-    this->createProcedure(ProcKind::INC, "INC", {{longType, true}}, nullptr, true, true);
-    this->createProcedure(ProcKind::DEC, "DEC", {{longType, true}}, nullptr, true, true);
+    this->createProcedure(ProcKind::INC, "INC", {{entireType, true}}, nullptr, true, true);
+    this->createProcedure(ProcKind::DEC, "DEC", {{entireType, true}}, nullptr, true, true);
     this->createProcedure(ProcKind::LSL, "LSL", {{longType, false}, {longType, false}}, longType, false, true);
     this->createProcedure(ProcKind::ASR, "ASR", {{longType, false}, {longType, false}}, longType, false, true);
     this->createProcedure(ProcKind::ROL, "ROL", {{longType, false}, {longType, false}}, longType, false, true);

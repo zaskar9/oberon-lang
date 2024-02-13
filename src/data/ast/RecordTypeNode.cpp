@@ -50,7 +50,7 @@ void RecordTypeNode::accept(NodeVisitor &visitor) {
 
 void RecordTypeNode::print(std::ostream &out) const {
     if (this->isAnonymous()) {
-        out << "RECORD...";
+        out << "record type";
     } else {
         out << *this->getIdentifier();
     }

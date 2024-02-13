@@ -676,10 +676,18 @@ Value *LLVMIRBuilder::callPredefined(ProcedureNodeReference &node, std::vector<V
             return value_;
         } else if (params.size() > 1) {
             auto source = params[1]->getType();
+            auto param = node.getActualParameter(1);
+            if (!param->getType()->isInteger()) {
+                logger_.error(param->pos(), "type mismatch: expected integer type, found " +
+                                             to_string(param->getType()) + ".");
+                return value_;
+            }
             delta = params[1];
             if (target->getIntegerBitWidth() > source->getIntegerBitWidth()) {
                 delta = builder_.CreateSExt(delta, target);
             } else if (target->getIntegerBitWidth() < source->getIntegerBitWidth()) {
+                logger_.warning(param->pos(), "type mismatch: truncating " + to_string(param->getType()) + " to " +
+                                               to_string(node.getActualParameter(0)->getType()) + " may lose data.");
                 delta = builder_.CreateTrunc(delta, target);
             }
         } else {
@@ -787,6 +795,12 @@ void LLVMIRBuilder::proc(ProcedureNode &node) {
 }
 
 std::string LLVMIRBuilder::qualifiedName(DeclarationNode *node) const {
+    if (node->getNodeType() == NodeType::procedure) {
+        auto proc = dynamic_cast<ProcedureNode *>(node);
+        if (proc->isExtern() && node->getModule() == ast_->getTranslationUnit()) {
+            return node->getIdentifier()->name();
+        }
+    }
     return node->getModule()->getIdentifier()->name() + "_" + node->getIdentifier()->name();
 }
 

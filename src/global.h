@@ -26,5 +26,12 @@ static std::string to_string(T obj) {
     return stream.str();
 }
 
+template <typename T>
+static std::string to_string(T *obj) {
+    std::stringstream stream;
+    stream << *obj;
+    return stream.str();
+}
+
 
 #endif //OBERON_LLVM_GLOBAL_H

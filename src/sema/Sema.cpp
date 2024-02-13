@@ -1012,6 +1012,9 @@ Sema::assertCompatible(const FilePos &pos, TypeNode *expected, TypeNode *actual,
     // Check numeric types
     if (expected->isNumeric() && actual->isNumeric()) {
         if (var) {
+            if (expected->kind() == TypeKind::ENTIRE && actual->isInteger()) {
+                return true;
+            }
             if (expected->kind() != actual->kind()) {
                 logger_.error(pos, "type mismatch: cannot pass " + to_string(*actualId) +
                                    " to " + to_string(*expectedId) + " by reference.");
