@@ -678,6 +678,36 @@ Sema::onValueReference(const FilePos &start, [[maybe_unused]] const FilePos &end
     return node;
 }
 
+unique_ptr<ExpressionNode>
+Sema::onQualifiedExpression(const FilePos &start, const FilePos &end,
+                            unique_ptr<Designator> designator) {
+    auto ident = designator->ident();
+    DeclarationNode* sym = symbols_->lookup(ident);
+    if (!sym) {
+        logger_.error(ident->start(), "undefined identifier: " + to_string(*ident) + ".");
+        return nullptr;
+    }
+    if (sym->getNodeType() == NodeType::constant) {
+        if (!designator->selectors().empty()) {
+            auto sel = designator->selectors()[0].get();
+            logger_.warning(sel->pos(), "ignoring unexpected selector(s).");
+        }
+        auto decl = dynamic_cast<ConstantDeclarationNode *>(sym);
+        return fold(start, end, decl->getValue());
+    } else if (sym->getNodeType() == NodeType::variable ||
+            sym->getNodeType() == NodeType::procedure ||
+            sym->getNodeType() == NodeType::parameter) {
+        auto it = designator->selectors().begin();
+        while (it != designator->selectors().end()) {
+            auto sel = (*it).get();
+            ++it;
+        }
+        return make_unique<QualifiedExpression>(start, std::move(designator), sym);
+    }
+    logger_.error(ident->start(), "constant, parameter, variable, function call expected.");
+    return nullptr;
+}
+
 unique_ptr<BooleanLiteralNode>
 Sema::onBooleanLiteral(const FilePos &start, [[maybe_unused]] const FilePos &end, bool value) {
     return make_unique<BooleanLiteralNode>(start, value, this->tBoolean_);

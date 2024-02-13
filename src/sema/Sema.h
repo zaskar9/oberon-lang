@@ -73,6 +73,13 @@ private:
     void onBlockStart();
     void onBlockEnd();
 
+    TypeNode *onSelector(TypeNode*, Selector*);
+    TypeNode *onActualParameters(TypeNode*, ActualParameters*);
+    TypeNode *onArrayIndex(TypeNode*, ArrayIndex*);
+    TypeNode *onDereference(TypeNode*, Dereference*);
+    TypeNode *onRecordField(TypeNode*, RecordField*);
+    TypeNode *onTypeguard(TypeNode*, Typeguard*);
+
 public:
     Sema(CompilerConfig &, ASTContext *, OberonSystem *);
     Sema(const Sema&) = delete;
@@ -147,6 +154,8 @@ public:
 
     unique_ptr<LiteralNode> onConstantReference(const FilePos &, const FilePos &, unique_ptr<Designator>);
     unique_ptr<ValueReferenceNode> onValueReference(const FilePos &, const FilePos &, unique_ptr<Designator>);
+
+    unique_ptr<ExpressionNode> onQualifiedExpression(const FilePos &, const FilePos &, unique_ptr<Designator>);
 
     unique_ptr<BooleanLiteralNode> onBooleanLiteral(const FilePos &, const FilePos &, bool);
     unique_ptr<IntegerLiteralNode> onIntegerLiteral(const FilePos &, const FilePos &, long, bool = false);

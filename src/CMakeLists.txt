@@ -20,7 +20,7 @@ set(SCANNER_SOURCES
 set(DATA_SOURCES
         data/ast/ASTContext.cpp data/ast/ASTContext.h
         data/ast/Ident.cpp data/ast/Ident.h
-        data/ast/Selector.cpp data/ast/Selector.h
+        data/ast/Designator.cpp data/ast/Designator.h
         data/ast/Node.cpp data/ast/Node.h
         data/ast/ExpressionNode.cpp data/ast/ExpressionNode.h
         data/ast/TypeNode.cpp data/ast/TypeNode.h

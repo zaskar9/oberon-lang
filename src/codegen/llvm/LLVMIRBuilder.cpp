@@ -226,21 +226,15 @@ void LLVMIRBuilder::visit(ValueReferenceNode &node) {
     }
 }
 
-void LLVMIRBuilder::visit([[maybe_unused]] ConstantDeclarationNode &node) {
-    // Node does not need code generation.
-}
+void LLVMIRBuilder::visit(QualifiedExpression &) {}
 
-void LLVMIRBuilder::visit([[maybe_unused]] FieldNode &node) {
-    // Node does not need code generation.
-}
+void LLVMIRBuilder::visit(ConstantDeclarationNode &) {}
 
-void LLVMIRBuilder::visit([[maybe_unused]] ParameterNode &node) {
-    // Node does not need code generation.
-}
+void LLVMIRBuilder::visit(FieldNode &) {}
 
-void LLVMIRBuilder::visit([[maybe_unused]] VariableDeclarationNode &node) {
-    // Node does not need code generation.
-}
+void LLVMIRBuilder::visit(ParameterNode &) {}
+
+void LLVMIRBuilder::visit(VariableDeclarationNode &) {}
 
 void LLVMIRBuilder::visit(BooleanLiteralNode &node) {
     value_ = node.value() ? builder_.getTrue() : builder_.getFalse();
@@ -406,29 +400,17 @@ void LLVMIRBuilder::visit(BinaryExpressionNode &node) {
     }
 }
 
-void LLVMIRBuilder::visit([[maybe_unused]] TypeDeclarationNode &node) {
-    // Node does not need code generation.
-}
+void LLVMIRBuilder::visit(TypeDeclarationNode &) {}
 
-void LLVMIRBuilder::visit([[maybe_unused]] ArrayTypeNode &node) {
-    // Node does not need code generation.
-}
+void LLVMIRBuilder::visit(ArrayTypeNode &) {}
 
-void LLVMIRBuilder::visit([[maybe_unused]] BasicTypeNode &node) {
-    // Node does not need code generation.
-}
+void LLVMIRBuilder::visit(BasicTypeNode &) {}
 
-void LLVMIRBuilder::visit([[maybe_unused]] ProcedureTypeNode &node) {
-    // Node does not need code generation.
-}
+void LLVMIRBuilder::visit(ProcedureTypeNode &) {}
 
-void LLVMIRBuilder::visit([[maybe_unused]] RecordTypeNode &node) {
-    // Node does not need code generation.
-}
+void LLVMIRBuilder::visit(RecordTypeNode &) {}
 
-void LLVMIRBuilder::visit([[maybe_unused]] PointerTypeNode &node) {
-    // Node does not need code generation.
-}
+void LLVMIRBuilder::visit(PointerTypeNode &) {}
 
 void LLVMIRBuilder::visit(StatementSequenceNode &node) {
     for (size_t i = 0; i < node.getStatementCount(); i++) {
@@ -451,7 +433,7 @@ void LLVMIRBuilder::visit(AssignmentNode &node) {
     value_ = builder_.CreateStore(rValue, lValue);
 }
 
-void LLVMIRBuilder::visit(IfThenElseNode& node) {
+void LLVMIRBuilder::visit(IfThenElseNode &node) {
     auto tail = BasicBlock::Create(builder_.getContext(), "tail", function_);
     auto if_true = BasicBlock::Create(builder_.getContext(), "if_true", function_);
     auto if_false = tail;
@@ -495,19 +477,17 @@ void LLVMIRBuilder::visit(IfThenElseNode& node) {
     builder_.SetInsertPoint(tail);
 }
 
-void LLVMIRBuilder::visit([[maybe_unused]] ElseIfNode& node) {
-    // Code for this node is generated in the context of if-then-else node.
-}
+void LLVMIRBuilder::visit(ElseIfNode &) {}
 
-void LLVMIRBuilder::visit(ProcedureCallNode& node) {
+void LLVMIRBuilder::visit(ProcedureCallNode &node) {
     call(node);
 }
 
-void LLVMIRBuilder::visit([[maybe_unused]] LoopNode& node) {
+void LLVMIRBuilder::visit([[maybe_unused]] LoopNode &node) {
     // TODO code generation for general loop
 }
 
-void LLVMIRBuilder::visit(WhileLoopNode& node) {
+void LLVMIRBuilder::visit(WhileLoopNode &node) {
     auto body = BasicBlock::Create(builder_.getContext(), "loop_body", function_);
     auto tail = BasicBlock::Create(builder_.getContext(), "tail", function_);
     setRefMode(true);
@@ -523,7 +503,7 @@ void LLVMIRBuilder::visit(WhileLoopNode& node) {
     builder_.SetInsertPoint(tail);
 }
 
-void LLVMIRBuilder::visit(RepeatLoopNode& node) {
+void LLVMIRBuilder::visit(RepeatLoopNode &node) {
     auto body = BasicBlock::Create(builder_.getContext(), "loop_body", function_);
     auto tail = BasicBlock::Create(builder_.getContext(), "tail", function_);
     builder_.CreateBr(body);
@@ -536,7 +516,7 @@ void LLVMIRBuilder::visit(RepeatLoopNode& node) {
     builder_.SetInsertPoint(tail);
 }
 
-void LLVMIRBuilder::visit(ForLoopNode& node) {
+void LLVMIRBuilder::visit(ForLoopNode &node) {
     // initialize loop counter
     setRefMode(true);
     node.getLow()->accept(*this);
@@ -589,7 +569,7 @@ void LLVMIRBuilder::visit(ForLoopNode& node) {
     builder_.SetInsertPoint(tail);
 }
 
-void LLVMIRBuilder::visit(ReturnNode& node) {
+void LLVMIRBuilder::visit(ReturnNode &node) {
     if (node.getValue()) {
         setRefMode(true);
         node.getValue()->accept(*this);

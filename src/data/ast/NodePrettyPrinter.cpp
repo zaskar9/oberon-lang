@@ -176,6 +176,8 @@ void NodePrettyPrinter::visit(ValueReferenceNode &node) {
     }
 }
 
+void NodePrettyPrinter::visit(QualifiedExpression &) {}
+
 void NodePrettyPrinter::visit(ConstantDeclarationNode &node) {
     stream_ << *node.getIdentifier() << "(*" << node.getLevel() << "*) = ";
     node.getValue()->accept(*this);

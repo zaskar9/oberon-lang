@@ -2,7 +2,7 @@
 // Created by Michael Grossniklaus on 9/29/22.
 //
 
-#include "Selector.h"
+#include "Designator.h"
 #include "NodeReference.h"
 #include "ExpressionNode.h"
 
@@ -71,4 +71,39 @@ ActualParameters::~ActualParameters() = default;
 
 vector<unique_ptr<ExpressionNode>> &ActualParameters::parameters() {
     return parameters_;
+}
+
+
+Designator::~Designator() = default;
+
+QualIdent *Designator::ident() const {
+    return ident_.get();
+}
+
+const vector<unique_ptr<Selector>> &Designator::selectors() const {
+    return selectors_;
+}
+
+void Designator::addSelector(std::unique_ptr<Selector> selector) {
+    selectors_.push_back(std::move(selector));
+}
+
+void Designator::insertSelector(size_t num, std::unique_ptr<Selector> selector) {
+    selectors_.insert(selectors_.begin() + (long) num, std::move(selector));
+}
+
+void Designator::setSelector(size_t num, std::unique_ptr<Selector> selector) {
+    selectors_[num] = std::move(selector);
+}
+
+Selector *Designator::getSelector(size_t num) const {
+    return selectors_[num].get();
+}
+
+void Designator::removeSelector(size_t num) {
+    selectors_.erase(selectors_.begin() + (long) num);
+}
+
+size_t Designator::getSelectorCount() const {
+    return selectors_.size();
 }

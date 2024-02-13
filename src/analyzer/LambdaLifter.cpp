@@ -151,13 +151,13 @@ void LambdaLifter::visit(ProcedureNode &node) {
     }
 }
 
-void LambdaLifter::visit([[maybe_unused]] ImportNode &node) { }
+void LambdaLifter::visit(ImportNode &) {}
 
 void LambdaLifter::visit(ConstantDeclarationNode &node) {
     node.setLevel(level_);
 }
 
-void LambdaLifter::visit([[maybe_unused]] FieldNode &node) { }
+void LambdaLifter::visit(FieldNode &) {}
 
 void LambdaLifter::visit(ParameterNode &node) {
     node.setLevel(level_);
@@ -193,16 +193,17 @@ void LambdaLifter::visit(ValueReferenceNode &node) {
     }
 }
 
+void LambdaLifter::visit(QualifiedExpression &) {}
 
-void LambdaLifter::visit([[maybe_unused]] BooleanLiteralNode &node) { }
+void LambdaLifter::visit(BooleanLiteralNode &) {}
 
-void LambdaLifter::visit([[maybe_unused]] IntegerLiteralNode &node) { }
+void LambdaLifter::visit(IntegerLiteralNode &) {}
 
-void LambdaLifter::visit([[maybe_unused]] RealLiteralNode &node) { }
+void LambdaLifter::visit(RealLiteralNode &) {}
 
-void LambdaLifter::visit([[maybe_unused]] StringLiteralNode &node) { }
+void LambdaLifter::visit(StringLiteralNode &) {}
 
-void LambdaLifter::visit([[maybe_unused]] NilLiteralNode &node) { }
+void LambdaLifter::visit(NilLiteralNode &) {}
 
 void LambdaLifter::visit(UnaryExpressionNode &node) {
     node.getExpression()->accept(*this);
@@ -217,15 +218,15 @@ void LambdaLifter::visit(TypeDeclarationNode &node) {
     node.setLevel(level_);
 }
 
-void LambdaLifter::visit([[maybe_unused]] ArrayTypeNode &node) { }
+void LambdaLifter::visit(ArrayTypeNode &) {}
 
-void LambdaLifter::visit([[maybe_unused]] BasicTypeNode &node) { }
+void LambdaLifter::visit(BasicTypeNode &) {}
 
-void LambdaLifter::visit([[maybe_unused]] ProcedureTypeNode &node) { }
+void LambdaLifter::visit(ProcedureTypeNode &) {}
 
-void LambdaLifter::visit([[maybe_unused]] RecordTypeNode &node) { }
+void LambdaLifter::visit(RecordTypeNode &) {}
 
-void LambdaLifter::visit([[maybe_unused]] PointerTypeNode &node) { }
+void LambdaLifter::visit(PointerTypeNode &) {}
 
 void LambdaLifter::visit(StatementSequenceNode &node) {
     for (size_t i = 0; i < node.getStatementCount(); i++) {

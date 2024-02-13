@@ -49,51 +49,52 @@ private:
     void restoreRefMode();
     bool deref() const;
 
-    Value *callPredefined(ProcedureNodeReference &node, std::vector<Value *> &params);
+    Value *callPredefined(ProcedureNodeReference &, std::vector<Value *> &params);
 
-    void cast(ExpressionNode &node);
+    void cast(ExpressionNode &);
 
-    void call(ProcedureNodeReference &node);
-    void proc(ProcedureNode &node);
+    void call(ProcedureNodeReference &);
+    void proc(ProcedureNode &);
 
-    void visit(ModuleNode &node) override;
-    void visit(ProcedureNode &node) override;
+    void visit(ModuleNode &) override;
+    void visit(ProcedureNode &) override;
 
-    void visit(ImportNode &node) override;
+    void visit(ImportNode &) override;
 
-    void visit(ConstantDeclarationNode &node) override;
-    void visit(FieldNode &node) override;
-    void visit(ParameterNode &node) override;
-    void visit(VariableDeclarationNode &node) override;
+    void visit(ConstantDeclarationNode &) override;
+    void visit(FieldNode &) override;
+    void visit(ParameterNode &) override;
+    void visit(VariableDeclarationNode &) override;
 
-    void visit(ValueReferenceNode &node) override;
+    void visit(ValueReferenceNode &) override;
+    void visit(QualifiedExpression &) override;
 
-    void visit(BooleanLiteralNode &node) override;
-    void visit(IntegerLiteralNode &node) override;
-    void visit(RealLiteralNode &node) override;
-    void visit(StringLiteralNode &node) override;
-    void visit(NilLiteralNode &node) override;
+    void visit(BooleanLiteralNode &) override;
+    void visit(IntegerLiteralNode &) override;
+    void visit(RealLiteralNode &) override;
+    void visit(StringLiteralNode &) override;
+    void visit(NilLiteralNode &) override;
 
-    void visit(UnaryExpressionNode &node) override;
-    void visit(BinaryExpressionNode &node) override;
+    void visit(UnaryExpressionNode &) override;
+    void visit(BinaryExpressionNode &) override;
 
-    void visit(TypeDeclarationNode &node) override;
-    void visit(ArrayTypeNode &node) override;
-    void visit(BasicTypeNode &node) override;
-    void visit(ProcedureTypeNode &node) override;
-    void visit(RecordTypeNode &node) override;
-    void visit(PointerTypeNode &node) override;
+    void visit(TypeDeclarationNode &) override;
+    void visit(ArrayTypeNode &) override;
+    void visit(BasicTypeNode &) override;
+    void visit(ProcedureTypeNode &) override;
+    void visit(RecordTypeNode &) override;
+    void visit(PointerTypeNode &) override;
 
-    void visit(StatementSequenceNode &node) override;
-    void visit(AssignmentNode &node) override;
-    void visit(IfThenElseNode &node) override;
-    void visit(ElseIfNode &node) override;
-    void visit(ProcedureCallNode &node) override;
-    void visit(LoopNode &node) override;
-    void visit(WhileLoopNode &node) override;
-    void visit(RepeatLoopNode &node) override;
-    void visit(ForLoopNode &node) override;
-    void visit(ReturnNode &node) override;
+    void visit(StatementSequenceNode &) override;
+    void visit(AssignmentNode &) override;
+    void visit(IfThenElseNode &) override;
+    void visit(ElseIfNode &) override;
+    void visit(ProcedureCallNode &) override;
+    void visit(LoopNode &) override;
+    void visit(WhileLoopNode &) override;
+    void visit(RepeatLoopNode &) override;
+    void visit(ForLoopNode &) override;
+    void visit(ReturnNode &) override;
 
 public:
     LLVMIRBuilder(CompilerConfig &config, LLVMContext &builder, Module *module);

@@ -2,8 +2,8 @@
 // Created by Michael Grossniklaus on 9/29/22.
 //
 
-#ifndef OBERON_LANG_SELECTOR_H
-#define OBERON_LANG_SELECTOR_H
+#ifndef OBERON_LANG_DESIGNATOR_H
+#define OBERON_LANG_DESIGNATOR_H
 
 
 #include <memory>
@@ -13,6 +13,8 @@
 #include "Ident.h"
 #include "DeclarationNode.h"
 
+
+using std::make_unique;
 using std::unique_ptr;
 using std::vector;
 
@@ -76,7 +78,7 @@ public:
 class Typeguard final : public Selector {
 
 private:
-    std::unique_ptr<QualIdent> ident_;
+    unique_ptr<QualIdent> ident_;
 
 public:
     explicit Typeguard(const FilePos &pos, unique_ptr<QualIdent> ident);
@@ -100,4 +102,33 @@ public:
 };
 
 
-#endif //OBERON_LANG_SELECTOR_H
+class Designator {
+
+private:
+    unique_ptr<QualIdent> ident_;
+    vector<unique_ptr<Selector>> selectors_;
+
+public:
+    explicit Designator(unique_ptr<QualIdent> ident) :
+            ident_(std::move(ident)), selectors_() {};
+    explicit Designator(unique_ptr<Ident> ident) :
+            ident_(make_unique<QualIdent>(ident.get())), selectors_() {};
+    explicit Designator(unique_ptr<Designator> &&designator) :
+            ident_(std::move(designator->ident_)), selectors_(std::move(designator->selectors_)) {};
+    Designator(unique_ptr<QualIdent> ident, vector<unique_ptr<Selector>> selectors) :
+            ident_(std::move(ident)), selectors_(std::move(selectors)) {};
+    virtual ~Designator();
+
+    [[nodiscard]] QualIdent *ident() const;
+    [[nodiscard]] const vector<unique_ptr<Selector>> &selectors() const;
+
+    void addSelector(unique_ptr<Selector> selector);
+    void insertSelector(size_t num, unique_ptr<Selector> selector);
+    void setSelector(size_t num, unique_ptr<Selector> selector);
+    void removeSelector(size_t num);
+    [[nodiscard]] Selector *getSelector(size_t num) const;
+    [[nodiscard]] size_t getSelectorCount() const;
+
+};
+
+#endif //OBERON_LANG_DESIGNATOR_H

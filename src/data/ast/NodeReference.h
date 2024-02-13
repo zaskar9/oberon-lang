@@ -8,50 +8,31 @@
 #define OBERON0C_REFERENCENODE_H
 
 
-#include "ExpressionNode.h"
-#include "DeclarationNode.h"
-#include "ProcedureNode.h"
-#include "Selector.h"
 #include <memory>
 #include <vector>
 
+#include "ExpressionNode.h"
+#include "DeclarationNode.h"
+#include "ProcedureNode.h"
+#include "Designator.h"
+
+using std::unique_ptr;
+using std::vector;
+
 class NodeReference {
 
+private:
+    DeclarationNode* node_;
+
 public:
-    explicit NodeReference() = default;
+    NodeReference() : node_() {};
+    explicit NodeReference(DeclarationNode *node) : node_(node) {};
     virtual ~NodeReference();
 
-    [[nodiscard]] virtual bool isResolved() const = 0;
-    [[nodiscard]] virtual Node *dereference() const = 0;
-
-};
-
-
-class Selector;
-
-class Designator {
-
-private:
-    std::unique_ptr<QualIdent> ident_;
-    std::vector<std::unique_ptr<Selector>> selectors_;
-
-public:
-    explicit Designator(std::unique_ptr<QualIdent> ident) :
-            ident_(std::move(ident)), selectors_() {};
-    explicit Designator(std::unique_ptr<Ident> ident) :
-            ident_(std::make_unique<QualIdent>(ident.get())), selectors_() {};
-    explicit Designator(std::unique_ptr<Designator> &&designator) :
-            ident_(std::move(designator->ident_)), selectors_(std::move(designator->selectors_)) {};
-    virtual ~Designator();
-
-    [[nodiscard]] QualIdent *ident() const;
-
-    void addSelector(std::unique_ptr<Selector> selector);
-    void insertSelector(size_t num, std::unique_ptr<Selector> selector);
-    void setSelector(size_t num, std::unique_ptr<Selector> selector);
-    void removeSelector(size_t num);
-    [[nodiscard]] Selector *getSelector(size_t num) const;
-    [[nodiscard]] size_t getSelectorCount() const;
+    [[deprecated("will be removed after refactoring")]]
+    virtual void resolve(DeclarationNode *node);
+    [[nodiscard]] virtual bool isResolved() const;
+    [[nodiscard]] virtual DeclarationNode *dereference() const;
 
 };
 
@@ -59,20 +40,18 @@ public:
 class ProcedureNodeReference : public NodeReference, public Designator {
 
 private:
-    std::vector<std::unique_ptr<ExpressionNode>> parameters_;
+    vector<unique_ptr<ExpressionNode>> parameters_;
 
 public:
-    explicit ProcedureNodeReference(std::unique_ptr<Designator> designator) :
+    explicit ProcedureNodeReference(unique_ptr<Designator> designator) :
             Designator(std::move(designator)),
             parameters_() {};
     ~ProcedureNodeReference() override;
 
     [[nodiscard]] virtual FilePos pos() = 0;
 
-    virtual void resolve(DeclarationNode *node) = 0;
-
-    void addActualParameter(std::unique_ptr<ExpressionNode> parameter);
-    void setActualParameter(size_t num, std::unique_ptr<ExpressionNode> parameter);
+    void addActualParameter(unique_ptr<ExpressionNode> parameter);
+    void setActualParameter(size_t num, unique_ptr<ExpressionNode> parameter);
     [[nodiscard]] ExpressionNode *getActualParameter(size_t num) const;
     [[nodiscard]] size_t getActualParameterCount() const;
 
@@ -84,15 +63,11 @@ protected:
 
 class ValueReferenceNode final : public ExpressionNode, public ProcedureNodeReference {
 
-private:
-    DeclarationNode *node_;
-
 public:
     // ctor for parser / sema
     ValueReferenceNode(const FilePos &pos, std::unique_ptr<Designator> designator) :
             ExpressionNode(NodeType::value_reference, pos, nullptr),
-            ProcedureNodeReference(std::move(designator)),
-            node_() {};
+            ProcedureNodeReference(std::move(designator)) {};
     // ctor for transformer
     ValueReferenceNode(const FilePos &pos, DeclarationNode *node);
     ~ValueReferenceNode() override = default;
@@ -100,9 +75,6 @@ public:
     [[nodiscard]] FilePos pos() override { return ExpressionNode::pos(); };
 
     void resolve(DeclarationNode *node) override;
-
-    [[nodiscard]] bool isResolved() const override;
-    [[nodiscard]] DeclarationNode *dereference() const override;
 
     [[nodiscard]] bool isConstant() const override;
     [[nodiscard]] int getPrecedence() const override;
@@ -116,25 +88,52 @@ public:
 
 class ProcedureCallNode final : public StatementNode, public ProcedureNodeReference {
 
-private:
-    ProcedureNode *node_;
-
 public:
-    ProcedureCallNode(FilePos pos, std::unique_ptr<Designator> designator) :
+    ProcedureCallNode(const FilePos& pos, std::unique_ptr<Designator> designator) :
             StatementNode(NodeType::procedure_call, pos),
-            ProcedureNodeReference(std::move(designator)),
-            node_() {};
+            ProcedureNodeReference(std::move(designator)) {};
     ~ProcedureCallNode() override = default;
 
     [[nodiscard]] FilePos pos() override { return StatementNode::pos(); };
 
     void resolve(DeclarationNode *node) override;
 
-    [[nodiscard]] bool isResolved() const override;
-    [[nodiscard]] ProcedureNode *dereference() const override;
+    void accept(NodeVisitor &visitor) override;
+    void print(std::ostream &stream) const override;
+
+};
+
+
+class QualifiedExpression : public ExpressionNode, public Designator, private NodeReference {
+
+public:
+    QualifiedExpression(const FilePos &pos, unique_ptr<Designator> designator, DeclarationNode *decl) :
+            ExpressionNode(NodeType::qualified_expression, pos, decl->getType()),
+            Designator(std::move(designator)),
+            NodeReference(decl) {};
+    ~QualifiedExpression();
+
+    [[nodiscard]] bool isConstant() const override;
+    [[nodiscard]] int getPrecedence() const override;
+    [[nodiscard]] TypeNode* getType() const override;
 
     void accept(NodeVisitor &visitor) override;
     void print(std::ostream &stream) const override;
+
+};
+
+
+class QualifiedStatement : public StatementNode, public Designator, private NodeReference {
+
+public:
+    QualifiedStatement(const FilePos &pos, unique_ptr<Designator> designator, DeclarationNode *decl) :
+            StatementNode(NodeType::qualified_statement, pos),
+            Designator(std::move(designator)),
+            NodeReference(decl) {};
+    ~QualifiedStatement();
+
+    // void accept(NodeVisitor &visitor) override;
+    // void print(std::ostream &stream) const override;
 
 };
 
