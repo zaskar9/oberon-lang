@@ -34,6 +34,8 @@ public:
             parameters_(std::move(params)), varargs_(false), type_(type) {};
     ~ProcedureTypeNode() override = default;
 
+    [[nodiscard]] const vector<unique_ptr<ParameterNode>> &parameters() const;
+
     void addFormalParameter(unique_ptr<ParameterNode> parameter);
     [[nodiscard]] ParameterNode *getFormalParameter(const string &name);
     [[nodiscard]] ParameterNode *getFormalParameter(size_t num) const;

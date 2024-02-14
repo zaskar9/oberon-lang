@@ -107,8 +107,8 @@ public:
 class QualifiedExpression : public ExpressionNode, public Designator, private NodeReference {
 
 public:
-    QualifiedExpression(const FilePos &pos, unique_ptr<Designator> designator, DeclarationNode *decl) :
-            ExpressionNode(NodeType::qualified_expression, pos, decl->getType()),
+    QualifiedExpression(const FilePos &pos, unique_ptr<Designator> designator, DeclarationNode *decl, TypeNode *type) :
+            ExpressionNode(NodeType::qualified_expression, pos, type),
             Designator(std::move(designator)),
             NodeReference(decl) {};
     ~QualifiedExpression();

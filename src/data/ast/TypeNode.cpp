@@ -66,6 +66,10 @@ bool TypeNode::isPointer() const {
     return kind_ == TypeKind::POINTER;
 }
 
+bool TypeNode::isProcedure() const {
+    return kind_ == TypeKind::PROCEDURE;
+}
+
 bool TypeNode::isBoolean() const {
     return kind_ == TypeKind::BOOLEAN;
 }

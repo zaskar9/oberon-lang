@@ -933,10 +933,11 @@ unique_ptr<ExpressionNode> Parser::basic_factor() {
     if (token->type() == TokenType::const_ident) {
         FilePos pos = token->start();
         auto designator = this->designator();
-        if (sema_.isConstant(designator->ident())) {
-            return sema_.onConstantReference(pos, EMPTY_POS, std::move(designator));
-        }
-        return sema_.onValueReference(pos, EMPTY_POS, std::move(designator));
+        return sema_.onQualifiedExpression(pos, token_->end(), std::move(designator));
+//        if (sema_.isConstant(designator->ident())) {
+//            return sema_.onConstantReference(pos, EMPTY_POS, std::move(designator));
+//        }
+//        return sema_.onValueReference(pos, EMPTY_POS, std::move(designator));
     }
     auto tmp = scanner_.next();
     if (token->type() == TokenType::int_literal) {

@@ -80,7 +80,7 @@ QualIdent *Designator::ident() const {
     return ident_.get();
 }
 
-const vector<unique_ptr<Selector>> &Designator::selectors() const {
+vector<unique_ptr<Selector>> &Designator::selectors() {
     return selectors_;
 }
 

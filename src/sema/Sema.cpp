@@ -678,6 +678,142 @@ Sema::onValueReference(const FilePos &start, [[maybe_unused]] const FilePos &end
     return node;
 }
 
+TypeNode *Sema::onSelectors(TypeNode *base, vector<unique_ptr<Selector>> &selectors) {
+    auto it = selectors.begin();
+    while (it != selectors.end()) {
+        auto sel = (*it).get();
+        if (!base) {
+            logger_.error(sel->pos(), "unexpected selector.");
+            return nullptr;
+        }
+        // check for implicit pointer de-referencing
+        if (base->isPointer() && (sel->getType() == NodeType::array_type ||
+                                  sel->getType() == NodeType::record_type)) {
+            auto caret = std::make_unique<Dereference>(sel->pos());
+            // place caret before the current element
+            it = selectors.insert(it, std::move(caret));
+            sel = (*it).get();
+        }
+        switch (sel->getType()) {
+            case NodeType::parameter:
+                base = onActualParameters(base, dynamic_cast<ActualParameters *>(sel));
+                break;
+            case NodeType::array_type:
+                base = onArrayIndex(base, dynamic_cast<ArrayIndex *>(sel));
+                break;
+            case NodeType::pointer_type:
+                base = onDereference(base, dynamic_cast<Dereference *>(sel));
+                break;
+            case NodeType::record_type:
+                base = onRecordField(base, dynamic_cast<RecordField *>(sel));
+                break;
+            case NodeType::type:
+                base = onTypeguard(base, dynamic_cast<Typeguard *>(sel));
+                break;
+            default:
+                logger_.error(sel->pos(), "unexpected selector.");
+                return nullptr;
+        }
+        ++it;
+    }
+    return base;
+}
+
+TypeNode *Sema::onActualParameters(TypeNode *base, ActualParameters *sel) {
+    if (!base->isProcedure()) {
+        logger_.error(sel->pos(), "type " + to_string(base) + " is not a procedure type.");
+        return nullptr;
+    }
+    auto proc = dynamic_cast<ProcedureTypeNode *>(base);
+    if (sel->parameters().size() < proc->parameters().size()) {
+        logger_.error(sel->pos(), "fewer actual than formal parameters.");
+    }
+    for (size_t cnt = 0; cnt < sel->parameters().size(); cnt++) {
+        auto expr = sel->parameters()[cnt].get();
+        if (cnt < proc->parameters().size()) {
+            auto param = proc->parameters()[cnt].get();
+            if (assertCompatible(expr->pos(), param->getType(), expr->getType(), param->isVar())) {
+                if (param->isVar()) {
+                    if (expr->getNodeType() == NodeType::value_reference) {
+                        auto reference = dynamic_cast<const ValueReferenceNode *>(expr);
+                        auto value = reference->dereference();
+                        if (value->getNodeType() == NodeType::constant) {
+                            logger_.error(expr->pos(), "illegal actual parameter: cannot pass constant by reference.");
+                        }
+                    } else {
+                        logger_.error(expr->pos(), "illegal actual parameter: cannot pass expression by reference.");
+                    }
+                } else {
+                    cast(expr, param->getType());
+                }
+            }
+        } else if (!proc->hasVarArgs()) {
+            logger_.error(expr->pos(), "more actual than formal parameters.");
+            break;
+        }
+    }
+    return proc->getReturnType();
+}
+
+TypeNode *Sema::onArrayIndex(TypeNode *base, ArrayIndex *sel) {
+    if (!base->isArray()) {
+        logger_.error(sel->pos(), "type " + to_string(base) + " is not an array type.");
+        return nullptr;
+    }
+    auto type = dynamic_cast<ArrayTypeNode *>(base);
+    if (sel->indices().size() > 1) {
+        logger_.error(sel->pos(), "multi-dimensional arrays are not yet supported.");
+    }
+    for (auto& index : sel->indices()) {
+        auto sel_type = index->getType();
+        if (sel_type && sel_type->kind() != TypeKind::INTEGER) {
+            logger_.error(sel->pos(), "integer expression expected.");
+        }
+    }
+    return type->getMemberType();
+}
+
+TypeNode *Sema::onDereference(TypeNode *base, Dereference *sel) {
+    if (!base->isPointer()) {
+        logger_.error(sel->pos(), "type " + to_string(base) + " is not a pointer type.");
+        return nullptr;
+    }
+    auto type = dynamic_cast<PointerTypeNode *>(base);
+    return type->getBase();
+}
+
+TypeNode *Sema::onRecordField(TypeNode *base, RecordField *sel) {
+    if (!base->isRecord()) {
+        logger_.error(sel->pos(), "type " + to_string(base) + " is not a record type.");
+        return nullptr;
+    }
+    auto type = dynamic_cast<RecordTypeNode *>(base);
+    auto ref = dynamic_cast<RecordField *>(sel);
+    auto field = type->getField(ref->ident()->name());
+    if (!field) {
+        logger_.error(ref->pos(), "undefined record field: " + to_string(*ref->ident()) + ".");
+        return nullptr;
+    } else {
+        ref->setField(field);
+        return field->getType();
+    }
+}
+
+TypeNode *Sema::onTypeguard([[maybe_unused]] TypeNode *base, Typeguard *sel) {
+    auto sym = symbols_->lookup(sel->ident());
+    if (sym) {
+        if (sym->getNodeType() == NodeType::type) {
+            // TODO check if type-guard is compatible with base type.
+            return dynamic_cast<TypeDeclarationNode *>(sym)->getType();
+        } else {
+            logger_.error(sel->pos(), "unexpected selector.");
+        }
+    } else {
+        logger_.error(sel->pos(), "undefined identifier: " + to_string(*sel->ident()) + ".");
+    }
+    return nullptr;
+}
+
 unique_ptr<ExpressionNode>
 Sema::onQualifiedExpression(const FilePos &start, const FilePos &end,
                             unique_ptr<Designator> designator) {
@@ -687,6 +823,7 @@ Sema::onQualifiedExpression(const FilePos &start, const FilePos &end,
         logger_.error(ident->start(), "undefined identifier: " + to_string(*ident) + ".");
         return nullptr;
     }
+    // check constant reference
     if (sym->getNodeType() == NodeType::constant) {
         if (!designator->selectors().empty()) {
             auto sel = designator->selectors()[0].get();
@@ -694,15 +831,21 @@ Sema::onQualifiedExpression(const FilePos &start, const FilePos &end,
         }
         auto decl = dynamic_cast<ConstantDeclarationNode *>(sym);
         return fold(start, end, decl->getValue());
-    } else if (sym->getNodeType() == NodeType::variable ||
-            sym->getNodeType() == NodeType::procedure ||
-            sym->getNodeType() == NodeType::parameter) {
-        auto it = designator->selectors().begin();
-        while (it != designator->selectors().end()) {
-            auto sel = (*it).get();
-            ++it;
+    }
+    // check variable or parameter reference
+    if (sym->getNodeType() == NodeType::variable || sym->getNodeType() == NodeType::parameter) {
+        auto type = onSelectors(sym->getType(), designator->selectors());
+        return make_unique<QualifiedExpression>(start, std::move(designator), sym, type);
+    }
+    // check procedure reference
+    if (sym->getNodeType() == NodeType::procedure) {
+        auto proc = dynamic_cast<ProcedureNode *>(sym);
+        if (designator->ident()->isQualified() && proc->isExtern()) {
+            // a fully-qualified external reference needs to be added to module for code generation
+            context_->addExternalProcedure(proc);
         }
-        return make_unique<QualifiedExpression>(start, std::move(designator), sym);
+        auto type = onSelectors(sym->getType(), designator->selectors());
+        return make_unique<QualifiedExpression>(start, std::move(designator), sym, type);
     }
     logger_.error(ident->start(), "constant, parameter, variable, function call expected.");
     return nullptr;
@@ -1139,6 +1282,9 @@ Sema::call(ProcedureNodeReference *node) {
                         if (value->getNodeType() == NodeType::constant) {
                             logger_.error(expr->pos(), "illegal actual parameter: cannot pass constant by reference.");
                         }
+                    } else if (expr->getNodeType() == NodeType::qualified_expression) {
+                        // TODO constants
+                        continue;
                     } else {
                         logger_.error(expr->pos(), "illegal actual parameter: cannot pass expression by reference.");
                     }

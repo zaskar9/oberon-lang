@@ -120,7 +120,7 @@ public:
     virtual ~Designator();
 
     [[nodiscard]] QualIdent *ident() const;
-    [[nodiscard]] const vector<unique_ptr<Selector>> &selectors() const;
+    [[nodiscard]] vector<unique_ptr<Selector>> &selectors();
 
     void addSelector(unique_ptr<Selector> selector);
     void insertSelector(size_t num, unique_ptr<Selector> selector);

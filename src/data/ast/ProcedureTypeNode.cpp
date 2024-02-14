@@ -19,6 +19,10 @@ ParameterNode *ProcedureTypeNode::getFormalParameter(const std::string &name) {
     return nullptr;
 }
 
+const vector<unique_ptr<ParameterNode>> &ProcedureTypeNode::parameters() const {
+    return parameters_;
+}
+
 ParameterNode *ProcedureTypeNode::getFormalParameter(size_t num) const {
     return parameters_[num].get();
 }
