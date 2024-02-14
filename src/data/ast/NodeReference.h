@@ -29,7 +29,6 @@ public:
     explicit NodeReference(DeclarationNode *node) : node_(node) {};
     virtual ~NodeReference();
 
-    [[deprecated("will be removed after refactoring")]]
     virtual void resolve(DeclarationNode *node);
     [[nodiscard]] virtual bool isResolved() const;
     [[nodiscard]] virtual DeclarationNode *dereference() const;
@@ -104,12 +103,16 @@ public:
 };
 
 
-class QualifiedExpression : public ExpressionNode, public Designator, private NodeReference {
+class QualifiedExpression : public ExpressionNode, public Designator, public NodeReference {
 
 public:
     QualifiedExpression(const FilePos &pos, unique_ptr<Designator> designator, DeclarationNode *decl, TypeNode *type) :
             ExpressionNode(NodeType::qualified_expression, pos, type),
             Designator(std::move(designator)),
+            NodeReference(decl) {};
+    QualifiedExpression(DeclarationNode *decl) :
+            ExpressionNode(NodeType::qualified_expression, EMPTY_POS, decl->getType()),
+            Designator(make_unique<Designator>(make_unique<QualIdent>(decl->getIdentifier()))),
             NodeReference(decl) {};
     ~QualifiedExpression();
 
@@ -117,13 +120,15 @@ public:
     [[nodiscard]] int getPrecedence() const override;
     [[nodiscard]] TypeNode* getType() const override;
 
+    void resolve(DeclarationNode *node) override;
+
     void accept(NodeVisitor &visitor) override;
     void print(std::ostream &stream) const override;
 
 };
 
 
-class QualifiedStatement : public StatementNode, public Designator, private NodeReference {
+class QualifiedStatement : public StatementNode, public Designator, public NodeReference {
 
 public:
     QualifiedStatement(const FilePos &pos, unique_ptr<Designator> designator, DeclarationNode *decl) :

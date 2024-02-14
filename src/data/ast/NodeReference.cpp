@@ -28,7 +28,7 @@ ProcedureNodeReference::~ProcedureNodeReference() = default;
 void ProcedureNodeReference::initActualParameters() {
     if (this->getSelectorCount() > 0) {
         auto selector = this->getSelector(0);
-        if (selector->getType() == NodeType::parameter) {
+        if (selector->getNodeType() == NodeType::parameter) {
             auto parameters = dynamic_cast<ActualParameters *>(selector);
             parameters_ = std::move(parameters->parameters());
             this->removeSelector(0);
@@ -133,6 +133,12 @@ TypeNode *QualifiedExpression::getType() const {
         return proc->getReturnType();
     }
     return type;
+}
+
+void QualifiedExpression::resolve(DeclarationNode *node) {
+    // TODO update the qualident to match the new declaration
+    NodeReference::resolve(node);
+    setType(node->getType());
 }
 
 void QualifiedExpression::accept(NodeVisitor &visitor) {

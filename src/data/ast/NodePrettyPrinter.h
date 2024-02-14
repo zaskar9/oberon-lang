@@ -13,6 +13,9 @@
 #include "NodeVisitor.h"
 #include <iostream>
 #include <iomanip>
+#include <vector>
+
+using std::vector;
 
 class NodePrettyPrinter final : private NodeVisitor {
 
@@ -24,6 +27,7 @@ private:
     void indent();
     void block(BlockNode &, bool isGlobal);
     void call(ProcedureNodeReference &);
+    void selectors(vector<unique_ptr<Selector>> &);
 
     void visit(ModuleNode &) override;
     void visit(ProcedureNode &) override;

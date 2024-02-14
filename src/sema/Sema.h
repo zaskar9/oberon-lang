@@ -73,7 +73,7 @@ private:
     void onBlockStart();
     void onBlockEnd();
 
-    TypeNode *onSelectors(TypeNode *, vector<unique_ptr<Selector>> &);
+    TypeNode *onSelectors(const DeclarationNode *, vector<unique_ptr<Selector>> &);
     TypeNode *onActualParameters(TypeNode*, ActualParameters*);
     TypeNode *onArrayIndex(TypeNode*, ArrayIndex*);
     TypeNode *onDereference(TypeNode*, Dereference*);

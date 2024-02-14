@@ -49,12 +49,14 @@ private:
     void restoreRefMode();
     bool deref() const;
 
-    Value *callPredefined(ProcedureNodeReference &, std::vector<Value *> &params);
+    Value *callPredefined(ProcedureNodeReference &, std::vector<Value *> &);
 
     void cast(ExpressionNode &);
 
     void call(ProcedureNodeReference &);
     void proc(ProcedureNode &);
+
+    TypeNode *selectors(TypeNode *, vector<unique_ptr<Selector>> &);
 
     void visit(ModuleNode &) override;
     void visit(ProcedureNode &) override;

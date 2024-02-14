@@ -29,7 +29,7 @@ public:
     virtual ~Selector();
 
     [[nodiscard]] FilePos pos() const;
-    [[nodiscard]] NodeType getType() const;
+    [[nodiscard]] NodeType getNodeType() const;
 };
 
 class ExpressionNode;
@@ -79,23 +79,32 @@ class Typeguard final : public Selector {
 
 private:
     unique_ptr<QualIdent> ident_;
+    TypeNode *type_;
 
 public:
     explicit Typeguard(const FilePos &pos, unique_ptr<QualIdent> ident);
     ~Typeguard() override;
 
-    [[nodiscard]] QualIdent* ident() const;
+    [[nodiscard]] QualIdent *ident() const;
+    void setType(TypeNode *);
+    [[nodiscard]] TypeNode *getType() const;
 
 };
+
+class ProcedureNode;
 
 class ActualParameters final : public Selector {
 
 private:
+    ProcedureNode *proc_;
     vector<unique_ptr<ExpressionNode>> parameters_;
 
 public:
     explicit ActualParameters(const FilePos &pos, vector<unique_ptr<ExpressionNode>> parameters_);
     ~ActualParameters() override;
+
+    void setProcedure(ProcedureNode *);
+    [[nodiscard]] ProcedureNode *getProcedure() const;
 
     [[nodiscard]] vector<unique_ptr<ExpressionNode>> &parameters();
 

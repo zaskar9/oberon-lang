@@ -50,6 +50,14 @@ unsigned int TypeNode::getSize() const {
     return size_;
 }
 
+void TypeNode::setLevel(unsigned int level) {
+    level_ = level;
+}
+
+unsigned int TypeNode::getLevel() const {
+    return level_;
+}
+
 bool TypeNode::isAnonymous() const {
     return anon_;
 }

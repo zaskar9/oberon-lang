@@ -605,15 +605,15 @@ Sema::onValueReference(const FilePos &start, [[maybe_unused]] const FilePos &end
             size_t last = node->getSelectorCount();
             while (pos < last) {
                 auto sel = node->getSelector(pos);
-                if (type->getNodeType() != sel->getType()) {
+                if (type->getNodeType() != sel->getNodeType()) {
                     if (type->getNodeType() == NodeType::pointer_type &&
-                        (sel->getType() == NodeType::array_type || sel->getType() == NodeType::record_type)) {
+                        (sel->getNodeType() == NodeType::array_type || sel->getNodeType() == NodeType::record_type)) {
                         // perform implicit pointer dereferencing
                         auto caret = std::make_unique<Dereference>(EMPTY_POS);
                         sel = caret.get();
                         node->insertSelector(pos, std::move(caret));
                         last++;
-                    } else if (sel->getType() == NodeType::type) {
+                    } else if (sel->getNodeType() == NodeType::type) {
                         // handle type-guard or clean up parsing ambiguity
                         auto guard = dynamic_cast<Typeguard *>(sel);
                         sym = symbols_->lookup(guard->ident());
@@ -635,7 +635,7 @@ Sema::onValueReference(const FilePos &start, [[maybe_unused]] const FilePos &end
                         logger_.error(sel->pos(), "selector type mismatch.");
                     }
                 }
-                if (sel->getType() == NodeType::array_type && type->isArray()) {
+                if (sel->getNodeType() == NodeType::array_type && type->isArray()) {
                     auto array_t = dynamic_cast<ArrayTypeNode *>(type);
                     auto indices = dynamic_cast<ArrayIndex*>(sel);
                     if (indices->indices().size() > 1) {
@@ -648,7 +648,7 @@ Sema::onValueReference(const FilePos &start, [[maybe_unused]] const FilePos &end
                         }
                     }
                     type = array_t->getMemberType();
-                } else if (sel->getType() == NodeType::record_type && type->isRecord()) {
+                } else if (sel->getNodeType() == NodeType::record_type && type->isRecord()) {
                     auto record_t = dynamic_cast<RecordTypeNode *>(type);
                     auto ref = dynamic_cast<RecordField *>(sel);
                     auto field = record_t->getField(ref->ident()->name());
@@ -658,10 +658,10 @@ Sema::onValueReference(const FilePos &start, [[maybe_unused]] const FilePos &end
                     } else {
                         logger_.error(ref->pos(), "unknown record field: " + to_string(*ref->ident()) + ".");
                     }
-                } else if (sel->getType() == NodeType::pointer_type && type->isPointer()) {
+                } else if (sel->getNodeType() == NodeType::pointer_type && type->isPointer()) {
                     auto pointer_t = dynamic_cast<PointerTypeNode *>(type);
                     type = pointer_t->getBase();
-                } else if (sel->getType() == NodeType::type) {
+                } else if (sel->getNodeType() == NodeType::type) {
                     // nothing to do here as type-guard is handled above
                 } else {
                     logger_.error(sel->pos(), "unexpected selector.");
@@ -678,7 +678,9 @@ Sema::onValueReference(const FilePos &start, [[maybe_unused]] const FilePos &end
     return node;
 }
 
-TypeNode *Sema::onSelectors(TypeNode *base, vector<unique_ptr<Selector>> &selectors) {
+TypeNode *Sema::onSelectors(const DeclarationNode *node, vector<unique_ptr<Selector>> &selectors) {
+    auto current = node;
+    auto base = node->getType();
     auto it = selectors.begin();
     while (it != selectors.end()) {
         auto sel = (*it).get();
@@ -687,14 +689,14 @@ TypeNode *Sema::onSelectors(TypeNode *base, vector<unique_ptr<Selector>> &select
             return nullptr;
         }
         // check for implicit pointer de-referencing
-        if (base->isPointer() && (sel->getType() == NodeType::array_type ||
-                                  sel->getType() == NodeType::record_type)) {
+        if (base->isPointer() && (sel->getNodeType() == NodeType::array_type ||
+                                  sel->getNodeType() == NodeType::record_type)) {
             auto caret = std::make_unique<Dereference>(sel->pos());
             // place caret before the current element
             it = selectors.insert(it, std::move(caret));
             sel = (*it).get();
         }
-        switch (sel->getType()) {
+        switch (sel->getNodeType()) {
             case NodeType::parameter:
                 base = onActualParameters(base, dynamic_cast<ActualParameters *>(sel));
                 break;
@@ -834,7 +836,7 @@ Sema::onQualifiedExpression(const FilePos &start, const FilePos &end,
     }
     // check variable or parameter reference
     if (sym->getNodeType() == NodeType::variable || sym->getNodeType() == NodeType::parameter) {
-        auto type = onSelectors(sym->getType(), designator->selectors());
+        auto type = onSelectors(*sym, designator->selectors());
         return make_unique<QualifiedExpression>(start, std::move(designator), sym, type);
     }
     // check procedure reference
@@ -844,7 +846,7 @@ Sema::onQualifiedExpression(const FilePos &start, const FilePos &end,
             // a fully-qualified external reference needs to be added to module for code generation
             context_->addExternalProcedure(proc);
         }
-        auto type = onSelectors(sym->getType(), designator->selectors());
+        auto type = onSelectors(*sym, designator->selectors());
         return make_unique<QualifiedExpression>(start, std::move(designator), sym, type);
     }
     logger_.error(ident->start(), "constant, parameter, variable, function call expected.");

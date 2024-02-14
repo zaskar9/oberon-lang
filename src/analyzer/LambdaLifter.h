@@ -8,9 +8,17 @@
 #define OBERON_LLVM_LAMBDALIFTER_H
 
 
+#include <memory>
+#include <string>
+#include <vector>
+
 #include "Analyzer.h"
 #include "data/ast/ASTContext.h"
 #include "data/ast/NodeVisitor.h"
+
+using std::string;
+using std::unique_ptr;
+using std::vector;
 
 class LambdaLifter final : public Analysis, private NodeVisitor {
 
@@ -20,11 +28,12 @@ private:
     DeclarationNode *env_;
     unsigned int level_;
 
-    static const std::string THIS_;
-    static const std::string SUPER_;
+    static const string THIS_;
+    static const string SUPER_;
     static const FilePos POS_;
 
     void call(ProcedureNodeReference &);
+    void selectors(TypeNode *, vector<unique_ptr<Selector>> &);
 
     void visit(ModuleNode &) override;
     void visit(ProcedureNode &) override;
@@ -66,13 +75,14 @@ private:
     void visit(ForLoopNode &) override;
     void visit(ReturnNode &) override;
 
-    static bool envFieldResolver(ValueReferenceNode *var, const std::string &field_name, TypeNode *field_type) ;
+    static bool envFieldResolver(ValueReferenceNode *, const string &, TypeNode *);
+    static bool envFieldResolver(QualifiedExpression *, const string &, TypeNode *);
 
 public:
     explicit LambdaLifter(ASTContext *context) : context_(context), module_(), env_(), level_() { };
     ~LambdaLifter() override = default;
 
-    void run(Logger &logger, Node* node) override;
+    void run(Logger &, Node *) override;
 
 };
 

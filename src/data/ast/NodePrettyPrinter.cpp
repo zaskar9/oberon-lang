@@ -5,14 +5,23 @@
  */
 
 #include "NodePrettyPrinter.h"
-#include "../../scanner/Scanner.h"
+
+#include <memory>
+#include <string>
+#include <vector>
+
+#include "scanner/Scanner.h"
+
+using std::string;
+using std::unique_ptr;
+using std::vector;
 
 void NodePrettyPrinter::print(Node *node) {
     node->accept(*this);
 }
 
 void NodePrettyPrinter::indent() {
-    stream_ << std::string(indent_, ' ');
+    stream_ << string(indent_, ' ');
 }
 
 void NodePrettyPrinter::block(BlockNode& node, bool isGlobal) {
@@ -152,7 +161,7 @@ void NodePrettyPrinter::visit(ValueReferenceNode &node) {
     stream_ << *node.dereference()->getIdentifier();
     for (size_t i = 0; i < node.getSelectorCount(); i++) {
         auto selector = node.getSelector(i);
-        auto type = selector->getType();
+        auto type = selector->getNodeType();
         if (type == NodeType::array_type) {
             auto indices = dynamic_cast<ArrayIndex *>(selector);
             stream_ << "[";
@@ -176,7 +185,47 @@ void NodePrettyPrinter::visit(ValueReferenceNode &node) {
     }
 }
 
-void NodePrettyPrinter::visit(QualifiedExpression &) {}
+void NodePrettyPrinter::selectors(std::vector<unique_ptr<Selector>> &selectors) {
+    for (auto &sel: selectors) {
+        auto selector = sel.get();
+        auto type = selector->getNodeType();
+        if (type == NodeType::parameter) {
+            auto params = dynamic_cast<ActualParameters *>(selector);
+            stream_ << "(";
+            string sep = "";
+            for (auto &param : params->parameters()) {
+                stream_ << sep;
+                param->accept(*this);
+                sep = ", ";
+            }
+            stream_ << ")";
+        } else if (type == NodeType::array_type) {
+            auto indices = dynamic_cast<ArrayIndex *>(selector);
+            stream_ << "[";
+            string sep = "";
+            for (auto &index : indices->indices()) {
+                stream_ << sep;
+                index->accept(*this);
+                sep = ", ";
+            }
+            stream_ << "]";
+        } else if (type == NodeType::record_type) {
+            stream_ << ".";
+            stream_ << *dynamic_cast<RecordField *>(selector)->getField()->getIdentifier();
+        } else if (type == NodeType::pointer_type) {
+            stream_ << "^";
+        } else if (type == NodeType::type) {
+            stream_ << "(";
+            stream_ << *dynamic_cast<Typeguard *>(selector)->ident();
+            stream_ << ")";
+        }
+    }
+}
+
+void NodePrettyPrinter::visit(QualifiedExpression &node) {
+    stream_ << *node.ident();
+    selectors(node.selectors());
+}
 
 void NodePrettyPrinter::visit(ConstantDeclarationNode &node) {
     stream_ << *node.getIdentifier() << "(*" << node.getLevel() << "*) = ";

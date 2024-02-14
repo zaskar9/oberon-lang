@@ -663,7 +663,10 @@ unique_ptr<StatementNode> Parser::statement() {
         FilePos pos = token->start();
         auto designator = this->designator();
         token = scanner_.peek();
-        if (token->type() == TokenType::op_becomes) {
+        if (token->type() == TokenType::op_eq) {
+            logger_.error(token->start(), "unexpected operator =, did you mean :=?");
+            return nullptr;
+        } else if (token->type() == TokenType::op_becomes) {
             return assignment(sema_.onValueReference(pos, EMPTY_POS, std::move(designator)));
         } else {
             return sema_.onProcedureCall(pos, EMPTY_POS, std::move(designator));

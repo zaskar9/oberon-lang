@@ -12,7 +12,7 @@ FilePos Selector::pos() const {
     return pos_;
 }
 
-NodeType Selector::getType() const {
+NodeType Selector::getNodeType() const {
     return type_;
 }
 
@@ -63,11 +63,27 @@ QualIdent *Typeguard::ident() const {
     return ident_.get();
 }
 
+void Typeguard::setType(TypeNode *type) {
+    type_ = type;
+}
+
+TypeNode *Typeguard::getType() const {
+    return type_;
+}
+
 
 ActualParameters::ActualParameters(const FilePos &pos, std::vector<std::unique_ptr<ExpressionNode>> parameters) :
-        Selector(NodeType::parameter, pos), parameters_(std::move(parameters)) { }
+        Selector(NodeType::parameter, pos), proc_(), parameters_(std::move(parameters)) { }
 
 ActualParameters::~ActualParameters() = default;
+
+void ActualParameters::setProcedure(ProcedureNode *proc) {
+    proc_ = proc;
+}
+
+ProcedureNode *ActualParameters::getProcedure() const {
+    return proc_;
+}
 
 vector<unique_ptr<ExpressionNode>> &ActualParameters::parameters() {
     return parameters_;

@@ -20,9 +20,20 @@ TYPE
     END;
 
 VAR
-    person: Person;
+    fred, mary: Person;
 
 BEGIN
-    NEW(person);
-    Out.String(person.spouse.title[0])
+    NEW(fred);
+    fred.name := "Fred Bloggs";
+    fred.title[0] := "Mr";
+    fred.zipcode := 1234;
+    NEW(mary);
+    mary.name := "Mary Black";
+    mary.title[0] := "Mrs";
+    mary.title[1] := "Dr";
+    mary.zipcode := fred.zipcode;
+    mary.spouse := fred;
+    fred.spouse := mary;
+    Out.String(fred.spouse.title[0]); Out.Ln;
+    Out.Long(LEN(fred.title), 0); Out.Ln
 END Selectors.

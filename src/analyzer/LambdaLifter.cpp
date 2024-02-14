@@ -180,9 +180,9 @@ void LambdaLifter::visit(ValueReferenceNode &node) {
     }
     for (size_t i = 0; i < node.getSelectorCount(); i++) {
         auto selector = node.getSelector(i);
-        if (selector->getType() == NodeType::array_type) {
+        if (selector->getNodeType() == NodeType::array_type) {
             auto indices = dynamic_cast<ArrayIndex *>(selector);
-            for (auto& index : indices->indices()) {
+            for (auto &index : indices->indices()) {
                 index->accept(*this);
             }
         }
@@ -193,7 +193,58 @@ void LambdaLifter::visit(ValueReferenceNode &node) {
     }
 }
 
-void LambdaLifter::visit(QualifiedExpression &) {}
+void LambdaLifter::selectors(TypeNode *base, vector<unique_ptr<Selector>> &selectors) {
+    for (auto &sel : selectors) {
+        auto selector = sel.get();
+        if (selector->getNodeType() == NodeType::parameter) {
+            // process regular parameters
+            auto params = dynamic_cast<ActualParameters *>(selector);
+            for (auto &param : params->parameters()) {
+                param->accept(*this);
+            }
+            auto type = dynamic_cast<ProcedureTypeNode *>(base);
+            // process procedure environment parameter
+            if (type->parameters().size() > params->parameters().size()) {
+                auto param = make_unique<QualifiedExpression>(env_);
+                if (type->getLevel() != env_->getLevel()) {
+                    envFieldResolver(param.get(), SUPER_, type->getFormalParameter(params->parameters().size())->getType());
+                }
+                params->parameters().push_back(std::move(param));
+            }
+            base = type->getReturnType();
+        } else if (selector->getNodeType() == NodeType::array_type) {
+            auto indices = dynamic_cast<ArrayIndex *>(selector);
+            auto type = dynamic_cast<ArrayTypeNode *>(base);
+            for (auto &index : indices->indices()) {
+                index->accept(*this);
+            }
+            base = type->getMemberType();
+        } else if (selector->getNodeType() == NodeType::pointer_type) {
+            auto type = dynamic_cast<PointerTypeNode *>(base);
+            base = type->getBase();
+        } else if (selector->getNodeType() == NodeType::record_type) {
+            auto field = dynamic_cast<RecordField *>(selector);
+            base = field->getField()->getType();
+        } else if (selector->getNodeType() == NodeType::type) {
+            auto guard = dynamic_cast<Typeguard *>(selector);
+            base = guard->getType();
+        }
+    }
+}
+
+void LambdaLifter::visit(QualifiedExpression &node) {
+    auto decl = node.dereference();
+    if (decl->getLevel() == SymbolTable::MODULE_LEVEL ||
+        (env_->getIdentifier()->name() == SUPER_ && env_->getLevel() == decl->getLevel())) {
+        // global variable or local variable in leaf procedure
+        return;
+    }
+    selectors(decl->getType(), node.selectors());
+    node.resolve(env_);
+    if (!envFieldResolver(&node, decl->getIdentifier()->name(), decl->getType())) {
+        std::cerr << "Unable to resolve record field: " << decl->getIdentifier() << "." << std::endl;
+    }
+}
 
 void LambdaLifter::visit(BooleanLiteralNode &) {}
 
@@ -284,6 +335,28 @@ void LambdaLifter::visit(ForLoopNode &node) {
 
 void LambdaLifter::visit(ReturnNode &node) {
     node.getValue()->accept(*this);
+}
+
+bool LambdaLifter::envFieldResolver(QualifiedExpression *var, const std::string &field_name, TypeNode *field_type) {
+    auto type = dynamic_cast<RecordTypeNode*>(var->getType());
+    size_t num = 0;
+    while (true) {
+        auto field = type->getField(field_name);
+        if (field && field->getType() == field_type) {
+            var->insertSelector(num, make_unique<RecordField>(EMPTY_POS, field));
+            var->setType(field->getType());
+            return true;
+        } else {
+            field = type->getField(SUPER_);
+            if (field) {
+                var->insertSelector(num, make_unique<RecordField>(EMPTY_POS, field));
+                type = dynamic_cast<RecordTypeNode *>(field->getType());
+                num++;
+            } else {
+                return false;
+            }
+        }
+    }
 }
 
 bool LambdaLifter::envFieldResolver(ValueReferenceNode *var, const string &field_name, TypeNode *field_type) {

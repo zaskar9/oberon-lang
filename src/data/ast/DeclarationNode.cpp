@@ -40,6 +40,9 @@ unsigned int DeclarationNode::index() const {
 }
 
 void DeclarationNode::setLevel(unsigned int level) {
+    if (type_) {
+        type_->setLevel(level);
+    }
     level_ = level;
 }
 
