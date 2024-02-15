@@ -310,7 +310,7 @@ Sema::onProcedureEnd([[maybe_unused]] const FilePos &end, unique_ptr<Ident> iden
 
 unique_ptr<AssignmentNode>
 Sema::onAssignment(const FilePos &start, [[maybe_unused]] const FilePos &end,
-                   unique_ptr<ValueReferenceNode> lvalue, unique_ptr<ExpressionNode> rvalue) {
+                   unique_ptr<QualifiedExpression> lvalue, unique_ptr<ExpressionNode> rvalue) {
     if (!lvalue) {
         logger_.error(start, "undefined left-hand side in assignment.");
     }
@@ -402,12 +402,13 @@ Sema::onForLoop(const FilePos &start, [[maybe_unused]] const FilePos &end,
                 unique_ptr<Ident> var,
                 unique_ptr<ExpressionNode> low, unique_ptr<ExpressionNode> high, unique_ptr<ExpressionNode> step,
                 unique_ptr<StatementSequenceNode> stmts) {
-    auto counter = onValueReference(var->start(), var->end(), make_unique<Designator>(std::move(var)));
+    auto ident = to_string(*var);
+    auto counter = onQualifiedExpression(var->start(), var->end(), make_unique<Designator>(std::move(var)));
     if (!counter) {
         logger_.error(start, "undefined counter variable in for-loop.");
     }
-    if (counter->getNodeType() == NodeType::value_reference) {
-        auto decl = counter->dereference();
+    if (counter->getNodeType() == NodeType::qualified_expression) {
+        auto decl = dynamic_cast<QualifiedExpression *>(counter.get())->dereference();
         if (decl->getNodeType() != NodeType::variable) {
             logger_.error(var->start(), "variable expected.");
         }
@@ -416,7 +417,7 @@ Sema::onForLoop(const FilePos &start, [[maybe_unused]] const FilePos &end,
             logger_.error(var->start(), "integer variable expected.");
         }
     } else {
-        logger_.error(counter->pos(), to_string(*counter->ident()) + " cannot be used as a loop counter.");
+        logger_.error(counter->pos(), ident + " cannot be used as a loop counter.");
     }
     if (!low) {
         logger_.error(start, "undefined low value in for-loop.");
@@ -447,25 +448,6 @@ Sema::onForLoop(const FilePos &start, [[maybe_unused]] const FilePos &end,
                                     std::move(stmts));
 }
 
-unique_ptr<ProcedureCallNode>
-Sema::onProcedureCall(const FilePos &start, [[maybe_unused]] const FilePos &end,
-                      unique_ptr<Designator> designator) {
-    auto node = make_unique<ProcedureCallNode>(start, std::move(designator));
-    auto symbol = symbols_->lookup(node->ident());
-    if (symbol) {
-        if (symbol->getNodeType() == NodeType::procedure) {
-            auto proc = dynamic_cast<ProcedureNode *>(symbol);
-            node->resolve(proc);
-            call(node.get());
-        } else {
-            logger_.error(node->pos(), to_string(*node->ident()) + " is not a procedure.");
-        }
-    } else {
-        logger_.error(node->pos(), "undefined identifier: " + to_string(*node->ident()) + ".");
-    }
-    return node;
-}
-
 unique_ptr<ReturnNode>
 Sema::onReturn(const FilePos &start, [[maybe_unused]] const FilePos &end, unique_ptr<ExpressionNode> expr) {
     if (procs_.empty()) {
@@ -490,197 +472,82 @@ Sema::onReturn(const FilePos &start, [[maybe_unused]] const FilePos &end, unique
     return make_unique<ReturnNode>(start, std::move(expr));
 }
 
-unique_ptr<ExpressionNode>
-Sema::onUnaryExpression(const FilePos &start, [[maybe_unused]] const FilePos &end,
-                        OperatorType op, unique_ptr<ExpressionNode> expr) {
-    if (!expr) {
-        logger_.error(start, "undefined expression in unary expression.");
+unique_ptr<StatementNode>
+Sema::onQualifiedStatement(const FilePos &start, [[maybe_unused]] const FilePos &end,
+                           unique_ptr<Designator> designator) {
+    auto ident = designator->ident();
+    DeclarationNode* sym = symbols_->lookup(ident);
+    if (!sym) {
+        logger_.error(ident->start(), "undefined identifier: " + to_string(*ident) + ".");
         return nullptr;
     }
-    auto type = expr->getType();
-    if (!type) {
-        logger_.error(start, "undefined type in unary expression.");
-        return nullptr;
-    }
-    if (expr->isConstant()) {
-        return fold(start, end, op, expr.get());
-    }
-    return make_unique<UnaryExpressionNode>(start, op, std::move(expr), type);
-}
-
-unique_ptr<ExpressionNode>
-Sema::onBinaryExpression(const FilePos &start, [[maybe_unused]] const FilePos &end,
-                         OperatorType op, unique_ptr<ExpressionNode> lhs, unique_ptr<ExpressionNode> rhs) {
-    if (!lhs) {
-        logger_.error(start, "undefined left-hand side in binary expression.");
-        return nullptr;
-    }
-    if (!rhs) {
-        logger_.error(start, "undefined right-hand side in binary expression.");
-        return nullptr;
-    }
-    auto lhsType = lhs->getType();
-    if (!lhsType) {
-        logger_.error(lhs->pos(), "undefined left-hand side type in binary expression.");
-        return nullptr;
-    }
-    auto rhsType = rhs->getType();
-    if (!rhsType) {
-        logger_.error(lhs->pos(), "undefined right-hand side type in binary expression.");
-        return nullptr;
-    }
-    // Type inference: find the common type of lhs and rhs, if one exists
-    auto common = commonType(lhsType, rhsType);
-    if (!common) {
-        logger_.error(start, "incompatible types (" + lhsType->getIdentifier()->name() + ", " +
-                              rhsType->getIdentifier()->name() + ")");
-        return nullptr;
-    }
-    // Type inference: except for boolean comparisons and floating-point division,
-    // the result type is the common type of lhs and rhs
-    auto type = common;
-    if (op == OperatorType::EQ
-        || op == OperatorType::NEQ
-        || op == OperatorType::LT
-        || op == OperatorType::LEQ
-        || op == OperatorType::GT
-        || op == OperatorType::GEQ) {
-        type = this->tBoolean_;
-    } else if (op == OperatorType::DIV && (!lhsType->isInteger() || !rhsType->isInteger())) {
-        logger_.error(start, "integer division needs integer arguments.");
-        return nullptr;
-    } else if (op == OperatorType::DIVIDE) {
-        if (common->isInteger()) {
-            if (common->kind() == TypeKind::LONGINT) {
-                type = this->tLongReal_;
-            } else {
-                type = this->tReal_;
-            }
+    // check procedure reference
+    if (sym->getNodeType() == NodeType::procedure) {
+        auto proc = dynamic_cast<ProcedureNode *>(sym);
+        if (designator->ident()->isQualified() && proc->isExtern()) {
+            // a fully-qualified external reference needs to be added to module for code generation
+            context_->addExternalProcedure(proc);
         }
+        auto type = onSelectors(sym->getType(), designator->selectors());
+        if (type) {
+            logger_.warning(ident->start(), "discarded expression value.");
+        }
+        return make_unique<QualifiedStatement>(start, std::move(designator), sym);
     }
-    // Folding
-    if (lhs->isConstant() && rhs->isConstant()) {
-        return fold(start, end, op, lhs.get(), rhs.get(), type);
-    }
-    // Casting left-hand side to common type
-    cast(lhs.get(), common);
-    // Casting right-hand side to common type
-    cast(rhs.get(), common);
-    return make_unique<BinaryExpressionNode>(start, op, std::move(lhs), std::move(rhs), type);
-}
-
-unique_ptr<LiteralNode>
-Sema::onConstantReference(const FilePos &start, const FilePos &end, unique_ptr<Designator> designator) {
-    auto sym = symbols_->lookup(designator->ident());
-    if (sym->getNodeType() == NodeType::constant) {
-        auto decl = dynamic_cast<ConstantDeclarationNode *>(sym);
-        return fold(start, end, decl->getValue());
-    }
-    logger_.error(start, to_string(*designator->ident()) + " is not a constant.");
+    logger_.error(ident->start(), "procedure call expected.");
     return nullptr;
 }
 
-std::unique_ptr<ValueReferenceNode>
-Sema::onValueReference(const FilePos &start, [[maybe_unused]] const FilePos &end, unique_ptr<Designator> designator) {
-    auto node = make_unique<ValueReferenceNode>(start, std::move(designator));
-    auto ident = node->ident();
+unique_ptr<QualifiedExpression>
+Sema::onQualifiedExpression(const FilePos &start, [[maybe_unused]] const FilePos &end,
+                            unique_ptr<Designator> designator) {
+    auto ident = designator->ident();
     DeclarationNode* sym = symbols_->lookup(ident);
-    if (sym) {
-        if (sym->getNodeType() == NodeType::constant ||
-            sym->getNodeType() == NodeType::parameter ||
-            sym->getNodeType() == NodeType::variable ||
-            sym->getNodeType() == NodeType::procedure) {
-            node->resolve(sym);
-            if (node->getNodeType() == NodeType::procedure_call) {
-                call(node.get());
-            }
-            auto type = sym->getType();
-            if (!type) {
-                if (sym->getNodeType() == NodeType::procedure) {
-                    logger_.error(node->pos(), "function expected, found procedure.");
-                }
-                logger_.error(node->pos(), "type undefined for " + to_string(*node->ident()) + ".");
-            }
-            size_t pos = 0;
-            size_t last = node->getSelectorCount();
-            while (pos < last) {
-                auto sel = node->getSelector(pos);
-                if (type->getNodeType() != sel->getNodeType()) {
-                    if (type->getNodeType() == NodeType::pointer_type &&
-                        (sel->getNodeType() == NodeType::array_type || sel->getNodeType() == NodeType::record_type)) {
-                        // perform implicit pointer dereferencing
-                        auto caret = std::make_unique<Dereference>(EMPTY_POS);
-                        sel = caret.get();
-                        node->insertSelector(pos, std::move(caret));
-                        last++;
-                    } else if (sel->getNodeType() == NodeType::type) {
-                        // handle type-guard or clean up parsing ambiguity
-                        auto guard = dynamic_cast<Typeguard *>(sel);
-                        sym = symbols_->lookup(guard->ident());
-                        if (sym) {
-                            if (sym->getNodeType() == NodeType::type) {
-                                type = dynamic_cast<TypeDeclarationNode *>(sym)->getType();
-                            } else if (sym->getNodeType() == NodeType::basic_type ||
-                                       sym->getNodeType() == NodeType::array_type ||
-                                       sym->getNodeType() == NodeType::record_type ||
-                                       sym->getNodeType() == NodeType::pointer_type) {
-                                type = dynamic_cast<TypeNode*>(sym);
-                            } else {
-                                logger_.error(sel->pos(), "oh, oh, parser has mistaken function call as type-guard.");
-                            }
-                        } else {
-                            logger_.error(node->pos(), "undefined identifier: " + to_string(*guard->ident()) + ".");
-                        }
-                    } else {
-                        logger_.error(sel->pos(), "selector type mismatch.");
-                    }
-                }
-                if (sel->getNodeType() == NodeType::array_type && type->isArray()) {
-                    auto array_t = dynamic_cast<ArrayTypeNode *>(type);
-                    auto indices = dynamic_cast<ArrayIndex*>(sel);
-                    if (indices->indices().size() > 1) {
-                        logger_.error(indices->pos(), "multi-dimensional arrays are not yet supported.");
-                    }
-                    for (auto& index : indices->indices()) {
-                        auto sel_type = index->getType();
-                        if (sel_type && sel_type->kind() != TypeKind::INTEGER) {
-                            logger_.error(sel->pos(), "integer expression expected.");
-                        }
-                    }
-                    type = array_t->getMemberType();
-                } else if (sel->getNodeType() == NodeType::record_type && type->isRecord()) {
-                    auto record_t = dynamic_cast<RecordTypeNode *>(type);
-                    auto ref = dynamic_cast<RecordField *>(sel);
-                    auto field = record_t->getField(ref->ident()->name());
-                    if (field) {
-                        ref->setField(field);
-                        type = field->getType();
-                    } else {
-                        logger_.error(ref->pos(), "unknown record field: " + to_string(*ref->ident()) + ".");
-                    }
-                } else if (sel->getNodeType() == NodeType::pointer_type && type->isPointer()) {
-                    auto pointer_t = dynamic_cast<PointerTypeNode *>(type);
-                    type = pointer_t->getBase();
-                } else if (sel->getNodeType() == NodeType::type) {
-                    // nothing to do here as type-guard is handled above
-                } else {
-                    logger_.error(sel->pos(), "unexpected selector.");
-                }
-                pos++;
-            }
-            node->setType(type);
-        } else {
-            logger_.error(node->pos(), "constant, parameter, variable, function call expected.");
-        }
-    } else {
-        logger_.error(node->pos(), "undefined identifier: " + to_string(*node->ident()) + ".");
+    if (!sym) {
+        logger_.error(ident->start(), "undefined identifier: " + to_string(*ident) + ".");
+        return nullptr;
     }
-    return node;
+    // check variable or parameter reference
+    if (sym->getNodeType() == NodeType::variable || sym->getNodeType() == NodeType::parameter) {
+        auto type = onSelectors(sym->getType(), designator->selectors());
+        return make_unique<QualifiedExpression>(start, std::move(designator), sym, type);
+    }
+    // check procedure reference
+    if (sym->getNodeType() == NodeType::procedure) {
+        auto proc = dynamic_cast<ProcedureNode *>(sym);
+        if (designator->ident()->isQualified() && proc->isExtern()) {
+            // a fully-qualified external reference needs to be added to module for code generation
+            context_->addExternalProcedure(proc);
+        }
+        auto type = onSelectors(sym->getType(), designator->selectors());
+        return make_unique<QualifiedExpression>(start, std::move(designator), sym, type);
+    }
+    logger_.error(ident->start(), "variable, parameter, or function call expected.");
+    return nullptr;
 }
 
-TypeNode *Sema::onSelectors(const DeclarationNode *node, vector<unique_ptr<Selector>> &selectors) {
-    auto current = node;
-    auto base = node->getType();
+unique_ptr<LiteralNode>
+Sema::onQualifiedConstant(const FilePos &start, const FilePos &end, unique_ptr<Designator> designator) {
+    auto ident = designator->ident();
+    DeclarationNode* sym = symbols_->lookup(ident);
+    if (!sym) {
+        logger_.error(ident->start(), "undefined identifier: " + to_string(*ident) + ".");
+        return nullptr;
+    }
+    // check constant reference
+    if (sym->getNodeType() == NodeType::constant) {
+        if (!designator->selectors().empty()) {
+            auto sel = designator->selectors()[0].get();
+            logger_.warning(sel->pos(), "ignoring unexpected selector(s).");
+        }
+        auto decl = dynamic_cast<ConstantDeclarationNode *>(sym);
+        return fold(start, end, decl->getValue());
+    }
+    logger_.error(ident->start(), "constant expected.");
+    return nullptr;
+}
+
+TypeNode *Sema::onSelectors(TypeNode *base, vector<unique_ptr<Selector>> &selectors) {
     auto it = selectors.begin();
     while (it != selectors.end()) {
         auto sel = (*it).get();
@@ -742,6 +609,9 @@ TypeNode *Sema::onActualParameters(TypeNode *base, ActualParameters *sel) {
                         if (value->getNodeType() == NodeType::constant) {
                             logger_.error(expr->pos(), "illegal actual parameter: cannot pass constant by reference.");
                         }
+                    } else if (expr->getNodeType() == NodeType::qualified_expression) {
+                        // TODO constants
+                        continue;
                     } else {
                         logger_.error(expr->pos(), "illegal actual parameter: cannot pass expression by reference.");
                     }
@@ -817,40 +687,82 @@ TypeNode *Sema::onTypeguard([[maybe_unused]] TypeNode *base, Typeguard *sel) {
 }
 
 unique_ptr<ExpressionNode>
-Sema::onQualifiedExpression(const FilePos &start, const FilePos &end,
-                            unique_ptr<Designator> designator) {
-    auto ident = designator->ident();
-    DeclarationNode* sym = symbols_->lookup(ident);
-    if (!sym) {
-        logger_.error(ident->start(), "undefined identifier: " + to_string(*ident) + ".");
+Sema::onUnaryExpression(const FilePos &start, [[maybe_unused]] const FilePos &end,
+                        OperatorType op, unique_ptr<ExpressionNode> expr) {
+    if (!expr) {
+        logger_.error(start, "undefined expression in unary expression.");
         return nullptr;
     }
-    // check constant reference
-    if (sym->getNodeType() == NodeType::constant) {
-        if (!designator->selectors().empty()) {
-            auto sel = designator->selectors()[0].get();
-            logger_.warning(sel->pos(), "ignoring unexpected selector(s).");
+    auto type = expr->getType();
+    if (!type) {
+        logger_.error(start, "undefined type in unary expression.");
+        return nullptr;
+    }
+    if (expr->isConstant()) {
+        return fold(start, end, op, expr.get());
+    }
+    return make_unique<UnaryExpressionNode>(start, op, std::move(expr), type);
+}
+
+unique_ptr<ExpressionNode>
+Sema::onBinaryExpression(const FilePos &start, [[maybe_unused]] const FilePos &end,
+                         OperatorType op, unique_ptr<ExpressionNode> lhs, unique_ptr<ExpressionNode> rhs) {
+    if (!lhs) {
+        logger_.error(start, "undefined left-hand side in binary expression.");
+        return nullptr;
+    }
+    if (!rhs) {
+        logger_.error(start, "undefined right-hand side in binary expression.");
+        return nullptr;
+    }
+    auto lhsType = lhs->getType();
+    if (!lhsType) {
+        logger_.error(lhs->pos(), "undefined left-hand side type in binary expression.");
+        return nullptr;
+    }
+    auto rhsType = rhs->getType();
+    if (!rhsType) {
+        logger_.error(lhs->pos(), "undefined right-hand side type in binary expression.");
+        return nullptr;
+    }
+    // Type inference: find the common type of lhs and rhs, if one exists
+    auto common = commonType(lhsType, rhsType);
+    if (!common) {
+        logger_.error(start, "incompatible types (" + lhsType->getIdentifier()->name() + ", " +
+                             rhsType->getIdentifier()->name() + ")");
+        return nullptr;
+    }
+    // Type inference: except for boolean comparisons and floating-point division,
+    // the result type is the common type of lhs and rhs
+    auto type = common;
+    if (op == OperatorType::EQ
+        || op == OperatorType::NEQ
+        || op == OperatorType::LT
+        || op == OperatorType::LEQ
+        || op == OperatorType::GT
+        || op == OperatorType::GEQ) {
+        type = this->tBoolean_;
+    } else if (op == OperatorType::DIV && (!lhsType->isInteger() || !rhsType->isInteger())) {
+        logger_.error(start, "integer division needs integer arguments.");
+        return nullptr;
+    } else if (op == OperatorType::DIVIDE) {
+        if (common->isInteger()) {
+            if (common->kind() == TypeKind::LONGINT) {
+                type = this->tLongReal_;
+            } else {
+                type = this->tReal_;
+            }
         }
-        auto decl = dynamic_cast<ConstantDeclarationNode *>(sym);
-        return fold(start, end, decl->getValue());
     }
-    // check variable or parameter reference
-    if (sym->getNodeType() == NodeType::variable || sym->getNodeType() == NodeType::parameter) {
-        auto type = onSelectors(*sym, designator->selectors());
-        return make_unique<QualifiedExpression>(start, std::move(designator), sym, type);
+    // Folding
+    if (lhs->isConstant() && rhs->isConstant()) {
+        return fold(start, end, op, lhs.get(), rhs.get(), type);
     }
-    // check procedure reference
-    if (sym->getNodeType() == NodeType::procedure) {
-        auto proc = dynamic_cast<ProcedureNode *>(sym);
-        if (designator->ident()->isQualified() && proc->isExtern()) {
-            // a fully-qualified external reference needs to be added to module for code generation
-            context_->addExternalProcedure(proc);
-        }
-        auto type = onSelectors(*sym, designator->selectors());
-        return make_unique<QualifiedExpression>(start, std::move(designator), sym, type);
-    }
-    logger_.error(ident->start(), "constant, parameter, variable, function call expected.");
-    return nullptr;
+    // Casting left-hand side to common type
+    cast(lhs.get(), common);
+    // Casting right-hand side to common type
+    cast(rhs.get(), common);
+    return make_unique<BinaryExpressionNode>(start, op, std::move(lhs), std::move(rhs), type);
 }
 
 unique_ptr<BooleanLiteralNode>
@@ -1301,7 +1213,7 @@ Sema::call(ProcedureNodeReference *node) {
     }
 }
 
-void Sema::cast(ExpressionNode *expr, TypeNode *expected) const {
+void Sema::cast(ExpressionNode *expr, TypeNode *expected) {
     if (expr->getType() != expected) {
         expr->setCast(expected);
     }

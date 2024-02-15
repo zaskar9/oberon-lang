@@ -151,3 +151,11 @@ void QualifiedExpression::print(std::ostream &stream) const {
 
 
 QualifiedStatement::~QualifiedStatement() = default;
+
+void QualifiedStatement::accept(NodeVisitor &visitor) {
+    visitor.visit(*this);
+}
+
+void QualifiedStatement::print(std::ostream &stream) const {
+    stream << *dereference();
+}

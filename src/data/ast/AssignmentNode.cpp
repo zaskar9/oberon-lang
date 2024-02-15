@@ -7,12 +7,8 @@
 #include "AssignmentNode.h"
 #include "NodeVisitor.h"
 
-ValueReferenceNode * AssignmentNode::getLvalue() {
+QualifiedExpression * AssignmentNode::getLvalue() {
     return lvalue_.get();
-}
-
-void AssignmentNode::setRvalue(std::unique_ptr<ExpressionNode> rvalue) {
-    rvalue_ = std::move(rvalue);
 }
 
 ExpressionNode * AssignmentNode::getRvalue() {

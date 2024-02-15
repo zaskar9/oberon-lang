@@ -667,9 +667,9 @@ unique_ptr<StatementNode> Parser::statement() {
             logger_.error(token->start(), "unexpected operator =, did you mean :=?");
             return nullptr;
         } else if (token->type() == TokenType::op_becomes) {
-            return assignment(sema_.onValueReference(pos, EMPTY_POS, std::move(designator)));
+            return assignment(sema_.onQualifiedExpression(pos, EMPTY_POS, std::move(designator)));
         } else {
-            return sema_.onProcedureCall(pos, EMPTY_POS, std::move(designator));
+            return sema_.onQualifiedStatement(pos, EMPTY_POS, std::move(designator));
         }
     } else if (token->type() == TokenType::kw_if) {
         return if_statement();
@@ -697,7 +697,7 @@ unique_ptr<StatementNode> Parser::statement() {
 }
 
 // assignment = designator ":=" expression .
-unique_ptr<StatementNode> Parser::assignment(unique_ptr<ValueReferenceNode> lvalue) {
+unique_ptr<StatementNode> Parser::assignment(unique_ptr<QualifiedExpression> lvalue) {
     logger_.debug("assignment");
     scanner_.next(); // skip assign operator
     auto statement = sema_.onAssignment(lvalue->pos(), EMPTY_POS, std::move(lvalue), expression());
@@ -936,11 +936,10 @@ unique_ptr<ExpressionNode> Parser::basic_factor() {
     if (token->type() == TokenType::const_ident) {
         FilePos pos = token->start();
         auto designator = this->designator();
-        return sema_.onQualifiedExpression(pos, token_->end(), std::move(designator));
-//        if (sema_.isConstant(designator->ident())) {
-//            return sema_.onConstantReference(pos, EMPTY_POS, std::move(designator));
-//        }
-//        return sema_.onValueReference(pos, EMPTY_POS, std::move(designator));
+        if (sema_.isConstant(designator->ident())) {
+            return sema_.onQualifiedConstant(pos, EMPTY_POS, std::move(designator));
+        }
+        return sema_.onQualifiedExpression(pos, EMPTY_POS, std::move(designator));
     }
     auto tmp = scanner_.next();
     if (token->type() == TokenType::int_literal) {

@@ -83,12 +83,12 @@ private:
 
     ProcedureTypeNode* procedure_signature(Ident * = nullptr);
     void procedure_body(ProcedureNode *);
-    void formal_parameters(vector<std::unique_ptr<ParameterNode>> &, bool &);
-    void fp_section(vector<std::unique_ptr<ParameterNode>> &, bool &);
+    void formal_parameters(vector<unique_ptr<ParameterNode>> &, bool &);
+    void fp_section(vector<unique_ptr<ParameterNode>> &, bool &);
 
     void statement_sequence(StatementSequenceNode *);
     unique_ptr<StatementNode> statement();
-    unique_ptr<StatementNode> assignment(unique_ptr<ValueReferenceNode>);
+    unique_ptr<StatementNode> assignment(unique_ptr<QualifiedExpression>);
     unique_ptr<StatementNode> if_statement();
     unique_ptr<StatementNode> loop_statement();
     unique_ptr<StatementNode> while_statement();

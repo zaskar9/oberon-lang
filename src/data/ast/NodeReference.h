@@ -110,11 +110,11 @@ public:
             ExpressionNode(NodeType::qualified_expression, pos, type),
             Designator(std::move(designator)),
             NodeReference(decl) {};
-    QualifiedExpression(DeclarationNode *decl) :
+    explicit QualifiedExpression(DeclarationNode *decl) :
             ExpressionNode(NodeType::qualified_expression, EMPTY_POS, decl->getType()),
             Designator(make_unique<Designator>(make_unique<QualIdent>(decl->getIdentifier()))),
             NodeReference(decl) {};
-    ~QualifiedExpression();
+    ~QualifiedExpression() override;
 
     [[nodiscard]] bool isConstant() const override;
     [[nodiscard]] int getPrecedence() const override;
@@ -135,10 +135,10 @@ public:
             StatementNode(NodeType::qualified_statement, pos),
             Designator(std::move(designator)),
             NodeReference(decl) {};
-    ~QualifiedStatement();
+    ~QualifiedStatement() override;
 
-    // void accept(NodeVisitor &visitor) override;
-    // void print(std::ostream &stream) const override;
+    void accept(NodeVisitor &visitor) override;
+    void print(std::ostream &stream) const override;
 
 };
 

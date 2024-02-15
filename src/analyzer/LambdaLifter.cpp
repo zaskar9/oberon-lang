@@ -83,10 +83,10 @@ void LambdaLifter::visit(ProcedureNode &node) {
             // initialize the procedure's environment (this)
             for (size_t i = 0; i < node.getFormalParameterCount(); i++) {
                 auto param = node.getFormalParameter(i);
-                auto lhs = make_unique<ValueReferenceNode>(EMPTY_POS, env_);
+                auto lhs = make_unique<QualifiedExpression>(env_);
                 auto field = type->getField(param->getIdentifier()->name());
                 lhs->addSelector(make_unique<RecordField>(EMPTY_POS, field));
-                auto rhs = make_unique<ValueReferenceNode>(EMPTY_POS, param);
+                auto rhs = make_unique<QualifiedExpression>(param);
                 node.statements()->insertStatement(i, make_unique<AssignmentNode>(EMPTY_POS, std::move(lhs), std::move(rhs)));
             }
             node.insertVariable(0, std::move(var));
@@ -98,8 +98,8 @@ void LambdaLifter::visit(ProcedureNode &node) {
             for (size_t i = 0; i < node.getFormalParameterCount(); i++ ){
                 auto param = node.getFormalParameter(i);
                 if (param->isVar() && param != node.getFormalParameter(SUPER_)) {
-                    auto lhs = make_unique<ValueReferenceNode>(EMPTY_POS, param);
-                    auto rhs = make_unique<ValueReferenceNode>(EMPTY_POS, env_);
+                    auto lhs = make_unique<QualifiedExpression>(param);
+                    auto rhs = make_unique<QualifiedExpression>(env_);
                     auto field = type->getField(param->getIdentifier()->name());
                     rhs->addSelector(make_unique<RecordField>(EMPTY_POS, field));
                     node.statements()->addStatement(make_unique<AssignmentNode>(EMPTY_POS, std::move(lhs), std::move(rhs)));
@@ -109,8 +109,8 @@ void LambdaLifter::visit(ProcedureNode &node) {
             if (level_ > SymbolTable::MODULE_LEVEL) /* neither root, nor leaf procedure */ {
                 auto param = node.getFormalParameter(SUPER_);
                 if (param) {
-                    auto lhs = make_unique<ValueReferenceNode>(EMPTY_POS, param);
-                    auto rhs = make_unique<ValueReferenceNode>(EMPTY_POS, env_);
+                    auto lhs = make_unique<QualifiedExpression>(param);
+                    auto rhs = make_unique<QualifiedExpression>(env_);
                     auto field = type->getField(SUPER_);
                     rhs->addSelector(make_unique<RecordField>(EMPTY_POS, field));
                     node.statements()->addStatement(make_unique<AssignmentNode>(EMPTY_POS, std::move(lhs), std::move(rhs)));
@@ -193,6 +193,24 @@ void LambdaLifter::visit(ValueReferenceNode &node) {
     }
 }
 
+void LambdaLifter::visit(QualifiedStatement &) {
+
+}
+
+void LambdaLifter::visit(QualifiedExpression &node) {
+    auto decl = node.dereference();
+    if (decl->getLevel() == SymbolTable::MODULE_LEVEL ||
+        (env_->getIdentifier()->name() == SUPER_ && env_->getLevel() == decl->getLevel())) {
+        // global variable or local variable in leaf procedure
+        return;
+    }
+    selectors(decl->getType(), node.selectors());
+    node.resolve(env_);
+    if (!envFieldResolver(&node, decl->getIdentifier()->name(), decl->getType())) {
+        std::cerr << "Unable to resolve record field: " << decl->getIdentifier() << "." << std::endl;
+    }
+}
+
 void LambdaLifter::selectors(TypeNode *base, vector<unique_ptr<Selector>> &selectors) {
     for (auto &sel : selectors) {
         auto selector = sel.get();
@@ -229,20 +247,6 @@ void LambdaLifter::selectors(TypeNode *base, vector<unique_ptr<Selector>> &selec
             auto guard = dynamic_cast<Typeguard *>(selector);
             base = guard->getType();
         }
-    }
-}
-
-void LambdaLifter::visit(QualifiedExpression &node) {
-    auto decl = node.dereference();
-    if (decl->getLevel() == SymbolTable::MODULE_LEVEL ||
-        (env_->getIdentifier()->name() == SUPER_ && env_->getLevel() == decl->getLevel())) {
-        // global variable or local variable in leaf procedure
-        return;
-    }
-    selectors(decl->getType(), node.selectors());
-    node.resolve(env_);
-    if (!envFieldResolver(&node, decl->getIdentifier()->name(), decl->getType())) {
-        std::cerr << "Unable to resolve record field: " << decl->getIdentifier() << "." << std::endl;
     }
 }
 

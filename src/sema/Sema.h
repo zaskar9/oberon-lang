@@ -49,14 +49,14 @@ private:
 
     void call(ProcedureNodeReference *);
 
-    void cast(ExpressionNode *, TypeNode *) const;
+    static void cast(ExpressionNode *, TypeNode *) ;
 
     void checkExport(DeclarationNode *);
 
     bool assertCompatible(const FilePos &, TypeNode *, TypeNode *, bool = false, bool = false);
     TypeNode *commonType(TypeNode *, TypeNode *) const;
 
-    ExpressionNode *resolveReference(ExpressionNode *);
+    static ExpressionNode *resolveReference(ExpressionNode *);
 
     string format(const TypeNode *, bool = false) const;
 
@@ -73,7 +73,7 @@ private:
     void onBlockStart();
     void onBlockEnd();
 
-    TypeNode *onSelectors(const DeclarationNode *, vector<unique_ptr<Selector>> &);
+    TypeNode *onSelectors(TypeNode*, vector<unique_ptr<Selector>> &);
     TypeNode *onActualParameters(TypeNode*, ActualParameters*);
     TypeNode *onArrayIndex(TypeNode*, ArrayIndex*);
     TypeNode *onDereference(TypeNode*, Dereference*);
@@ -118,7 +118,7 @@ public:
     unique_ptr<ProcedureNode> onProcedureEnd(const FilePos &, unique_ptr<Ident>);
 
     unique_ptr<AssignmentNode> onAssignment(const FilePos &, const FilePos &,
-                                            unique_ptr<ValueReferenceNode>, unique_ptr<ExpressionNode>);
+                                            unique_ptr<QualifiedExpression>, unique_ptr<ExpressionNode>);
     unique_ptr<IfThenElseNode> onIfStatement(const FilePos &, const FilePos &,
                                              unique_ptr<ExpressionNode>,
                                              unique_ptr<StatementSequenceNode>,
@@ -141,8 +141,11 @@ public:
                                       unique_ptr<ExpressionNode>,
                                       unique_ptr<ExpressionNode>,
                                       unique_ptr<StatementSequenceNode>);
-    unique_ptr<ProcedureCallNode> onProcedureCall(const FilePos &, const FilePos &, unique_ptr<Designator>);
     unique_ptr<ReturnNode> onReturn(const FilePos &, const FilePos &, unique_ptr<ExpressionNode>);
+
+    unique_ptr<StatementNode> onQualifiedStatement(const FilePos &, const FilePos &, unique_ptr<Designator>);
+    unique_ptr<QualifiedExpression> onQualifiedExpression(const FilePos &, const FilePos &, unique_ptr<Designator>);
+    unique_ptr<LiteralNode> onQualifiedConstant(const FilePos &, const FilePos &, unique_ptr<Designator>);
 
     unique_ptr<ExpressionNode> onUnaryExpression(const FilePos &, const FilePos &,
                                                  OperatorType,
@@ -151,11 +154,6 @@ public:
                                                   OperatorType,
                                                   unique_ptr<ExpressionNode>,
                                                   unique_ptr<ExpressionNode>);
-
-    unique_ptr<LiteralNode> onConstantReference(const FilePos &, const FilePos &, unique_ptr<Designator>);
-    unique_ptr<ValueReferenceNode> onValueReference(const FilePos &, const FilePos &, unique_ptr<Designator>);
-
-    unique_ptr<ExpressionNode> onQualifiedExpression(const FilePos &, const FilePos &, unique_ptr<Designator>);
 
     unique_ptr<BooleanLiteralNode> onBooleanLiteral(const FilePos &, const FilePos &, bool);
     unique_ptr<IntegerLiteralNode> onIntegerLiteral(const FilePos &, const FilePos &, long, bool = false);

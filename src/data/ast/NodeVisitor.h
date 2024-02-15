@@ -21,45 +21,51 @@
 class NodeVisitor {
 
 public:
-    virtual void visit(ModuleNode &node) = 0;
-    virtual void visit(ProcedureNode &node) = 0;
+    virtual void visit(ModuleNode &) = 0;
+    virtual void visit(ProcedureNode &) = 0;
 
-    virtual void visit(ImportNode &node) = 0;
+    virtual void visit(ImportNode &) = 0;
 
-    virtual void visit(ConstantDeclarationNode &node) = 0;
-    virtual void visit(FieldNode &node) = 0;
-    virtual void visit(ParameterNode &node) = 0;
-    virtual void visit(TypeDeclarationNode &node) = 0;
-    virtual void visit(VariableDeclarationNode &node) = 0;
+    virtual void visit(ConstantDeclarationNode &) = 0;
+    virtual void visit(FieldNode &) = 0;
+    virtual void visit(ParameterNode &) = 0;
+    virtual void visit(TypeDeclarationNode &) = 0;
+    virtual void visit(VariableDeclarationNode &) = 0;
 
-    virtual void visit(ValueReferenceNode &node) = 0;
-    virtual void visit(QualifiedExpression &node) = 0;
+    virtual void visit(QualifiedStatement &) = 0;
+    virtual void visit(QualifiedExpression &) = 0;
 
-    virtual void visit(BooleanLiteralNode &node) = 0;
-    virtual void visit(IntegerLiteralNode &node) = 0;
-    virtual void visit(RealLiteralNode &node) = 0;
-    virtual void visit(StringLiteralNode &node) = 0;
-    virtual void visit(NilLiteralNode &node) = 0;
+    [[deprecated]]
+    virtual void visit(ValueReferenceNode &) = 0;
 
-    virtual void visit(UnaryExpressionNode &node) = 0;
-    virtual void visit(BinaryExpressionNode &node) = 0;
+    virtual void visit(BooleanLiteralNode &) = 0;
+    virtual void visit(IntegerLiteralNode &) = 0;
+    virtual void visit(RealLiteralNode &) = 0;
+    virtual void visit(StringLiteralNode &) = 0;
+    virtual void visit(NilLiteralNode &) = 0;
 
-    virtual void visit(ArrayTypeNode &node) = 0;
-    virtual void visit(BasicTypeNode &node) = 0;
-    virtual void visit(ProcedureTypeNode &node) = 0;
-    virtual void visit(RecordTypeNode &node) = 0;
-    virtual void visit(PointerTypeNode &node) = 0;
+    virtual void visit(UnaryExpressionNode &) = 0;
+    virtual void visit(BinaryExpressionNode &) = 0;
 
-    virtual void visit(StatementSequenceNode &node) = 0;
-    virtual void visit(AssignmentNode &node) = 0;
-    virtual void visit(IfThenElseNode &node) = 0;
-    virtual void visit(ElseIfNode &node) = 0;
-    virtual void visit(ProcedureCallNode &node) = 0;
-    virtual void visit(LoopNode &node) = 0;
-    virtual void visit(WhileLoopNode &node) = 0;
-    virtual void visit(RepeatLoopNode &node) = 0;
-    virtual void visit(ForLoopNode &node) = 0;
-    virtual void visit(ReturnNode &node) = 0;
+    virtual void visit(ArrayTypeNode &) = 0;
+    virtual void visit(BasicTypeNode &) = 0;
+    virtual void visit(ProcedureTypeNode &) = 0;
+    virtual void visit(RecordTypeNode &) = 0;
+    virtual void visit(PointerTypeNode &) = 0;
+
+    virtual void visit(StatementSequenceNode &) = 0;
+    virtual void visit(AssignmentNode &) = 0;
+    virtual void visit(IfThenElseNode &) = 0;
+    virtual void visit(ElseIfNode &) = 0;
+    virtual void visit(LoopNode &) = 0;
+    virtual void visit(WhileLoopNode &) = 0;
+    virtual void visit(RepeatLoopNode &) = 0;
+    virtual void visit(ForLoopNode &) = 0;
+    virtual void visit(ReturnNode &) = 0;
+
+    [[deprecated]]
+    virtual void visit(ProcedureCallNode &) = 0;
+
 
     virtual ~NodeVisitor() noexcept;
 

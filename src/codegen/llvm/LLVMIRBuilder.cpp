@@ -156,112 +156,59 @@ void LLVMIRBuilder::visit(ImportNode &node) {
     }
 }
 
-void LLVMIRBuilder::visit(ValueReferenceNode &node) {
-    if (node.getNodeType() == NodeType::procedure_call) {
-        call(node);
-        return;
-    }
-    auto ref = node.dereference();
-    auto level = ref->getLevel();
+void LLVMIRBuilder::visit(ValueReferenceNode &) {}
+
+void LLVMIRBuilder::visit(QualifiedStatement &node) {
+    auto proc = dynamic_cast<ProcedureNode *>(node.dereference());
+    call(proc, node.ident(), node.selectors());
+}
+
+void LLVMIRBuilder::visit(QualifiedExpression &node) {
+    auto decl = node.dereference();
+    auto level = decl->getLevel();
     if (level == 1) /* global level */ {
-        value_ = values_[ref];
+        value_ = values_[decl];
     } else if (level == level_) /* same procedure level */ {
-        value_ = values_[ref];
+        value_ = values_[decl];
     } else if (level > level_) /* parent procedure level */ {
-        logger_.error(ref->pos(), "referencing variables of parent procedures is not yet supported.");
+        logger_.error(decl->pos(), "referencing variables of parent procedures is not yet supported.");
     } else /* error */ {
-        logger_.error(ref->pos(), "cannot reference variable of child procedure.");
+        logger_.error(decl->pos(), "cannot reference variable of child procedure.");
     }
-    auto type = ref->getType();
-    if (type->getNodeType() == NodeType::array_type ||
-        type->getNodeType() == NodeType::record_type ||
-        type->getNodeType() == NodeType::pointer_type) {
-        auto selector_t = type;
-        auto base = value_;
-        std::vector<Value *> indices;
-        indices.push_back(builder_.getInt32(0));
-        for (size_t i = 0; i < node.getSelectorCount(); i++) {
-            auto sel = node.getSelector(i);
-            if (sel->getNodeType() == NodeType::array_type) {
-                // handle array index access
-                indices.push_back(builder_.getInt32(1));   // the array is the second field in the struct
-                setRefMode(true);
-                // TODO add support for multi-dimensional arrays
-                dynamic_cast<ArrayIndex*>(sel)->indices()[0]->accept(*this);
-                indices.push_back(value_);
-                restoreRefMode();
-                selector_t = dynamic_cast<ArrayTypeNode*>(selector_t)->getMemberType();
-            } else if (sel->getNodeType() == NodeType::record_type) {
-                // handle record field access
-                auto field = dynamic_cast<RecordField *>(sel)->getField();
-                auto record_t = dynamic_cast<RecordTypeNode*>(selector_t);
-                for (size_t pos = 0; pos < record_t->getFieldCount(); pos++) {
-                    if (field == record_t->getField(pos)) {
-                        indices.push_back(builder_.getInt32(pos));
-                        break;
-                    }
-                }
-                selector_t = field->getType();
-            } else if (sel->getNodeType() == NodeType::pointer_type) {
-                // output the GEP up to the pointer
-                if (indices.size() > 1) {
-                    base = builder_.CreateInBoundsGEP(getLLVMType(type), base, indices);
-                    indices.clear();
-                    indices.push_back(builder_.getInt32(0));
-                }
-                // create a load to dereference the pointer
-                base = builder_.CreateLoad(getLLVMType(selector_t), base);
-                selector_t = dynamic_cast<PointerTypeNode *>(selector_t)->getBase();
-                type = selector_t;
-            } else {
-                logger_.error(sel->pos(), "unsupported selector.");
-            }
-        }
-        // clean up
-        if (indices.size() > 1) {
-            value_ = builder_.CreateInBoundsGEP(getLLVMType(type), base, indices);
-        } else {
-            value_ = base;
-        }
-        type = selector_t;
+    auto type = decl->getType();
+    if (type->isProcedure()) {
+        type = call(dynamic_cast<ProcedureNode *>(decl), node.ident(), node.selectors());
+    } else {
+        type = selectors(type, node.selectors().begin(), node.selectors().end());
     }
     if (deref()) {
         value_ = builder_.CreateLoad(getLLVMType(type), value_);
     }
 }
 
-TypeNode *LLVMIRBuilder::selectors(TypeNode *base, vector<unique_ptr<Selector>> &selectors) {
+TypeNode *LLVMIRBuilder::selectors(TypeNode *base, SelectorIterator start, SelectorIterator end) {
     auto selector_t = base;
     auto value = value_;
     vector<Value *> indices;
     indices.push_back(builder_.getInt32(0));
-    for (auto &selector : selectors) {
-        auto sel = selector.get();
+    for (auto it = start; it != end; ++it) {
+        auto sel = (*it).get();
         if (sel->getNodeType() == NodeType::parameter) {
             auto params = dynamic_cast<ActualParameters *>(sel);
             auto type = dynamic_cast<ProcedureTypeNode *>(selector_t);
-            std::vector<Value*> values;
-            for (size_t i = 0; i < type->parameters().size(); i++) {
-                setRefMode(i >= type->getFormalParameterCount() || !type->getFormalParameter(i)->isVar());
-                auto param = params->parameters()[i].get();
-                param->accept(*this);
-                cast(*param);
-                values.push_back(value_);
-                restoreRefMode();
+            vector<Value*> values;
+            parameters(type, params, values);
+            auto funTy = getLLVMType(type);
+            // output the GEP up to the pointer
+            if (indices.size() > 1) {
+                value = builder_.CreateInBoundsGEP(getLLVMType(base), value, indices);
+                indices.clear();
+                indices.push_back(builder_.getInt32(0));
             }
-            auto proc = params->getProcedure();
-            if (proc->isPredefined()) {
-                value_ = callPredefined(node, params);
-            } else {
-                auto ident = proc->getIdentifier();
-                auto fun = module_->getFunction(qualifiedName(proc));
-                if (fun) {
-                    value_ = builder_.CreateCall(fun, values);
-                } else {
-                    logger_.error(node.pos(), "undefined procedure: " + to_string(*ident) + ".");
-                }
-            }
-            selector_t = proc->getReturnType();
+            // create a load to dereference the function pointer
+            value = builder_.CreateLoad(funTy, value);
+            value_ = builder_.CreateCall(::cast<FunctionType>(funTy), value, values);
+            selector_t = type->getReturnType();
         } else if (sel->getNodeType() == NodeType::array_type) {
             // handle array index access
             indices.push_back(builder_.getInt32(1));   // the array is the second field in the struct
@@ -308,22 +255,34 @@ TypeNode *LLVMIRBuilder::selectors(TypeNode *base, vector<unique_ptr<Selector>> 
     return selector_t;
 }
 
-void LLVMIRBuilder::visit(QualifiedExpression &node) {
-    auto decl = node.dereference();
-    auto level = decl->getLevel();
-    if (level == 1) /* global level */ {
-        value_ = values_[decl];
-    } else if (level == level_) /* same procedure level */ {
-        value_ = values_[decl];
-    } else if (level > level_) /* parent procedure level */ {
-        logger_.error(decl->pos(), "referencing variables of parent procedures is not yet supported.");
-    } else /* error */ {
-        logger_.error(decl->pos(), "cannot reference variable of child procedure.");
+void LLVMIRBuilder::parameters(ProcedureTypeNode *type, ActualParameters *params, vector<llvm::Value *> &values) {
+    for (size_t i = 0; i < type->parameters().size(); i++) {
+        setRefMode(i >= type->getFormalParameterCount() || !type->getFormalParameter(i)->isVar());
+        auto param = params->parameters()[i].get();
+        param->accept(*this);
+        cast(*param);
+        values.push_back(value_);
+        restoreRefMode();
     }
-    auto type = selectors(decl->getType(), node.selectors());
-    if (deref()) {
-        value_ = builder_.CreateLoad(getLLVMType(type), value_);
+}
+
+TypeNode *LLVMIRBuilder::call(ProcedureNode *proc, QualIdent *ident, Selectors &selectors) {
+    auto type = dynamic_cast<ProcedureTypeNode *>(proc->getType());
+    std::vector<Value*> values;
+    // TODO getting the first element without checking is risky business
+    auto params = dynamic_cast<ActualParameters *>(selectors[0].get());
+    parameters(type, params, values);
+    if (proc->isPredefined()) {
+        value_ = callPredefined(dynamic_cast<PredefinedProcedure *>(proc), ident, params, values);
+    } else {
+        auto fun = module_->getFunction(qualifiedName(proc));
+        if (fun) {
+            value_ = builder_.CreateCall(fun, values);
+        } else {
+            logger_.error(ident->start(), "undefined procedure: " + to_string(*ident) + ".");
+        }
     }
+    return this->selectors(proc->getType(), selectors.begin() + 1, selectors.end());
 }
 
 void LLVMIRBuilder::visit(ConstantDeclarationNode &) {}
@@ -577,9 +536,7 @@ void LLVMIRBuilder::visit(IfThenElseNode &node) {
 
 void LLVMIRBuilder::visit(ElseIfNode &) {}
 
-void LLVMIRBuilder::visit(ProcedureCallNode &node) {
-    call(node);
-}
+void LLVMIRBuilder::visit(ProcedureCallNode &) {}
 
 void LLVMIRBuilder::visit([[maybe_unused]] LoopNode &node) {
     // TODO code generation for general loop
@@ -705,19 +662,19 @@ void LLVMIRBuilder::cast(ExpressionNode &node) {
     }
 }
 
-Value *LLVMIRBuilder::callPredefined(ProcedureNodeReference &node, std::vector<Value *> &params) {
-    auto proc = dynamic_cast<PredefinedProcedure *>(node.dereference());
-    auto ptype = proc->getKind();
-    if (ptype == ProcKind::NEW) {
+Value *LLVMIRBuilder::callPredefined(PredefinedProcedure *proc, QualIdent *ident, ActualParameters *actuals, std::vector<Value *> &params) {
+    auto type = dynamic_cast<ProcedureTypeNode *>(proc->getType());
+    ProcKind kind = proc->getKind();
+    if (kind == ProcKind::NEW) {
         auto fun = module_->getFunction("malloc");
         if (!fun) {
-            auto type = FunctionType::get(builder_.getPtrTy(), {builder_.getInt64Ty()}, false);
-            fun = Function::Create(type, GlobalValue::ExternalLinkage, "malloc", module_);
+            auto funTy = FunctionType::get(builder_.getPtrTy(), {builder_.getInt64Ty()}, false);
+            fun = Function::Create(funTy, GlobalValue::ExternalLinkage, "malloc", module_);
             fun->addFnAttr(Attribute::getWithAllocSizeArgs(builder_.getContext(), 0, {}));
             fun->addParamAttr(0, Attribute::NoUndef);
         }
         std::vector<Value *> values;
-        auto ptr = (PointerTypeNode *) node.getActualParameter(0)->getType();
+        auto ptr = (PointerTypeNode *) actuals->parameters()[0]->getType();
         auto layout = module_->getDataLayout();
         auto base = ptr->getBase();
         values.push_back(ConstantInt::get(builder_.getInt64Ty(), layout.getTypeAllocSize(getLLVMType(base))));
@@ -725,39 +682,39 @@ Value *LLVMIRBuilder::callPredefined(ProcedureNodeReference &node, std::vector<V
         // TODO remove next line (bit-cast) once non-opaque pointers are no longer supported
         value_ = builder_.CreateBitCast(value_, getLLVMType(ptr));
         return builder_.CreateStore(value_, params[0]);
-    } else if (ptype == ProcKind::FREE) {
+    } else if (kind == ProcKind::FREE) {
         auto fun = module_->getFunction("free");
 #ifdef _LLVM_LEGACY
-        auto void_t = PointerType::get(builder_.getVoidTy(), 0);
+        auto voidTy = PointerType::get(builder_.getVoidTy(), 0);
 #else
-        auto void_t = builder_.getPtrTy();
+        auto voidTy = builder_.getPtrTy();
 #endif
         if (!fun) {
-            auto type = FunctionType::get(builder_.getVoidTy(), {void_t}, false);
-            fun = Function::Create(type, GlobalValue::ExternalLinkage, "free", module_);
+            auto funTy = FunctionType::get(builder_.getVoidTy(), {voidTy}, false);
+            fun = Function::Create(funTy, GlobalValue::ExternalLinkage, "free", module_);
             fun->addParamAttr(0, Attribute::NoUndef);
         }
         std::vector<Value *> values;
-        values.push_back(builder_.CreateLoad(void_t, params[0]));
+        values.push_back(builder_.CreateLoad(voidTy, params[0]));
         builder_.CreateCall(FunctionCallee(fun), values);
 #ifdef _LLVM_LEGACY
         auto ptr = (PointerTypeNode*) node.getActualParameter(0)->getType();
         void_t = (PointerType*) getLLVMType(ptr);
 #endif
-        return builder_.CreateStore(ConstantPointerNull::get(void_t), params[0]);
-    } else if (ptype == ProcKind::INC || ptype == ProcKind::DEC) {
-        auto target = getLLVMType(node.getActualParameter(0)->getType());
+        return builder_.CreateStore(ConstantPointerNull::get(voidTy), params[0]);
+    } else if (kind == ProcKind::INC || kind == ProcKind::DEC) {
+        auto target = getLLVMType(type->parameters()[0]->getType());
         Value *delta;
         if (params.size() > 2) {
-            auto param = node.getActualParameter(2);
+            auto param = actuals->parameters()[2].get();
             logger_.error(param->pos(), "more actual than formal parameters.");
             return value_;
         } else if (params.size() > 1) {
             auto source = params[1]->getType();
-            auto param = node.getActualParameter(1);
+            auto param = actuals->parameters()[0].get();
             if (!param->getType()->isInteger()) {
                 logger_.error(param->pos(), "type mismatch: expected integer type, found " +
-                                             to_string(param->getType()) + ".");
+                                            to_string(param->getType()) + ".");
                 return value_;
             }
             delta = params[1];
@@ -765,52 +722,52 @@ Value *LLVMIRBuilder::callPredefined(ProcedureNodeReference &node, std::vector<V
                 delta = builder_.CreateSExt(delta, target);
             } else if (target->getIntegerBitWidth() < source->getIntegerBitWidth()) {
                 logger_.warning(param->pos(), "type mismatch: truncating " + to_string(param->getType()) + " to " +
-                                               to_string(node.getActualParameter(0)->getType()) + " may lose data.");
+                                              to_string(type->parameters()[0]->getType()) + " may lose data.");
                 delta = builder_.CreateTrunc(delta, target);
             }
         } else {
             delta = ConstantInt::get(target, 1);
         }
         Value *value = builder_.CreateLoad(target, params[0]);
-        if (ptype == ProcKind::INC) {
+        if (kind == ProcKind::INC) {
             value = builder_.CreateAdd(value, delta);
         } else {
             value = builder_.CreateSub(value, delta);
         }
         return builder_.CreateStore(value, params[0]);
-    } else if (ptype == ProcKind::LSL) {
+    } else if (kind == ProcKind::LSL) {
         return builder_.CreateShl(params[0], params[1]);
-    } else if (ptype == ProcKind::ASR) {
+    } else if (kind == ProcKind::ASR) {
         return builder_.CreateAShr(params[0], params[1]);
-    } else if (ptype == ProcKind::ROL) {
+    } else if (kind == ProcKind::ROL) {
         Value *lhs = builder_.CreateShl(params[0], params[1]);
         Value *delta = builder_.CreateSub(builder_.getInt64(64), params[1]);
         Value *rhs = builder_.CreateLShr(params[0], delta);
         return builder_.CreateOr(lhs, rhs);
-    } else if (ptype == ProcKind::ROR) {
+    } else if (kind == ProcKind::ROR) {
         Value *lhs = builder_.CreateLShr(params[0], params[1]);
         Value *delta = builder_.CreateSub(builder_.getInt64(64), params[1]);
         Value *rhs = builder_.CreateShl(params[0], delta);
         return builder_.CreateOr(lhs, rhs);
-    } else if (ptype == ProcKind::ODD) {
-        auto type = params[0]->getType();
-        value_ = builder_.CreateSRem(params[0], ConstantInt::get(type, 2));
-        return builder_.CreateICmpEQ(value_, ConstantInt::get(type, 1));
-    } else if (ptype == ProcKind::HALT) {
+    } else if (kind == ProcKind::ODD) {
+        auto paramTy = params[0]->getType();
+        value_ = builder_.CreateSRem(params[0], ConstantInt::get(paramTy, 2));
+        return builder_.CreateICmpEQ(value_, ConstantInt::get(paramTy, 1));
+    } else if (kind == ProcKind::HALT) {
         auto fun = module_->getFunction("exit");
         if (!fun) {
-            auto type = FunctionType::get(builder_.getVoidTy(), {builder_.getInt32Ty()}, false);
-            fun = Function::Create(type, GlobalValue::ExternalLinkage, "exit", module_);
+            auto funTy = FunctionType::get(builder_.getVoidTy(), {builder_.getInt32Ty()}, false);
+            fun = Function::Create(funTy, GlobalValue::ExternalLinkage, "exit", module_);
             fun->addFnAttr(Attribute::NoReturn);
             fun->addParamAttr(0, Attribute::NoUndef);
         }
         builder_.CreateCall(FunctionCallee(fun), {params[0]});
         return builder_.CreateUnreachable();
-    } else if (ptype == ProcKind::ASSERT) {
+    } else if (kind == ProcKind::ASSERT) {
         auto fun = module_->getFunction("abort");
         if (!fun) {
-            auto type = FunctionType::get(builder_.getVoidTy(), {}, false);
-            fun = Function::Create(type, GlobalValue::ExternalLinkage, "abort", module_);
+            auto funTy = FunctionType::get(builder_.getVoidTy(), {}, false);
+            fun = Function::Create(funTy, GlobalValue::ExternalLinkage, "abort", module_);
             fun->addFnAttr(Attribute::Cold);
             fun->addFnAttr(Attribute::NoReturn);
         }
@@ -822,36 +779,13 @@ Value *LLVMIRBuilder::callPredefined(ProcedureNodeReference &node, std::vector<V
         value_ = builder_.CreateUnreachable();
         builder_.SetInsertPoint(tail);
         return value_;
-    } else if (ptype == ProcKind::LEN) {
+    } else if (kind == ProcKind::LEN) {
         value_ = builder_.CreateLoad(builder_.getInt64Ty(), params[0]);
         return value_;
     } else {
-        logger_.error(node.pos(), "unsupported predefined procedure: " + to_string(*proc->getIdentifier()) + ".");
+        logger_.error(ident->start(), "unsupported predefined procedure: " + to_string(*ident) + ".");
         // to generate correct LLVM IR, the current value is returned (no-op).
         return value_;
-    }
-}
-
-void LLVMIRBuilder::call(ProcedureNodeReference &node) {
-    auto proc = dynamic_cast<ProcedureNode *>(node.dereference());
-    std::vector<Value*> params;
-    for (size_t i = 0; i < node.getActualParameterCount(); i++) {
-        setRefMode(i >= proc->getFormalParameterCount() || !proc->getFormalParameter(i)->isVar());
-        node.getActualParameter(i)->accept(*this);
-        cast(*node.getActualParameter(i));
-        params.push_back(value_);
-        restoreRefMode();
-    }
-    if (proc->isPredefined()) {
-        value_ = callPredefined(node, params);
-    } else {
-        auto ident = proc->getIdentifier();
-        auto fun = module_->getFunction(qualifiedName(proc));
-        if (fun) {
-            value_ = builder_.CreateCall(fun, params);
-        } else {
-            logger_.error(node.pos(), "undefined procedure: " + to_string(*ident) + ".");
-        }
     }
 }
 

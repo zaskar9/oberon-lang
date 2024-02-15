@@ -10,17 +10,25 @@
 
 #include <map>
 #include <stack>
+#include <string>
+#include <vector>
 
 #include <llvm/IR/DataLayout.h>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
 
-#include "data/ast/ASTContext.h"
 #include "compiler/CompilerConfig.h"
+#include "data/ast/ASTContext.h"
 #include "data/ast/NodeVisitor.h"
 #include "logging/Logger.h"
+#include "system/PredefinedProcedure.h"
 
 using namespace llvm;
+
+using std::map;
+using std::stack;
+using std::string;
+using std::vector;
 
 class LLVMIRBuilder final : private NodeVisitor {
 
@@ -30,11 +38,11 @@ private:
     IRBuilder<> builder_;
     Module *module_;
     Value *value_;
-    std::map<DeclarationNode*, Value*> values_;
-    std::map<TypeNode*, Type*> types_;
-    std::map<ProcedureNode*, Function*> functions_;
-    std::map<std::string, Constant*> strings_;
-    std::stack<bool> deref_ctx;
+    map<DeclarationNode*, Value*> values_;
+    map<TypeNode*, Type*> types_;
+    map<ProcedureNode*, Function*> functions_;
+    map<string, Constant*> strings_;
+    stack<bool> deref_ctx;
     unsigned int level_;
     Function *function_;
     AttrBuilder attrs_;
@@ -43,20 +51,23 @@ private:
     Type* getLLVMType(TypeNode *type);
     MaybeAlign getLLVMAlign(TypeNode *type);
 
-    std::string qualifiedName(DeclarationNode *) const;
+    string qualifiedName(DeclarationNode *) const;
 
     void setRefMode(bool deref);
     void restoreRefMode();
     bool deref() const;
 
-    Value *callPredefined(ProcedureNodeReference &, std::vector<Value *> &);
+    Value *callPredefined(PredefinedProcedure *, QualIdent *, ActualParameters *, vector<Value *> &);
 
     void cast(ExpressionNode &);
 
-    void call(ProcedureNodeReference &);
     void proc(ProcedureNode &);
 
-    TypeNode *selectors(TypeNode *, vector<unique_ptr<Selector>> &);
+    using Selectors = vector<unique_ptr<Selector>>;
+    using SelectorIterator = Selectors::iterator;
+    TypeNode *selectors(TypeNode *, SelectorIterator, SelectorIterator);
+    void parameters(ProcedureTypeNode *, ActualParameters *, vector<Value *> &);
+    TypeNode *call(ProcedureNode *, QualIdent *, Selectors &);
 
     void visit(ModuleNode &) override;
     void visit(ProcedureNode &) override;
@@ -68,8 +79,10 @@ private:
     void visit(ParameterNode &) override;
     void visit(VariableDeclarationNode &) override;
 
-    void visit(ValueReferenceNode &) override;
+    void visit(QualifiedStatement &) override;
     void visit(QualifiedExpression &) override;
+
+    void visit(ValueReferenceNode &) override;
 
     void visit(BooleanLiteralNode &) override;
     void visit(IntegerLiteralNode &) override;

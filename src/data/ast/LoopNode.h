@@ -34,7 +34,6 @@ public:
     [[nodiscard]] StatementSequenceNode * getStatements() const;
 
     void accept(NodeVisitor& visitor) override;
-
     void print(std::ostream &stream) const override;
 
 };
@@ -64,7 +63,6 @@ public:
     ~WhileLoopNode() override = default;
 
     void accept(NodeVisitor& visitor) final;
-
     void print(std::ostream &stream) const final;
 
 };
@@ -77,7 +75,6 @@ public:
     ~RepeatLoopNode() override = default;
 
     void accept(NodeVisitor& visitor) final;
-
     void print(std::ostream &stream) const final;
 
 };
@@ -85,30 +82,23 @@ public:
 class ForLoopNode final : public LoopNode {
 
 private:
-    unique_ptr<ValueReferenceNode> counter_;
+    unique_ptr<QualifiedExpression> counter_;
     unique_ptr<ExpressionNode> low_, high_, step_;
 
 public:
-    ForLoopNode(const FilePos &pos, unique_ptr<ValueReferenceNode> counter,
+    ForLoopNode(const FilePos &pos, unique_ptr<QualifiedExpression> counter,
                 unique_ptr<ExpressionNode> low, unique_ptr<ExpressionNode> high, unique_ptr<ExpressionNode> step,
                 unique_ptr<StatementSequenceNode> stmts) :
             LoopNode(NodeType::for_loop, pos, std::move(stmts)), counter_(std::move(counter)), low_(std::move(low)),
             high_(std::move(high)), step_(step != nullptr ? std::move(step) : make_unique<IntegerLiteralNode>(pos, 1)) { };
     ~ForLoopNode() override = default;
 
-    [[nodiscard]] ValueReferenceNode * getCounter() const;
-
-    void setLow(std::unique_ptr<ExpressionNode> low);
-    [[nodiscard]] ExpressionNode * getLow() const;
-
-    void setHigh(std::unique_ptr<ExpressionNode> high);
-    [[nodiscard]] ExpressionNode * getHigh() const;
-
-    void setStep(std::unique_ptr<ExpressionNode> step);
-    [[nodiscard]] ExpressionNode * getStep() const;
+    [[nodiscard]] QualifiedExpression *getCounter() const;
+    [[nodiscard]] ExpressionNode *getLow() const;
+    [[nodiscard]] ExpressionNode *getHigh() const;
+    [[nodiscard]] ExpressionNode *getStep() const;
 
     void accept(NodeVisitor& visitor) final;
-
     void print(std::ostream &stream) const final;
 
 };

@@ -185,6 +185,16 @@ void NodePrettyPrinter::visit(ValueReferenceNode &node) {
     }
 }
 
+void NodePrettyPrinter::visit(QualifiedStatement &node) {
+    stream_ << *node.ident();
+    selectors(node.selectors());
+}
+
+void NodePrettyPrinter::visit(QualifiedExpression &node) {
+    stream_ << *node.ident();
+    selectors(node.selectors());
+}
+
 void NodePrettyPrinter::selectors(std::vector<unique_ptr<Selector>> &selectors) {
     for (auto &sel: selectors) {
         auto selector = sel.get();
@@ -220,11 +230,6 @@ void NodePrettyPrinter::selectors(std::vector<unique_ptr<Selector>> &selectors) 
             stream_ << ")";
         }
     }
-}
-
-void NodePrettyPrinter::visit(QualifiedExpression &node) {
-    stream_ << *node.ident();
-    selectors(node.selectors());
 }
 
 void NodePrettyPrinter::visit(ConstantDeclarationNode &node) {

@@ -40,8 +40,10 @@ private:
     void visit(TypeDeclarationNode &) override;
     void visit(VariableDeclarationNode &) override;
 
-    void visit(ValueReferenceNode &) override;
+    void visit(QualifiedStatement &) override;
     void visit(QualifiedExpression &) override;
+
+    void visit(ValueReferenceNode &) override;
 
     void visit(BooleanLiteralNode &) override;
     void visit(IntegerLiteralNode &) override;

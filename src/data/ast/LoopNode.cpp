@@ -46,28 +46,16 @@ void RepeatLoopNode::print(std::ostream& stream) const {
 }
 
 
-ValueReferenceNode* ForLoopNode::getCounter() const {
+QualifiedExpression* ForLoopNode::getCounter() const {
     return counter_.get();
-}
-
-void ForLoopNode::setLow(std::unique_ptr<ExpressionNode> low) {
-    low_ = std::move(low);
 }
 
 ExpressionNode* ForLoopNode::getLow() const {
     return low_.get();
 }
 
-void ForLoopNode::setHigh(std::unique_ptr<ExpressionNode> high) {
-    high_ = std::move(high);
-}
-
 ExpressionNode* ForLoopNode::getHigh() const {
     return high_.get();
-}
-
-void ForLoopNode::setStep(std::unique_ptr<ExpressionNode> step) {
-    step_ = std::move(step);
 }
 
 ExpressionNode * ForLoopNode::getStep() const {
