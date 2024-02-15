@@ -100,7 +100,8 @@ private:
     vector<unique_ptr<ExpressionNode>> parameters_;
 
 public:
-    explicit ActualParameters(const FilePos &pos, vector<unique_ptr<ExpressionNode>> parameters_);
+    ActualParameters(const FilePos &pos, vector<unique_ptr<ExpressionNode>> parameters_);
+    ActualParameters();
     ~ActualParameters() override;
 
     void setProcedure(ProcedureNode *);

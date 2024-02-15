@@ -75,6 +75,9 @@ TypeNode *Typeguard::getType() const {
 ActualParameters::ActualParameters(const FilePos &pos, std::vector<std::unique_ptr<ExpressionNode>> parameters) :
         Selector(NodeType::parameter, pos), proc_(), parameters_(std::move(parameters)) { }
 
+ActualParameters::ActualParameters() :
+        Selector(NodeType::parameter, EMPTY_POS), proc_(), parameters_() {}
+
 ActualParameters::~ActualParameters() = default;
 
 void ActualParameters::setProcedure(ProcedureNode *proc) {

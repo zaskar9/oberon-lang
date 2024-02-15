@@ -32,7 +32,6 @@ private:
     static const string SUPER_;
     static const FilePos POS_;
 
-    void call(ProcedureNodeReference &);
     void selectors(TypeNode *, vector<unique_ptr<Selector>> &);
 
     void visit(ModuleNode &) override;
@@ -48,8 +47,6 @@ private:
 
     void visit(QualifiedStatement &) override;
     void visit(QualifiedExpression &) override;
-
-    void visit(ValueReferenceNode &) override;
 
     void visit(BooleanLiteralNode &) override;
     void visit(IntegerLiteralNode &) override;
@@ -70,14 +67,12 @@ private:
     void visit(AssignmentNode &) override;
     void visit(IfThenElseNode &) override;
     void visit(ElseIfNode &) override;
-    void visit(ProcedureCallNode &) override;
     void visit(LoopNode &) override;
     void visit(WhileLoopNode &) override;
     void visit(RepeatLoopNode &) override;
     void visit(ForLoopNode &) override;
     void visit(ReturnNode &) override;
 
-    static bool envFieldResolver(ValueReferenceNode *, const string &, TypeNode *);
     static bool envFieldResolver(QualifiedExpression *, const string &, TypeNode *);
 
 public:

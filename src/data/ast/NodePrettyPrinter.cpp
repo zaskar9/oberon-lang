@@ -75,17 +75,6 @@ void NodePrettyPrinter::block(BlockNode& node, bool isGlobal) {
     indent_ -= TAB_WIDTH;
 }
 
-void NodePrettyPrinter::call(ProcedureNodeReference &node) {
-    stream_ << *node.ident() << "(";
-    for (size_t i = 0; i < node.getActualParameterCount(); i++) {
-        node.getActualParameter(i)->accept(*this);
-        if (i + 1 < node.getActualParameterCount()) {
-            stream_ << ", ";
-        }
-    }
-    stream_ << ")";
-}
-
 void NodePrettyPrinter::visit(ModuleNode& node) {
     indent();
     stream_ << "MODULE " << *node.getIdentifier() << "(*" << node.getLevel() << "*);" << std::endl;
@@ -149,40 +138,6 @@ void NodePrettyPrinter::visit(ImportNode &node) {
         stream_ << *node.getAlias() << " := ";
     }
     stream_ << *node.getModule() << "; ";
-}
-
-void NodePrettyPrinter::visit(ValueReferenceNode &node) {
-    if (node.getNodeType() == NodeType::procedure_call) {
-        call(node);
-        return;
-    }
-    // TODO Remove work-around once ValueReference::resolve() does update Designator
-    // stream_ << *node.ident();
-    stream_ << *node.dereference()->getIdentifier();
-    for (size_t i = 0; i < node.getSelectorCount(); i++) {
-        auto selector = node.getSelector(i);
-        auto type = selector->getNodeType();
-        if (type == NodeType::array_type) {
-            auto indices = dynamic_cast<ArrayIndex *>(selector);
-            stream_ << "[";
-            string sep = "";
-            for (auto& index : indices->indices()) {
-                stream_ << sep;
-                index->accept(*this);
-                sep = ", ";
-            }
-            stream_ << "]";
-        } else if (type == NodeType::record_type) {
-            stream_ << ".";
-            stream_ << *dynamic_cast<RecordField *>(selector)->getField()->getIdentifier();
-        } else if (type == NodeType::pointer_type) {
-            stream_ << "^";
-        } else if (type == NodeType::type) {
-            stream_ << "(";
-            stream_ << *dynamic_cast<Typeguard *>(selector)->ident();
-            stream_ << ")";
-        }
-    }
 }
 
 void NodePrettyPrinter::visit(QualifiedStatement &node) {
@@ -391,10 +346,6 @@ void NodePrettyPrinter::visit(ElseIfNode& node) {
     indent_ += TAB_WIDTH;
     node.getStatements()->accept(*this);
     indent_ -= TAB_WIDTH;
-}
-
-void NodePrettyPrinter::visit(ProcedureCallNode &node) {
-    call(node);
 }
 
 void NodePrettyPrinter::visit(LoopNode &node) {

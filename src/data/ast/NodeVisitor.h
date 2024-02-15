@@ -35,9 +35,6 @@ public:
     virtual void visit(QualifiedStatement &) = 0;
     virtual void visit(QualifiedExpression &) = 0;
 
-    [[deprecated]]
-    virtual void visit(ValueReferenceNode &) = 0;
-
     virtual void visit(BooleanLiteralNode &) = 0;
     virtual void visit(IntegerLiteralNode &) = 0;
     virtual void visit(RealLiteralNode &) = 0;
@@ -62,10 +59,6 @@ public:
     virtual void visit(RepeatLoopNode &) = 0;
     virtual void visit(ForLoopNode &) = 0;
     virtual void visit(ReturnNode &) = 0;
-
-    [[deprecated]]
-    virtual void visit(ProcedureCallNode &) = 0;
-
 
     virtual ~NodeVisitor() noexcept;
 

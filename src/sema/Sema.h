@@ -47,8 +47,6 @@ private:
     bool assertEqual(Ident *, Ident *) const;
     void assertUnique(IdentDef *, DeclarationNode *);
 
-    void call(ProcedureNodeReference *);
-
     static void cast(ExpressionNode *, TypeNode *) ;
 
     void checkExport(DeclarationNode *);
@@ -73,7 +71,10 @@ private:
     void onBlockStart();
     void onBlockEnd();
 
-    TypeNode *onSelectors(TypeNode*, vector<unique_ptr<Selector>> &);
+    using Selectors = vector<unique_ptr<Selector>>;
+    using SelectorIterator = Selectors::iterator;
+    SelectorIterator &handleMissingParameters(TypeNode*, Selectors &, SelectorIterator &);
+    TypeNode *onSelectors(TypeNode*, Selectors &);
     TypeNode *onActualParameters(TypeNode*, ActualParameters*);
     TypeNode *onArrayIndex(TypeNode*, ArrayIndex*);
     TypeNode *onDereference(TypeNode*, Dereference*);

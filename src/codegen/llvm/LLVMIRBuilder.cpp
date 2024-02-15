@@ -156,8 +156,6 @@ void LLVMIRBuilder::visit(ImportNode &node) {
     }
 }
 
-void LLVMIRBuilder::visit(ValueReferenceNode &) {}
-
 void LLVMIRBuilder::visit(QualifiedStatement &node) {
     auto proc = dynamic_cast<ProcedureNode *>(node.dereference());
     call(proc, node.ident(), node.selectors());
@@ -166,14 +164,14 @@ void LLVMIRBuilder::visit(QualifiedStatement &node) {
 void LLVMIRBuilder::visit(QualifiedExpression &node) {
     auto decl = node.dereference();
     auto level = decl->getLevel();
-    if (level == 1) /* global level */ {
+    if (level <= 1) /* global level */ {
         value_ = values_[decl];
     } else if (level == level_) /* same procedure level */ {
         value_ = values_[decl];
     } else if (level > level_) /* parent procedure level */ {
-        logger_.error(decl->pos(), "referencing variables of parent procedures is not yet supported.");
+        logger_.error(node.pos(), "referencing variables of parent procedures is not yet supported.");
     } else /* error */ {
-        logger_.error(decl->pos(), "cannot reference variable of child procedure.");
+        logger_.error(node.pos(), "cannot reference variable of child procedure.");
     }
     auto type = decl->getType();
     if (type->isProcedure()) {
@@ -269,8 +267,10 @@ void LLVMIRBuilder::parameters(ProcedureTypeNode *type, ActualParameters *params
 TypeNode *LLVMIRBuilder::call(ProcedureNode *proc, QualIdent *ident, Selectors &selectors) {
     auto type = dynamic_cast<ProcedureTypeNode *>(proc->getType());
     std::vector<Value*> values;
-    // TODO getting the first element without checking is risky business
-    auto params = dynamic_cast<ActualParameters *>(selectors[0].get());
+    ActualParameters *params = nullptr;
+    if (!selectors.empty()) {
+        params = dynamic_cast<ActualParameters *>(selectors[0].get());
+    }
     parameters(type, params, values);
     if (proc->isPredefined()) {
         value_ = callPredefined(dynamic_cast<PredefinedProcedure *>(proc), ident, params, values);
@@ -282,7 +282,7 @@ TypeNode *LLVMIRBuilder::call(ProcedureNode *proc, QualIdent *ident, Selectors &
             logger_.error(ident->start(), "undefined procedure: " + to_string(*ident) + ".");
         }
     }
-    return this->selectors(proc->getType(), selectors.begin() + 1, selectors.end());
+    return this->selectors(proc->getReturnType(), selectors.begin() + 1, selectors.end());
 }
 
 void LLVMIRBuilder::visit(ConstantDeclarationNode &) {}
@@ -535,8 +535,6 @@ void LLVMIRBuilder::visit(IfThenElseNode &node) {
 }
 
 void LLVMIRBuilder::visit(ElseIfNode &) {}
-
-void LLVMIRBuilder::visit(ProcedureCallNode &) {}
 
 void LLVMIRBuilder::visit([[maybe_unused]] LoopNode &node) {
     // TODO code generation for general loop

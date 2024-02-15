@@ -26,7 +26,6 @@ private:
 
     void indent();
     void block(BlockNode &, bool isGlobal);
-    void call(ProcedureNodeReference &);
     void selectors(vector<unique_ptr<Selector>> &);
 
     void visit(ModuleNode &) override;
@@ -42,8 +41,6 @@ private:
 
     void visit(QualifiedStatement &) override;
     void visit(QualifiedExpression &) override;
-
-    void visit(ValueReferenceNode &) override;
 
     void visit(BooleanLiteralNode &) override;
     void visit(IntegerLiteralNode &) override;
@@ -64,7 +61,6 @@ private:
     void visit(AssignmentNode &) override;
     void visit(IfThenElseNode &) override;
     void visit(ElseIfNode &) override;
-    void visit(ProcedureCallNode &) override;
     void visit(LoopNode &) override;
     void visit(WhileLoopNode &) override;
     void visit(RepeatLoopNode &) override;

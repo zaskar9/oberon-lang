@@ -549,6 +549,7 @@ Sema::onQualifiedConstant(const FilePos &start, const FilePos &end, unique_ptr<D
 
 TypeNode *Sema::onSelectors(TypeNode *base, vector<unique_ptr<Selector>> &selectors) {
     auto it = selectors.begin();
+    it = handleMissingParameters(base, selectors, it);
     while (it != selectors.end()) {
         auto sel = (*it).get();
         if (!base) {
@@ -583,9 +584,22 @@ TypeNode *Sema::onSelectors(TypeNode *base, vector<unique_ptr<Selector>> &select
                 logger_.error(sel->pos(), "unexpected selector.");
                 return nullptr;
         }
+        it = handleMissingParameters(base, selectors, it);
         ++it;
     }
     return base;
+}
+
+Sema::SelectorIterator &
+Sema::handleMissingParameters(TypeNode *base, Sema::Selectors &selectors, Sema::SelectorIterator &it) {
+    if (base && base->isProcedure()) {
+        if (selectors.empty()) {
+            it = selectors.insert(selectors.begin(), make_unique<ActualParameters>());
+        } else if (it + 1 != selectors.end() && (*(it +1))->getNodeType() != NodeType::parameter) {
+            it = selectors.insert(it, make_unique<ActualParameters>());
+        }
+    }
+    return it;
 }
 
 TypeNode *Sema::onActualParameters(TypeNode *base, ActualParameters *sel) {
@@ -603,14 +617,9 @@ TypeNode *Sema::onActualParameters(TypeNode *base, ActualParameters *sel) {
             auto param = proc->parameters()[cnt].get();
             if (assertCompatible(expr->pos(), param->getType(), expr->getType(), param->isVar())) {
                 if (param->isVar()) {
-                    if (expr->getNodeType() == NodeType::value_reference) {
-                        auto reference = dynamic_cast<const ValueReferenceNode *>(expr);
-                        auto value = reference->dereference();
-                        if (value->getNodeType() == NodeType::constant) {
-                            logger_.error(expr->pos(), "illegal actual parameter: cannot pass constant by reference.");
-                        }
+                    if (expr->isLiteral()) {
+                        logger_.error(expr->pos(), "illegal actual parameter: cannot pass constant by reference.");
                     } else if (expr->getNodeType() == NodeType::qualified_expression) {
-                        // TODO constants
                         continue;
                     } else {
                         logger_.error(expr->pos(), "illegal actual parameter: cannot pass expression by reference.");
@@ -1174,45 +1183,6 @@ Sema::format(const TypeNode *type, bool isPtr) const {
     return name;
 }
 
-void
-Sema::call(ProcedureNodeReference *node) {
-    auto proc = dynamic_cast<ProcedureNode *>(node->dereference());
-    if (node->ident()->isQualified() && proc->isExtern()) {
-        // a fully-qualified external reference needs to be added to module for code generation
-        context_->addExternalProcedure(proc);
-    }
-    if (node->getActualParameterCount() < proc->getFormalParameterCount()) {
-        logger_.error(node->pos(), "fewer actual than formal parameters.");
-    }
-    for (size_t cnt = 0; cnt < node->getActualParameterCount(); cnt++) {
-        auto expr = node->getActualParameter(cnt);
-        if (cnt < proc->getFormalParameterCount()) {
-            auto parameter = proc->getFormalParameter(cnt);
-            if (assertCompatible(expr->pos(), parameter->getType(), expr->getType(), parameter->isVar())) {
-                if (parameter->isVar()) {
-                    if (expr->getNodeType() == NodeType::value_reference) {
-                        auto reference = dynamic_cast<const ValueReferenceNode *>(expr);
-                        auto value = reference->dereference();
-                        if (value->getNodeType() == NodeType::constant) {
-                            logger_.error(expr->pos(), "illegal actual parameter: cannot pass constant by reference.");
-                        }
-                    } else if (expr->getNodeType() == NodeType::qualified_expression) {
-                        // TODO constants
-                        continue;
-                    } else {
-                        logger_.error(expr->pos(), "illegal actual parameter: cannot pass expression by reference.");
-                    }
-                } else {
-                    cast(expr, parameter->getType());
-                }
-            }
-        } else if (!proc->hasVarArgs()) {
-            logger_.error(expr->pos(), "more actual than formal parameters.");
-            break;
-        }
-    }
-}
-
 void Sema::cast(ExpressionNode *expr, TypeNode *expected) {
     if (expr->getType() != expected) {
         expr->setCast(expected);
@@ -1222,7 +1192,7 @@ void Sema::cast(ExpressionNode *expr, TypeNode *expected) {
 ExpressionNode
 *Sema::resolveReference(ExpressionNode *expr) {
     if (expr->getNodeType() == NodeType::value_reference) {
-        auto ref = dynamic_cast<const ValueReferenceNode *>(expr);
+        auto ref = dynamic_cast<const QualifiedExpression *>(expr);
         if (ref->isConstant()) {
             auto constant = dynamic_cast<const ConstantDeclarationNode *>(ref->dereference());
             return constant->getValue();

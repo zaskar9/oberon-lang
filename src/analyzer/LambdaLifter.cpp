@@ -27,20 +27,6 @@ void LambdaLifter::run(Logger &logger, Node *node) {
     }
 }
 
-void LambdaLifter::call(ProcedureNodeReference &node) {
-    for (size_t i = 0; i < node.getActualParameterCount(); i++) {
-        node.getActualParameter(i)->accept(*this);
-    }
-    auto proc = dynamic_cast<ProcedureNode *>(node.dereference());
-    if (proc->getFormalParameterCount() > node.getActualParameterCount()) {
-        auto param = make_unique<ValueReferenceNode>(EMPTY_POS, env_);
-        if (proc->getLevel() != env_->getLevel()) {
-            envFieldResolver(param.get(), SUPER_, proc->getFormalParameter(node.getActualParameterCount())->getType());
-        }
-        node.addActualParameter(std::move(param));
-    }
-}
-
 void LambdaLifter::visit(ModuleNode &node) {
     module_ = &node;
     for (size_t i = 0; i < node.getProcedureCount(); i++) {
@@ -167,34 +153,19 @@ void LambdaLifter::visit(VariableDeclarationNode &node) {
     node.setLevel(level_);
 }
 
-void LambdaLifter::visit(ValueReferenceNode &node) {
-    if (node.getNodeType() == NodeType::procedure_call) {
-        call(node);
-        return;
-    }
-    auto decl = node.dereference();
-    if (decl->getLevel() == SymbolTable::MODULE_LEVEL ||
-        (env_->getIdentifier()->name() == SUPER_ && env_->getLevel() == decl->getLevel())) {
-        // global variable or local variable in leaf procedure
-        return;
-    }
-    for (size_t i = 0; i < node.getSelectorCount(); i++) {
-        auto selector = node.getSelector(i);
-        if (selector->getNodeType() == NodeType::array_type) {
-            auto indices = dynamic_cast<ArrayIndex *>(selector);
-            for (auto &index : indices->indices()) {
-                index->accept(*this);
-            }
-        }
-    }
-    node.resolve(env_);
-    if (!envFieldResolver(&node, decl->getIdentifier()->name(), decl->getType())) {
-        std::cerr << "Unable to resolve record field: " << decl->getIdentifier() << "." << std::endl;
-    }
-}
-
+// TODO copy-paste from visit(ProcedureNodeReference &)
 void LambdaLifter::visit(QualifiedStatement &) {
-
+//    for (size_t i = 0; i < node.getActualParameterCount(); i++) {
+//        node.getActualParameter(i)->accept(*this);
+//    }
+//    auto proc = dynamic_cast<ProcedureNode *>(node.dereference());
+//    if (proc->getFormalParameterCount() > node.getActualParameterCount()) {
+//        auto param = make_unique<ValueReferenceNode>(EMPTY_POS, env_);
+//        if (proc->getLevel() != env_->getLevel()) {
+//            envFieldResolver(param.get(), SUPER_, proc->getFormalParameter(node.getActualParameterCount())->getType());
+//        }
+//        node.addActualParameter(std::move(param));
+//    }
 }
 
 void LambdaLifter::visit(QualifiedExpression &node) {
@@ -312,10 +283,6 @@ void LambdaLifter::visit(ElseIfNode &node) {
     node.getStatements()->accept(*this);
 }
 
-void LambdaLifter::visit(ProcedureCallNode &node) {
-    call(node);
-}
-
 void LambdaLifter::visit(LoopNode &node) {
     node.getStatements()->accept(*this);
 }
@@ -342,28 +309,6 @@ void LambdaLifter::visit(ReturnNode &node) {
 }
 
 bool LambdaLifter::envFieldResolver(QualifiedExpression *var, const std::string &field_name, TypeNode *field_type) {
-    auto type = dynamic_cast<RecordTypeNode*>(var->getType());
-    size_t num = 0;
-    while (true) {
-        auto field = type->getField(field_name);
-        if (field && field->getType() == field_type) {
-            var->insertSelector(num, make_unique<RecordField>(EMPTY_POS, field));
-            var->setType(field->getType());
-            return true;
-        } else {
-            field = type->getField(SUPER_);
-            if (field) {
-                var->insertSelector(num, make_unique<RecordField>(EMPTY_POS, field));
-                type = dynamic_cast<RecordTypeNode *>(field->getType());
-                num++;
-            } else {
-                return false;
-            }
-        }
-    }
-}
-
-bool LambdaLifter::envFieldResolver(ValueReferenceNode *var, const string &field_name, TypeNode *field_type) {
     auto type = dynamic_cast<RecordTypeNode*>(var->getType());
     size_t num = 0;
     while (true) {
