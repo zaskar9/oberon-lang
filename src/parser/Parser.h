@@ -46,7 +46,7 @@ private:
 
     unique_ptr<Ident> ident();
     unique_ptr<QualIdent> qualident();
-    unique_ptr<Designator> designator();
+    unique_ptr<QualIdent> designator(vector<unique_ptr<Selector>> &);
     unique_ptr<Selector> selector();
     unique_ptr<IdentDef> identdef(bool checkAlphaNum = true);
     void ident_list(vector<unique_ptr<IdentDef>> &idents);

@@ -192,8 +192,8 @@ Sema::onPointerType([[maybe_unused]] const FilePos &start, [[maybe_unused]] cons
 
 ProcedureTypeNode *
 Sema::onProcedureType([[maybe_unused]] const FilePos &start, [[maybe_unused]] const FilePos &end,
-                      Ident *ident, vector<unique_ptr<ParameterNode>> params, TypeNode *ret) {
-    return context_->getOrInsertProcedureType(ident, std::move(params), ret);
+                      Ident *ident, vector<unique_ptr<ParameterNode>> params, bool varargs, TypeNode *ret) {
+    return context_->getOrInsertProcedureType(ident, std::move(params), varargs, ret);
 }
 
 unique_ptr<ParameterNode>
@@ -399,25 +399,30 @@ Sema::onWhileLoop(const FilePos &start, [[maybe_unused]] const FilePos &end,
 
 unique_ptr<ForLoopNode>
 Sema::onForLoop(const FilePos &start, [[maybe_unused]] const FilePos &end,
-                unique_ptr<Ident> var,
+                unique_ptr<QualIdent> var,
                 unique_ptr<ExpressionNode> low, unique_ptr<ExpressionNode> high, unique_ptr<ExpressionNode> step,
                 unique_ptr<StatementSequenceNode> stmts) {
-    auto ident = to_string(*var);
-    auto counter = onQualifiedExpression(var->start(), var->end(), make_unique<Designator>(std::move(var)));
+    // auto ident = to_string(*var);
+    vector<unique_ptr<Selector>> selectors;
+    auto counter = onQualifiedExpression(var->start(), var->end(), std::move(var), std::move(selectors));
     if (!counter) {
         logger_.error(start, "undefined counter variable in for-loop.");
+    }
+    auto ident = counter->ident();
+    if (ident->isQualified()) {
+        logger_.error(ident->start(), to_string(*ident) + " cannot be used as a loop counter.");
     }
     if (counter->getNodeType() == NodeType::qualified_expression) {
         auto decl = dynamic_cast<QualifiedExpression *>(counter.get())->dereference();
         if (decl->getNodeType() != NodeType::variable) {
-            logger_.error(var->start(), "variable expected.");
+            logger_.error(ident->start(), "variable expected.");
         }
         auto type = decl->getType();
         if (type && type->kind() != TypeKind::INTEGER) {
-            logger_.error(var->start(), "integer variable expected.");
+            logger_.error(ident->start(), "integer variable expected.");
         }
     } else {
-        logger_.error(counter->pos(), ident + " cannot be used as a loop counter.");
+        logger_.error(ident->start(), to_string(*ident) + " cannot be used as a loop counter.");
     }
     if (!low) {
         logger_.error(start, "undefined low value in for-loop.");
@@ -457,14 +462,14 @@ Sema::onReturn(const FilePos &start, [[maybe_unused]] const FilePos &end, unique
     } else {
         auto proc = procs_.top().get();
         if (expr) {
-            if (!proc->getReturnType()) {
+            if (!proc->getType()->getReturnType()) {
                 logger_.error(expr->pos(), "procedure cannot return a value.");
             }
-            if (assertCompatible(expr->pos(), proc->getReturnType(), expr->getType())) {
-                cast(expr.get(), proc->getReturnType());
+            if (assertCompatible(expr->pos(), proc->getType()->getReturnType(), expr->getType())) {
+                cast(expr.get(), proc->getType()->getReturnType());
             }
         } else {
-            if (proc->getReturnType()) {
+            if (proc->getType()->getReturnType()) {
                 logger_.error(proc->pos(), "function must return value.");
             }
         }
@@ -474,9 +479,8 @@ Sema::onReturn(const FilePos &start, [[maybe_unused]] const FilePos &end, unique
 
 unique_ptr<StatementNode>
 Sema::onQualifiedStatement(const FilePos &start, [[maybe_unused]] const FilePos &end,
-                           unique_ptr<Designator> designator) {
-    auto ident = designator->ident();
-    DeclarationNode* sym = symbols_->lookup(ident);
+                           unique_ptr<QualIdent> ident, vector<unique_ptr<Selector>> selectors) {
+    DeclarationNode* sym = symbols_->lookup(ident.get());
     if (!sym) {
         logger_.error(ident->start(), "undefined identifier: " + to_string(*ident) + ".");
         return nullptr;
@@ -484,15 +488,15 @@ Sema::onQualifiedStatement(const FilePos &start, [[maybe_unused]] const FilePos 
     // check procedure reference
     if (sym->getNodeType() == NodeType::procedure) {
         auto proc = dynamic_cast<ProcedureNode *>(sym);
-        if (designator->ident()->isQualified() && proc->isExtern()) {
+        if (ident->isQualified() && proc->isExtern()) {
             // a fully-qualified external reference needs to be added to module for code generation
             context_->addExternalProcedure(proc);
         }
-        auto type = onSelectors(sym->getType(), designator->selectors());
+        auto type = onSelectors(sym->getType(), selectors);
         if (type) {
             logger_.warning(ident->start(), "discarded expression value.");
         }
-        return make_unique<QualifiedStatement>(start, std::move(designator), sym);
+        return make_unique<QualifiedStatement>(start, std::move(ident), std::move(selectors), sym);
     }
     logger_.error(ident->start(), "procedure call expected.");
     return nullptr;
@@ -500,44 +504,43 @@ Sema::onQualifiedStatement(const FilePos &start, [[maybe_unused]] const FilePos 
 
 unique_ptr<QualifiedExpression>
 Sema::onQualifiedExpression(const FilePos &start, [[maybe_unused]] const FilePos &end,
-                            unique_ptr<Designator> designator) {
-    auto ident = designator->ident();
-    DeclarationNode* sym = symbols_->lookup(ident);
+                            unique_ptr<QualIdent> ident, vector<unique_ptr<Selector>> selectors) {
+    DeclarationNode* sym = symbols_->lookup(ident.get());
     if (!sym) {
         logger_.error(ident->start(), "undefined identifier: " + to_string(*ident) + ".");
         return nullptr;
     }
     // check variable or parameter reference
     if (sym->getNodeType() == NodeType::variable || sym->getNodeType() == NodeType::parameter) {
-        auto type = onSelectors(sym->getType(), designator->selectors());
-        return make_unique<QualifiedExpression>(start, std::move(designator), sym, type);
+        auto type = onSelectors(sym->getType(), selectors);
+        return make_unique<QualifiedExpression>(start, std::move(ident), std::move(selectors), sym, type);
     }
     // check procedure reference
     if (sym->getNodeType() == NodeType::procedure) {
         auto proc = dynamic_cast<ProcedureNode *>(sym);
-        if (designator->ident()->isQualified() && proc->isExtern()) {
+        if (ident->isQualified() && proc->isExtern()) {
             // a fully-qualified external reference needs to be added to module for code generation
             context_->addExternalProcedure(proc);
         }
-        auto type = onSelectors(sym->getType(), designator->selectors());
-        return make_unique<QualifiedExpression>(start, std::move(designator), sym, type);
+        auto type = onSelectors(sym->getType(), selectors);
+        return make_unique<QualifiedExpression>(start, std::move(ident), std::move(selectors), sym, type);
     }
     logger_.error(ident->start(), "variable, parameter, or function call expected.");
     return nullptr;
 }
 
 unique_ptr<LiteralNode>
-Sema::onQualifiedConstant(const FilePos &start, const FilePos &end, unique_ptr<Designator> designator) {
-    auto ident = designator->ident();
-    DeclarationNode* sym = symbols_->lookup(ident);
+Sema::onQualifiedConstant(const FilePos &start, const FilePos &end,
+                          unique_ptr<QualIdent> ident, vector<unique_ptr<Selector>> selectors) {
+    DeclarationNode* sym = symbols_->lookup(ident.get());
     if (!sym) {
         logger_.error(ident->start(), "undefined identifier: " + to_string(*ident) + ".");
         return nullptr;
     }
     // check constant reference
     if (sym->getNodeType() == NodeType::constant) {
-        if (!designator->selectors().empty()) {
-            auto sel = designator->selectors()[0].get();
+        if (!selectors.empty()) {
+            auto sel = selectors[0].get();
             logger_.warning(sel->pos(), "ignoring unexpected selector(s).");
         }
         auto decl = dynamic_cast<ConstantDeclarationNode *>(sym);

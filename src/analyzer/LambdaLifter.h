@@ -32,6 +32,9 @@ private:
     static const string SUPER_;
     static const FilePos POS_;
 
+    ParameterNode *findParameter(string, vector<unique_ptr<ParameterNode>> &);
+
+    void declaration(DeclarationNode *, vector<unique_ptr<Selector>> &);
     void selectors(TypeNode *, vector<unique_ptr<Selector>> &);
 
     void visit(ModuleNode &) override;

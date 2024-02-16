@@ -44,8 +44,8 @@ TypeNode *QualifiedExpression::getType() const {
 }
 
 void QualifiedExpression::resolve(DeclarationNode *node) {
-    // TODO update the qualident to match the new declaration
     NodeReference::resolve(node);
+    setIdent(node->getIdentifier());
     setType(node->getType());
 }
 

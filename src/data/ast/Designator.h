@@ -96,16 +96,12 @@ class ProcedureNode;
 class ActualParameters final : public Selector {
 
 private:
-    ProcedureNode *proc_;
     vector<unique_ptr<ExpressionNode>> parameters_;
 
 public:
     ActualParameters(const FilePos &pos, vector<unique_ptr<ExpressionNode>> parameters_);
     ActualParameters();
     ~ActualParameters() override;
-
-    void setProcedure(ProcedureNode *);
-    [[nodiscard]] ProcedureNode *getProcedure() const;
 
     [[nodiscard]] vector<unique_ptr<ExpressionNode>> &parameters();
 
@@ -118,26 +114,18 @@ private:
     unique_ptr<QualIdent> ident_;
     vector<unique_ptr<Selector>> selectors_;
 
+protected:
+    void setIdent(Ident *);
+
 public:
     explicit Designator(unique_ptr<QualIdent> ident) :
             ident_(std::move(ident)), selectors_() {};
-    explicit Designator(unique_ptr<Ident> ident) :
-            ident_(make_unique<QualIdent>(ident.get())), selectors_() {};
-    explicit Designator(unique_ptr<Designator> &&designator) :
-            ident_(std::move(designator->ident_)), selectors_(std::move(designator->selectors_)) {};
     Designator(unique_ptr<QualIdent> ident, vector<unique_ptr<Selector>> selectors) :
             ident_(std::move(ident)), selectors_(std::move(selectors)) {};
     virtual ~Designator();
 
     [[nodiscard]] QualIdent *ident() const;
     [[nodiscard]] vector<unique_ptr<Selector>> &selectors();
-
-    void addSelector(unique_ptr<Selector> selector);
-    void insertSelector(size_t num, unique_ptr<Selector> selector);
-    void setSelector(size_t num, unique_ptr<Selector> selector);
-    void removeSelector(size_t num);
-    [[nodiscard]] Selector *getSelector(size_t num) const;
-    [[nodiscard]] size_t getSelectorCount() const;
 
 };
 

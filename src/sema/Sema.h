@@ -103,7 +103,7 @@ public:
     PointerTypeNode *onPointerType(const FilePos &, const FilePos &, Ident *, unique_ptr<QualIdent>);
     PointerTypeNode *onPointerType(const FilePos &, const FilePos &, Ident *, TypeNode *);
     ProcedureTypeNode *onProcedureType(const FilePos &, const FilePos &,
-                                       Ident *, vector<unique_ptr<ParameterNode>>, TypeNode *);
+                                       Ident *, vector<unique_ptr<ParameterNode>>, bool varargs, TypeNode *);
 
     unique_ptr<ParameterNode> onParameter(const FilePos &, const FilePos &, unique_ptr<Ident>, TypeNode *, bool, unsigned = 0);
 
@@ -137,16 +137,19 @@ public:
                                           unique_ptr<ExpressionNode>,
                                           unique_ptr<StatementSequenceNode>);
     unique_ptr<ForLoopNode> onForLoop(const FilePos &, const FilePos &,
-                                      unique_ptr<Ident>,
+                                      unique_ptr<QualIdent>,
                                       unique_ptr<ExpressionNode>,
                                       unique_ptr<ExpressionNode>,
                                       unique_ptr<ExpressionNode>,
                                       unique_ptr<StatementSequenceNode>);
     unique_ptr<ReturnNode> onReturn(const FilePos &, const FilePos &, unique_ptr<ExpressionNode>);
 
-    unique_ptr<StatementNode> onQualifiedStatement(const FilePos &, const FilePos &, unique_ptr<Designator>);
-    unique_ptr<QualifiedExpression> onQualifiedExpression(const FilePos &, const FilePos &, unique_ptr<Designator>);
-    unique_ptr<LiteralNode> onQualifiedConstant(const FilePos &, const FilePos &, unique_ptr<Designator>);
+    unique_ptr<StatementNode> onQualifiedStatement(const FilePos &, const FilePos &,
+                                                   unique_ptr<QualIdent>, vector<unique_ptr<Selector>>);
+    unique_ptr<QualifiedExpression> onQualifiedExpression(const FilePos &, const FilePos &,
+                                                          unique_ptr<QualIdent>, vector<unique_ptr<Selector>>);
+    unique_ptr<LiteralNode> onQualifiedConstant(const FilePos &, const FilePos &,
+                                                unique_ptr<QualIdent>, vector<unique_ptr<Selector>>);
 
     unique_ptr<ExpressionNode> onUnaryExpression(const FilePos &, const FilePos &,
                                                  OperatorType,

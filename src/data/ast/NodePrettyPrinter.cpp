@@ -101,19 +101,20 @@ void NodePrettyPrinter::visit(ModuleNode& node) {
 void NodePrettyPrinter::visit(ProcedureNode& node) {
     indent();
     stream_ << "PROCEDURE " << *node.getIdentifier() << "(*" << node.getLevel() << "*)(";
-    for (size_t i = 0; i < node.getFormalParameterCount(); i++) {
-        node.getFormalParameter(i)->accept(*this);
-        if (i + 1 < node.getFormalParameterCount()) {
-            stream_ << "; ";
-        }
+    auto type = dynamic_cast<ProcedureTypeNode *>(node.getType());
+    string s;
+    for (auto &param : type->parameters()) {
+        stream_ << s;
+        param->accept(*this);
+        s = "; ";
     }
-    if (node.hasVarArgs()) {
+    if (type->hasVarArgs()) {
         stream_ << "; ...";
     }
     stream_ << ")";
-    if (node.getReturnType() != nullptr) {
+    if (type->getReturnType() != nullptr) {
         stream_ << ": ";
-        node.getReturnType()->accept(*this);
+        type->getReturnType()->accept(*this);
     }
     stream_ << ";";
     if (node.isExtern()) {

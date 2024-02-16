@@ -34,6 +34,7 @@ public:
     [[nodiscard]] StatementSequenceNode * getStatements() const;
 
     void accept(NodeVisitor& visitor) override;
+
     void print(std::ostream &stream) const override;
 
 };
@@ -63,6 +64,7 @@ public:
     ~WhileLoopNode() override = default;
 
     void accept(NodeVisitor& visitor) final;
+
     void print(std::ostream &stream) const final;
 
 };
@@ -75,6 +77,7 @@ public:
     ~RepeatLoopNode() override = default;
 
     void accept(NodeVisitor& visitor) final;
+
     void print(std::ostream &stream) const final;
 
 };
@@ -99,6 +102,7 @@ public:
     [[nodiscard]] ExpressionNode *getStep() const;
 
     void accept(NodeVisitor& visitor) final;
+
     void print(std::ostream &stream) const final;
 
 };

@@ -75,10 +75,9 @@ unique_ptr<IdentDef> Parser::identdef(bool checkAlphaNum) {
 }
 
 // designator = qualident { selector } .
-unique_ptr<Designator> Parser::designator() {
+unique_ptr<QualIdent> Parser::designator(vector<unique_ptr<Selector>> &selectors) {
     logger_.debug("designator");
-    auto identifier = qualident();
-    auto designator = make_unique<Designator>(std::move(identifier));
+    auto ident = qualident();
     auto token = scanner_.peek();
     while (token->type() == TokenType::period ||
            token->type() == TokenType::lbrack ||
@@ -86,13 +85,13 @@ unique_ptr<Designator> Parser::designator() {
            token->type() == TokenType::lparen) {
         auto sel = selector();
         if (sel) {
-            designator->addSelector(std::move(sel));
+            selectors.push_back(std::move(sel));
         } else {
             break;
         }
         token = scanner_.peek();
     }
-    return designator;
+    return ident;
 }
 
 // selector = "." ident | "[" expression_list "]" | "^" | "(" qualident | [ expression_list ] ")" .
@@ -466,7 +465,7 @@ void Parser::procedure_declaration(vector<unique_ptr<ProcedureNode>> &procs) {
         proc->setType(procedure_signature(proc->getIdentifier()));
     } else {
         vector<unique_ptr<ParameterNode>> params;
-        proc->setType(sema_.onProcedureType(token->start(), token->end(), proc->getIdentifier(), std::move(params), nullptr));
+        proc->setType(sema_.onProcedureType(token->start(), token->end(), proc->getIdentifier(), std::move(params), false, nullptr));
     }
     token = scanner_.peek();
     if (token->type() != TokenType::semicolon) {
@@ -517,9 +516,7 @@ ProcedureTypeNode* Parser::procedure_signature(Ident* ident) {
         // [<;>]
         resync({TokenType::semicolon});
     }
-    auto type = sema_.onProcedureType(start, peek->end(), ident, std::move(params), ret);
-    type->setVarArgs(varargs);
-    return type;
+    return sema_.onProcedureType(start, peek->end(), ident, std::move(params), varargs, ret);;
 }
 
 // TODO procedure_body = declarations [ "BEGIN" statement_sequence ] [ "RETURN" expression] "END" .
@@ -661,15 +658,16 @@ unique_ptr<StatementNode> Parser::statement() {
     auto token = scanner_.peek();
     if (token->type() == TokenType::const_ident) {
         FilePos pos = token->start();
-        auto designator = this->designator();
+        vector<unique_ptr<Selector>> selectors;
+        auto ident = this->designator(selectors);
         token = scanner_.peek();
         if (token->type() == TokenType::op_eq) {
-            logger_.error(token->start(), "unexpected operator =, did you mean :=?");
+            logger_.error(token->start(), "unexpected = operator, did you mean the := operator?");
             return nullptr;
         } else if (token->type() == TokenType::op_becomes) {
-            return assignment(sema_.onQualifiedExpression(pos, EMPTY_POS, std::move(designator)));
+            return assignment(sema_.onQualifiedExpression(pos, EMPTY_POS, std::move(ident), std::move(selectors)));
         } else {
-            return sema_.onQualifiedStatement(pos, EMPTY_POS, std::move(designator));
+            return sema_.onQualifiedStatement(pos, EMPTY_POS, std::move(ident), std::move(selectors));
         }
     } else if (token->type() == TokenType::kw_if) {
         return if_statement();
@@ -803,7 +801,7 @@ unique_ptr<StatementNode> Parser::for_statement() {
     logger_.debug("for_statement");
     token_ = scanner_.next(); // skip FOR keyword
     FilePos start = token_->start();
-    unique_ptr<Ident> var = ident();
+    auto var = qualident();
     token_ = scanner_.next();
     unique_ptr<ExpressionNode> low;
     if (assertToken(token_.get(), TokenType::op_becomes)) {
@@ -935,11 +933,12 @@ unique_ptr<ExpressionNode> Parser::basic_factor() {
     auto token = scanner_.peek();
     if (token->type() == TokenType::const_ident) {
         FilePos pos = token->start();
-        auto designator = this->designator();
-        if (sema_.isConstant(designator->ident())) {
-            return sema_.onQualifiedConstant(pos, EMPTY_POS, std::move(designator));
+        vector<unique_ptr<Selector>> selectors;
+        auto ident = this->designator(selectors);
+        if (sema_.isConstant(ident.get())) {
+            return sema_.onQualifiedConstant(pos, EMPTY_POS, std::move(ident), std::move(selectors));
         }
-        return sema_.onQualifiedExpression(pos, EMPTY_POS, std::move(designator));
+        return sema_.onQualifiedExpression(pos, EMPTY_POS, std::move(ident), std::move(selectors));
     }
     auto tmp = scanner_.next();
     if (token->type() == TokenType::int_literal) {

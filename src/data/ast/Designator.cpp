@@ -73,20 +73,12 @@ TypeNode *Typeguard::getType() const {
 
 
 ActualParameters::ActualParameters(const FilePos &pos, std::vector<std::unique_ptr<ExpressionNode>> parameters) :
-        Selector(NodeType::parameter, pos), proc_(), parameters_(std::move(parameters)) { }
+        Selector(NodeType::parameter, pos), parameters_(std::move(parameters)) { }
 
 ActualParameters::ActualParameters() :
-        Selector(NodeType::parameter, EMPTY_POS), proc_(), parameters_() {}
+        Selector(NodeType::parameter, EMPTY_POS), parameters_() {}
 
 ActualParameters::~ActualParameters() = default;
-
-void ActualParameters::setProcedure(ProcedureNode *proc) {
-    proc_ = proc;
-}
-
-ProcedureNode *ActualParameters::getProcedure() const {
-    return proc_;
-}
 
 vector<unique_ptr<ExpressionNode>> &ActualParameters::parameters() {
     return parameters_;
@@ -95,34 +87,14 @@ vector<unique_ptr<ExpressionNode>> &ActualParameters::parameters() {
 
 Designator::~Designator() = default;
 
+void Designator::setIdent(Ident *ident) {
+    ident_ = make_unique<QualIdent>(ident);
+}
+
 QualIdent *Designator::ident() const {
     return ident_.get();
 }
 
 vector<unique_ptr<Selector>> &Designator::selectors() {
     return selectors_;
-}
-
-void Designator::addSelector(std::unique_ptr<Selector> selector) {
-    selectors_.push_back(std::move(selector));
-}
-
-void Designator::insertSelector(size_t num, std::unique_ptr<Selector> selector) {
-    selectors_.insert(selectors_.begin() + (long) num, std::move(selector));
-}
-
-void Designator::setSelector(size_t num, std::unique_ptr<Selector> selector) {
-    selectors_[num] = std::move(selector);
-}
-
-Selector *Designator::getSelector(size_t num) const {
-    return selectors_[num].get();
-}
-
-void Designator::removeSelector(size_t num) {
-    selectors_.erase(selectors_.begin() + (long) num);
-}
-
-size_t Designator::getSelectorCount() const {
-    return selectors_.size();
 }

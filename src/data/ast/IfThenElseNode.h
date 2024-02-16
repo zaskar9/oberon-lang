@@ -62,7 +62,6 @@ public:
     [[nodiscard]] size_t getElseIfCount() const;
     [[nodiscard]] bool hasElseIf() const;
 
-    [[nodiscard]] StatementSequenceNode* addElseStatements(FilePos pos);
     [[nodiscard]] StatementSequenceNode* getElseStatements() const;
     [[nodiscard]] bool hasElse() const;
 

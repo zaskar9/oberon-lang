@@ -25,8 +25,6 @@ class ProcedureNode : public BlockNode {
 private:
     bool extern_;
 
-    [[nodiscard]] ProcedureTypeNode * proctype() const;
-
 public:
     // ctor for use in sema / parser
     ProcedureNode(const FilePos &pos, unique_ptr<IdentDef> ident, bool external = false) :
@@ -38,16 +36,7 @@ public:
             extern_(external) {};
     ~ProcedureNode() override = default;
 
-    void addFormalParameter(unique_ptr<ParameterNode> parameter);
-    [[nodiscard]] ParameterNode *getFormalParameter(const std::string &name);
-    [[nodiscard]] ParameterNode *getFormalParameter(size_t num) const;
-    [[nodiscard]] size_t getFormalParameterCount() const;
-
-    void setVarArgs(bool value);
-    [[nodiscard]] bool hasVarArgs() const;
-
-    void setReturnType(TypeNode *type);
-    [[nodiscard]] TypeNode *getReturnType() const;
+    [[nodiscard]] ProcedureTypeNode *getType() const;
 
     void setExtern(bool value);
     [[nodiscard]] bool isExtern() const;
@@ -57,6 +46,7 @@ public:
     }
 
     void accept(NodeVisitor &visitor) override;
+
     void print(std::ostream &stream) const override;
 
 };

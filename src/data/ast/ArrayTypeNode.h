@@ -20,21 +20,12 @@ private:
     TypeNode *memberType_;
 
 public:
-    ArrayTypeNode() : ArrayTypeNode(EMPTY_POS, nullptr, 0, nullptr) {};
-    ArrayTypeNode(const FilePos &pos, Ident *ident, unsigned int dimension, TypeNode *memberType) :
-            TypeNode(NodeType::array_type, pos, ident, TypeKind::ARRAY, 0),
-            dimension_(dimension), memberType_(memberType) {};
     ArrayTypeNode(Ident *ident, unsigned int dimension, TypeNode *memberType) :
             TypeNode(NodeType::array_type, EMPTY_POS, ident, TypeKind::ARRAY, 0),
             dimension_(dimension), memberType_(memberType) {};
     ~ArrayTypeNode() final = default;
 
-    [[nodiscard]] ExpressionNode *getExpression() const;
-
-    void setDimension(unsigned int dim);
     [[nodiscard]] unsigned int getDimension() const;
-
-    void setMemberType(TypeNode *memberType);
     [[nodiscard]] TypeNode *getMemberType() const;
 
     [[nodiscard]] bool isOpen() const;

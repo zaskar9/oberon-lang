@@ -28,17 +28,13 @@ private:
     RecordTypeNode *base_;
 
 public:
-    RecordTypeNode() : RecordTypeNode(EMPTY_POS, nullptr) {};
-    RecordTypeNode(const FilePos &pos, Ident *ident) :
-            TypeNode(NodeType::record_type, pos, ident, TypeKind::RECORD, 0), fields_(), base_() {};
-    explicit RecordTypeNode(Ident *ident, vector<unique_ptr<FieldNode>> fields) :
+    RecordTypeNode(Ident *ident, vector<unique_ptr<FieldNode>> fields) :
             TypeNode(NodeType::record_type, EMPTY_POS, ident, TypeKind::RECORD, 0),
             fields_(std::move(fields)), base_() {};
     ~RecordTypeNode() final = default;
 
     [[nodiscard]] unsigned int getSize() const final;
 
-    void addField(unique_ptr<FieldNode> field);
     [[nodiscard]] FieldNode *getField(const string &name) const;
     [[nodiscard]] FieldNode *getField(size_t num) const;
     [[nodiscard]] size_t getFieldCount();

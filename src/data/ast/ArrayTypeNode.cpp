@@ -7,16 +7,8 @@
 #include "ArrayTypeNode.h"
 #include "NodeVisitor.h"
 
-void ArrayTypeNode::setDimension(unsigned int dim) {
-    dimension_ = dim;
-}
-
 unsigned int ArrayTypeNode::getDimension() const {
     return dimension_;
-}
-
-void ArrayTypeNode::setMemberType(TypeNode *memberType) {
-    memberType_ = memberType;
 }
 
 TypeNode *ArrayTypeNode::getMemberType() const {

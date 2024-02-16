@@ -39,13 +39,14 @@ public:
 class QualifiedExpression : public ExpressionNode, public Designator, public NodeReference {
 
 public:
-    QualifiedExpression(const FilePos &pos, unique_ptr<Designator> designator, DeclarationNode *decl, TypeNode *type) :
+    QualifiedExpression(const FilePos &pos, unique_ptr<QualIdent> ident, vector<unique_ptr<Selector>> selectors,
+                        DeclarationNode *decl, TypeNode *type) :
             ExpressionNode(NodeType::qualified_expression, pos, type),
-            Designator(std::move(designator)),
+            Designator(std::move(ident), std::move(selectors)),
             NodeReference(decl) {};
     explicit QualifiedExpression(DeclarationNode *decl) :
             ExpressionNode(NodeType::qualified_expression, EMPTY_POS, decl->getType()),
-            Designator(make_unique<Designator>(make_unique<QualIdent>(decl->getIdentifier()))),
+            Designator(make_unique<QualIdent>(decl->getIdentifier())),
             NodeReference(decl) {};
     ~QualifiedExpression() override;
 
@@ -64,9 +65,10 @@ public:
 class QualifiedStatement : public StatementNode, public Designator, public NodeReference {
 
 public:
-    QualifiedStatement(const FilePos &pos, unique_ptr<Designator> designator, DeclarationNode *decl) :
+    QualifiedStatement(const FilePos &pos, unique_ptr<QualIdent> ident, vector<unique_ptr<Selector>> selectors,
+                       DeclarationNode *decl) :
             StatementNode(NodeType::qualified_statement, pos),
-            Designator(std::move(designator)),
+            Designator(std::move(ident), std::move(selectors)),
             NodeReference(decl) {};
     ~QualifiedStatement() override;
 

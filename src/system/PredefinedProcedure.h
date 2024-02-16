@@ -31,7 +31,7 @@ private:
     ProcKind kind_;
 
 public:
-    explicit PredefinedProcedure(ProcKind, const string &, const vector<pair<TypeNode*, bool>> &, TypeNode *);
+    explicit PredefinedProcedure(ProcKind, const string &, const vector<pair<TypeNode*, bool>> &, bool, TypeNode *);
     ~PredefinedProcedure() override;
 
     [[nodiscard]] ProcKind getKind() const;

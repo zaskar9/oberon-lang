@@ -25,26 +25,15 @@ private:
     TypeNode *type_;
 
 public:
-    ProcedureTypeNode() : ProcedureTypeNode(EMPTY_POS, nullptr) {};
-    ProcedureTypeNode(const FilePos &pos, Ident *ident) :
-            TypeNode(NodeType::procedure_type, pos, ident, TypeKind::PROCEDURE, 0),
-            parameters_(), varargs_(false), type_(nullptr) {};
-    ProcedureTypeNode(Ident *ident, vector<unique_ptr<ParameterNode>> params, TypeNode *type) :
+    ProcedureTypeNode(Ident *ident, vector<unique_ptr<ParameterNode>> params, bool vararags, TypeNode *type) :
             TypeNode(NodeType::procedure_type, EMPTY_POS, ident, TypeKind::PROCEDURE, 0),
-            parameters_(std::move(params)), varargs_(false), type_(type) {};
+            parameters_(std::move(params)), varargs_(vararags), type_(type) {};
     ~ProcedureTypeNode() override = default;
 
-    [[nodiscard]] const vector<unique_ptr<ParameterNode>> &parameters() const;
+    [[nodiscard]] vector<unique_ptr<ParameterNode>> &parameters();
 
-    void addFormalParameter(unique_ptr<ParameterNode> parameter);
-    [[nodiscard]] ParameterNode *getFormalParameter(const string &name);
-    [[nodiscard]] ParameterNode *getFormalParameter(size_t num) const;
-    [[nodiscard]] size_t getFormalParameterCount() const;
-
-    void setVarArgs(bool value);
     [[nodiscard]] bool hasVarArgs() const;
 
-    void setReturnType(TypeNode *type);
     [[nodiscard]] TypeNode *getReturnType() const;
 
     void accept(NodeVisitor &visitor) final;

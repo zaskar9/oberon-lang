@@ -214,7 +214,7 @@ int LLVMCodeGen::jit(ASTContext *ast, boost::filesystem::path path) {
         auto mainAddr = exitOnErr_(jit_->lookup(entry));
         auto mainFn = mainAddr.toPtr<int(void)>();
         int result = mainFn();
-        logger_.debug("Process finished with exit code " + to_string(result) + ".");
+        logger_.debug("Process finished with exit code " + to_string(result));
         return result;
     } else {
         logger_.error(path.filename().string(), "code generation failed.");

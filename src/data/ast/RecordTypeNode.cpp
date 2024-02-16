@@ -7,10 +7,6 @@
 #include "RecordTypeNode.h"
 #include "NodeVisitor.h"
 
-void RecordTypeNode::addField(std::unique_ptr<FieldNode> field) {
-    fields_.push_back(std::move(field));
-}
-
 unsigned int RecordTypeNode::getSize() const {
     unsigned int size = 0;
     for (auto &&itr : fields_) {

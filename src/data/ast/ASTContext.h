@@ -50,7 +50,7 @@ public:
     ArrayTypeNode *getOrInsertArrayType(Ident *, unsigned int, TypeNode *);
     RecordTypeNode *getOrInsertRecordType(Ident *, vector<unique_ptr<FieldNode>>);
     PointerTypeNode *getOrInsertPointerType(Ident *, TypeNode *);
-    ProcedureTypeNode *getOrInsertProcedureType(Ident *, vector<unique_ptr<ParameterNode>>, TypeNode *);
+    ProcedureTypeNode *getOrInsertProcedureType(Ident *, vector<unique_ptr<ParameterNode>>, bool, TypeNode *);
 
     // mainly for memory management as an anchor for smart pointers
     void addExternalModule(unique_ptr<ModuleNode> module);

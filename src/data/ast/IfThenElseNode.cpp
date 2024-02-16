@@ -44,11 +44,6 @@ bool IfThenElseNode::hasElseIf() const {
     return !elseIfs_.empty();
 }
 
-StatementSequenceNode* IfThenElseNode::addElseStatements(const FilePos pos) {
-    elseStatements_ = std::make_unique<StatementSequenceNode>(pos);
-    return elseStatements_.get();
-}
-
 StatementSequenceNode* IfThenElseNode::getElseStatements() const {
     return elseStatements_.get();
 }

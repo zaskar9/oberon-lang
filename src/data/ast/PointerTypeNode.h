@@ -14,8 +14,6 @@ private:
     TypeNode *base_;
 
 public:
-    PointerTypeNode(const FilePos &pos, Ident *ident, TypeNode *base) :
-            TypeNode(NodeType::pointer_type, pos, ident, TypeKind::POINTER, 8), base_(base) {};
     explicit PointerTypeNode(Ident *ident, TypeNode *base) :
             TypeNode(NodeType::pointer_type, EMPTY_POS, ident, TypeKind::POINTER, 8), base_(base) {};
     ~PointerTypeNode() final = default;

@@ -136,8 +136,8 @@ void SymbolExporter::writeArrayType(SymbolFile *file, ArrayTypeNode *type) {
 
 void SymbolExporter::writeProcedureType(SymbolFile *file, ProcedureTypeNode *type) {
     writeType(file, type->getReturnType());
-    for (size_t i = 0; i < type->getFormalParameterCount(); i++) {
-        writeParameter(file, type->getFormalParameter(i));
+    for (auto &param : type->parameters()) {
+        writeParameter(file, param.get());
     }
     file->writeChar(0);
 }

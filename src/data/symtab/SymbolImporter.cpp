@@ -187,7 +187,7 @@ TypeNode *SymbolImporter::readProcedureType(SymbolFile *file) {
         // check for terminator
         ch = file->readChar();
     }
-    return context_->getOrInsertProcedureType(nullptr, std::move(params), return_t);
+    return context_->getOrInsertProcedureType(nullptr, std::move(params), false, return_t);
 }
 
 TypeNode *SymbolImporter::readRecordType(SymbolFile *file) {

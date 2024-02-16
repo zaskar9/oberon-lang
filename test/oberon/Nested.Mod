@@ -28,6 +28,7 @@ VAR var1: INTEGER;
 
     PROCEDURE Procedure2(param2: INTEGER);
     VAR var2: INTEGER;
+        array2: ARRAY const0 OF INTEGER;
 
         PROCEDURE Procedure3(param3: INTEGER);
         VAR var3: INTEGER;
@@ -40,6 +41,9 @@ VAR var1: INTEGER;
             var2 := param3;
             array1[var2 - var1 + 1].x := param3;
             array1[var2 - var1 + 2].color.r := param3;
+            ASSERT(LEN(array0) = const0);
+            ASSERT(LEN(array1) = const0);
+            ASSERT(LEN(array2) = const0);
             param12 := 0
         END Procedure3;
 

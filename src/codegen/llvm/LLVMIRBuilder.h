@@ -48,8 +48,10 @@ private:
     AttrBuilder attrs_;
     ASTContext *ast_;
 
-    Type* getLLVMType(TypeNode *type);
+    Type *getLLVMType(TypeNode *type);
     MaybeAlign getLLVMAlign(TypeNode *type);
+
+    Value *processGEP(TypeNode *, Value *, vector<Value *> &);
 
     string qualifiedName(DeclarationNode *) const;
 
@@ -57,17 +59,17 @@ private:
     void restoreRefMode();
     bool deref() const;
 
-    Value *callPredefined(PredefinedProcedure *, QualIdent *, ActualParameters *, vector<Value *> &);
 
     void cast(ExpressionNode &);
 
-    void proc(ProcedureNode &);
+    void procedure(ProcedureNode &);
 
     using Selectors = vector<unique_ptr<Selector>>;
     using SelectorIterator = Selectors::iterator;
     TypeNode *selectors(TypeNode *, SelectorIterator, SelectorIterator);
     void parameters(ProcedureTypeNode *, ActualParameters *, vector<Value *> &);
-    TypeNode *call(ProcedureNode *, QualIdent *, Selectors &);
+    TypeNode *staticCall(ProcedureNode *, QualIdent *, Selectors &);
+    Value *predefinedCall(PredefinedProcedure *, QualIdent *, ActualParameters *, vector<Value *> &);
 
     void visit(ModuleNode &) override;
     void visit(ProcedureNode &) override;

@@ -26,6 +26,7 @@ public:
     [[nodiscard]] ExpressionNode * getRvalue();
 
     void accept(NodeVisitor& visitor) final;
+
     void print(std::ostream &stream) const final;
 
 };

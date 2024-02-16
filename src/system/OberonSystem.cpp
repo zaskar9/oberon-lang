@@ -55,7 +55,7 @@ BasicTypeNode *OberonSystem::getBasicType(TypeKind kind) {
 }
 
 PointerTypeNode *OberonSystem::createPointerType(TypeNode *base) {
-    auto type = make_unique<PointerTypeNode>(EMPTY_POS, nullptr, base);
+    auto type = make_unique<PointerTypeNode>(nullptr, base);
     auto ptr = type.get();
     types_.push_back(std::move(type));
     symbols_->setRef((char) TypeKind::POINTER, ptr);
@@ -63,17 +63,16 @@ PointerTypeNode *OberonSystem::createPointerType(TypeNode *base) {
 }
 
 ArrayTypeNode *OberonSystem::createArrayType(TypeNode *memberType, unsigned int dimension) {
-    auto type = make_unique<ArrayTypeNode>(EMPTY_POS, nullptr, dimension, memberType);
+    auto type = make_unique<ArrayTypeNode>(nullptr, dimension, memberType);
     auto ptr = type.get();
     types_.push_back(std::move(type));
     symbols_->setRef((char) TypeKind::ARRAY, ptr);
     return ptr;
 }
 
-void OberonSystem::createProcedure(ProcKind type, const string& name, vector<pair<TypeNode *, bool>> params,
-                                   TypeNode *ret, bool hasVarArgs, bool toSymbols) {
-    auto proc = make_unique<PredefinedProcedure>(type, name, params, ret);
-    proc->setVarArgs(hasVarArgs);
+void OberonSystem::createProcedure(ProcKind kind, const string& name, const vector<pair<TypeNode *, bool>>& params,
+                                   TypeNode *ret, bool varargs, bool toSymbols) {
+    auto proc = make_unique<PredefinedProcedure>(kind, name, params, varargs, ret);
     auto ptr = proc.get();
     decls_.push_back(std::move(proc));
     if (toSymbols) {
