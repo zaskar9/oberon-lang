@@ -38,9 +38,9 @@ endif
 clean:
 	@rm -f *.s *.o *.ll *.bc *.smb
 ifeq ($(OS), macos)
-	@find . -depth 1 -type f -perm +111 -delete
+	@find . -depth 1 -type f ! -name "*.*" -perm +111 -delete
 else ifeq ($(OS), linux)
-	@find . -maxdepth 1 -type f -executable -delete
+	@find . -maxdepth 1 -type f ! -name "*.*" -executable -delete
 endif
 
 % : %.o

@@ -8,23 +8,23 @@
 #define OBERON_LANG_LLVMCODEGEN_H
 
 
-#include "analyzer/Analyzer.h"
-#include "codegen/CodeGen.h"
-#include "logging/Logger.h"
 #include <string>
 #include <boost/filesystem.hpp>
 #include <llvm/ExecutionEngine/Orc/LLJIT.h>
 #include <llvm/Passes/PassBuilder.h>
 #include <llvm/Target/TargetMachine.h>
 
+#include "data/ast/ASTContext.h"
+#include "codegen/CodeGen.h"
+#include "logging/Logger.h"
 
 int mingw_noop_main(void);
 
 class LLVMCodeGen final : public CodeGen {
 
 private:
-    CompilerFlags *flags_;
-    Logger *logger_;
+    CompilerConfig &config_;
+    Logger &logger_;
     OutputFileType type_;
     llvm::LLVMContext ctx_;
     llvm::PassBuilder pb_;
@@ -37,16 +37,16 @@ private:
     static std::string getLibName(const std::string &name, bool dylib, const llvm::Triple &triple);
 
 public:
-    LLVMCodeGen(CompilerFlags *flags, Logger *logger);
+    LLVMCodeGen(CompilerConfig &config);
     ~LLVMCodeGen() override = default;
 
     std::string getDescription() final;
 
-    void configure(CompilerFlags *flags) final;
+    void configure() final;
 
-    void generate(Node *ast, boost::filesystem::path path) final;
+    void generate(ASTContext *ast, boost::filesystem::path path) final;
 #ifndef _LLVM_LEGACY
-    int jit(Node *ast, boost::filesystem::path path) final;
+    int jit(ASTContext *ast, boost::filesystem::path path) final;
 #endif
 
 };

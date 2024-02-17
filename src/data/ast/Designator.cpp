@@ -2,7 +2,7 @@
 // Created by Michael Grossniklaus on 9/29/22.
 //
 
-#include "Selector.h"
+#include "Designator.h"
 #include "NodeReference.h"
 #include "ExpressionNode.h"
 
@@ -12,18 +12,18 @@ FilePos Selector::pos() const {
     return pos_;
 }
 
-NodeType Selector::getType() const {
+NodeType Selector::getNodeType() const {
     return type_;
 }
 
 
-ArrayIndex::ArrayIndex(const FilePos &pos, std::unique_ptr<ExpressionNode> expression) :
-        Selector(NodeType::array_type, pos), expression_(std::move(expression)) { }
+ArrayIndex::ArrayIndex(const FilePos &pos, std::vector<std::unique_ptr<ExpressionNode>> indices) :
+        Selector(NodeType::array_type, pos), indices_(std::move(indices)) { }
 
 ArrayIndex::~ArrayIndex() = default;
 
-ExpressionNode *ArrayIndex::getExpression() const {
-    return expression_.get();
+const vector<unique_ptr<ExpressionNode>> &ArrayIndex::indices() const {
+    return indices_;
 }
 
 
@@ -55,7 +55,7 @@ Dereference::~Dereference() = default;
 
 
 Typeguard::Typeguard(const FilePos &pos, std::unique_ptr<QualIdent> ident)  :
-        Selector(NodeType::type_declaration, pos), ident_(std::move(ident)) { }
+        Selector(NodeType::type, pos), ident_(std::move(ident)) { }
 
 Typeguard::~Typeguard() = default;
 
@@ -63,18 +63,38 @@ QualIdent *Typeguard::ident() const {
     return ident_.get();
 }
 
+void Typeguard::setType(TypeNode *type) {
+    type_ = type;
+}
 
-ActualParameters::ActualParameters(const FilePos &pos) :
-        Selector(NodeType::parameter, pos), parameters_() { }
+TypeNode *Typeguard::getType() const {
+    return type_;
+}
+
+
+ActualParameters::ActualParameters(const FilePos &pos, std::vector<std::unique_ptr<ExpressionNode>> parameters) :
+        Selector(NodeType::parameter, pos), parameters_(std::move(parameters)) { }
+
+ActualParameters::ActualParameters() :
+        Selector(NodeType::parameter, EMPTY_POS), parameters_() {}
 
 ActualParameters::~ActualParameters() = default;
 
-void ActualParameters::addActualParameter(std::unique_ptr<ExpressionNode> parameter) {
-    parameters_.push_back(std::move(parameter));
+vector<unique_ptr<ExpressionNode>> &ActualParameters::parameters() {
+    return parameters_;
 }
 
-void ActualParameters::moveActuralParameters(std::vector<std::unique_ptr<ExpressionNode>> &target) {
-    for (auto& parameter: parameters_) {
-        target.push_back(std::move(parameter));
-    }
+
+Designator::~Designator() = default;
+
+void Designator::setIdent(Ident *ident) {
+    ident_ = make_unique<QualIdent>(ident);
+}
+
+QualIdent *Designator::ident() const {
+    return ident_.get();
+}
+
+vector<unique_ptr<Selector>> &Designator::selectors() {
+    return selectors_;
 }

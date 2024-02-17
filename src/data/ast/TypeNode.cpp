@@ -12,6 +12,9 @@ std::ostream &operator<<(std::ostream &stream, const TypeKind &kind) {
         case TypeKind::ANYTYPE: result = "ANYTYPE"; break;
         case TypeKind::NOTYPE: result = "NOTYPE"; break;
         case TypeKind::NILTYPE: result = "NILTYPE"; break;
+        case TypeKind::ENTIRE: result = "integer type"; break;
+        case TypeKind::FLOATING: result = "floating-point type"; break;
+        case TypeKind::NUMERIC: result = "numeric type"; break;
         case TypeKind::ARRAY: result = "ARRAY"; break;
         case TypeKind::POINTER: result = "POINTER"; break;
         case TypeKind::PROCEDURE: result = "PROCEDURE"; break;
@@ -63,6 +66,10 @@ bool TypeNode::isPointer() const {
     return kind_ == TypeKind::POINTER;
 }
 
+bool TypeNode::isProcedure() const {
+    return kind_ == TypeKind::PROCEDURE;
+}
+
 bool TypeNode::isBoolean() const {
     return kind_ == TypeKind::BOOLEAN;
 }
@@ -73,11 +80,13 @@ bool TypeNode::isNumeric() const {
 
 bool TypeNode::isInteger() const {
     return kind_ == TypeKind::BYTE || kind_ == TypeKind::CHAR ||
-           kind_ == TypeKind::INTEGER || kind_ == TypeKind::LONGINT;
+           kind_ == TypeKind::INTEGER || kind_ == TypeKind::LONGINT ||
+           kind_ == TypeKind::ENTIRE;
 }
 
 bool TypeNode::isReal() const {
-    return kind_ == TypeKind::REAL || kind_ == TypeKind::LONGREAL;
+    return kind_ == TypeKind::REAL || kind_ == TypeKind::LONGREAL ||
+           kind_ == TypeKind::FLOATING;
 }
 
 bool TypeNode::isString() const {

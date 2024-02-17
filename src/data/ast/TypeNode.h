@@ -13,11 +13,12 @@
 #include <utility>
 
 enum class TypeKind : char {
-    ANYTYPE = 0, NOTYPE = 1, NILTYPE = 2,
-    ARRAY = 3, POINTER = 4, PROCEDURE = 5, RECORD = 6, SET = 7,
-    BOOLEAN = 8,
-    BYTE = 9, CHAR = 10, INTEGER = 11, LONGINT = 12, REAL = 13, LONGREAL = 14,
-    STRING = 15
+    // WARNING: Changing these values invalidates existing symbol files!
+    ANYTYPE = 0, NOTYPE = 1, NILTYPE = 2, ENTIRE = 3, FLOATING = 4, NUMERIC = 5,
+    ARRAY = 6, POINTER = 7, PROCEDURE = 8, RECORD = 9, SET = 10,
+    BOOLEAN = 11,
+    BYTE = 12, CHAR = 13, INTEGER = 14, LONGINT = 15, REAL = 16, LONGREAL = 17,
+    STRING = 18
 };
 
 std::ostream &operator<<(std::ostream &stream, const TypeKind &kind);
@@ -39,7 +40,8 @@ public:
     [[nodiscard]] Ident *getIdentifier() const;
 
     [[nodiscard]] virtual TypeKind kind() const;
-    void setSize(unsigned int size);
+
+    void setSize(unsigned int);
     [[nodiscard]] virtual unsigned int getSize() const;
 
     [[nodiscard]] bool isAnonymous() const;
@@ -47,16 +49,17 @@ public:
     [[nodiscard]] bool isArray() const;
     [[nodiscard]] bool isRecord() const;
     [[nodiscard]] bool isPointer() const;
+    [[nodiscard]] bool isProcedure() const;
     [[nodiscard]] bool isBoolean() const;
     [[nodiscard]] bool isNumeric() const;
     [[nodiscard]] bool isInteger() const;
     [[nodiscard]] bool isReal() const;
     [[nodiscard]] bool isString() const;
 
-    void setRef(int ref);
+    void setRef(int);
     [[nodiscard]] int getRef() const;
 
-    void accept(NodeVisitor &visitor) override = 0;
+    void accept(NodeVisitor &) override = 0;
 
 };
 

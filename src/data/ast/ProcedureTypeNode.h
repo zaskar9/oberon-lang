@@ -6,33 +6,34 @@
 #define OBERON_LANG_PROCEDURETYPENODE_H
 
 
+#include <memory>
+#include <string>
+#include <vector>
+
 #include "TypeNode.h"
 #include "DeclarationNode.h"
-#include <vector>
+
+using std::unique_ptr;
+using std::string;
+using std::vector;
 
 class ProcedureTypeNode final : public TypeNode {
 
 private:
-    std::vector<std::unique_ptr<ParameterNode>> parameters_;
+    vector<unique_ptr<ParameterNode>> parameters_;
     bool varargs_;
     TypeNode *type_;
 
 public:
-    explicit ProcedureTypeNode() : ProcedureTypeNode(EMPTY_POS, nullptr) {};
-    explicit ProcedureTypeNode(const FilePos &pos, Ident *ident) :
-            TypeNode(NodeType::procedure_type, pos, ident, TypeKind::PROCEDURE, 0),
-            parameters_(), varargs_(false), type_(nullptr) {};
+    ProcedureTypeNode(Ident *ident, vector<unique_ptr<ParameterNode>> params, bool vararags, TypeNode *type) :
+            TypeNode(NodeType::procedure_type, EMPTY_POS, ident, TypeKind::PROCEDURE, 0),
+            parameters_(std::move(params)), varargs_(vararags), type_(type) {};
     ~ProcedureTypeNode() override = default;
 
-    void addFormalParameter(std::unique_ptr<ParameterNode> parameter);
-    [[nodiscard]] ParameterNode *getFormalParameter(const std::string &name);
-    [[nodiscard]] ParameterNode *getFormalParameter(size_t num) const;
-    [[nodiscard]] size_t getFormalParameterCount() const;
+    [[nodiscard]] vector<unique_ptr<ParameterNode>> &parameters();
 
-    void setVarArgs(bool value);
     [[nodiscard]] bool hasVarArgs() const;
 
-    void setReturnType(TypeNode *type);
     [[nodiscard]] TypeNode *getReturnType() const;
 
     void accept(NodeVisitor &visitor) final;

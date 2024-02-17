@@ -7,19 +7,28 @@
 #ifndef OBERON0C_LOOPNODE_H
 #define OBERON0C_LOOPNODE_H
 
+
+#include <memory>
+
 #include "AssignmentNode.h"
 #include "ExpressionNode.h"
 #include "StatementSequenceNode.h"
 
+using std::make_unique;
+using std::unique_ptr;
+
 class LoopNode : public StatementNode {
 
 private:
-    std::unique_ptr<StatementSequenceNode> statements_;
+    unique_ptr<StatementSequenceNode> statements_;
+
+protected:
+    LoopNode(NodeType nodeType, const FilePos &pos, unique_ptr<StatementSequenceNode> stmts) :
+            StatementNode(nodeType, pos), statements_(std::move(stmts)) { };
 
 public:
-    explicit LoopNode(NodeType nodeType, const FilePos &pos) :
-            StatementNode(nodeType, pos), statements_(std::make_unique<StatementSequenceNode>(pos)) { };
-    explicit LoopNode(const FilePos &pos) : LoopNode(NodeType::loop, pos) { };
+    LoopNode(const FilePos &pos, unique_ptr<StatementSequenceNode> stmts) :
+            LoopNode(NodeType::loop, pos, std::move(stmts)) { };
     ~LoopNode() override = default;
 
     [[nodiscard]] StatementSequenceNode * getStatements() const;
@@ -35,14 +44,14 @@ class ConditionalLoopNode : public LoopNode {
 private:
     std::unique_ptr<ExpressionNode> condition_;
 
+protected:
+    ConditionalLoopNode(NodeType nodeType, const FilePos &pos, unique_ptr<ExpressionNode> condition,
+                        unique_ptr<StatementSequenceNode> stmts) :
+            LoopNode(nodeType, pos, std::move(stmts)), condition_(std::move(condition)) { };
+
 public:
-    explicit ConditionalLoopNode(NodeType nodeType, const FilePos &pos, std::unique_ptr<ExpressionNode> condition) :
-            LoopNode(nodeType, pos), condition_(std::move(condition)) { };
-    explicit ConditionalLoopNode(NodeType nodeType, const FilePos &pos) :
-            ConditionalLoopNode(nodeType, pos, nullptr) { };
     ~ConditionalLoopNode() override;
 
-    void setCondition(std::unique_ptr<ExpressionNode> condition);
     [[nodiscard]] ExpressionNode * getCondition() const;
 
 };
@@ -50,8 +59,8 @@ public:
 class WhileLoopNode final: public ConditionalLoopNode {
 
 public:
-    explicit WhileLoopNode(const FilePos &pos, std::unique_ptr<ExpressionNode> condition) :
-            ConditionalLoopNode(NodeType::while_loop, pos, std::move(condition)) { };
+    WhileLoopNode(const FilePos &pos, unique_ptr<ExpressionNode> condition, unique_ptr<StatementSequenceNode> stmts) :
+            ConditionalLoopNode(NodeType::while_loop, pos, std::move(condition), std::move(stmts)) { };
     ~WhileLoopNode() override = default;
 
     void accept(NodeVisitor& visitor) final;
@@ -63,7 +72,8 @@ public:
 class RepeatLoopNode final : public ConditionalLoopNode {
 
 public:
-    explicit RepeatLoopNode(const FilePos &pos) : ConditionalLoopNode(NodeType::repeat_loop, pos) { };
+    RepeatLoopNode(const FilePos &pos, unique_ptr<ExpressionNode> condition, unique_ptr<StatementSequenceNode> stmts) :
+            ConditionalLoopNode(NodeType::repeat_loop, pos, std::move(condition), std::move(stmts)) { };
     ~RepeatLoopNode() override = default;
 
     void accept(NodeVisitor& visitor) final;
@@ -75,27 +85,21 @@ public:
 class ForLoopNode final : public LoopNode {
 
 private:
-    std::unique_ptr<ValueReferenceNode> counter_;
-    std::unique_ptr<ExpressionNode> low_, high_, step_;
+    unique_ptr<QualifiedExpression> counter_;
+    unique_ptr<ExpressionNode> low_, high_, step_;
 
 public:
-    explicit ForLoopNode(const FilePos &pos, std::unique_ptr<ValueReferenceNode> counter,
-            std::unique_ptr<ExpressionNode> low, std::unique_ptr<ExpressionNode> high,
-            std::unique_ptr<ExpressionNode> step) :
-            LoopNode(NodeType::for_loop, pos), counter_(std::move(counter)), low_(std::move(low)),
-            high_(std::move(high)), step_(step != nullptr ? std::move(step) : std::make_unique<IntegerLiteralNode>(pos, 1)) { };
+    ForLoopNode(const FilePos &pos, unique_ptr<QualifiedExpression> counter,
+                unique_ptr<ExpressionNode> low, unique_ptr<ExpressionNode> high, unique_ptr<ExpressionNode> step,
+                unique_ptr<StatementSequenceNode> stmts) :
+            LoopNode(NodeType::for_loop, pos, std::move(stmts)), counter_(std::move(counter)), low_(std::move(low)),
+            high_(std::move(high)), step_(step != nullptr ? std::move(step) : make_unique<IntegerLiteralNode>(pos, 1)) { };
     ~ForLoopNode() override = default;
 
-    [[nodiscard]] ValueReferenceNode * getCounter() const;
-
-    void setLow(std::unique_ptr<ExpressionNode> low);
-    [[nodiscard]] ExpressionNode * getLow() const;
-
-    void setHigh(std::unique_ptr<ExpressionNode> high);
-    [[nodiscard]] ExpressionNode * getHigh() const;
-
-    void setStep(std::unique_ptr<ExpressionNode> step);
-    [[nodiscard]] ExpressionNode * getStep() const;
+    [[nodiscard]] QualifiedExpression *getCounter() const;
+    [[nodiscard]] ExpressionNode *getLow() const;
+    [[nodiscard]] ExpressionNode *getHigh() const;
+    [[nodiscard]] ExpressionNode *getStep() const;
 
     void accept(NodeVisitor& visitor) final;
 

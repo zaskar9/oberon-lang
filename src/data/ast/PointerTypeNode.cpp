@@ -19,7 +19,7 @@ void PointerTypeNode::accept(NodeVisitor &visitor) {
 
 void PointerTypeNode::print(std::ostream &out) const {
     if (this->isAnonymous()) {
-        out << "POINTER TO " << *base_;
+        out << "pointer type";
     } else {
         out << *this->getIdentifier();
     }

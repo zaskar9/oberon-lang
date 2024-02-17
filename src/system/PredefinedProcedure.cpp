@@ -4,17 +4,30 @@
 
 #include "PredefinedProcedure.h"
 
-PredefinedProcedure::PredefinedProcedure(ProcType type, std::string name, std::vector<std::pair<TypeNode *, bool>> params,
-                                         TypeNode *ret) : ProcedureNode(EMPTY_POS, std::make_unique<Ident>(name)), type_(type) {
-    for (auto p: params) {
-        auto param = std::make_unique<ParameterNode>(EMPTY_POS, std::make_unique<Ident>("_"), p.first, p.second);
-        this->addFormalParameter(std::move(param));
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
+using std::make_unique;
+using std::pair;
+using std::string;
+using std::vector;
+
+PredefinedProcedure::PredefinedProcedure(ProcKind kind, const string &name,
+                                         const vector<pair<TypeNode *, bool>> &pairs, bool varargs, TypeNode *ret) :
+        ProcedureNode(make_unique<IdentDef>(name), nullptr), kind_(kind) {
+    vector<unique_ptr<ParameterNode>> params;
+    params.reserve(pairs.size());
+    for (auto p : pairs) {
+        params.push_back(std::make_unique<ParameterNode>(EMPTY_POS, make_unique<Ident>("_"), p.first, p.second));
     }
-    this->setReturnType(ret);
+    type_ = make_unique<ProcedureTypeNode>(this->getIdentifier(), std::move(params), varargs, ret);
+    this->setType(type_.get());
 }
 
 PredefinedProcedure::~PredefinedProcedure() = default;
 
-ProcType PredefinedProcedure::getProcType() const {
-    return type_;
+ProcKind PredefinedProcedure::getKind() const {
+    return kind_;
 }

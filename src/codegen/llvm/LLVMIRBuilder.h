@@ -8,95 +8,113 @@
 #define OBERON0C_LLVMCODEGEN_H
 
 
-#include "compiler/CompilerFlags.h"
-#include "data/ast/NodeVisitor.h"
-#include "logging/Logger.h"
+#include <map>
+#include <stack>
+#include <string>
+#include <vector>
+
 #include <llvm/IR/DataLayout.h>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
-#include <map>
-#include <stack>
+
+#include "compiler/CompilerConfig.h"
+#include "data/ast/ASTContext.h"
+#include "data/ast/NodeVisitor.h"
+#include "logging/Logger.h"
+#include "system/PredefinedProcedure.h"
 
 using namespace llvm;
+
+using std::map;
+using std::stack;
+using std::string;
+using std::vector;
 
 class LLVMIRBuilder final : private NodeVisitor {
 
 private:
-    CompilerFlags *flags_;
-    Logger *logger_;
+    CompilerConfig &config_;
+    Logger &logger_;
     IRBuilder<> builder_;
     Module *module_;
     Value *value_;
-    std::map<DeclarationNode*, Value*> values_;
-    std::map<TypeNode*, Type*> types_;
-    std::map<ProcedureNode*, Function*> functions_;
-    std::map<std::string, Constant*> strings_;
-    std::stack<bool> deref_ctx;
+    map<DeclarationNode*, Value*> values_;
+    map<TypeNode*, Type*> types_;
+    map<ProcedureNode*, Function*> functions_;
+    map<string, Constant*> strings_;
+    stack<bool> deref_ctx;
     unsigned int level_;
     Function *function_;
     AttrBuilder attrs_;
+    ASTContext *ast_;
 
-    Type* getLLVMType(TypeNode *type);
+    Type *getLLVMType(TypeNode *type);
     MaybeAlign getLLVMAlign(TypeNode *type);
 
-    std::string qualifiedName(Ident *ident, bool external) const;
+    Value *processGEP(TypeNode *, Value *, vector<Value *> &);
+
+    string qualifiedName(DeclarationNode *) const;
 
     void setRefMode(bool deref);
     void restoreRefMode();
     bool deref() const;
 
-    Value *callPredefined(ProcedureNodeReference &node, std::vector<Value *> &params);
 
-    void cast(ExpressionNode &node);
+    void cast(ExpressionNode &);
 
-    void call(ProcedureNodeReference &node);
-    void proc(ProcedureNode &node);
+    void procedure(ProcedureNode &);
 
-    void visit(ModuleNode &node) override;
-    void visit(ProcedureNode &node) override;
+    using Selectors = vector<unique_ptr<Selector>>;
+    using SelectorIterator = Selectors::iterator;
+    TypeNode *selectors(TypeNode *, SelectorIterator, SelectorIterator);
+    void parameters(ProcedureTypeNode *, ActualParameters *, vector<Value *> &);
+    TypeNode *staticCall(ProcedureNode *, QualIdent *, Selectors &);
+    Value *predefinedCall(PredefinedProcedure *, QualIdent *, ActualParameters *, vector<Value *> &);
 
-    void visit(ImportNode &node) override;
+    void visit(ModuleNode &) override;
+    void visit(ProcedureNode &) override;
 
-    void visit(ConstantDeclarationNode &node) override;
-    void visit(FieldNode &node) override;
-    void visit(ParameterNode &node) override;
-    void visit(VariableDeclarationNode &node) override;
+    void visit(ImportNode &) override;
 
-    void visit(ValueReferenceNode &node) override;
-    void visit(TypeReferenceNode &node) override;
+    void visit(ConstantDeclarationNode &) override;
+    void visit(FieldNode &) override;
+    void visit(ParameterNode &) override;
+    void visit(VariableDeclarationNode &) override;
 
-    void visit(BooleanLiteralNode &node) override;
-    void visit(IntegerLiteralNode &node) override;
-    void visit(RealLiteralNode &node) override;
-    void visit(StringLiteralNode &node) override;
-    void visit(NilLiteralNode &node) override;
+    void visit(QualifiedStatement &) override;
+    void visit(QualifiedExpression &) override;
 
-    void visit(UnaryExpressionNode &node) override;
-    void visit(BinaryExpressionNode &node) override;
+    void visit(BooleanLiteralNode &) override;
+    void visit(IntegerLiteralNode &) override;
+    void visit(RealLiteralNode &) override;
+    void visit(StringLiteralNode &) override;
+    void visit(NilLiteralNode &) override;
 
-    void visit(TypeDeclarationNode &node) override;
-    void visit(ArrayTypeNode &node) override;
-    void visit(BasicTypeNode &node) override;
-    void visit(ProcedureTypeNode &node) override;
-    void visit(RecordTypeNode &node) override;
-    void visit(PointerTypeNode &node) override;
+    void visit(UnaryExpressionNode &) override;
+    void visit(BinaryExpressionNode &) override;
 
-    void visit(StatementSequenceNode &node) override;
-    void visit(AssignmentNode &node) override;
-    void visit(IfThenElseNode &node) override;
-    void visit(ElseIfNode &node) override;
-    void visit(ProcedureCallNode &node) override;
-    void visit(LoopNode &node) override;
-    void visit(WhileLoopNode &node) override;
-    void visit(RepeatLoopNode &node) override;
-    void visit(ForLoopNode &node) override;
-    void visit(ReturnNode &node) override;
+    void visit(TypeDeclarationNode &) override;
+    void visit(ArrayTypeNode &) override;
+    void visit(BasicTypeNode &) override;
+    void visit(ProcedureTypeNode &) override;
+    void visit(RecordTypeNode &) override;
+    void visit(PointerTypeNode &) override;
+
+    void visit(StatementSequenceNode &) override;
+    void visit(AssignmentNode &) override;
+    void visit(IfThenElseNode &) override;
+    void visit(ElseIfNode &) override;
+    void visit(LoopNode &) override;
+    void visit(WhileLoopNode &) override;
+    void visit(RepeatLoopNode &) override;
+    void visit(ForLoopNode &) override;
+    void visit(ReturnNode &) override;
 
 public:
-    LLVMIRBuilder(CompilerFlags *flags, Logger *logger, LLVMContext &context, Module *module);
-    ~LLVMIRBuilder() = default;
+    LLVMIRBuilder(CompilerConfig &config, LLVMContext &builder, Module *module);
+    ~LLVMIRBuilder() override = default;
 
-    void build(Node *node);
+    void build(ASTContext *ast);
 
 };
 

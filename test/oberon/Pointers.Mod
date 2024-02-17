@@ -78,8 +78,7 @@ BEGIN
     ptr2 := NIL;
     ASSERT(ptr1 = ptr2);
     ASSERT(ptr1 = NIL);
-    IF (NIL = NIL) THEN Out.String("NIL = NIL"); Out.Ln END;
-    (* ASSERT(NIL = NIL); <-- strangely, this does not work! *)
+    ASSERT(NIL = NIL);
     NEW(ptr1);
     ASSERT(ptr1 # NIL);
     ptr1^ := 2 * ten;

@@ -8,9 +8,12 @@
 #define OBERON0C_EXPRESSIONNODE_H
 
 
+#include <memory>
 #include "Node.h"
 #include "TypeNode.h"
 #include "BasicTypeNode.h"
+
+using std::unique_ptr;
 
 enum class OperatorType : char {
     EQ, NEQ, LT, GT, GEQ, LEQ,
@@ -29,8 +32,7 @@ private:
     TypeNode *cast_;
 
 public:
-    explicit ExpressionNode(const NodeType nodeType, const FilePos &pos, TypeNode *type = nullptr,
-                            TypeNode *cast = nullptr) :
+    ExpressionNode(const NodeType nodeType, const FilePos &pos, TypeNode *type, TypeNode* cast = nullptr) :
             Node(nodeType, pos), type_(type), cast_(cast) { };
     ~ExpressionNode() override;
 
@@ -57,8 +59,8 @@ private:
     std::unique_ptr<ExpressionNode> expr_;
 
 public:
-    UnaryExpressionNode(const FilePos &pos, OperatorType op, std::unique_ptr<ExpressionNode> expr) :
-            ExpressionNode(NodeType::unary_expression, pos), op_(op), expr_(std::move(expr)) {};
+    UnaryExpressionNode(const FilePos& start, OperatorType op, unique_ptr<ExpressionNode> expr, TypeNode *type) :
+            ExpressionNode(NodeType::unary_expression, start, type), op_(op), expr_(std::move(expr)) {};
     ~UnaryExpressionNode() final = default;
 
     [[nodiscard]] bool isConstant() const final;
@@ -83,8 +85,9 @@ private:
     std::unique_ptr<ExpressionNode> lhs_, rhs_;
 
 public:
-    BinaryExpressionNode(const FilePos &pos, OperatorType op, std::unique_ptr<ExpressionNode> lhs, std::unique_ptr<ExpressionNode> rhs) :
-            ExpressionNode(NodeType::binary_expression, pos), op_(op), lhs_(std::move(lhs)), rhs_(std::move(rhs)) {};
+    BinaryExpressionNode(const FilePos &start, OperatorType op, unique_ptr<ExpressionNode> lhs,
+                         unique_ptr<ExpressionNode> rhs, TypeNode *type) :
+            ExpressionNode(NodeType::binary_expression, start, type), op_(op), lhs_(std::move(lhs)), rhs_(std::move(rhs)) {};
     ~BinaryExpressionNode() final = default;
 
     [[nodiscard]] bool isConstant() const final;
@@ -203,8 +206,8 @@ public:
 class NilLiteralNode final : public LiteralNode {
 
 public:
-    explicit NilLiteralNode(const FilePos &pos) :
-            LiteralNode(NodeType::pointer, pos, TypeKind::POINTER, nullptr, nullptr) {};
+    explicit NilLiteralNode(const FilePos &pos, TypeNode *type = nullptr) :
+            LiteralNode(NodeType::pointer, pos, TypeKind::POINTER, type, nullptr) {};
 
     void accept(NodeVisitor &visitor) final;
     void print(std::ostream &stream) const final;

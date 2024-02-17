@@ -3,48 +3,49 @@
 //
 
 #include "Compiler.h"
+
+#include <filesystem>
+
 #include "config.h"
 #include "scanner/Scanner.h"
 #include "parser/Parser.h"
-#include "analyzer/SemanticAnalysis.h"
 #include "analyzer/LambdaLifter.h"
 #include "data/ast/NodePrettyPrinter.h"
 
-unique_ptr<Node> Compiler::run(const boost::filesystem::path &file) {
-    // Scan and parse the input file
-    logger_->debug("Parsing...");
-    auto errors = logger_->getErrorCount();
-    auto scanner = std::make_unique<Scanner>(logger_, file);
-    auto parser = std::make_unique<Parser>(flags_, logger_, scanner.get());
-    auto ast = parser->parse();
-    if (ast && ast->getNodeType() == NodeType::module) {
-        // Check if file name matches module name
-        if (file.filename().replace_extension("").string() != ast->getIdentifier()->name()) {
-            std::string name = ast->getIdentifier()->name();
-            logger_->warning(ast->pos(), "module " + name + " should be declared in a file named " + name +
-                                            ".Mod.");
-        }
-        // Run the analyzer
-        logger_->debug("Analyzing...");
-        auto analyzer = std::make_unique<Analyzer>(logger_);
-        auto path = file.parent_path();
-        auto importer = std::make_unique<SymbolImporter>(logger_, flags_, path);
-        auto exporter = std::make_unique<SymbolExporter>(logger_, path);
-        analyzer->add(std::make_unique<SemanticAnalysis>(system_->getSymbolTable(), importer.get(), exporter.get()));
-        analyzer->add(std::make_unique<LambdaLifter>());
-        analyzer->run(ast.get());
-        if (logger_->getErrorCount() == errors) {
-#ifdef _DEBUG
-            auto printer = std::make_unique<NodePrettyPrinter>(std::cout);
-            printer->print(ast.get());
-#endif
-            return ast;
-        }
+using std::filesystem::path;
+
+unique_ptr<ASTContext> Compiler::run(const path &file) {
+    // Scan, parse, and analyze the input file
+    logger_.debug("Parsing and analyzing...");
+    int errors = logger_.getErrorCount();
+    Scanner scanner(config_, file);
+    auto ast = std::make_unique<ASTContext>(file);
+    Sema sema(config_, ast.get(), system_.get());
+    Parser parser(config_, scanner, sema);
+    parser.parse(ast.get());
+    if (logger_.getErrorCount() != errors) {
+        // Parsing and analyzing failed
+        return nullptr;
     }
-    return nullptr;
+    auto module = ast->getTranslationUnit();
+    // Check if file name matches module name
+    if (file.filename().replace_extension("").string() != module->getIdentifier()->name()) {
+        std::string name = module->getIdentifier()->name();
+        logger_.warning(module->pos(), "module " + name + " should be declared in a file named " + name + ".Mod.");
+    }
+    // Run AST transformations
+    logger_.debug("Transforming...");
+    auto analyzer = std::make_unique<Analyzer>(config_);
+    analyzer->add(std::make_unique<LambdaLifter>(ast.get()));
+    analyzer->run(module);
+#ifdef _DEBUG
+    auto printer = std::make_unique<NodePrettyPrinter>(std::cout);
+    printer->print(module);
+#endif
+    return ast;
 }
 
-void Compiler::compile(const boost::filesystem::path &file) {
+void Compiler::compile(const path &file) {
     auto path = absolute(file);
     auto ast = run(file);
     if (ast) {
@@ -53,7 +54,7 @@ void Compiler::compile(const boost::filesystem::path &file) {
 }
 
 #ifndef _LLVM_LEGACY
-int Compiler::jit(const boost::filesystem::path &file) {
+int Compiler::jit(const path &file) {
     auto path = absolute(file);
     auto ast = run(path);
     if (ast) {

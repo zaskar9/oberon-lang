@@ -6,8 +6,12 @@
 
 Ident::~Ident() = default;
 
-FilePos Ident::pos() const {
-    return pos_;
+FilePos Ident::start() const {
+    return start_;
+}
+
+FilePos Ident::end() const {
+    return end_;
 }
 
 std::string Ident::name() const {

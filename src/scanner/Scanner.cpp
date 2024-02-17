@@ -14,14 +14,12 @@
 #include "LiteralToken.h"
 #include "UndefinedToken.h"
 
-namespace fs = boost::filesystem;
-
-Scanner::Scanner(Logger *logger, const fs::path &path) :
-        logger_(logger), path_(path), tokens_(), lineNo_(1), charNo_(0), ch_{}, eof_(false) {
+Scanner::Scanner(CompilerConfig &config, const path &path) : config_(config), logger_(config_.logger()), path_(path),
+        tokens_(), lineNo_(1), charNo_(0), ch_{}, eof_(false) {
     init();
-    file_.open(path_.string(), std::ios::in);
+    file_.open(path_.string(), std::ifstream::binary);
     if (!file_.is_open()) {
-        logger_->error(PROJECT_NAME, "cannot open file: " + path_.string() + ".");
+        logger_.error(PROJECT_NAME, "cannot open file: " + path_.string() + ".");
         exit(1);
     }
     read();
@@ -77,6 +75,15 @@ std::unique_ptr<const Token> Scanner::next() {
         tokens_.pop();
     }
     return std::unique_ptr<const Token>(token);
+}
+
+void Scanner::seek(const FilePos &pos) {
+    file_.seekg(pos.offset - (streampos)1);
+    std::queue<const Token*> empty;
+    std::swap(tokens_, empty);
+    lineNo_ = pos.lineNo;
+    charNo_ = pos.charNo - 1;
+    ch_ = '\0';
 }
 
 const Token* Scanner::scanToken() {
@@ -225,7 +232,7 @@ const Token* Scanner::scanToken() {
         token = new Token(TokenType::eof, current());
     }
     if (token->type() == TokenType::undef) {
-        logger_->error(pos, "bad character.");
+        logger_.error(pos, "bad character.");
         token = scanToken();
     }
     return token;
@@ -242,17 +249,18 @@ void Scanner::read() {
         charNo_++;
         eof_ = true;
     } else {
-        logger_->error(path_.string(), "error reading file.");
+        logger_.error(path_.string(), "error reading file.");
         exit(1);
     }
 
 }
 
-FilePos Scanner::current() const {
+FilePos Scanner::current() {
     FilePos pos;
     pos.fileName = path_.string();
     pos.lineNo = lineNo_;
     pos.charNo = charNo_;
+    pos.offset = file_.tellg();
     return pos;
 }
 
@@ -281,7 +289,7 @@ void Scanner::scanComment() {
             break;
         }
         if (eof_) {
-            logger_->error(pos, "comment not terminated.");
+            logger_.error(pos, "comment not terminated.");
             break;
         }
     }
@@ -328,7 +336,7 @@ const Token* Scanner::scanNumber() {
     }
     if (ch_ == 'H') {
         if (isFloat) {
-            logger_->error(pos, "undefined number.");
+            logger_.error(pos, "undefined number.");
             auto token = new UndefinedToken(pos, ch_);
             read();
             return token;
@@ -343,7 +351,7 @@ const Token* Scanner::scanNumber() {
         try {
              value = boost::convert<double>(num, ccnv(std::dec)(std::scientific)).value();
         } catch (boost::bad_optional_access const&) {
-            logger_->error(pos, "invalid real literal: " + num + ".");
+            logger_.error(pos, "invalid real literal: " + num + ".");
         }
         if (value >= std::numeric_limits<float>::lowest() && value <= std::numeric_limits<float>::max()) {
             return new FloatLiteralToken(pos, current(), static_cast<float>(value));
@@ -358,7 +366,7 @@ const Token* Scanner::scanNumber() {
                 value = boost::convert<long>(num, ccnv(std::dec)).value();
             }
         } catch (boost::bad_optional_access const&) {
-            logger_->error(pos, "invalid integer literal: " + num + ".");
+            logger_.error(pos, "invalid integer literal: " + num + ".");
             value = 0;
         }
         if (value >= std::numeric_limits<int>::lowest() && value <= std::numeric_limits<int>::max()) {

@@ -7,10 +7,6 @@
 #include "RecordTypeNode.h"
 #include "NodeVisitor.h"
 
-void RecordTypeNode::addField(std::unique_ptr<FieldNode> field) {
-    fields_.push_back(std::move(field));
-}
-
 unsigned int RecordTypeNode::getSize() const {
     unsigned int size = 0;
     for (auto &&itr : fields_) {
@@ -50,7 +46,7 @@ void RecordTypeNode::accept(NodeVisitor &visitor) {
 
 void RecordTypeNode::print(std::ostream &out) const {
     if (this->isAnonymous()) {
-        out << "RECORD...";
+        out << "record type";
     } else {
         out << *this->getIdentifier();
     }

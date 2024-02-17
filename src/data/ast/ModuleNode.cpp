@@ -8,6 +8,14 @@
 #include "NodeVisitor.h"
 #include <algorithm>
 
+void ModuleNode::setAlias(std::string alias) {
+    alias_ = alias;
+}
+
+std::string ModuleNode::getAlias() const {
+    return alias_;
+}
+
 void ModuleNode::addImport(std::unique_ptr<ImportNode> import) {
     imports_.push_back(std::move(import));
 }
@@ -18,32 +26,6 @@ ImportNode* ModuleNode::getImport(size_t num) const {
 
 size_t ModuleNode::getImportCount() const {
     return imports_.size();
-}
-
-void ModuleNode::addExternalModule(std::unique_ptr<ModuleNode> module) {
-    modules_.push_back(std::move(module));
-}
-
-void ModuleNode::addExternalProcedure(ProcedureNode *proc) {
-    if (std::find(extprocs_.begin(), extprocs_.end(), proc) == extprocs_.end()) {
-        extprocs_.push_back(proc);
-    }
-}
-
-ProcedureNode *ModuleNode::getExternalProcedure(size_t num) const {
-    return extprocs_.at(num);
-}
-
-size_t ModuleNode::getExternalProcedureCount() const {
-    return extprocs_.size();
-}
-
-void ModuleNode::setAlias(std::string alias) {
-    alias_ = alias;
-}
-
-std::string ModuleNode::getAlias() const {
-    return alias_;
 }
 
 void ModuleNode::accept(NodeVisitor& visitor) {

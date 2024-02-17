@@ -6,10 +6,13 @@ VAR a, b: INTEGER;
 PROCEDURE IncDec;
 VAR i: INTEGER;
     l: LONGINT;
+    a: ARRAY 10 OF INTEGER;
+    r: RECORD x: INTEGER END;
+    p: POINTER TO LONGINT;
 BEGIN
     i := 0;
     l := 0;
-    INC(i, 10);
+    INC(a[0], p^);
     INC(l);
     Out.String("["); Out.Int(i, 0); Out.String(","); Out.Long(l, 0); Out.String("]"); Out.Ln;
     DEC(i, 5);
@@ -73,9 +76,11 @@ BEGIN
     RolRor;
     Odd(a);
     Odd(b);
+    ASSERT(~ODD(0));
+    ASSERT(ODD(1));
     ASSERT(a > b);
     Out.String("Passed assertion."); Out.Ln;
-    IF (a > b) THEN HALT(1) END;
+    IF (a < b) THEN HALT(1) END;
     Out.String("Passed halt."); Out.Ln;
     HALT(0);
     Out.String("Unreachable!")
