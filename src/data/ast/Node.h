@@ -23,7 +23,7 @@ enum class NodeType : char {
     field, parameter, variable, constant, type,
     integer, real, boolean, string, pointer,
     value_reference,
-    assignment, loop, while_loop, repeat_loop, for_loop, if_then_else, else_if, procedure_call, qualified_statement, ret
+    assignment, loop, while_loop, repeat_loop, for_loop, if_then_else, else_if, qualified_statement, ret
 };
 
 class NodeVisitor;
