@@ -864,6 +864,30 @@ LLVMIRBuilder::predefinedCall(PredefinedProcedure *proc, QualIdent *ident,
         value_ = builder_.CreateLoad(builder_.getInt32Ty(), params[0]);
         value_ = builder_.CreateAnd(value_, value);
         return builder_.CreateStore(value_, params[0]);
+    } else if (kind == ProcKind::ORD) {
+        auto param = actuals->parameters()[0].get();
+        if (param->getType()->isBoolean()) {
+            Value *value = builder_.CreateAlloca(builder_.getInt32Ty());
+            auto tail = BasicBlock::Create(builder_.getContext(), "tail", function_);
+            auto return1 = BasicBlock::Create(builder_.getContext(), "true", function_);
+            auto return0 = BasicBlock::Create(builder_.getContext(), "false", function_);
+            builder_.CreateCondBr(params[0], return1, return0);
+            builder_.SetInsertPoint(return1);
+            builder_.CreateStore(ConstantInt::get(builder_.getInt32Ty(), 0x1), value);
+            builder_.CreateBr(tail);
+            builder_.SetInsertPoint(return0);
+            builder_.CreateStore(ConstantInt::get(builder_.getInt32Ty(), 0x0), value);
+            builder_.CreateBr(tail);
+            builder_.SetInsertPoint(tail);
+            value_ = builder_.CreateLoad(builder_.getInt32Ty(), value);
+        } else if (param->getType()->isChar()) {
+            logger_.error(param->pos(), "type CHAR is not yet supported.");
+        } else if (param->getType()->isSet()) {
+            value_ = params[0];
+        } else {
+            logger_.error(param->pos(), "type mismatch: BOOLEAN, CHAR, or SET expected.");
+        }
+        return value_;
     } else {
         logger_.error(ident->start(), "unsupported predefined procedure: " + to_string(*ident) + ".");
         // to generate correct LLVM IR, the current value is returned (no-op).

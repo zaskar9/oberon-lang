@@ -62,5 +62,6 @@ BEGIN
     P3(7, 15);
     s := EmptySet; v := 12;
     INCL(s, v); Out.Set(s); Out.Ln; ASSERT(v IN s);
-    EXCL(s, v); Out.Set(s); Out.Ln; ASSERT(~(v IN s))
+    EXCL(s, v); Out.Set(s); Out.Ln; ASSERT(~(v IN s));
+    Out.Hex(ORD(FullSet)); Out.Ln
 END Sets.
