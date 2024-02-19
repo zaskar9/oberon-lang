@@ -853,6 +853,17 @@ LLVMIRBuilder::predefinedCall(PredefinedProcedure *proc, QualIdent *ident,
         auto array = dynamic_cast<ArrayTypeNode *>(actuals->parameters()[0]->getType());
         value_ = builder_.getInt64(array->getDimension());
         return value_;
+    } else if (kind == ProcKind::INCL) {
+        Value *value = builder_.CreateShl(ConstantInt::get(builder_.getInt32Ty(), 0x1), params[1]);
+        value_ = builder_.CreateLoad(builder_.getInt32Ty(), params[0]);
+        value_ = builder_.CreateOr(value_, value);
+        return builder_.CreateStore(value_, params[0]);
+    } else if (kind == ProcKind::EXCL) {
+        Value *value = builder_.CreateShl(ConstantInt::get(builder_.getInt32Ty(), 0x1), params[1]);
+        value = builder_.CreateXor(ConstantInt::get(builder_.getInt32Ty(), 0xffffffff), value);
+        value_ = builder_.CreateLoad(builder_.getInt32Ty(), params[0]);
+        value_ = builder_.CreateAnd(value_, value);
+        return builder_.CreateStore(value_, params[0]);
     } else {
         logger_.error(ident->start(), "unsupported predefined procedure: " + to_string(*ident) + ".");
         // to generate correct LLVM IR, the current value is returned (no-op).

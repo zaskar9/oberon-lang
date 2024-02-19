@@ -268,7 +268,10 @@ void NodePrettyPrinter::visit(RangeLiteralNode &node) {
 
 void NodePrettyPrinter::visit(UnaryExpressionNode &node) {
     stream_ << node.getOperator();
+    auto expr = node.getExpression();
+    stream_ << (expr->getPrecedence() < node.getPrecedence() ? "(" : "");
     node.getExpression()->accept(*this);
+    stream_ << (expr->getPrecedence() < node.getPrecedence() ? ")" : "");
 }
 
 void NodePrettyPrinter::visit(BinaryExpressionNode &node) {

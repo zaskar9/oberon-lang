@@ -32,6 +32,11 @@ BEGIN
     rt_out_int(val, n)
 END Long;
 
+PROCEDURE Hex*(i: LONGINT);
+BEGIN
+    printf("%X", i)
+END Hex;
+
 PROCEDURE Real*(val: REAL);
 VAR valL: LONGREAL;
 BEGIN

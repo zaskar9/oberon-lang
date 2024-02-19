@@ -6,6 +6,9 @@ CONST
     EmptySet = {};
     FullSet = { 0 .. 31 };
 
+VAR s: SET;
+    v: INTEGER;
+
     PROCEDURE P1(m, n: INTEGER);
     VAR s0, s1, s2: SET;
     BEGIN
@@ -56,5 +59,8 @@ BEGIN
     Out.Set(FullSet); Out.Ln;
     Out.Set(EmptySet); Out.Ln;
     P1(1, 3); Out.Ln;
-    P3(7, 15)
+    P3(7, 15);
+    s := EmptySet; v := 12;
+    INCL(s, v); Out.Set(s); Out.Ln; ASSERT(v IN s);
+    EXCL(s, v); Out.Set(s); Out.Ln; ASSERT(~(v IN s))
 END Sets.
