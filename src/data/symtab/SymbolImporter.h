@@ -29,14 +29,12 @@ private:
     Logger &logger_;
     vector<TypeNode*> types_;
     SymbolTable *symbols_;
-    // std::unique_ptr<ModuleNode> module_;
 
     void readDeclaration(SymbolFile *, NodeType, ModuleNode *);
     TypeNode *readType(SymbolFile *);
     TypeNode *readArrayType(SymbolFile *);
     TypeNode *readProcedureType(SymbolFile *);
     TypeNode *readRecordType(SymbolFile *);
-    TypeNode *readParameter(SymbolFile *);
 
 public:
     explicit SymbolImporter(CompilerConfig &config, ASTContext *context) :

@@ -328,7 +328,11 @@ void LLVMIRBuilder::visit(UnaryExpressionNode &node) {
             value_ = builder_.CreateNot(value_);
             break;
         case OperatorType::NEG:
-            value_ = type->isReal() ? builder_.CreateFNeg(value_) : builder_.CreateNeg(value_);
+            if (type->isSet()) {
+                value_ = builder_.CreateXor(ConstantInt::get(builder_.getInt32Ty(), 0xffffffff), value_);
+            } else {
+                value_ = type->isReal() ? builder_.CreateFNeg(value_) : builder_.CreateNeg(value_);
+            }
             break;
         case OperatorType::AND:
         case OperatorType::OR:
@@ -388,6 +392,49 @@ void LLVMIRBuilder::visit(BinaryExpressionNode &node) {
         phi->addIncoming(lhs, lhsBB);
         phi->addIncoming(value_, rhsBB);
         value_ = phi;
+    } else if (node.getLeftExpression()->getType()->isSet() || node.getRightExpression()->getType()->isSet()) {
+        node.getRightExpression()->accept(*this);
+        cast(*node.getRightExpression());
+        auto rhs = value_;
+        switch (node.getOperator()) {
+            case OperatorType::PLUS:
+                value_ = builder_.CreateOr(lhs, rhs);
+                break;
+            case OperatorType::MINUS:
+                value_ = builder_.CreateXor(ConstantInt::get(builder_.getInt32Ty(), 0xffffffff), rhs);
+                value_ = builder_.CreateAnd(lhs, value_);
+                break;
+            case OperatorType::TIMES:
+                value_ = builder_.CreateAnd(lhs, rhs);
+                break;
+            case OperatorType::DIVIDE:
+                value_ = builder_.CreateXor(lhs, rhs);
+                break;
+            case OperatorType::LEQ:
+                value_ = builder_.CreateXor(ConstantInt::get(builder_.getInt32Ty(), 0xffffffff), rhs);
+                value_ = builder_.CreateAnd(lhs, value_);
+                value_ = builder_.CreateIsNull(value_);
+                break;
+            case OperatorType::GEQ:
+                value_ = builder_.CreateXor(ConstantInt::get(builder_.getInt32Ty(), 0xffffffff), lhs);
+                value_ = builder_.CreateAnd(rhs, value_);
+                value_ = builder_.CreateIsNull(value_);
+                break;
+            case OperatorType::IN:
+                if (!node.getLeftExpression()->getType()->isInteger()) {
+                    logger_.error(node.getLeftExpression()->pos(), "integer expression expected.");
+                }
+                value_ = ConstantInt::get(builder_.getInt32Ty(), 0x1);
+                value_ = builder_.CreateAnd(value_, value_);
+                value_ = builder_.CreateShl(value_, lhs);
+                value_ = builder_.CreateAnd(value_, rhs);
+                value_ = builder_.CreateIsNotNull(value_);
+                break;
+            default:
+                value_ = nullptr;
+                logger_.error(node.pos(), "operator " + to_string(node.getOperator()) + " not applicable here.");
+                break;
+        }
     } else {
         node.getRightExpression()->accept(*this);
         cast(*node.getRightExpression());
@@ -430,12 +477,6 @@ void LLVMIRBuilder::visit(BinaryExpressionNode &node) {
             case OperatorType::GEQ:
                 value_ = floating ? builder_.CreateFCmpUGE(lhs, rhs) : builder_.CreateICmpSGE(lhs, rhs);
                 break;
-            case OperatorType::IN:
-                value_ = ConstantInt::get(builder_.getInt32Ty(), 0x1);
-                value_ = builder_.CreateAnd(value_, value_);
-                value_ = builder_.CreateShl(value_, lhs);
-                value_ = builder_.CreateAnd(value_, rhs);
-                value_ = builder_.CreateIsNotNull(value_);
             case OperatorType::AND:
             case OperatorType::OR:
                 // unreachable code due to the if-branch of this else-branch
@@ -443,11 +484,11 @@ void LLVMIRBuilder::visit(BinaryExpressionNode &node) {
             case OperatorType::NOT:
             case OperatorType::NEG:
                 value_ = nullptr;
-                logger_.error(node.pos(), "unary operator in binary expression.");
+                logger_.error(node.pos(), "unary operator " + to_string(node.getOperator()) + " in binary expression.");
                 break;
             default:
                 value_ = nullptr;
-                logger_.error(node.pos(), "unknown operator.");
+                logger_.error(node.pos(), "operator " + to_string(node.getOperator()) + " not applicable here.");
                 break;
         }
     }
@@ -460,15 +501,15 @@ void LLVMIRBuilder::visit(RangeExpressionNode &node) {
     node.getLower()->accept(*this);
     Value *lower = value_;
     restoreRefMode();
-    result = builder_.CreateLShr(result, lower);
+    result = builder_.CreateShl(result, lower);
     setRefMode(true);
     node.getUpper()->accept(*this);
     Value *upper = value_;
     restoreRefMode();
     Value *diff = builder_.CreateSub(ConstantInt::get(builder_.getInt32Ty(), 31), upper);
     Value *sum = builder_.CreateAdd(diff, lower);
-    result = builder_.CreateShl(result, sum);
-    value_ = builder_.CreateLShr(result, diff);
+    result = builder_.CreateLShr(result, sum);
+    value_ = builder_.CreateShl(result, lower);
 }
 
 void LLVMIRBuilder::visit(SetExpressionNode &node) {
@@ -477,7 +518,7 @@ void LLVMIRBuilder::visit(SetExpressionNode &node) {
     for (auto &elem : node.elements()) {
         setRefMode(true);
         elem->accept(*this);
-        if (elem->getNodeType() != NodeType::range || elem->getNodeType() != NodeType::range_expression) {
+        if (elem->getNodeType() != NodeType::range && elem->getNodeType() != NodeType::range_expression) {
             value_ = builder_.CreateShl(ConstantInt::get(builder_.getInt32Ty(), 0x1), value_);
         }
         result = builder_.CreateOr(result, value_);

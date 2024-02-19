@@ -43,7 +43,8 @@ unique_ptr<ModuleNode> SymbolImporter::read(const string &alias, const string &n
     [[maybe_unused]] auto ident = file->readString();
     auto version = file->readChar();
     if (version != SymbolFile::VERSION) {
-        logger_.error(fp.string(), "Wrong symbol file version.");
+        logger_.error(fp.string(), "Wrong symbol file version: expected " + to_string(SymbolFile::VERSION) +
+                                   ", found " + to_string((int) version) + ".");
         return nullptr;
     }
 #ifdef _DEBUG
@@ -78,7 +79,6 @@ unique_ptr<ModuleNode> SymbolImporter::read(const string &alias, const string &n
 
 void SymbolImporter::readDeclaration(SymbolFile *file, NodeType nodeType, ModuleNode *module) {
     auto name = file->readString();
-    // auto ident = std::make_unique<QualIdent>(module->getIdentifier()->name(), name);
     auto ident = make_unique<IdentDef>(name);
     auto type = readType(file);
     if (nodeType == NodeType::constant) {

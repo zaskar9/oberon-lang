@@ -39,4 +39,16 @@ BEGIN
     printf("%f", valL)
 END Real;
 
+PROCEDURE Set*(set: SET);
+VAR i: INTEGER;
+BEGIN
+    String("{ ");
+    FOR i := 0 TO 31 DO
+        IF i IN set THEN
+            Int(i, 0); String(" ")
+        END
+    END;
+    String("}")
+END Set;
+
 END Out.
