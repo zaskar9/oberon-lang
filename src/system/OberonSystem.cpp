@@ -94,6 +94,7 @@ void Oberon07::initSymbolTable(SymbolTable *symbols) {
                     {{TypeKind::LONGINT,  8}, true},
                     {{TypeKind::REAL,     4}, true},
                     {{TypeKind::LONGREAL, 8}, true},
+                    {{TypeKind::SET,      4}, true},
                     {{TypeKind::STRING,   8}, true}
             }
     );

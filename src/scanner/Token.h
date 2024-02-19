@@ -17,12 +17,13 @@ enum class TokenType : char {
     float_literal, double_literal, string_literal,
     const_ident,
     period, comma, colon, semicolon, rparen, lparen, lbrack, rbrack, lbrace, rbrace, caret,
-    varargs, pipe,
+    varargs, pipe, range,
     op_times, op_divide, op_div, op_mod, op_plus, op_minus, op_and, op_or, op_not,
-    op_eq, op_neq, op_lt, op_gt, op_leq, op_geq, op_becomes,
+    op_eq, op_neq, op_lt, op_gt, op_leq, op_geq, op_becomes, op_in, op_is,
     kw_module, kw_import, kw_procedure, kw_extern, kw_return, kw_begin, kw_end,
     kw_if, kw_then, kw_else, kw_elsif,
     kw_loop, kw_exit, kw_while, kw_do, kw_repeat, kw_until, kw_for, kw_to, kw_by,
+    kw_case,
     kw_array, kw_record, kw_const, kw_type, kw_var, kw_of,
     kw_pointer, kw_nil
 };

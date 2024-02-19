@@ -311,6 +311,14 @@ void LLVMIRBuilder::visit(NilLiteralNode &node) {
     value_ = ConstantPointerNull::get((PointerType*) type);
 }
 
+void LLVMIRBuilder::visit(SetLiteralNode &node) {
+    value_ = ConstantInt::get(builder_.getInt32Ty(), (unsigned int) node.value().to_ulong());
+}
+
+void LLVMIRBuilder::visit(RangeLiteralNode &node) {
+    value_ = ConstantInt::get(builder_.getInt32Ty(), (unsigned int) node.value().to_ulong());
+}
+
 void LLVMIRBuilder::visit(UnaryExpressionNode &node) {
     auto type = node.getType();
     node.getExpression()->accept(*this);
@@ -422,6 +430,12 @@ void LLVMIRBuilder::visit(BinaryExpressionNode &node) {
             case OperatorType::GEQ:
                 value_ = floating ? builder_.CreateFCmpUGE(lhs, rhs) : builder_.CreateICmpSGE(lhs, rhs);
                 break;
+            case OperatorType::IN:
+                value_ = ConstantInt::get(builder_.getInt32Ty(), 0x1);
+                value_ = builder_.CreateAnd(value_, value_);
+                value_ = builder_.CreateShl(value_, lhs);
+                value_ = builder_.CreateAnd(value_, rhs);
+                value_ = builder_.CreateIsNotNull(value_);
             case OperatorType::AND:
             case OperatorType::OR:
                 // unreachable code due to the if-branch of this else-branch
@@ -437,6 +451,39 @@ void LLVMIRBuilder::visit(BinaryExpressionNode &node) {
                 break;
         }
     }
+}
+
+void LLVMIRBuilder::visit(RangeExpressionNode &node) {
+    Value *ones = ConstantInt::get(builder_.getInt32Ty(), 0xffffffff);
+    Value *result = builder_.CreateAnd(ones, ones);
+    setRefMode(true);
+    node.getLower()->accept(*this);
+    Value *lower = value_;
+    restoreRefMode();
+    result = builder_.CreateLShr(result, lower);
+    setRefMode(true);
+    node.getUpper()->accept(*this);
+    Value *upper = value_;
+    restoreRefMode();
+    Value *diff = builder_.CreateSub(ConstantInt::get(builder_.getInt32Ty(), 31), upper);
+    Value *sum = builder_.CreateAdd(diff, lower);
+    result = builder_.CreateShl(result, sum);
+    value_ = builder_.CreateLShr(result, diff);
+}
+
+void LLVMIRBuilder::visit(SetExpressionNode &node) {
+    Value *zero = ConstantInt::get(builder_.getInt32Ty(), 0x0);
+    Value *result = builder_.CreateXor(zero, zero);
+    for (auto &elem : node.elements()) {
+        setRefMode(true);
+        elem->accept(*this);
+        if (elem->getNodeType() != NodeType::range || elem->getNodeType() != NodeType::range_expression) {
+            value_ = builder_.CreateShl(ConstantInt::get(builder_.getInt32Ty(), 0x1), value_);
+        }
+        result = builder_.CreateOr(result, value_);
+        restoreRefMode();
+    }
+    value_ = result;
 }
 
 void LLVMIRBuilder::visit(TypeDeclarationNode &) {}
@@ -851,6 +898,8 @@ Type* LLVMIRBuilder::getLLVMType(TypeNode *type) {
             result = builder_.getDoubleTy();
         } else if (type->kind() == TypeKind::STRING) {
             result = builder_.getPtrTy();
+        } else if (type->kind() == TypeKind::SET) {
+            result = builder_.getInt32Ty();
         }
         types_[type] = result;
     }
@@ -884,7 +933,7 @@ MaybeAlign LLVMIRBuilder::getLLVMAlign(TypeNode *type) {
     } else if (type->getNodeType() == NodeType::basic_type) {
         return { layout.getPrefTypeAlign(getLLVMType(type)) };
     }
-    return MaybeAlign();
+    return {};
 }
 
 void LLVMIRBuilder::setRefMode(bool deref) {

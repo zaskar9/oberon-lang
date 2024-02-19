@@ -40,9 +40,13 @@ public:
     virtual void visit(RealLiteralNode &) = 0;
     virtual void visit(StringLiteralNode &) = 0;
     virtual void visit(NilLiteralNode &) = 0;
+    virtual void visit(SetLiteralNode &) = 0;
+    virtual void visit(RangeLiteralNode &) = 0;
 
     virtual void visit(UnaryExpressionNode &) = 0;
     virtual void visit(BinaryExpressionNode &) = 0;
+    virtual void visit(RangeExpressionNode &) = 0;
+    virtual void visit(SetExpressionNode &) = 0;
 
     virtual void visit(ArrayTypeNode &) = 0;
     virtual void visit(BasicTypeNode &) = 0;

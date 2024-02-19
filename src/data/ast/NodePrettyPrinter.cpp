@@ -102,11 +102,11 @@ void NodePrettyPrinter::visit(ProcedureNode& node) {
     indent();
     stream_ << "PROCEDURE " << *node.getIdentifier() << "(*" << node.getLevel() << "*)(";
     auto type = dynamic_cast<ProcedureTypeNode *>(node.getType());
-    string s;
+    string sep;
     for (auto &param : type->parameters()) {
-        stream_ << s;
+        stream_ << sep;
         param->accept(*this);
-        s = "; ";
+        sep = "; ";
     }
     if (type->hasVarArgs()) {
         stream_ << "; ...";
@@ -158,7 +158,7 @@ void NodePrettyPrinter::selectors(std::vector<unique_ptr<Selector>> &selectors) 
         if (type == NodeType::parameter) {
             auto params = dynamic_cast<ActualParameters *>(selector);
             stream_ << "(";
-            string sep = "";
+            string sep;
             for (auto &param : params->parameters()) {
                 stream_ << sep;
                 param->accept(*this);
@@ -168,7 +168,7 @@ void NodePrettyPrinter::selectors(std::vector<unique_ptr<Selector>> &selectors) 
         } else if (type == NodeType::array_type) {
             auto indices = dynamic_cast<ArrayIndex *>(selector);
             stream_ << "[";
-            string sep = "";
+            string sep;
             for (auto &index : indices->indices()) {
                 stream_ << sep;
                 index->accept(*this);
@@ -234,8 +234,36 @@ void NodePrettyPrinter::visit(StringLiteralNode &node) {
     stream_ << "\"" << Scanner::escape(node.value()) << "\"";
 }
 
-void NodePrettyPrinter::visit([[maybe_unused]] NilLiteralNode &node) {
+void NodePrettyPrinter::visit(NilLiteralNode &) {
     stream_ << "NIL";
+}
+
+void NodePrettyPrinter::visit(SetLiteralNode &node) {
+    if (node.value().none()) {
+        stream_ << "{}";
+    } else {
+        auto set = node.value();
+        string sep;
+        stream_ << "{ ";
+        for (std::size_t bit = 0; bit < set.size(); ++bit) {
+            if (set.test(bit)) {
+                stream_ << sep << bit;
+                sep = ", ";
+            }
+        }
+        stream_ << " } (* " << set.to_ulong() << ": " << set << " *)";
+    }
+}
+
+void NodePrettyPrinter::visit(RangeLiteralNode &node) {
+    auto set = node.value();
+    string sep;
+    for (std::size_t bit = 0; bit < set.size(); ++bit) {
+        if (set.test(bit)) {
+            stream_ << sep << bit;
+            sep = ", ";
+        }
+    }
 }
 
 void NodePrettyPrinter::visit(UnaryExpressionNode &node) {
@@ -253,6 +281,27 @@ void NodePrettyPrinter::visit(BinaryExpressionNode &node) {
     stream_ << (rhs->getPrecedence() < node.getPrecedence() ? "(" : "");
     node.getRightExpression()->accept(*this);
     stream_ << (rhs->getPrecedence() < node.getPrecedence() ? ")" : "");
+}
+
+void NodePrettyPrinter::visit(RangeExpressionNode &node) {
+    node.getLower()->accept(*this);
+    stream_ << " .. ";
+    node.getUpper()->accept(*this);
+}
+
+void NodePrettyPrinter::visit(SetExpressionNode &node) {
+    if (node.isEmptySet()) {
+        stream_ << "{}";
+    } else {
+        stream_ << "{ ";
+        string sep;
+        for (auto &element : node.elements()) {
+            stream_ << sep;
+            element->accept(*this);
+            sep = ", ";
+        }
+        stream_ << " }";
+    }
 }
 
 void NodePrettyPrinter::visit(ArrayTypeNode &node) {

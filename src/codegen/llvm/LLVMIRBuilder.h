@@ -89,9 +89,13 @@ private:
     void visit(RealLiteralNode &) override;
     void visit(StringLiteralNode &) override;
     void visit(NilLiteralNode &) override;
+    void visit(SetLiteralNode &) override;
+    void visit(RangeLiteralNode &) override;
 
     void visit(UnaryExpressionNode &) override;
     void visit(BinaryExpressionNode &) override;
+    void visit(RangeExpressionNode &) override;
+    void visit(SetExpressionNode &) override;
 
     void visit(TypeDeclarationNode &) override;
     void visit(ArrayTypeNode &) override;

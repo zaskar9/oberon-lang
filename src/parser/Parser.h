@@ -46,8 +46,6 @@ private:
 
     unique_ptr<Ident> ident();
     unique_ptr<QualIdent> qualident();
-    unique_ptr<QualIdent> designator(vector<unique_ptr<Selector>> &);
-    unique_ptr<Selector> selector();
     unique_ptr<IdentDef> identdef(bool checkAlphaNum = true);
     void ident_list(vector<unique_ptr<IdentDef>> &idents);
 
@@ -71,6 +69,10 @@ private:
     unique_ptr<ExpressionNode> term();
     unique_ptr<ExpressionNode> factor();
     unique_ptr<ExpressionNode> basic_factor();
+    unique_ptr<QualIdent> designator(vector<unique_ptr<Selector>> &);
+    unique_ptr<Selector> selector();
+    unique_ptr<ExpressionNode> set();
+    unique_ptr<ExpressionNode> element();
 
     TypeNode* type(Ident * = nullptr);
 
@@ -98,7 +100,7 @@ private:
     bool assertToken(const Token *token, TokenType expected);
     bool assertOberonIdent(const Ident *ident);
 
-    void resync(set<TokenType> types);
+    void resync(std::set<TokenType> types);
 
 public:
     explicit Parser(CompilerConfig &config, Scanner &scanner, Sema &sema) :
