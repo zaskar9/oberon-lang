@@ -67,6 +67,15 @@ void LLVMIRBuilder::visit(ModuleNode &node) {
     for (size_t i = 0; i < node.getImportCount(); ++i) {
         node.getImport(i)->accept(*this);
     }
+    // initialize array sizes
+//    for (size_t i = 0; i < node.getVariableCount(); ++i) {
+//        auto variable = node.getVariable(i);
+//        if (variable->getType()->isArray()) {
+//            auto array_t = dynamic_cast<ArrayTypeNode*>(variable->getType());
+//            value_ = values_[variable];
+//            value_ = builder_.CreateStore(builder_.getInt64(array_t->getDimension()), value_);
+//        }
+//    }
     // generate code for statements
     if (node.statements()->getStatementCount() > 0) {
         node.statements()->accept(*this);
@@ -195,13 +204,15 @@ TypeNode *LLVMIRBuilder::selectors(TypeNode *base, SelectorIterator start, Selec
             selector_t = type->getReturnType();
         } else if (sel->getNodeType() == NodeType::array_type) {
             // handle array index access
-            // indices.push_back(builder_.getInt32(1));   // the array is the second field in the struct
+            indices.push_back(builder_.getInt32(1));   // the array is the second field in the struct
             setRefMode(true);
             // TODO add support for multi-dimensional arrays
             dynamic_cast<ArrayIndex*>(sel)->indices()[0]->accept(*this);
             indices.push_back(value_);
             restoreRefMode();
+            value = processGEP(base, value, indices);
             selector_t = dynamic_cast<ArrayTypeNode*>(selector_t)->getMemberType();
+            base = selector_t;
         } else if (sel->getNodeType() == NodeType::pointer_type) {
             // output the GEP up to the pointer
             value = processGEP(base, value, indices);
@@ -219,7 +230,9 @@ TypeNode *LLVMIRBuilder::selectors(TypeNode *base, SelectorIterator start, Selec
                     break;
                 }
             }
+            value = processGEP(base, value, indices);
             selector_t = field->getType();
+            base = selector_t;
         } else if (sel->getNodeType() == NodeType::type) {
             logger_.error(sel->pos(), "type-guards are not yet supported.");
         } else {
@@ -850,8 +863,11 @@ LLVMIRBuilder::predefinedCall(PredefinedProcedure *proc, QualIdent *ident,
         builder_.SetInsertPoint(tail);
         return value_;
     } else if (kind == ProcKind::LEN) {
-        auto array = dynamic_cast<ArrayTypeNode *>(actuals->parameters()[0]->getType());
-        value_ = builder_.getInt64(array->getDimension());
+        auto array_t = getLLVMType(actuals->parameters()[0]->getType());
+        value_ = builder_.CreateInBoundsGEP(array_t, params[0], {builder_.getInt32(0)});
+        value_ = builder_.CreateLoad(builder_.getInt64Ty(), value_);
+        // auto array = dynamic_cast<ArrayTypeNode *>(actuals->parameters()[0]->getType());
+        // value_ = builder_.getInt64(array->getDimension());
         return value_;
     } else if (kind == ProcKind::INCL) {
         Value *value = builder_.CreateShl(ConstantInt::get(builder_.getInt32Ty(), 0x1), params[1]);
@@ -939,8 +955,10 @@ Type* LLVMIRBuilder::getLLVMType(TypeNode *type) {
     } else if (types_[type] != nullptr) {
         result = types_[type];
     } else if (type->getNodeType() == NodeType::array_type) {
+        // create a struct that stores the size and the elements of the array
         auto array_t = dynamic_cast<ArrayTypeNode *>(type);
         result = ArrayType::get(getLLVMType(array_t->getMemberType()), array_t->getDimension());
+        result = StructType::create(builder_.getContext(), { builder_.getInt64Ty(), result });
         types_[type] = result;
     } else if (type->getNodeType() == NodeType::record_type) {
         // create an empty struct and add it to the lookup table immediately to support recursive records

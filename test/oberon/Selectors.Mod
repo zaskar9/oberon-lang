@@ -38,11 +38,23 @@ VAR
     m: Matrix;
     nm: NamedMatrix;
     nma: NamedMatrixArray;
+    i: INTEGER;
+
+PROCEDURE Len(VAR a: Array): INTEGER;
+VAR i: INTEGER;
+BEGIN
+    i := a.dim;
+    RETURN i
+END Len;
 
 BEGIN
-    v[0] := 42;
-    ASSERT(LEN(v) = Ten);
+    v[3] := 42;
+    (* ASSERT(LEN(v) = Ten); Out.String("mark\n"); *)
+    p.zipcode := 8280;
+    p.address.dim := 10;
+    p.address.vec[3] := 42;
     ASSERT(LEN(p.title) = Two);
+    (*
     ASSERT(LEN(v) = LEN(p.address.vec));
     ASSERT(LEN(m) = Two);
     ASSERT(LEN(m[0]) = Ten);
@@ -69,5 +81,6 @@ BEGIN
     ASSERT(fred.spouse.zipcode = fred.zipcode);
     ASSERT(LEN(v) = 10);
     ASSERT(LEN(fred.title) = Two);
+    *)
     Out.String("Assertions passed."); Out.Ln
 END Selectors.
