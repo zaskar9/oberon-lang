@@ -1,44 +1,33 @@
-//
-// Created by Michael Grossniklaus on 9/16/22.
-//
-
-#include "runtime.h"
-
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <time.h>
+#include "../../liboberon/ieee754.h"
 
-#include "ieee754.h"
-
-float rt_realf(int x) {
-    return (float) x;
+int rt_reals_expo(float x) {
+    union ieee754_float f = { .f = x };
+    return f.ieee.exponent;
 }
 
-int rt_entierf(float x) {
-    return (int) floorf(x);
+int rt_reals_expoL(double x) {
+    union ieee754_double d = { .d = x };
+    return d.ieee.exponent;
 }
 
-int rt_timespec_get(struct timespec* const time_spec, int const base) {
-    return timespec_get(time_spec, base);
+float rt_reals_ten(int e) {
+    return powf(10.0, e);
 }
 
-void rt_out_int(long i, int n) {
-    if (n < 0) {
-        n = 0;
-    }
-    char buf[21]; // 64-bit is maximally 20 digits (with sign), long plus '\0'
-    sprintf(buf, "%ld", i);
-    int len = strlen(buf);
-    if (len < n) {
-        char *out = (char*) malloc((n + 1) * sizeof(char));
-        int diff = n - len;
-        memmove(out + diff, buf, len + 1);
-        memset(out, ' ', diff);
-        printf("%s", out);
-    } else {
-        printf("%s", buf);
+double rt_reals_tenL(int e) {
+    return pow(10.0, e);
+}
+
+void rt_reals_convert(float x, int n, char* d) {
+    int i = (int) floorf(x);
+    int k = 0;
+    while (k < n) {
+        d[k] = (char)(i % 10 + 0x30);
+        i = i / 10;
+        ++k;
     }
 }
 
@@ -110,30 +99,28 @@ void rt_out_real(float x, int n) {
     }
 }
 
-int rt_reals_expo(float x) {
-    union ieee754_float f = { .f = x };
-    return f.ieee.exponent;
-}
-
-int rt_reals_expoL(double x) {
-    union ieee754_double d = { .d = x };
-    return d.ieee.exponent;
-}
-
-float rt_reals_ten(int e) {
-    return powf(10.0, e);
-}
-
-double rt_reals_tenL(int e) {
-    return pow(10.0, e);
-}
-
-void rt_reals_convert(float x, int n, char* d) {
-    int i = (int) floorf(x);
-    int k = 0;
-    while (k < n) {
-        d[k] = (char)(i % 10 + 0x30);
-        i = i / 10;
-        ++k;
-    }
+int main(void) {
+    float e = 2.7182818284;
+    float pi = 3.1415926535;
+    int i1 = 1;
+    int i2 = 2;
+    float f1 = pi; rt_out_real(f1, 16); printf("\n");
+    f1 = i1; rt_out_real(f1, 16); printf("\n");
+    float f2 = i1 + i2; rt_out_real(f2, 16); printf("\n");
+    f2 = i1 - f2; rt_out_real(f2, 16); printf("\n");
+    f2 = f1 * i2; rt_out_real(f2, 16); printf("\n");
+    f2 = f1 / f2; rt_out_real(f2, 16); printf("\n");
+    rt_out_real(sqrtf(2), 16); printf("\n");
+    rt_out_real(expf(12.0), 16); printf("\n");
+    rt_out_real(logf(e), 16); printf("\n");
+    rt_out_real(sinf(pi), 16); printf("\n");
+    rt_out_real(cosf(pi), 16); printf("\n");
+    rt_out_real(atan(pi), 16); printf("\n");
+    printf("3\n");
+    rt_out_real(3, 16); printf("\n");
+    f1 = 0.1;
+    f2 = 0.2;
+    rt_out_real(f1 + f2, 16); printf("\n");
+    rt_out_real(9 / 5, 16); printf("\n");
+    return 0;
 }
