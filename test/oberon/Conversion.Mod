@@ -99,8 +99,8 @@ BEGIN
     f := i;
     AssertRealEqual(f, 0);
     AssertRealEqual(f, i);
-    Out.Real(i); Out.Ln;
-    Out.Real(f); Out.Ln;
+    Out.Real(i, 16); Out.Ln;
+    Out.Real(f, 16); Out.Ln;
     d := 0;
     d := i;
     d := l;

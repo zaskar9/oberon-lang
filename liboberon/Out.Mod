@@ -3,8 +3,11 @@ MODULE Out;
 (* Import `printf` function from C <stdio.h> library. *)
 PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
 
-(* Import `rt_out_int` from Oberon runtime library. *)
+(* Import `void rt_out_int(long, int)` from Oberon runtime library. *)
 PROCEDURE rt_out_int(i: LONGINT; n: INTEGER); EXTERN;
+
+(* Import `void rt_out_real(float, int)` from Oberon runtime library. *)
+PROCEDURE rt_out_real(x: REAL; n: INTEGER); EXTERN;
 
 (* Writes a string value to standard out. *)
 PROCEDURE String*(str: STRING);
@@ -37,12 +40,15 @@ BEGIN
     printf("%X", i)
 END Hex;
 
-PROCEDURE Real*(val: REAL);
-VAR valL: LONGREAL;
+PROCEDURE Real*(x: REAL; n: INTEGER);
 BEGIN
-    valL := val;
-    printf("%f", valL)
+    rt_out_real(x, n)
 END Real;
+
+PROCEDURE LongReal*(val: REAL);
+BEGIN
+    printf("%f", val)
+END LongReal;
 
 PROCEDURE Set*(set: SET);
 VAR i: INTEGER;
