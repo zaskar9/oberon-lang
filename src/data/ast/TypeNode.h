@@ -55,6 +55,8 @@ public:
     [[nodiscard]] bool isInteger() const;
     [[nodiscard]] bool isReal() const;
     [[nodiscard]] bool isString() const;
+    [[nodiscard]] bool isSet() const;
+    [[nodiscard]] bool isChar() const;
 
     void setRef(int);
     [[nodiscard]] int getRef() const;

@@ -82,7 +82,6 @@ int main(const int argc, const char **argv) {
                               << BOOST_VERSION / 100 % 1000 << "."
                               << BOOST_VERSION % 100 << ", ";
         cout << "LLVM " << LLVM_VERSION << endl;
-
         return EXIT_SUCCESS;
     } else if (vm.count("inputs")) {
         if (vm.count("quiet")) {

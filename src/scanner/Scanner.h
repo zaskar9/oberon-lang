@@ -35,7 +35,7 @@ private:
     CompilerConfig &config_;
     Logger &logger_;
     const path &path_;
-    queue<const Token*> tokens_;
+    queue<unique_ptr<const Token>> tokens_;
     int lineNo_, charNo_;
     char ch_;
     bool eof_;
@@ -45,10 +45,10 @@ private:
     void init();
     void read();
     FilePos current();
-    const Token* scanToken();
-    const Token* scanIdent();
-    const Token* scanNumber();
-    const Token* scanString();
+    unique_ptr<const Token> scanToken();
+    unique_ptr<const Token> scanIdent();
+    unique_ptr<const Token> scanNumber();
+    unique_ptr<const Token> scanString();
     void scanComment();
 
 public:

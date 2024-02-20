@@ -229,6 +229,10 @@ void LambdaLifter::visit(StringLiteralNode &) {}
 
 void LambdaLifter::visit(NilLiteralNode &) {}
 
+void LambdaLifter::visit(SetLiteralNode &) {}
+
+void LambdaLifter::visit(RangeLiteralNode &) {}
+
 void LambdaLifter::visit(UnaryExpressionNode &node) {
     node.getExpression()->accept(*this);
 }
@@ -236,6 +240,17 @@ void LambdaLifter::visit(UnaryExpressionNode &node) {
 void LambdaLifter::visit(BinaryExpressionNode &node) {
     node.getLeftExpression()->accept(*this);
     node.getRightExpression()->accept(*this);
+}
+
+void LambdaLifter::visit(RangeExpressionNode &node) {
+    node.getLower()->accept(*this);
+    node.getUpper()->accept(*this);
+}
+
+void LambdaLifter::visit(SetExpressionNode &node) {
+    for (auto &element : node.elements()) {
+        element->accept(*this);
+    }
 }
 
 void LambdaLifter::visit(TypeDeclarationNode &node) {

@@ -74,81 +74,6 @@ unique_ptr<IdentDef> Parser::identdef(bool checkAlphaNum) {
     return make_unique<IdentDef>(identifier->start(), identifier->end(), identifier->name(), exp);
 }
 
-// designator = qualident { selector } .
-unique_ptr<QualIdent> Parser::designator(vector<unique_ptr<Selector>> &selectors) {
-    logger_.debug("designator");
-    auto ident = qualident();
-    auto token = scanner_.peek();
-    while (token->type() == TokenType::period ||
-           token->type() == TokenType::lbrack ||
-           token->type() == TokenType::caret ||
-           token->type() == TokenType::lparen) {
-        auto sel = selector();
-        if (sel) {
-            selectors.push_back(std::move(sel));
-        } else {
-            break;
-        }
-        token = scanner_.peek();
-    }
-    return ident;
-}
-
-// selector = "." ident | "[" expression_list "]" | "^" | "(" qualident | [ expression_list ] ")" .
-unique_ptr<Selector> Parser::selector() {
-    logger_.debug("selector");
-    auto token = scanner_.peek();
-    if (token->type() == TokenType::period) {
-        token_ = scanner_.next();
-        auto pos = token_->start();
-        return make_unique<RecordField>(pos, ident());
-    } else if (token->type() == TokenType::lbrack) {
-        auto pos = token->start();
-        token_ = scanner_.next();
-        vector<unique_ptr<ExpressionNode>> expressions;
-        expression_list(expressions);
-        if (expressions.empty()) {
-            logger_.error(token_->start(), "expression expected.");
-        }
-        auto sel = make_unique<ArrayIndex>(pos, std::move(expressions));
-        token_ = scanner_.next();
-        if (token_->type() != TokenType::rbrack) {
-            logger_.error(token_->start(), "] expected, found " + to_string(token_->type()) + ".");
-        }
-        return sel;
-    } else if (token->type() == TokenType::caret) {
-        token_ = scanner_.next();
-        return make_unique<Dereference>(token_->start());
-    } else if (token->type() == TokenType::lparen) {
-        token_ = scanner_.next(); // skip left parenthesis
-        FilePos start = token_->start();
-        unique_ptr<Selector> sel = nullptr;
-        if (scanner_.peek()->type() == TokenType::const_ident) {
-            auto ident = qualident();
-            if (sema_.isType(ident.get())) {
-                logger_.debug("typeguard");
-                sel = make_unique<Typeguard>(start, std::move(ident));
-            } else {
-                scanner_.seek(ident->start());
-            }
-        }
-        if (!sel) {
-            vector<std::unique_ptr<ExpressionNode>> params;
-            auto debug = scanner_.peek()->type();
-            if (debug != TokenType::rparen) {
-                expression_list(params);
-            }
-            logger_.debug("actual_parameters");
-            sel = make_unique<ActualParameters>(start, std::move(params));
-        }
-        token_ = scanner_.next(); // skip right parenthesis
-        assertToken(token_.get(), TokenType::rparen);
-        return sel;
-    }
-    logger_.error(token_->start(), "selector expected.");
-    return nullptr;
-}
-
 // ident_list = identdef { "," identdef } .
 void Parser::ident_list(vector<unique_ptr<IdentDef>> &idents) {
     logger_.debug("ident_list");
@@ -842,7 +767,7 @@ void Parser::expression_list(vector<unique_ptr<ExpressionNode>> &expressions) {
     }
 }
 
-// expression = simple_expression [ ( "=" | "#" | "<" | "<=" | ">" | ">=" ) simple_expression ] .
+// expression = simple_expression [ ( "=" | "#" | "<" | "<=" | ">" | ">=" | "IN" | "IS" ) simple_expression ] .
 unique_ptr<ExpressionNode> Parser::expression() {
     logger_.debug("expression");
     auto result = simple_expression();
@@ -852,7 +777,9 @@ unique_ptr<ExpressionNode> Parser::expression() {
         || token == TokenType::op_lt
         || token == TokenType::op_leq
         || token == TokenType::op_gt
-        || token == TokenType::op_geq) {
+        || token == TokenType::op_geq
+        || token == TokenType::op_in
+        || token == TokenType::op_is) {
         token_ = scanner_.next();
         OperatorType op = token_to_operator(token_->type());
         auto rhs = simple_expression();
@@ -927,7 +854,7 @@ unique_ptr<ExpressionNode> Parser::factor() {
     return basic_factor();
 }
 
-// basic_factor = designator | integer | real | string | "NIL" | "TRUE" | "FALSE" | "(" expression ")" .
+// basic_factor = designator | set |  "(" expression ")" | number | string | TRUE | FALSE | NIL | "~" factor.
 unique_ptr<ExpressionNode> Parser::basic_factor() {
     logger_.debug("basic_factor");
     auto token = scanner_.peek();
@@ -939,6 +866,16 @@ unique_ptr<ExpressionNode> Parser::basic_factor() {
             return sema_.onQualifiedConstant(pos, EMPTY_POS, std::move(ident), std::move(selectors));
         }
         return sema_.onQualifiedExpression(pos, EMPTY_POS, std::move(ident), std::move(selectors));
+    } else if (token->type() == TokenType::lbrace) {
+        return set();
+    } else if (token->type() == TokenType::lparen) {
+        scanner_.next();   // skip opening parenthesis
+        auto expr = expression();
+        token = scanner_.peek();
+        if (assertToken(token, TokenType::rparen)) {
+            scanner_.next();
+        }
+        return expr;
     }
     auto tmp = scanner_.next();
     if (token->type() == TokenType::int_literal) {
@@ -961,17 +898,116 @@ unique_ptr<ExpressionNode> Parser::basic_factor() {
         return sema_.onBooleanLiteral(boolean->start(), boolean->end(), boolean->value());
     } else if (token->type() == TokenType::kw_nil) {
         return sema_.onNilLiteral(tmp->start(), tmp->end());
-    } else if (token->type() == TokenType::lparen) {
-        auto expr = expression();
-        token = scanner_.peek();
-        if (assertToken(token, TokenType::rparen)) {
-            scanner_.next();
-        }
-        return expr;
     } else {
         logger_.error(token->start(), "unexpected token: " + to_string(token->type()) + ".");
         return nullptr;
     }
+}
+
+// designator = qualident { selector } .
+unique_ptr<QualIdent> Parser::designator(vector<unique_ptr<Selector>> &selectors) {
+    logger_.debug("designator");
+    auto ident = qualident();
+    auto token = scanner_.peek();
+    while (token->type() == TokenType::period ||
+           token->type() == TokenType::lbrack ||
+           token->type() == TokenType::caret ||
+           token->type() == TokenType::lparen) {
+        auto sel = selector();
+        if (sel) {
+            selectors.push_back(std::move(sel));
+        } else {
+            break;
+        }
+        token = scanner_.peek();
+    }
+    return ident;
+}
+
+// selector = "." ident | "[" expression_list "]" | "^" | "(" qualident | [ expression_list ] ")" .
+unique_ptr<Selector> Parser::selector() {
+    logger_.debug("selector");
+    auto token = scanner_.peek();
+    if (token->type() == TokenType::period) {
+        token_ = scanner_.next();
+        auto pos = token_->start();
+        return make_unique<RecordField>(pos, ident());
+    } else if (token->type() == TokenType::lbrack) {
+        auto pos = token->start();
+        token_ = scanner_.next();
+        vector<unique_ptr<ExpressionNode>> expressions;
+        expression_list(expressions);
+        if (expressions.empty()) {
+            logger_.error(token_->start(), "expression expected.");
+        }
+        auto sel = make_unique<ArrayIndex>(pos, std::move(expressions));
+        token_ = scanner_.next();
+        if (token_->type() != TokenType::rbrack) {
+            logger_.error(token_->start(), "] expected, found " + to_string(token_->type()) + ".");
+        }
+        return sel;
+    } else if (token->type() == TokenType::caret) {
+        token_ = scanner_.next();
+        return make_unique<Dereference>(token_->start());
+    } else if (token->type() == TokenType::lparen) {
+        token_ = scanner_.next(); // skip left parenthesis
+        FilePos start = token_->start();
+        unique_ptr<Selector> sel = nullptr;
+        if (scanner_.peek()->type() == TokenType::const_ident) {
+            auto ident = qualident();
+            if (sema_.isType(ident.get())) {
+                logger_.debug("typeguard");
+                sel = make_unique<Typeguard>(start, std::move(ident));
+            } else {
+                scanner_.seek(ident->start());
+            }
+        }
+        if (!sel) {
+            vector<std::unique_ptr<ExpressionNode>> params;
+            auto debug = scanner_.peek()->type();
+            if (debug != TokenType::rparen) {
+                expression_list(params);
+            }
+            logger_.debug("actual_parameters");
+            sel = make_unique<ActualParameters>(start, std::move(params));
+        }
+        token_ = scanner_.next(); // skip right parenthesis
+        assertToken(token_.get(), TokenType::rparen);
+        return sel;
+    }
+    logger_.error(token_->start(), "selector expected.");
+    return nullptr;
+}
+
+// set = "{" [ element { "," element } ] "}" .
+unique_ptr<ExpressionNode> Parser::set() {
+    logger_.debug("set");
+    vector<unique_ptr<ExpressionNode>> elements;
+    auto token = scanner_.next();   // skip opening brace
+    if (scanner_.peek()->type() == TokenType::rbrace) {
+        token_ = scanner_.next();
+        return sema_.onSetExpression(token->start(), token_->end(), std::move(elements));
+    }
+    elements.push_back(element());
+    while (scanner_.peek()->type() == TokenType::comma) {
+        scanner_.next();   // skip comma
+        elements.push_back(element());
+    }
+    if (assertToken(scanner_.peek(), TokenType::rbrace)) {
+        token_ = scanner_.next();   // skip closing brace
+    }
+    return sema_.onSetExpression(token->start(), token_->end(), std::move(elements));
+}
+
+// element = expression [ ".." expression ] .
+unique_ptr<ExpressionNode> Parser::element() {
+    logger_.debug("element");
+    auto expr = expression();
+    if (scanner_.peek()->type() == TokenType::range) {
+        scanner_.next();   // skip range indicator
+        return sema_.onRangeExpression(expr->pos(), EMPTY_POS, std::move(expr), expression());
+    }
+    return expr;
 }
 
 bool Parser::assertToken(const Token *token, TokenType expected) {
@@ -1006,6 +1042,8 @@ OperatorType token_to_operator(TokenType token) {
         case TokenType::op_geq:    return OperatorType::GEQ;
         case TokenType::op_lt:     return OperatorType::LT;
         case TokenType::op_gt:     return OperatorType::GT;
+        case TokenType::op_in:     return OperatorType::IN;
+        case TokenType::op_is:     return OperatorType::IS;
         case TokenType::op_times:  return OperatorType::TIMES;
         case TokenType::op_divide: return OperatorType::DIVIDE;
         case TokenType::op_div:    return OperatorType::DIV;
@@ -1016,7 +1054,7 @@ OperatorType token_to_operator(TokenType token) {
         case TokenType::op_or:     return OperatorType::OR;
         case TokenType::op_not:    return OperatorType::NOT;
         default:
-            std::cerr << "Cannot map token type to operator." << std::endl;
+            std::cerr << "Parser cannot map token type to operator." << std::endl;
             exit(1);
     }
 }

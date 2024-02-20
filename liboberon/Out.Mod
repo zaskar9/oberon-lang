@@ -32,11 +32,28 @@ BEGIN
     rt_out_int(val, n)
 END Long;
 
+PROCEDURE Hex*(i: LONGINT);
+BEGIN
+    printf("%X", i)
+END Hex;
+
 PROCEDURE Real*(val: REAL);
 VAR valL: LONGREAL;
 BEGIN
     valL := val;
     printf("%f", valL)
 END Real;
+
+PROCEDURE Set*(set: SET);
+VAR i: INTEGER;
+BEGIN
+    String("{ ");
+    FOR i := 0 TO 31 DO
+        IF i IN set THEN
+            Int(i, 0); String(" ")
+        END
+    END;
+    String("}")
+END Set;
 
 END Out.

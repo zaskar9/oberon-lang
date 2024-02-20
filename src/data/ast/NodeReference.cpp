@@ -36,7 +36,7 @@ int QualifiedExpression::getPrecedence() const {
 
 TypeNode *QualifiedExpression::getType() const {
     auto type = ExpressionNode::getType();
-    if (type->kind() == TypeKind::PROCEDURE) {
+    if (type && type->kind() == TypeKind::PROCEDURE) {
         auto proc = dynamic_cast<ProcedureTypeNode *>(type);
         return proc->getReturnType();
     }

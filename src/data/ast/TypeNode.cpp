@@ -93,6 +93,14 @@ bool TypeNode::isString() const {
     return kind_ == TypeKind::STRING;
 }
 
+bool TypeNode::isSet() const {
+    return kind_ == TypeKind::SET;
+}
+
+bool TypeNode::isChar() const {
+    return kind_ == TypeKind::CHAR;
+}
+
 void TypeNode::setRef(int ref) {
     ref_ = ref;
 }

@@ -6,6 +6,7 @@
 #define OBERON_LANG_SEMA_H
 
 
+#include <bitset>
 #include <map>
 #include <memory>
 #include <stack>
@@ -22,6 +23,7 @@
 #include "data/ast/LoopNode.h"
 #include "system/OberonSystem.h"
 
+using std::bitset;
 using std::map;
 using std::stack;
 using std::string;
@@ -42,26 +44,27 @@ private:
     SymbolTable *symbols_;
     SymbolImporter importer_;
     SymbolExporter exporter_;
-    TypeNode *tBoolean_, *tByte_, *tChar_, *tInteger_, *tLongInt_, *tReal_, *tLongReal_, *tString_;
+    TypeNode *tBoolean_, *tByte_, *tChar_, *tInteger_, *tLongInt_, *tReal_, *tLongReal_, *tString_, *tSet_;
 
     bool assertEqual(Ident *, Ident *) const;
     void assertUnique(IdentDef *, DeclarationNode *);
+    long assertInBounds(const IntegerLiteralNode *, long, long);
 
     static void cast(ExpressionNode *, TypeNode *) ;
 
     void checkExport(DeclarationNode *);
 
     bool assertCompatible(const FilePos &, TypeNode *, TypeNode *, bool = false, bool = false);
-    TypeNode *commonType(TypeNode *, TypeNode *) const;
+    TypeNode *commonType(const FilePos &, TypeNode *, TypeNode *) const;
 
-    static ExpressionNode *resolveReference(ExpressionNode *);
-
-    string format(const TypeNode *, bool = false) const;
+    static string format(const TypeNode *, bool = false) ;
 
     bool foldBoolean(const FilePos &, const FilePos &, ExpressionNode *);
     long foldInteger(const FilePos &, const FilePos &, ExpressionNode *);
     double foldReal(const FilePos &, const FilePos &, ExpressionNode *);
     string foldString(const FilePos &, const FilePos &, ExpressionNode *);
+    bitset<32> foldSet(const FilePos &, const FilePos &, ExpressionNode *);
+    bitset<32> foldRange(const FilePos &, const FilePos &, ExpressionNode *);
     unique_ptr<LiteralNode> fold(const FilePos &, const FilePos &, ExpressionNode *);
     unique_ptr<LiteralNode> fold(const FilePos &, const FilePos &,
                                  OperatorType, ExpressionNode *);
@@ -73,7 +76,7 @@ private:
 
     using Selectors = vector<unique_ptr<Selector>>;
     using SelectorIterator = Selectors::iterator;
-    SelectorIterator &handleMissingParameters(TypeNode*, Selectors &, SelectorIterator &);
+    static SelectorIterator &handleMissingParameters(TypeNode*, Selectors &, SelectorIterator &);
     TypeNode *onSelectors(TypeNode*, Selectors &);
     TypeNode *onActualParameters(TypeNode*, ActualParameters*);
     TypeNode *onArrayIndex(TypeNode*, ArrayIndex*);
@@ -158,12 +161,18 @@ public:
                                                   OperatorType,
                                                   unique_ptr<ExpressionNode>,
                                                   unique_ptr<ExpressionNode>);
+    unique_ptr<ExpressionNode> onRangeExpression(const FilePos &, const FilePos &,
+                                                 unique_ptr<ExpressionNode>,
+                                                 unique_ptr<ExpressionNode>);
+    unique_ptr<ExpressionNode> onSetExpression(const FilePos &, const FilePos &,
+                                               vector<unique_ptr<ExpressionNode>>);
 
     unique_ptr<BooleanLiteralNode> onBooleanLiteral(const FilePos &, const FilePos &, bool);
     unique_ptr<IntegerLiteralNode> onIntegerLiteral(const FilePos &, const FilePos &, long, bool = false);
     unique_ptr<RealLiteralNode> onRealLiteral(const FilePos &, const FilePos &, double, bool = false);
     unique_ptr<StringLiteralNode> onStringLiteral(const FilePos &, const FilePos &, const string &);
     unique_ptr<NilLiteralNode> onNilLiteral(const FilePos &, const FilePos &);
+    unique_ptr<SetLiteralNode> onSetLiteral(const FilePos &, const FilePos &, bitset<32>);
 
     bool isDefined(Ident *);
     bool isConstant(QualIdent *);

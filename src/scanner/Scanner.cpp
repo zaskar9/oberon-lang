@@ -5,14 +5,19 @@
  */
 
 
+#include <memory>
+
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/convert.hpp>
 #include <boost/convert/stream.hpp>
+
 #include <config.h>
 #include "Scanner.h"
 #include "IdentToken.h"
 #include "LiteralToken.h"
 #include "UndefinedToken.h"
+
+using std::make_unique;
 
 Scanner::Scanner(CompilerConfig &config, const path &path) : config_(config), logger_(config_.logger()), path_(path),
         tokens_(), lineNo_(1), charNo_(0), ch_{}, eof_(false) {
@@ -33,7 +38,7 @@ Scanner::~Scanner() {
 
 void Scanner::init() {
     keywords_ = { { "DIV", TokenType::op_div }, { "MOD", TokenType::op_mod },
-                  { "OR", TokenType::op_or },
+                  { "OR", TokenType::op_or }, { "IN", TokenType::op_in }, { "IS", TokenType::op_is },
                   { "MODULE", TokenType::kw_module }, { "IMPORT", TokenType::kw_import },
                   { "PROCEDURE", TokenType::kw_procedure }, { "EXTERN", TokenType::kw_extern },
                   { "BEGIN", TokenType::kw_begin }, { "END", TokenType::kw_end },
@@ -45,6 +50,7 @@ void Scanner::init() {
                   { "BY", TokenType::kw_by },
                   { "IF", TokenType::kw_if }, { "THEN", TokenType::kw_then },
                   { "ELSE", TokenType::kw_else }, { "ELSIF", TokenType::kw_elsif },
+                  { "CASE", TokenType::kw_case },
                   { "VAR", TokenType::kw_var }, { "CONST", TokenType::kw_const },
                   { "TYPE", TokenType::kw_type }, { "ARRAY", TokenType::kw_array },
                   { "RECORD", TokenType::kw_record }, { "OF", TokenType::kw_of },
@@ -55,187 +61,151 @@ void Scanner::init() {
 const Token* Scanner::peek(bool advance) {
     if (tokens_.empty()) {
         tokens_.push(scanToken());
-        return tokens_.back();
+        return tokens_.back().get();
     }
     if (advance) {
-        auto token = tokens_.back();
+        auto token = tokens_.back().get();
         tokens_.push(scanToken());
         return token;
     } else {
-        return tokens_.front();
+        return tokens_.front().get();
     }
 }
 
 std::unique_ptr<const Token> Scanner::next() {
-    const Token *token;
     if (tokens_.empty()) {
-        token = scanToken();
+        return scanToken();
     } else {
-        token = tokens_.front();
+        auto token = std::move(tokens_.front());
         tokens_.pop();
+        return token;
     }
-    return std::unique_ptr<const Token>(token);
 }
 
 void Scanner::seek(const FilePos &pos) {
     file_.seekg(pos.offset - (streampos)1);
-    std::queue<const Token*> empty;
+    queue<unique_ptr<const Token>> empty;
     std::swap(tokens_, empty);
     lineNo_ = pos.lineNo;
     charNo_ = pos.charNo - 1;
     ch_ = '\0';
 }
 
-const Token* Scanner::scanToken() {
-    const Token *token;
-    // Skip whitespace
+unique_ptr<const Token> Scanner::scanToken() {
+    // skip whitespace
     while (!eof_ && ch_ <= ' ') {
         read();
     }
     FilePos pos = current();
     if (!eof_) {
         if ((ch_ >= 'A' && ch_ <= 'Z') || (ch_ >= 'a' && ch_ <= 'z') || ch_ == '_') {
-            // Scan identifier
-            token = scanIdent();
+            return scanIdent();
         } else if ((ch_ >= '0') && (ch_ <= '9')) {
-            // Scan integer
-            token = scanNumber();
+            return scanNumber();
         } else if (ch_ == '"') {
-            token = scanString();
+            return scanString();
         } else {
             switch (ch_) {
                 case '&':
                     read();
-                    token = new Token(TokenType::op_and, pos);
-                    break;
+                    return make_unique<Token>(TokenType::op_and, pos);
                 case '*':
                     read();
-                    token = new Token(TokenType::op_times, pos);
-                    break;
+                    return make_unique<Token>(TokenType::op_times, pos);
                 case '/':
                     read();
-                    token = new Token(TokenType::op_divide, pos);
-                    break;
+                    return make_unique<Token>(TokenType::op_divide, pos);
                 case '+':
                     read();
-                    token = new Token(TokenType::op_plus, pos);
-                    break;
+                    return make_unique<Token>(TokenType::op_plus, pos);
                 case '-':
                     read();
-                    token = new Token(TokenType::op_minus, pos);
-                    break;
+                    return make_unique<Token>(TokenType::op_minus, pos);
                 case '=':
                     read();
-                    token = new Token(TokenType::op_eq, pos);
-                    break;
+                    return make_unique<Token>(TokenType::op_eq, pos);
                 case '#':
                     read();
-                    token = new Token(TokenType::op_neq, pos);
-                    break;
+                    return make_unique<Token>(TokenType::op_neq, pos);
                 case '<':
                     read();
                     if (ch_ == '=') {
                         read();
-                        token = new Token(TokenType::op_leq, pos, current());
-                    } else {
-                        token = new Token(TokenType::op_lt, pos);
+                        return make_unique<Token>(TokenType::op_leq, pos, current());
                     }
-                    break;
+                    return make_unique<Token>(TokenType::op_lt, pos);
                 case '>':
                     read();
                     if (ch_ == '=') {
                         read();
-                        token = new Token(TokenType::op_geq, pos, current());
-                    } else {
-                        token = new Token(TokenType::op_gt, pos);
+                        return make_unique<Token>(TokenType::op_geq, pos, current());
                     }
-                    break;
+                    return make_unique<Token>(TokenType::op_gt, pos);
                 case ';':
                     read();
-                    token = new Token(TokenType::semicolon, pos);
-                    break;
+                    return make_unique<Token>(TokenType::semicolon, pos);
                 case ',':
                     read();
-                    token = new Token(TokenType::comma, pos);
-                    break;
+                    return make_unique<Token>(TokenType::comma, pos);
                 case ':':
                     read();
                     if (ch_ == '=') {
                         read();
-                        token = new Token(TokenType::op_becomes, pos, current());
-                    } else {
-                        token = new Token(TokenType::colon, pos);
+                        return make_unique<Token>(TokenType::op_becomes, pos, current());
                     }
-                    break;
+                    return make_unique<Token>(TokenType::colon, pos);
                 case '.':
                     read();
-                    token = new Token(TokenType::period, pos);
                     if (!eof_ && ch_ == '.') {
                         FilePos nextPos = current();
                         read();
                         if (!eof_ && ch_ == '.') {
                             read();
-                            token = new Token(TokenType::varargs, pos, current());
-                        } else {
-                            tokens_.push(new Token(TokenType::period, nextPos));
+                            return make_unique<Token>(TokenType::varargs, pos, current());
                         }
+                        return make_unique<Token>(TokenType::range, pos, current());
                     }
-                    break;
+                    return make_unique<Token>(TokenType::period, pos, current());
                 case '(':
                     read();
                     if (ch_ == '*') {
                         scanComment();
-                        token = scanToken();
-                    } else {
-                        token = new Token(TokenType::lparen, pos);
+                        return scanToken();
                     }
-                    break;
+                    return make_unique<Token>(TokenType::lparen, pos);
                 case ')':
                     read();
-                    token = new Token(TokenType::rparen, pos);
-                    break;
+                    return make_unique<Token>(TokenType::rparen, pos);
                 case '[':
                     read();
-                    token = new Token(TokenType::lbrack, pos);
-                    break;
+                    return make_unique<Token>(TokenType::lbrack, pos);
                 case ']':
                     read();
-                    token = new Token(TokenType::rbrack, pos);
-                    break;
+                    return make_unique<Token>(TokenType::rbrack, pos);
                 case '{':
                     read();
-                    token = new Token(TokenType::lbrace, pos);
-                    break;
+                    return make_unique<Token>(TokenType::lbrace, pos);
                 case '}':
                     read();
-                    token = new Token(TokenType::rbrace, pos);
-                    break;
+                    return make_unique<Token>(TokenType::rbrace, pos);
                 case '^':
                     read();
-                    token = new Token(TokenType::caret, pos);
-                    break;
+                    return make_unique<Token>(TokenType::caret, pos);
                 case '|':
                     read();
-                    token = new Token(TokenType::pipe, pos);
-                    break;
+                    return make_unique<Token>(TokenType::pipe, pos);
                 case '~':
                     read();
-                    token = new Token(TokenType::op_not, pos);
-                    break;
+                    return make_unique<Token>(TokenType::op_not, pos);
                 default:
                     read();
-                    token = new UndefinedToken(pos, ch_);
-                    break;
+                    logger_.error(pos, "bad character.");
+                    return scanToken();
             }
         }
     } else {
-        token = new Token(TokenType::eof, current());
+        return make_unique<Token>(TokenType::eof, current());
     }
-    if (token->type() == TokenType::undef) {
-        logger_.error(pos, "bad character.");
-        token = scanToken();
-    }
-    return token;
 }
 
 void Scanner::read() {
@@ -295,7 +265,7 @@ void Scanner::scanComment() {
     }
 }
 
-const Token* Scanner::scanIdent() {
+unique_ptr<const Token> Scanner::scanIdent() {
     FilePos pos = current();
     std::stringstream ss;
     do {
@@ -308,14 +278,14 @@ const Token* Scanner::scanIdent() {
     auto it = keywords_.find(ident);
     if (it != keywords_.end()) {
         if (it->second == TokenType::boolean_literal) {
-            return new BooleanLiteralToken(pos, current(), it->first == "TRUE");
+            return make_unique<BooleanLiteralToken>(pos, current(), it->first == "TRUE");
         }
-        return new Token(it->second, pos, current());
+        return make_unique<Token>(it->second, pos, current());
     }
-    return new IdentToken(pos, current(), ident);
+    return make_unique<IdentToken>(pos, current(), ident);
 }
 
-const Token* Scanner::scanNumber() {
+unique_ptr<const Token> Scanner::scanNumber() {
     bool isHex = false;
     bool isFloat = false;
     FilePos pos = current();
@@ -337,7 +307,7 @@ const Token* Scanner::scanNumber() {
     if (ch_ == 'H') {
         if (isFloat) {
             logger_.error(pos, "undefined number.");
-            auto token = new UndefinedToken(pos, ch_);
+            auto token = make_unique<UndefinedToken>(pos, ch_);
             read();
             return token;
         }
@@ -354,9 +324,9 @@ const Token* Scanner::scanNumber() {
             logger_.error(pos, "invalid real literal: " + num + ".");
         }
         if (value >= std::numeric_limits<float>::lowest() && value <= std::numeric_limits<float>::max()) {
-            return new FloatLiteralToken(pos, current(), static_cast<float>(value));
+            return make_unique<FloatLiteralToken>(pos, current(), static_cast<float>(value));
         }
-        return new DoubleLiteralToken(pos, current(), value);
+        return make_unique<DoubleLiteralToken>(pos, current(), value);
     } else {
         long value;
         try {
@@ -370,13 +340,13 @@ const Token* Scanner::scanNumber() {
             value = 0;
         }
         if (value >= std::numeric_limits<int>::lowest() && value <= std::numeric_limits<int>::max()) {
-            return new IntLiteralToken(pos, current(), static_cast<int>(value));
+            return make_unique<IntLiteralToken>(pos, current(), static_cast<int>(value));
         }
-        return new LongLiteralToken(pos, current(), value);
+        return make_unique<LongLiteralToken>(pos, current(), value);
     }
 }
 
-const Token* Scanner::scanString() {
+unique_ptr<const Token> Scanner::scanString() {
     std::stringstream ss;
     auto p = current();
     read();
@@ -390,7 +360,7 @@ const Token* Scanner::scanString() {
     } while (ch_ != '"');
     read();
     std::string str = ss.str();
-    return new StringLiteralToken(p, current(), unescape(str));
+    return make_unique<StringLiteralToken>(p, current(), unescape(str));
 }
 
 std::string Scanner::escape(std::string str) {
