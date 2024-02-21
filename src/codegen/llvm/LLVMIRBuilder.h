@@ -52,6 +52,8 @@ private:
     MaybeAlign getLLVMAlign(TypeNode *type);
 
     Value *processGEP(TypeNode *, Value *, vector<Value *> &);
+    void arrayInitializers(TypeNode *);
+    void arrayInitializers(TypeNode *, TypeNode *, vector<Value *> &);
 
     string qualifiedName(DeclarationNode *) const;
 
@@ -63,6 +65,8 @@ private:
     void cast(ExpressionNode &);
 
     void procedure(ProcedureNode &);
+
+
 
     using Selectors = vector<unique_ptr<Selector>>;
     using SelectorIterator = Selectors::iterator;

@@ -165,9 +165,11 @@ Sema::onArrayType(const FilePos &start, [[maybe_unused]] const FilePos &end,
     }
     if (!type) {
         logger_.error(start, "undefined member type.");
+    } else if (type->isArray()) {
+        logger_.warning(start, "nested array found, use multi-dimensional array instead.");
     }
     auto res = context_->getOrInsertArrayType(ident, dim, type);
-    if (type->getSize() > 0 && dim > 0) {
+    if (type && type->getSize() > 0 && dim > 0) {
         res->setSize(dim * type->getSize());
     }
     return res;
@@ -512,7 +514,7 @@ Sema::onQualifiedExpression(const FilePos &start, [[maybe_unused]] const FilePos
     DeclarationNode* sym = symbols_->lookup(ident.get());
     if (!sym) {
         logger_.error(ident->start(), "undefined identifier: " + to_string(*ident) + ".");
-        return nullptr;
+        return make_unique<QualifiedExpression>(start, std::move(ident), std::move(selectors), sym, nullptr);
     }
     // check variable or parameter reference
     if (sym->getNodeType() == NodeType::variable || sym->getNodeType() == NodeType::parameter) {
@@ -620,6 +622,9 @@ TypeNode *Sema::onActualParameters(TypeNode *base, ActualParameters *sel) {
     }
     for (size_t cnt = 0; cnt < sel->parameters().size(); cnt++) {
         auto expr = sel->parameters()[cnt].get();
+        if (!expr) {
+            continue;
+        }
         if (cnt < proc->parameters().size()) {
             auto param = proc->parameters()[cnt].get();
             if (assertCompatible(expr->pos(), param->getType(), expr->getType(), param->isVar())) {

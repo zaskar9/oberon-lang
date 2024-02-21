@@ -587,7 +587,7 @@ unique_ptr<StatementNode> Parser::statement() {
         auto ident = this->designator(selectors);
         token = scanner_.peek();
         if (token->type() == TokenType::op_eq) {
-            logger_.error(token->start(), "unexpected = operator, did you mean the := operator?");
+            logger_.error(token->start(), "unexpected operator = found, use operator := instead.");
             return nullptr;
         } else if (token->type() == TokenType::op_becomes) {
             return assignment(sema_.onQualifiedExpression(pos, EMPTY_POS, std::move(ident), std::move(selectors)));

@@ -38,7 +38,16 @@ VAR
     m: Matrix;
     nm: NamedMatrix;
     nma: NamedMatrixArray;
-    i: INTEGER;
+
+PROCEDURE TestLocal();
+VAR v: Vector;
+    p: PersonDesc;
+BEGIN
+    ASSERT(LEN(v) = Ten);
+    ASSERT(LEN(p.title) = Two);
+    p.address.vec[9] := 42;
+    ASSERT(p.address.vec[9] = 42)
+END TestLocal;
 
 PROCEDURE Len(VAR a: Array): INTEGER;
 VAR i: INTEGER;
@@ -48,25 +57,26 @@ BEGIN
 END Len;
 
 BEGIN
-    v[3] := 42;
-    (* ASSERT(LEN(v) = Ten); Out.String("mark\n"); *)
-    p.zipcode := 8280;
-    p.address.dim := 10;
-    p.address.vec[3] := 42;
+    v[3] := 42;                         ASSERT(v[3] = 42);
+    ASSERT(LEN(v) = Ten);
+    p.zipcode := 8280;                  ASSERT(p.zipcode = 8280);
+    p.address.dim := 10;                ASSERT(p.address.dim = 10);
+    p.address.vec[9] := 42;             ASSERT(p.address.vec[9] = 42);
+    ASSERT(Len(p.address) = Ten);
     ASSERT(LEN(p.title) = Two);
-    (*
     ASSERT(LEN(v) = LEN(p.address.vec));
     ASSERT(LEN(m) = Two);
     ASSERT(LEN(m[0]) = Ten);
     ASSERT(LEN(nm.matrix) = Two);
-    nm.matrix[0][0] := -42;
-    ASSERT(nm.matrix[0][0] = -42);
-    nm.matrix[Two - 1][Ten - 1] := 42;
-    ASSERT(nm.matrix[Two - 1][Ten - 1] = 42);
-    ASSERT(LEN(nm.matrix[Two - 1]) = Ten);
+    nm.matrix[0][0] := -42;             ASSERT(nm.matrix[0][0] = -42);
+    nm.matrix[Two - 1][Ten - 1] := 42;  ASSERT(nm.matrix[Two - 1][Ten - 1] = 42);
+    ASSERT(LEN(nm.matrix[0]) = Ten);
     ASSERT(LEN(nma) = Two);
     ASSERT(LEN(nma[0].matrix) = Two);
     ASSERT(LEN(nma[0].matrix[0]) = Ten);
+    Out.String("Assertions for global variables passed."); Out.Ln;
+    TestLocal;
+    Out.String("Assertions for local variables passed."); Out.Ln;
     NEW(fred);
     fred.name := "Fred Bloggs";
     fred.title[0] := "Mr";
@@ -79,8 +89,8 @@ BEGIN
     mary.spouse := fred;
     fred.spouse := mary;
     ASSERT(fred.spouse.zipcode = fred.zipcode);
-    ASSERT(LEN(v) = 10);
     ASSERT(LEN(fred.title) = Two);
-    *)
-    Out.String("Assertions passed."); Out.Ln
+    ASSERT(LEN(fred.address.vec) = Ten);
+    ASSERT(LEN(fred.spouse.title) = LEN(fred.title));
+    Out.String("Assertions for pointer variables passed."); Out.Ln
 END Selectors.

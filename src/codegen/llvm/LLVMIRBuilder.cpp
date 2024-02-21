@@ -68,14 +68,11 @@ void LLVMIRBuilder::visit(ModuleNode &node) {
         node.getImport(i)->accept(*this);
     }
     // initialize array sizes
-//    for (size_t i = 0; i < node.getVariableCount(); ++i) {
-//        auto variable = node.getVariable(i);
-//        if (variable->getType()->isArray()) {
-//            auto array_t = dynamic_cast<ArrayTypeNode*>(variable->getType());
-//            value_ = values_[variable];
-//            value_ = builder_.CreateStore(builder_.getInt64(array_t->getDimension()), value_);
-//        }
-//    }
+    for (size_t i = 0; i < node.getVariableCount(); ++i) {
+        auto var = node.getVariable(i);
+        value_ = values_[var];
+        arrayInitializers(var->getType());
+    }
     // generate code for statements
     if (node.statements()->getStatementCount() > 0) {
         node.statements()->accept(*this);
@@ -112,20 +109,21 @@ void LLVMIRBuilder::visit(ProcedureNode &node) {
     Function::arg_iterator args = function_->arg_begin();
     for (auto &param : node.getType()->parameters()) {
         auto arg = args++;
-        arg->setName(param->getIdentifier()->name());
+        arg->addAttr(Attribute::AttrKind::NoUndef);
+        // arg->setName(param->getIdentifier()->name());
+        Type *type = param->isVar() ? builder_.getPtrTy() : getLLVMType(param->getType());
+        Value *value = builder_.CreateAlloca(type, nullptr);
+        builder_.CreateStore(arg, value);
         if (param->isVar()) {
-            values_[param.get()] = arg;
-        } else {
-            auto value = builder_.CreateAlloca(getLLVMType(param->getType()), nullptr);
-            builder_.CreateStore(arg, value);
-            values_[param.get()] = value;
+            value = builder_.CreateLoad(type, value);
         }
-        // function_->addParamAttr(i, Attribute::AttrKind::NoUndef);
+        values_[param.get()] = value;
     }
     for (size_t i = 0; i < node.getVariableCount(); i++) {
         auto var = node.getVariable(i);
-        auto value = builder_.CreateAlloca(getLLVMType(var->getType()), nullptr, var->getIdentifier()->name());
-        values_[var] = value;
+        value_ = builder_.CreateAlloca(getLLVMType(var->getType()), nullptr, var->getIdentifier()->name());
+        arrayInitializers(var->getType());
+        values_[var] = value_;
     }
     level_ = node.getLevel() + 1;
     node.statements()->accept(*this);
@@ -143,6 +141,35 @@ void LLVMIRBuilder::visit(ProcedureNode &node) {
     }
     verifyFunction(*function_, &errs());
 }
+
+void LLVMIRBuilder::arrayInitializers(TypeNode *base) {
+    vector<Value *> indices;
+    indices.push_back(builder_.getInt32(0));
+    arrayInitializers(base, base, indices);
+}
+
+void LLVMIRBuilder::arrayInitializers(TypeNode *base, TypeNode *type, vector<Value *> &indices) {
+    if (type->isArray()) {
+        auto array_t = dynamic_cast<ArrayTypeNode *>(type);
+        indices.push_back(builder_.getInt32(0));   // the array dimension is the first field in the struct
+        Value *value = builder_.CreateInBoundsGEP(getLLVMType(base), value_, indices);
+        builder_.CreateStore(builder_.getInt64(array_t->getDimension()), value);
+        indices.pop_back();
+        indices.push_back(builder_.getInt32(1));   // the array is the second field in the struct
+        indices.push_back(builder_.getInt32(0));   // select the first element of the array
+        arrayInitializers(base, array_t->getMemberType(), indices);
+        indices.pop_back();
+        indices.pop_back();
+    } else if (type->isRecord()) {
+        auto record_t = dynamic_cast<RecordTypeNode *>(type);
+        for (size_t i = 0; i < record_t->getFieldCount(); ++i) {
+            indices.push_back(builder_.getInt32(i));
+            arrayInitializers(base, record_t->getField(i)->getType(), indices);
+            indices.pop_back();
+        }
+    }
+}
+
 
 void LLVMIRBuilder::visit(ImportNode &node) {
     std::string name = node.getModule()->name();
@@ -764,7 +791,10 @@ LLVMIRBuilder::predefinedCall(PredefinedProcedure *proc, QualIdent *ident,
         value_ = builder_.CreateCall(FunctionCallee(fun), values);
         // TODO remove next line (bit-cast) once non-opaque pointers are no longer supported
         value_ = builder_.CreateBitCast(value_, getLLVMType(ptr));
-        return builder_.CreateStore(value_, params[0]);
+        Value *value = builder_.CreateStore(value_, params[0]);
+        value_ = builder_.CreateLoad(builder_.getPtrTy(), params[0]);
+        arrayInitializers(base);
+        return value;
     } else if (kind == ProcKind::FREE) {
         auto fun = module_->getFunction("free");
 #ifdef _LLVM_LEGACY
@@ -938,7 +968,6 @@ std::string LLVMIRBuilder::qualifiedName(DeclarationNode *node) const {
 }
 
 Value *LLVMIRBuilder::processGEP(TypeNode *base, Value *value, vector<Value *> &indices) {
-    // output the GEP up to the pointer
     if (indices.size() > 1) {
         auto result = builder_.CreateInBoundsGEP(getLLVMType(base), value, indices);
         indices.clear();
@@ -971,7 +1000,7 @@ Type* LLVMIRBuilder::getLLVMType(TypeNode *type) {
         }
         struct_t->setBody(elem_ts);
         if (!record_t->isAnonymous()) {
-            struct_t->setName("T_" + record_t->getIdentifier()->name());
+            struct_t->setName("record." + record_t->getIdentifier()->name());
         }
         result = struct_t;
     } else if (type->getNodeType() == NodeType::pointer_type) {

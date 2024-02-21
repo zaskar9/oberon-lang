@@ -1,8 +1,11 @@
 #include <stdio.h>
+#include <stdlib.h>
+
+typedef int Vector[10];
 
 struct Array {
     int dim;
-    int vec[10];
+    Vector vec;
 };
 
 struct PersonDesc {
@@ -17,11 +20,16 @@ int Len(struct Array *a) {
     return i;
 }
 
+void update(int *v) {
+    *v = 10;
+}
+
+struct PersonDesc p;
+
 int main(void) {
-    struct PersonDesc p;
     p.zipcode = 8280;
     p.address.dim = 10;
-    p.address.vec[3] = 42;
-    printf("%d\n", Len(&p.address));
+    p.address.vec[9] = 42;
+    // printf("%d\n", Len(&p.address));
     return 0;
 }
