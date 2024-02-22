@@ -45,6 +45,14 @@ BEGIN
     SwapTuple1(t)
 END SwapTuple3;
 
+PROCEDURE SwapTuple4(t : Tuple);
+VAR tmp: INTEGER;
+BEGIN
+    tmp := t.fst;
+    t.fst := t.snd;
+    t.snd := tmp
+END SwapTuple4;
+
 BEGIN
     a[0] := 42; a[1] := 24;
     SwapList1(a);

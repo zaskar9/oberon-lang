@@ -647,7 +647,17 @@ TypeNode *Sema::onActualParameters(TypeNode *base, ActualParameters *sel) {
                     if (expr->isLiteral()) {
                         logger_.error(expr->pos(), "illegal actual parameter: cannot pass constant by reference.");
                     } else if (expr->getNodeType() == NodeType::qualified_expression) {
-                        continue;
+                        auto type = expr->getType();
+                        if (type->isArray() || type->isRecord() || type->isProcedure()) {
+                            auto arg = dynamic_cast<QualifiedExpression *>(expr);
+                            auto ref = arg->dereference();
+                            if (ref->getNodeType() == NodeType::parameter) {
+                                auto decl = dynamic_cast<ParameterNode *>(ref);
+                                if (!decl->isVar()) {
+                                    logger_.error(expr->pos(), "illegal actual parameter: cannot pass non-variable parameter by reference.");
+                                }
+                            }
+                        }
                     } else {
                         logger_.error(expr->pos(), "illegal actual parameter: cannot pass expression by reference.");
                     }

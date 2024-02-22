@@ -904,8 +904,6 @@ LLVMIRBuilder::predefinedCall(PredefinedProcedure *proc, QualIdent *ident,
         auto array_t = getLLVMType(actuals->parameters()[0]->getType());
         value_ = builder_.CreateInBoundsGEP(array_t, params[0], {builder_.getInt32(0), builder_.getInt32(0)});
         value_ = builder_.CreateLoad(builder_.getInt64Ty(), value_);
-        // auto array = dynamic_cast<ArrayTypeNode *>(actuals->parameters()[0]->getType());
-        // value_ = builder_.getInt64(array->getDimension());
         return value_;
     } else if (kind == ProcKind::INCL) {
         Value *value = builder_.CreateShl(ConstantInt::get(builder_.getInt32Ty(), 0x1), params[1]);
@@ -997,7 +995,8 @@ Type* LLVMIRBuilder::getLLVMType(TypeNode *type) {
         // create a struct that stores the size and the elements of the array
         // TODO support for multi-dimensional arrays
         result = ArrayType::get(getLLVMType(array_t->getMemberType()), array_t->lengths()[0]);
-        result = StructType::create(builder_.getContext(), {builder_.getInt64Ty(), result});
+        // TODO create a human-readable name
+        result = StructType::create(builder_.getContext(), { builder_.getInt64Ty(), result });
         types_[type] = result;
     } else if (type->getNodeType() == NodeType::record_type) {
         // create an empty struct and add it to the lookup table immediately to support recursive records
