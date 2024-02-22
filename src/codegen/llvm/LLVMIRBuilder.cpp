@@ -111,10 +111,11 @@ void LLVMIRBuilder::visit(ProcedureNode &node) {
         auto arg = args++;
         arg->addAttr(Attribute::AttrKind::NoUndef);
         // arg->setName(param->getIdentifier()->name());
-        Type *type = param->isVar() ? builder_.getPtrTy() : getLLVMType(param->getType());
-        Value *value = builder_.CreateAlloca(type, nullptr);
+        bool varType = param->getType()->isArray() || param->getType()->isRecord() || param->getType()->isProcedure();
+        Type *type = param->isVar() || varType ? builder_.getPtrTy() : getLLVMType(param->getType());
+        Value *value = builder_.CreateAlloca(type, nullptr, param->getIdentifier()->name());
         builder_.CreateStore(arg, value);
-        if (param->isVar()) {
+        if (param->isVar() || varType) {
             value = builder_.CreateLoad(type, value);
         }
         values_[param.get()] = value;
@@ -134,7 +135,7 @@ void LLVMIRBuilder::visit(ProcedureNode &node) {
     if (block->getTerminator() == nullptr) {
         if (node.getType()->getReturnType() != nullptr && !block->empty()) {
             logger_.error(node.pos(),
-                           "function \"" + to_string(node.getIdentifier()) + "\" has no return statement.");
+                          "function \"" + to_string(node.getIdentifier()) + "\" has no return statement.");
         } else {
             builder_.CreateUnreachable();
         }
@@ -153,7 +154,8 @@ void LLVMIRBuilder::arrayInitializers(TypeNode *base, TypeNode *type, vector<Val
         auto array_t = dynamic_cast<ArrayTypeNode *>(type);
         indices.push_back(builder_.getInt32(0));   // the array dimension is the first field in the struct
         Value *value = builder_.CreateInBoundsGEP(getLLVMType(base), value_, indices);
-        builder_.CreateStore(builder_.getInt64(array_t->getDimension()), value);
+        // TODO support for multi-dimensional arrays
+        builder_.CreateStore(builder_.getInt64(array_t->lengths()[0]), value);
         indices.pop_back();
         indices.push_back(builder_.getInt32(1));   // the array is the second field in the struct
         indices.push_back(builder_.getInt32(0));   // select the first element of the array
@@ -233,7 +235,7 @@ TypeNode *LLVMIRBuilder::selectors(TypeNode *base, SelectorIterator start, Selec
             // handle array index access
             indices.push_back(builder_.getInt32(1));   // the array is the second field in the struct
             setRefMode(true);
-            // TODO add support for multi-dimensional arrays
+            // TODO support for multi-dimensional arrays
             dynamic_cast<ArrayIndex*>(sel)->indices()[0]->accept(*this);
             indices.push_back(value_);
             restoreRefMode();
@@ -275,10 +277,16 @@ TypeNode *LLVMIRBuilder::selectors(TypeNode *base, SelectorIterator start, Selec
     return selector_t;
 }
 
-void LLVMIRBuilder::parameters(ProcedureTypeNode *type, ActualParameters *actuals, vector<llvm::Value *> &values) {
+void LLVMIRBuilder::parameters(ProcedureTypeNode *proc, ActualParameters *actuals, vector<llvm::Value *> &values) {
     for (size_t i = 0; i < actuals->parameters().size(); i++) {
-        setRefMode(i >= type->parameters().size() || !type->parameters()[i]->isVar());
         auto param = actuals->parameters()[i].get();
+        auto type = param->getType();
+        bool deref = i >= proc->parameters().size();
+        if (type->isArray() || type->isRecord() || type->isProcedure()) {
+            setRefMode(deref);
+        } else {
+            setRefMode(deref || !proc->parameters()[i]->isVar());
+        }
         param->accept(*this);
         cast(*param);
         values.push_back(value_);
@@ -894,7 +902,7 @@ LLVMIRBuilder::predefinedCall(PredefinedProcedure *proc, QualIdent *ident,
         return value_;
     } else if (kind == ProcKind::LEN) {
         auto array_t = getLLVMType(actuals->parameters()[0]->getType());
-        value_ = builder_.CreateInBoundsGEP(array_t, params[0], {builder_.getInt32(0)});
+        value_ = builder_.CreateInBoundsGEP(array_t, params[0], {builder_.getInt32(0), builder_.getInt32(0)});
         value_ = builder_.CreateLoad(builder_.getInt64Ty(), value_);
         // auto array = dynamic_cast<ArrayTypeNode *>(actuals->parameters()[0]->getType());
         // value_ = builder_.getInt64(array->getDimension());
@@ -950,7 +958,8 @@ void LLVMIRBuilder::procedure(ProcedureNode &node) {
     std::vector<Type*> params;
     for (auto &param : node.getType()->parameters()) {
         auto param_t = getLLVMType(param->getType());
-        params.push_back(param->isVar() ? param_t->getPointerTo() : param_t);
+        bool varType = param->getType()->isArray() || param->getType()->isRecord() || param->getType()->isProcedure();
+        params.push_back(param->isVar() || varType ? param_t->getPointerTo() : param_t);
     }
     auto type = FunctionType::get(getLLVMType(node.getType()->getReturnType()), params, node.getType()->hasVarArgs());
     auto callee = module_->getOrInsertFunction(name, type);
@@ -984,10 +993,11 @@ Type* LLVMIRBuilder::getLLVMType(TypeNode *type) {
     } else if (types_[type] != nullptr) {
         result = types_[type];
     } else if (type->getNodeType() == NodeType::array_type) {
-        // create a struct that stores the size and the elements of the array
         auto array_t = dynamic_cast<ArrayTypeNode *>(type);
-        result = ArrayType::get(getLLVMType(array_t->getMemberType()), array_t->getDimension());
-        result = StructType::create(builder_.getContext(), { builder_.getInt64Ty(), result });
+        // create a struct that stores the size and the elements of the array
+        // TODO support for multi-dimensional arrays
+        result = ArrayType::get(getLLVMType(array_t->getMemberType()), array_t->lengths()[0]);
+        result = StructType::create(builder_.getContext(), {builder_.getInt64Ty(), result});
         types_[type] = result;
     } else if (type->getNodeType() == NodeType::record_type) {
         // create an empty struct and add it to the lookup table immediately to support recursive records

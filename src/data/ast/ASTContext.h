@@ -47,7 +47,9 @@ public:
     [[nodiscard]] ModuleNode *getTranslationUnit() const;
     void setTranslationUnit(unique_ptr<ModuleNode>);
 
-    ArrayTypeNode *getOrInsertArrayType(Ident *, unsigned int, TypeNode *);
+    [[deprecated]]
+    ArrayTypeNode *getOrInsertArrayType(Ident *, unsigned, TypeNode *);
+    ArrayTypeNode *getOrInsertArrayType(Ident *, unsigned, vector<unsigned>, TypeNode *);
     RecordTypeNode *getOrInsertRecordType(Ident *, vector<unique_ptr<FieldNode>>);
     PointerTypeNode *getOrInsertPointerType(Ident *, TypeNode *);
     ProcedureTypeNode *getOrInsertProcedureType(Ident *, vector<unique_ptr<ParameterNode>>, bool, TypeNode *);

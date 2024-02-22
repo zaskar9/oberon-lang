@@ -8,7 +8,7 @@ TYPE
 
 VAR l: Array;
 
-PROCEDURE Init(VAR l: Array; val: INTEGER);
+PROCEDURE Init(l: Array; val: INTEGER);
 VAR i: INTEGER;
 BEGIN
     FOR i := 0 TO Dim - 1 DO
@@ -16,10 +16,15 @@ BEGIN
     END
 END Init;
 
+PROCEDURE Len(a: ARRAY OF INTEGER): LONGINT;
+BEGIN
+    RETURN LEN(a)
+END Len;
+
 PROCEDURE Print(l: Array);
 VAR i: INTEGER;
 BEGIN
-    Out.String("Array<"); Out.Long(LEN(l), 0); Out.String(">[");
+    Out.String("Array<"); Out.Long(Len(l), 0); Out.String(">[");
     FOR i := Dim - 1 TO 0 BY -1 DO
         Out.Int(l[i], 0);
         IF i > 0 THEN Out.String(", ") ELSE Out.String("]") END
@@ -38,5 +43,6 @@ BEGIN
     Init(l, 5);
     Print(l);
     Run;
-    Print(l)
+    Print(l);
+    Len(l)
 END Arrays.

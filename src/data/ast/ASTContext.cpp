@@ -20,13 +20,27 @@ void ASTContext::setTranslationUnit(unique_ptr<ModuleNode> module) {
     module_ = std::move(module);
 }
 
-ArrayTypeNode *ASTContext::getOrInsertArrayType(Ident *ident, unsigned int dimension, TypeNode *memberType) {
+ArrayTypeNode *ASTContext::getOrInsertArrayType(Ident *ident, unsigned length, TypeNode *memberType) {
+    return getOrInsertArrayType(ident, 1, { length }, memberType);
+}
+
+ArrayTypeNode *
+ASTContext::getOrInsertArrayType(Ident *ident, unsigned dimensions, vector<unsigned> lengths, TypeNode *memberType) {
     for (auto &type : array_ts_) {
-        if (type->getMemberType() == memberType && type->getDimension() == dimension) {
-            return type.get();
+        if (type->dimensions() == dimensions && type->getMemberType() == memberType) {
+            bool found = true;
+            for (unsigned i = 0; i < dimensions; i++) {
+                if (lengths[i] != type->lengths()[i]) {
+                    found = false;
+                    break;
+                }
+            }
+            if (found) {
+                return type.get();
+            }
         }
     }
-    auto type = make_unique<ArrayTypeNode>(ident, dimension, memberType);
+    auto type = make_unique<ArrayTypeNode>(ident, dimensions, std::move(lengths), memberType);
     auto res = type.get();
     array_ts_.push_back(std::move(type));
     return res;

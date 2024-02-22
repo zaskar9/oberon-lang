@@ -30,6 +30,6 @@ int main(void) {
     p.zipcode = 8280;
     p.address.dim = 10;
     p.address.vec[9] = 42;
-    // printf("%d\n", Len(&p.address));
+    printf("%d\n", Len(&p.address));
     return 0;
 }

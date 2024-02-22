@@ -76,8 +76,9 @@ private:
 
     using Selectors = vector<unique_ptr<Selector>>;
     using SelectorIterator = Selectors::iterator;
-    static SelectorIterator &handleMissingParameters(TypeNode*, Selectors &, SelectorIterator &);
-    TypeNode *onSelectors(TypeNode*, Selectors &);
+    SelectorIterator &handleMissingParameters(const FilePos &, const FilePos &,
+                                              TypeNode*, Selectors &, SelectorIterator &);
+    TypeNode *onSelectors(const FilePos &, const FilePos &, TypeNode*, Selectors &);
     TypeNode *onActualParameters(TypeNode*, ActualParameters*);
     TypeNode *onArrayIndex(TypeNode*, ArrayIndex*);
     TypeNode *onDereference(TypeNode*, Dereference*);
@@ -113,7 +114,7 @@ public:
     RecordTypeNode *onRecordType(const FilePos &, const FilePos &, Ident *, vector<unique_ptr<FieldNode>>);
     unique_ptr<FieldNode> onField(const FilePos&, const FilePos&, unique_ptr<IdentDef>, TypeNode*, unsigned = 0);
 
-    TypeNode *onTypeReference(const FilePos &, const FilePos &, unique_ptr<QualIdent>);
+    TypeNode *onTypeReference(const FilePos &, const FilePos &, unique_ptr<QualIdent>, unsigned = 0);
 
     unique_ptr<VariableDeclarationNode> onVariable(const FilePos &, const FilePos &,
                                                    unique_ptr<IdentDef>, TypeNode*, int = 0);

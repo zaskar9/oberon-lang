@@ -10,22 +10,28 @@
 
 #include "TypeNode.h"
 #include "ExpressionNode.h"
-#include <memory>
 #include <utility>
+#include <vector>
+
+using std::vector;
 
 class ArrayTypeNode final : public TypeNode {
 
 private:
-    unsigned int dimension_;
+    unsigned dimensions_;
+    vector<unsigned> lengths_;
     TypeNode *memberType_;
 
 public:
-    ArrayTypeNode(Ident *ident, unsigned int dimension, TypeNode *memberType) :
+    ArrayTypeNode(Ident *ident, unsigned dimensions, vector<unsigned> lengths, TypeNode *memberType) :
             TypeNode(NodeType::array_type, EMPTY_POS, ident, TypeKind::ARRAY, 0),
-            dimension_(dimension), memberType_(memberType) {};
+            dimensions_(dimensions), lengths_(std::move(lengths)), memberType_(memberType) {};
+    ArrayTypeNode(Ident *ident, unsigned length, TypeNode *memberType) :
+            ArrayTypeNode(ident, 1, { length }, memberType) {};
     ~ArrayTypeNode() final = default;
 
-    [[nodiscard]] unsigned int getDimension() const;
+    [[nodiscard]] unsigned dimensions() const;
+    [[nodiscard]] const vector<unsigned> &lengths() const;
     [[nodiscard]] TypeNode *getMemberType() const;
 
     [[nodiscard]] bool isOpen() const;

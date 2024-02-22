@@ -310,7 +310,13 @@ void NodePrettyPrinter::visit(SetExpressionNode &node) {
 void NodePrettyPrinter::visit(ArrayTypeNode &node) {
     if (node.isAnonymous() || isDecl_) {
         isDecl_ = false;
-        stream_ << "ARRAY " << node.getDimension() << " OF ";
+        stream_ << "ARRAY ";
+        string sep;
+        for (unsigned len : node.lengths()) {
+            stream_ << sep << len;
+            sep = ", ";
+        }
+        stream_ << " OF ";
         node.getMemberType()->accept(*this);
     } else {
         stream_ << *node.getIdentifier();

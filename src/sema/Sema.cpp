@@ -138,7 +138,7 @@ Sema::onType(const FilePos &start, [[maybe_unused]] const FilePos &end,
 ArrayTypeNode *
 Sema::onArrayType(const FilePos &start, [[maybe_unused]] const FilePos &end,
                   Ident *ident, unique_ptr<ExpressionNode> expr, TypeNode *type) {
-    unsigned dim = 0;
+    unsigned length = 0;
     if (expr) {
         if (!expr->isConstant()) {
             logger_.error(expr->pos(), "constant expression expected.");
@@ -150,7 +150,7 @@ Sema::onArrayType(const FilePos &start, [[maybe_unused]] const FilePos &end,
                     if (literal->value() <= 0) {
                         logger_.error(expr->pos(), "array dimension must be a positive value.");
                     }
-                    dim = (unsigned) literal->value();
+                    length = (unsigned) literal->value();
                 } else {
                     logger_.error(expr->pos(), "integer expression expected.");
                 }
@@ -168,9 +168,9 @@ Sema::onArrayType(const FilePos &start, [[maybe_unused]] const FilePos &end,
     } else if (type->isArray()) {
         logger_.warning(start, "nested array found, use multi-dimensional array instead.");
     }
-    auto res = context_->getOrInsertArrayType(ident, dim, type);
-    if (type && type->getSize() > 0 && dim > 0) {
-        res->setSize(dim * type->getSize());
+    auto res = context_->getOrInsertArrayType(ident, 1, { length }, type);
+    if (type && type->getSize() > 0 && length > 0) {
+        res->setSize(length * type->getSize());
     }
     return res;
 }
@@ -249,20 +249,26 @@ Sema::onField(const FilePos &start, [[maybe_unused]] const FilePos &end,
 }
 
 TypeNode *
-Sema::onTypeReference(const FilePos &start, [[maybe_unused]] const FilePos &end, unique_ptr<QualIdent> ident) {
+Sema::onTypeReference(const FilePos &start, [[maybe_unused]] const FilePos &end,
+                      unique_ptr<QualIdent> ident, unsigned dimensions) {
     auto sym = symbols_->lookup(ident.get());
     if (sym) {
+        TypeNode *type;
         if (sym->getNodeType() == NodeType::array_type ||
             sym->getNodeType() == NodeType::basic_type ||
             sym->getNodeType() == NodeType::record_type ||
             sym->getNodeType() == NodeType::pointer_type) {
-            return dynamic_cast<TypeNode *>(sym);
+            type = dynamic_cast<TypeNode *>(sym);
+        } else if (sym->getNodeType() == NodeType::type) {
+            type = dynamic_cast<TypeDeclarationNode *>(sym)->getType();
+        } else {
+            logger_.error(start, to_string(*ident) + " is not a type.");
         }
-        if (sym->getNodeType() == NodeType::type) {
-            auto type = dynamic_cast<TypeDeclarationNode *>(sym);
-            return type->getType();
+        if (dimensions == 0) {
+            return type;
         }
-        logger_.error(start, to_string(*ident) + " is not a type.");
+        vector<unsigned> lengths(dimensions, 0);
+        return context_->getOrInsertArrayType(nullptr, dimensions, lengths, type);
     } else {
         logger_.error(start, "undefined type: " + to_string(*ident) + ".");
     }
@@ -408,7 +414,6 @@ Sema::onForLoop(const FilePos &start, [[maybe_unused]] const FilePos &end,
                 unique_ptr<QualIdent> var,
                 unique_ptr<ExpressionNode> low, unique_ptr<ExpressionNode> high, unique_ptr<ExpressionNode> step,
                 unique_ptr<StatementSequenceNode> stmts) {
-    // auto ident = to_string(*var);
     vector<unique_ptr<Selector>> selectors;
     auto counter = onQualifiedExpression(var->start(), var->end(), std::move(var), std::move(selectors));
     if (!counter) {
@@ -498,7 +503,7 @@ Sema::onQualifiedStatement(const FilePos &start, [[maybe_unused]] const FilePos 
             // a fully-qualified external reference needs to be added to module for code generation
             context_->addExternalProcedure(proc);
         }
-        auto type = onSelectors(sym->getType(), selectors);
+        auto type = onSelectors(ident->start(), ident->end(), sym->getType(), selectors);
         if (type) {
             logger_.warning(ident->start(), "discarded expression value.");
         }
@@ -518,7 +523,7 @@ Sema::onQualifiedExpression(const FilePos &start, [[maybe_unused]] const FilePos
     }
     // check variable or parameter reference
     if (sym->getNodeType() == NodeType::variable || sym->getNodeType() == NodeType::parameter) {
-        auto type = onSelectors(sym->getType(), selectors);
+        auto type = onSelectors(ident->start(), ident->end(), sym->getType(), selectors);
         return make_unique<QualifiedExpression>(start, std::move(ident), std::move(selectors), sym, type);
     }
     // check procedure reference
@@ -528,7 +533,7 @@ Sema::onQualifiedExpression(const FilePos &start, [[maybe_unused]] const FilePos
             // a fully-qualified external reference needs to be added to module for code generation
             context_->addExternalProcedure(proc);
         }
-        auto type = onSelectors(sym->getType(), selectors);
+        auto type = onSelectors(ident->start(), ident->end(), sym->getType(), selectors);
         return make_unique<QualifiedExpression>(start, std::move(ident), std::move(selectors), sym, type);
     }
     logger_.error(ident->start(), "variable, parameter, or function call expected.");
@@ -556,9 +561,11 @@ Sema::onQualifiedConstant(const FilePos &start, const FilePos &end,
     return nullptr;
 }
 
-TypeNode *Sema::onSelectors(TypeNode *base, vector<unique_ptr<Selector>> &selectors) {
+TypeNode *
+Sema::onSelectors(const FilePos &start, const FilePos &end,
+                  TypeNode *base, vector<unique_ptr<Selector>> &selectors) {
     auto it = selectors.begin();
-    it = handleMissingParameters(base, selectors, it);
+    it = handleMissingParameters(start, end, base, selectors, it);
     while (it != selectors.end()) {
         auto sel = (*it).get();
         if (!base) {
@@ -593,19 +600,27 @@ TypeNode *Sema::onSelectors(TypeNode *base, vector<unique_ptr<Selector>> &select
                 logger_.error(sel->pos(), "unexpected selector.");
                 return nullptr;
         }
-        it = handleMissingParameters(base, selectors, it);
+        it = handleMissingParameters(start, end, base, selectors, it);
         ++it;
     }
     return base;
 }
 
 Sema::SelectorIterator &
-Sema::handleMissingParameters(TypeNode *base, Sema::Selectors &selectors, Sema::SelectorIterator &it) {
+Sema::handleMissingParameters(const FilePos &start, [[maybe_unused]] const FilePos &end,
+                              TypeNode *base, Sema::Selectors &selectors, Sema::SelectorIterator &it) {
     if (base && base->isProcedure()) {
+        bool found = false;
         if (selectors.empty()) {
             it = selectors.insert(selectors.begin(), make_unique<ActualParameters>());
+            found = true;
         } else if (it + 1 != selectors.end() && (*(it +1))->getNodeType() != NodeType::parameter) {
             it = selectors.insert(it, make_unique<ActualParameters>());
+            found = true;
+        }
+        auto proc = dynamic_cast<ProcedureTypeNode *>(base);
+        if (found && proc->getReturnType()) {
+            logger_.error(start, "function procedures must be called with a parameter list.");
         }
     }
     return it;
@@ -661,7 +676,8 @@ TypeNode *Sema::onArrayIndex(TypeNode *base, ArrayIndex *sel) {
         auto type = index->getType();
         if (type && type->kind() == TypeKind::INTEGER) {
             if (index->isLiteral()) {
-                assertInBounds(dynamic_cast<const IntegerLiteralNode *>(index.get()), 0, array->getDimension() - 1);
+                // TODO support for multi-dimensional arrays
+                assertInBounds(dynamic_cast<const IntegerLiteralNode *>(index.get()), 0, array->lengths()[0] - 1);
             }
         } else {
             logger_.error(sel->pos(), "integer expression expected.");
@@ -1345,7 +1361,8 @@ Sema::assertCompatible(const FilePos &pos, TypeNode *expected, TypeNode *actual,
     if (expected->isArray() && actual->isArray()) {
         auto exp_array = dynamic_cast<ArrayTypeNode *>(expected);
         auto act_array = dynamic_cast<ArrayTypeNode *>(actual);
-        if ((exp_array->isOpen() || exp_array->getDimension() == act_array->getDimension())) {
+        // TODO support for multi-dimensional arrays
+        if ((exp_array->isOpen() || exp_array->lengths()[0] == act_array->lengths()[0])) {
             return assertCompatible(pos, exp_array->getMemberType(), act_array->getMemberType(), var);
         }
     }

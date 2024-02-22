@@ -7,8 +7,12 @@
 #include "ArrayTypeNode.h"
 #include "NodeVisitor.h"
 
-unsigned int ArrayTypeNode::getDimension() const {
-    return dimension_;
+unsigned int ArrayTypeNode::dimensions() const {
+    return dimensions_;
+}
+
+const vector<unsigned int> &ArrayTypeNode::lengths() const {
+    return lengths_;
 }
 
 TypeNode *ArrayTypeNode::getMemberType() const {
@@ -16,7 +20,7 @@ TypeNode *ArrayTypeNode::getMemberType() const {
 }
 
 bool ArrayTypeNode::isOpen() const {
-    return dimension_ == 0;
+    return lengths_[0] == 0;
 }
 
 void ArrayTypeNode::accept(NodeVisitor &visitor) {
