@@ -42,18 +42,20 @@ Sema::onTranslationUnitEnd(const string &name) {
 }
 
 void Sema::onBlockStart() {
+    // O07.6.4: If a type P is defined as POINTER TO T, the identifier T can be declared textually
+    // following the declaration of P, but, if so, it must lie within the same scope.
+    if (!forwards_.empty()) {
+        for (const auto& pair: forwards_) {
+            auto type = pair.second;
+            logger_.error(type->pos(), "undefined forward reference: " + pair.first + ".");
+        }
+    }
     forwards_.clear();
     symbols_->openScope();
 }
 
 void Sema::onBlockEnd() {
     symbols_->closeScope();
-    if (!forwards_.empty()) {
-        for (const auto& pair: forwards_) {
-            auto base = pair.second->getBase();
-            logger_.error(base->pos(), "undefined forward reference: " + format(base) + ".");
-        }
-    }
 }
 
 ModuleNode *
@@ -128,6 +130,10 @@ Sema::onType(const FilePos &start, [[maybe_unused]] const FilePos &end,
         if (it != forwards_.end()) {
             auto pointer_t = it->second;
             logger_.debug("Resolving forward reference: " + to_string(*node->getIdentifier()));
+            if (!type->isRecord()) {
+                // O07.6.4: Pointer base type must be a record type.
+                logger_.error(start, "pointer base type must be a record type.");
+            }
             pointer_t->setBase(type);
             forwards_.erase(it);
         }
@@ -136,7 +142,7 @@ Sema::onType(const FilePos &start, [[maybe_unused]] const FilePos &end,
 }
 
 ArrayTypeNode *
-Sema::onArrayType(const FilePos &start, [[maybe_unused]] const FilePos &end,
+Sema::onArrayType(const FilePos &start, const FilePos &end,
                   Ident *ident, unique_ptr<ExpressionNode> expr, TypeNode *type) {
     unsigned length = 0;
     if (expr) {
@@ -168,7 +174,7 @@ Sema::onArrayType(const FilePos &start, [[maybe_unused]] const FilePos &end,
     } else if (type->isArray()) {
         logger_.warning(start, "nested array found, use multi-dimensional array instead.");
     }
-    auto res = context_->getOrInsertArrayType(ident, 1, { length }, type);
+    auto res = context_->getOrInsertArrayType(start, end, ident, 1, { length }, type);
     if (type && type->getSize() > 0 && length > 0) {
         res->setSize(length * type->getSize());
     }
@@ -179,7 +185,7 @@ PointerTypeNode *
 Sema::onPointerType(const FilePos &start, const FilePos &end, Ident *ident, unique_ptr<QualIdent> reference) {
     auto sym = symbols_->lookup(reference.get());
     if (!sym) {
-        auto node = context_->getOrInsertPointerType(ident, nullptr);
+        auto node = context_->getOrInsertPointerType(start, end, ident, nullptr);
         forwards_[reference->name()] = node;
         logger_.debug("Found possible forward type reference: " + to_string(*reference));
         return node;
@@ -190,15 +196,19 @@ Sema::onPointerType(const FilePos &start, const FilePos &end, Ident *ident, uniq
 }
 
 PointerTypeNode *
-Sema::onPointerType([[maybe_unused]] const FilePos &start, [[maybe_unused]] const FilePos &end,
+Sema::onPointerType([[maybe_unused]] const FilePos &start, const FilePos &end,
                                      Ident *ident, TypeNode *base) {
-    return context_->getOrInsertPointerType(ident, base);
+    if (!base->isRecord()) {
+        // O07.6.4: Pointer base type must be a record type.
+        logger_.error(start, "pointer base type must be a record type.");
+    }
+    return context_->getOrInsertPointerType(start, end, ident, base);
 }
 
 ProcedureTypeNode *
-Sema::onProcedureType([[maybe_unused]] const FilePos &start, [[maybe_unused]] const FilePos &end,
+Sema::onProcedureType([[maybe_unused]] const FilePos &start, const FilePos &end,
                       Ident *ident, vector<unique_ptr<ParameterNode>> params, bool varargs, TypeNode *ret) {
-    return context_->getOrInsertProcedureType(ident, std::move(params), varargs, ret);
+    return context_->getOrInsertProcedureType(start, end, ident, std::move(params), varargs, ret);
 }
 
 unique_ptr<ParameterNode>
@@ -214,12 +224,12 @@ Sema::onParameter(const FilePos &start, [[maybe_unused]] const FilePos &end,
 }
 
 RecordTypeNode *
-Sema::onRecordType([[maybe_unused]] const FilePos &start, [[maybe_unused]] const FilePos &end,
+Sema::onRecordType(const FilePos &start, const FilePos &end,
                   Ident *ident, vector<unique_ptr<FieldNode>> fields) {
     if (fields.empty()) {
         logger_.error(start, "records needs at least one field.");
     }
-    auto node = context_->getOrInsertRecordType(ident, std::move(fields));
+    auto node = context_->getOrInsertRecordType(start, end, ident, std::move(fields));
     set<string> names;
     for (size_t i = 0; i < node->getFieldCount(); i++) {
         auto field = node->getField(i);
@@ -249,7 +259,7 @@ Sema::onField(const FilePos &start, [[maybe_unused]] const FilePos &end,
 }
 
 TypeNode *
-Sema::onTypeReference(const FilePos &start, [[maybe_unused]] const FilePos &end,
+Sema::onTypeReference(const FilePos &start, const FilePos &end,
                       unique_ptr<QualIdent> ident, unsigned dimensions) {
     auto sym = symbols_->lookup(ident.get());
     if (sym) {
@@ -268,7 +278,7 @@ Sema::onTypeReference(const FilePos &start, [[maybe_unused]] const FilePos &end,
             return type;
         }
         vector<unsigned> lengths(dimensions, 0);
-        return context_->getOrInsertArrayType(nullptr, dimensions, lengths, type);
+        return context_->getOrInsertArrayType(start, end, nullptr, dimensions, lengths, type);
     } else {
         logger_.error(start, "undefined type: " + to_string(*ident) + ".");
     }
@@ -306,6 +316,11 @@ Sema::onProcedureEnd([[maybe_unused]] const FilePos &end, unique_ptr<Ident> iden
     onBlockEnd();
     auto proc = std::move(procs_.top());
     procs_.pop();
+    auto ret = proc->getType()->getReturnType();
+    if (ret && (ret->isArray() || ret->isRecord())) {
+        // O07.10.1: The result type of a procedure can be neither a record nor an array.
+        logger_.error(proc->pos(), "result type of a procedure can neither be a record nor an array.");
+    }
     if (proc->isExtern()) {
         if (proc->getLevel() != SymbolTable::MODULE_LEVEL) {
             logger_.error(proc->pos(), "only top-level procedures can be external.");
@@ -325,13 +340,9 @@ Sema::onAssignment(const FilePos &start, [[maybe_unused]] const FilePos &end,
     if (!lvalue) {
         logger_.error(start, "undefined left-hand side in assignment.");
     }
-    auto decl = lvalue->dereference();
-    if (decl) {
-        if (decl->getNodeType() == NodeType::constant) {
-            logger_.error(lvalue->pos(), "cannot assign constant.");
-        }
-    } else {
-        logger_.error(lvalue->pos(), "undefined left-hand side in assignment.");
+    string err;
+    if (!assertAssignable(lvalue.get(), err)) {
+        logger_.error(lvalue->pos(), "cannot assign to " + err + ".");
     }
     if (!rvalue) {
         logger_.error(start, "undefined right-hand side in assignment.");
@@ -537,7 +548,7 @@ Sema::onQualifiedExpression(const FilePos &start, [[maybe_unused]] const FilePos
         return make_unique<QualifiedExpression>(start, std::move(ident), std::move(selectors), sym, type);
     }
     logger_.error(ident->start(), "variable, parameter, or function call expected.");
-    return nullptr;
+    return make_unique<QualifiedExpression>(start, std::move(ident), std::move(selectors), sym, nullptr);;
 }
 
 unique_ptr<LiteralNode>
@@ -606,6 +617,32 @@ Sema::onSelectors(const FilePos &start, const FilePos &end,
     return base;
 }
 
+bool
+Sema::assertAssignable(const ExpressionNode * expr, string &err) const {
+    if (expr->isLiteral()) {
+        err = "a constant value";
+        return false;
+    } else if (expr->getNodeType() == NodeType::qualified_expression) {
+        auto decl = dynamic_cast<const QualifiedExpression *>(expr)->dereference();
+        if (decl->getNodeType() == NodeType::parameter) {
+            auto type = decl->getType();
+            if (type->isArray() || type->isRecord() || type->isProcedure()) {
+                auto param = dynamic_cast<const ParameterNode *>(decl);
+                err = "a non-variable parameter";
+                return param->isVar();
+            }
+        } else if (decl->getNodeType() == NodeType::constant) {
+            err = "a constant";
+            return false;
+        }
+        err = "";
+        return true;
+    } else {
+        err = "an expression";
+        return false;
+    }
+}
+
 Sema::SelectorIterator &
 Sema::handleMissingParameters(const FilePos &start, [[maybe_unused]] const FilePos &end,
                               TypeNode *base, Sema::Selectors &selectors, Sema::SelectorIterator &it) {
@@ -644,22 +681,9 @@ TypeNode *Sema::onActualParameters(TypeNode *base, ActualParameters *sel) {
             auto param = proc->parameters()[cnt].get();
             if (assertCompatible(expr->pos(), param->getType(), expr->getType(), param->isVar())) {
                 if (param->isVar()) {
-                    if (expr->isLiteral()) {
-                        logger_.error(expr->pos(), "illegal actual parameter: cannot pass constant by reference.");
-                    } else if (expr->getNodeType() == NodeType::qualified_expression) {
-                        auto type = expr->getType();
-                        if (type->isArray() || type->isRecord() || type->isProcedure()) {
-                            auto arg = dynamic_cast<QualifiedExpression *>(expr);
-                            auto ref = arg->dereference();
-                            if (ref->getNodeType() == NodeType::parameter) {
-                                auto decl = dynamic_cast<ParameterNode *>(ref);
-                                if (!decl->isVar()) {
-                                    logger_.error(expr->pos(), "illegal actual parameter: cannot pass non-variable parameter by reference.");
-                                }
-                            }
-                        }
-                    } else {
-                        logger_.error(expr->pos(), "illegal actual parameter: cannot pass expression by reference.");
+                    string err;
+                    if (!assertAssignable(expr, err)) {
+                        logger_.error(expr->pos(), "illegal actual parameter: cannot pass " + err + " by reference.");
                     }
                 } else {
                     cast(expr, param->getType());

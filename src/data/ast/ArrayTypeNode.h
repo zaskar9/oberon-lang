@@ -23,11 +23,11 @@ private:
     TypeNode *memberType_;
 
 public:
-    ArrayTypeNode(Ident *ident, unsigned dimensions, vector<unsigned> lengths, TypeNode *memberType) :
-            TypeNode(NodeType::array_type, EMPTY_POS, ident, TypeKind::ARRAY, 0),
+    ArrayTypeNode(const FilePos &pos, Ident *ident, unsigned dimensions, vector<unsigned> lengths, TypeNode *memberType) :
+            TypeNode(NodeType::array_type, pos, ident, TypeKind::ARRAY, 0),
             dimensions_(dimensions), lengths_(std::move(lengths)), memberType_(memberType) {};
-    ArrayTypeNode(Ident *ident, unsigned length, TypeNode *memberType) :
-            ArrayTypeNode(ident, 1, { length }, memberType) {};
+    ArrayTypeNode(const FilePos &pos, Ident *ident, unsigned length, TypeNode *memberType) :
+            ArrayTypeNode(pos, ident, 1, { length }, memberType) {};
     ~ArrayTypeNode() final = default;
 
     [[nodiscard]] unsigned dimensions() const;

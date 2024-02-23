@@ -22,7 +22,7 @@ PredefinedProcedure::PredefinedProcedure(ProcKind kind, const string &name,
     for (auto p : pairs) {
         params.push_back(std::make_unique<ParameterNode>(EMPTY_POS, make_unique<Ident>("_"), p.first, p.second));
     }
-    type_ = make_unique<ProcedureTypeNode>(this->getIdentifier(), std::move(params), varargs, ret);
+    type_ = make_unique<ProcedureTypeNode>(EMPTY_POS, this->getIdentifier(), std::move(params), varargs, ret);
     this->setType(type_.get());
 }
 

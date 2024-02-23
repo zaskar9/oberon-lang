@@ -1,7 +1,9 @@
 MODULE VarVsPtr;
 IMPORT Out;
 
-TYPE IntPtr = POINTER TO INTEGER;
+TYPE
+    IntPtr = POINTER TO IntRec;
+    IntRec = RECORD val: INTEGER END;
 
 VAR a, b: INTEGER;
     aptr, bptr: IntPtr;
@@ -39,12 +41,12 @@ PROCEDURE Swap4(a, b: INTEGER);
   END Swap4;
 
 BEGIN
-  NEW(aptr); aptr^ := 42;
-  NEW(bptr); bptr^ := 24;
+  NEW(aptr); aptr.val := 42;
+  NEW(bptr); bptr.val := 24;
   Swap1(aptr, bptr);
-  ASSERT((aptr^ = 24) & (bptr^ = 42));
+  ASSERT((aptr.val = 24) & (bptr.val = 42));
   Swap2(aptr, bptr);
-  ASSERT((aptr^ = 24) & (bptr^ = 42));
+  ASSERT((aptr.val = 24) & (bptr.val = 42));
   FREE(aptr);
   FREE(bptr);
   a := 42;

@@ -28,8 +28,8 @@ private:
     RecordTypeNode *base_;
 
 public:
-    RecordTypeNode(Ident *ident, vector<unique_ptr<FieldNode>> fields) :
-            TypeNode(NodeType::record_type, EMPTY_POS, ident, TypeKind::RECORD, 0),
+    RecordTypeNode(const FilePos &pos, Ident *ident, vector<unique_ptr<FieldNode>> fields) :
+            TypeNode(NodeType::record_type, pos, ident, TypeKind::RECORD, 0),
             fields_(std::move(fields)), base_() {};
     ~RecordTypeNode() final = default;
 

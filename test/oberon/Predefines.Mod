@@ -8,11 +8,11 @@ VAR i: INTEGER;
     l: LONGINT;
     a: ARRAY 10 OF INTEGER;
     r: RECORD x: INTEGER END;
-    p: POINTER TO LONGINT;
+    (* p: POINTER TO LONGINT; *)
 BEGIN
     i := 0;
     l := 0;
-    INC(a[0], p^);
+    INC(i, 5);
     INC(l);
     Out.String("["); Out.Int(i, 0); Out.String(","); Out.Long(l, 0); Out.String("]"); Out.Ln;
     DEC(i, 5);

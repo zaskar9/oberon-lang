@@ -49,6 +49,7 @@ private:
     bool assertEqual(Ident *, Ident *) const;
     void assertUnique(IdentDef *, DeclarationNode *);
     long assertInBounds(const IntegerLiteralNode *, long, long);
+    bool assertAssignable(const ExpressionNode *, string &) const;
 
     static void cast(ExpressionNode *, TypeNode *) ;
 

@@ -55,7 +55,7 @@ BasicTypeNode *OberonSystem::getBasicType(TypeKind kind) {
 }
 
 PointerTypeNode *OberonSystem::createPointerType(TypeNode *base) {
-    auto type = make_unique<PointerTypeNode>(nullptr, base);
+    auto type = make_unique<PointerTypeNode>(EMPTY_POS, nullptr, base);
     auto ptr = type.get();
     types_.push_back(std::move(type));
     symbols_->setRef((char) TypeKind::POINTER, ptr);
@@ -63,7 +63,7 @@ PointerTypeNode *OberonSystem::createPointerType(TypeNode *base) {
 }
 
 ArrayTypeNode *OberonSystem::createArrayType(TypeNode *memberType, unsigned int dimension) {
-    auto type = make_unique<ArrayTypeNode>(nullptr, dimension, memberType);
+    auto type = make_unique<ArrayTypeNode>(EMPTY_POS, nullptr, dimension, memberType);
     auto ptr = type.get();
     types_.push_back(std::move(type));
     symbols_->setRef((char) TypeKind::ARRAY, ptr);
@@ -119,7 +119,7 @@ void Oberon07::initSymbolTable(SymbolTable *symbols) {
     this->createProcedure(ProcKind::ODD, "ODD", {{longType, false}}, boolType, false, true);
     this->createProcedure(ProcKind::HALT, "HALT", {{intType, false}}, nullptr, false, true);
     this->createProcedure(ProcKind::ASSERT, "ASSERT", {{boolType, false}}, nullptr, false, true);
-    this->createProcedure(ProcKind::LEN, "LEN", {{this->createArrayType(anyType, 0), true}}, longType, false, true);
+    this->createProcedure(ProcKind::LEN, "LEN", {{this->createArrayType(anyType, 0), false}}, longType, false, true);
     this->createProcedure(ProcKind::INCL, "INCL", {{setType, true}, {intType, false}}, nullptr, false, true);
     this->createProcedure(ProcKind::EXCL, "EXCL", {{setType, true}, {intType, false}}, nullptr, false, true);
     this->createProcedure(ProcKind::ORD, "ORD", {{anyType, false}}, intType, false, true);
