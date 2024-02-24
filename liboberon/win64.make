@@ -21,7 +21,7 @@ clean:
 	@del /q *.ilk *.pdb *.obj *.exe
 
 .c.obj:
-	@$(CXX) /nologo /c $< >nul
+	@$(CXX) /nologo /GS- /c $< >nul
 
 .Mod.obj:
 	@$(O7C) $(O7CFLAGS) $<
