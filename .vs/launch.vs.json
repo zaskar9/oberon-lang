@@ -21,9 +21,12 @@
       "name": "oberon-lang.exe (src\\oberon-lang.exe)",
       "currentDir": "${workspaceRoot}/test/oberon",
       "args": [
-        "-I.;./include",
-        "--filetype=ll",
-        "Sort.Mod"
+        "-I.;.\\include",
+        "-L.;.\\lib",
+        "-loberon",
+        "-v",
+        "--run",
+        "Sets.Mod"
       ]
     }
   ]
