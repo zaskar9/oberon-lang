@@ -656,7 +656,8 @@ TypeNode *Sema::onArrayIndex(TypeNode *base, ArrayIndex *sel) {
         auto type = index->getType();
         if (type && type->kind() == TypeKind::INTEGER) {
             if (index->isLiteral()) {
-                assertInBounds(dynamic_cast<const IntegerLiteralNode *>(index.get()), 0, array->getDimension() - 1);
+                long length = (long) array->getDimension();
+                assertInBounds(dynamic_cast<const IntegerLiteralNode *>(index.get()), 0, length - 1);
             }
         } else {
             logger_.error(sel->pos(), "integer expression expected.");

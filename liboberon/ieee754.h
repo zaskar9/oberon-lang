@@ -20,11 +20,24 @@
 
 #define _IEEE754_H 1
 
-#if defined(__APPLE__)
+#if defined(__FreeBSD__) || defined(__APPLE__) || defined(__FreeBSD_kernel__) || defined(__OpenBSD__)
     #include <machine/endian.h>
-#else
+#endif
+
+#if defined(__linux__) || defined(__CYGWIN__) || defined(__GNU__) || defined(ANDROID)
     #include <endian.h>
 #endif
+
+#ifdef __MINGW32__
+    #include <sys/param.h>
+#endif
+
+#ifdef _MSC_VER
+    #define LITTLE_ENDIAN 0x0001
+    #define BYTE_ORDER LITTLE_ENDIAN
+    #define FLOAT_WORD_ORDER BYTE_ORDER
+#endif
+
 
 union ieee754_float
 {
