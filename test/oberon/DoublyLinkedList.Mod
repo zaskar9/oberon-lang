@@ -20,6 +20,7 @@ PROCEDURE append(VAR l: List; value: INTEGER);
   BEGIN
     NEW(newNode);
     newNode.value := value;
+    newNode.next := NIL;
 
     IF l.tail = NIL THEN
       (* If the list is empty, set the new node as both head and tail *)

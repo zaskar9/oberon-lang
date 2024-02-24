@@ -408,7 +408,9 @@ Sema::onForLoop(const FilePos &start, [[maybe_unused]] const FilePos &end,
                 unique_ptr<StatementSequenceNode> stmts) {
     // auto ident = to_string(*var);
     vector<unique_ptr<Selector>> selectors;
-    auto counter = onQualifiedExpression(var->start(), var->end(), std::move(var), std::move(selectors));
+    FilePos v_start = var->start();
+    FilePos v_end = var->end();
+    auto counter = onQualifiedExpression(v_start, v_end, std::move(var), std::move(selectors));
     if (!counter) {
         logger_.error(start, "undefined counter variable in for-loop.");
     }
@@ -656,7 +658,8 @@ TypeNode *Sema::onArrayIndex(TypeNode *base, ArrayIndex *sel) {
         auto type = index->getType();
         if (type && type->kind() == TypeKind::INTEGER) {
             if (index->isLiteral()) {
-                assertInBounds(dynamic_cast<const IntegerLiteralNode *>(index.get()), 0, array->getDimension() - 1);
+                long length = (long) array->getDimension();
+                assertInBounds(dynamic_cast<const IntegerLiteralNode *>(index.get()), 0, length - 1);
             }
         } else {
             logger_.error(sel->pos(), "integer expression expected.");

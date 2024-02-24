@@ -100,7 +100,7 @@ int main(const int argc, const char **argv) {
             auto params = vm["-I"].as<vector<string>>();
             vector<string> includes;
             for (const auto& param : params) {
-                boost::algorithm::split(includes, param, boost::is_any_of(":"));
+                boost::algorithm::split(includes, param, boost::is_any_of(separator));
                 for (const auto& include: includes) {
                     config.addIncludeDirectory(include);
                     logger.debug("Include search path: '" + include + "'.");
@@ -111,7 +111,7 @@ int main(const int argc, const char **argv) {
             auto params = vm["-L"].as<vector<string>>();
             vector<string> libraries;
             for (const auto& param : params) {
-                boost::algorithm::split(libraries, param, boost::is_any_of(":"));
+                boost::algorithm::split(libraries, param, boost::is_any_of(separator));
                 for (const auto& library: libraries) {
                     config.addLibraryDirectory(library);
                     logger.debug("Library search path: '" + library + "'.");
