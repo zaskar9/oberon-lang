@@ -5,12 +5,10 @@ CONST Dim = 10;
 
 TYPE
     Array = ARRAY Dim OF INTEGER;
-    TestPtr = POINTER TO TestRec;
 
 VAR l: Array;
 
 PROCEDURE Init(VAR l: Array; val: INTEGER);
-TYPE TestRec = RECORD x: INTEGER END;
 VAR i: INTEGER;
 BEGIN
     FOR i := 0 TO Dim - 1 DO
