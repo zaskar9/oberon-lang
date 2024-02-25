@@ -9,11 +9,15 @@ IMPORT Out;
 VAR
   a, b, c : INTEGER;
 
-PROCEDURE Test : INTEGER;
-    PROCEDURE Inner : INTEGER;
-    BEGIN c := a + b
+PROCEDURE Test();
+
+    PROCEDURE Inner();
+    BEGIN
+        c := a + b
     END Inner;
-BEGIN Inner()
+
+BEGIN
+    Inner()
 END Test;
 
 BEGIN

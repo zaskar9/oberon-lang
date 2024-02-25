@@ -13,9 +13,9 @@ BEGIN
   FOR i := 0 TO 2 DO
     a[i] := i + 1.5
   END;
-  Out.Real(a[0]); Out.Ln;
-  Out.Real(a[1]); Out.Ln;
-  Out.Real(a[2]); Out.Ln
+  Out.Real(a[0], 10); Out.Ln;
+  Out.Real(a[1], 10); Out.Ln;
+  Out.Real(a[2], 10); Out.Ln
 END Test;
 
 BEGIN

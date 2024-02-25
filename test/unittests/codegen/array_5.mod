@@ -24,7 +24,7 @@ END Test;
 
 BEGIN
     Test
-END Array4.
+END Array5.
 (*
     CHECK: 1
     CHECK: 1
