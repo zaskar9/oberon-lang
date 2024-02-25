@@ -5,6 +5,7 @@ CONST Dim = 10;
 
 TYPE
     Array = ARRAY Dim OF INTEGER;
+    Matrix = ARRAY Dim, Dim OF INTEGER;
 
 VAR l: Array;
 

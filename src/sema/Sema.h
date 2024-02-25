@@ -104,7 +104,8 @@ public:
 
     unique_ptr<TypeDeclarationNode> onType(const FilePos &, const FilePos &,
                                            unique_ptr<IdentDef>, TypeNode *);
-    ArrayTypeNode *onArrayType(const FilePos &, const FilePos &, Ident *, unique_ptr<ExpressionNode>, TypeNode *);
+    ArrayTypeNode *onArrayType(const FilePos &, const FilePos &,
+                               Ident *, vector<unique_ptr<ExpressionNode>>, TypeNode *);
     PointerTypeNode *onPointerType(const FilePos &, const FilePos &, Ident *, unique_ptr<QualIdent>);
     PointerTypeNode *onPointerType(const FilePos &, const FilePos &, Ident *, TypeNode *);
     ProcedureTypeNode *onProcedureType(const FilePos &, const FilePos &,

@@ -143,39 +143,45 @@ Sema::onType(const FilePos &start, [[maybe_unused]] const FilePos &end,
 
 ArrayTypeNode *
 Sema::onArrayType(const FilePos &start, const FilePos &end,
-                  Ident *ident, unique_ptr<ExpressionNode> expr, TypeNode *type) {
-    unsigned length = 0;
-    if (expr) {
-        if (!expr->isConstant()) {
-            logger_.error(expr->pos(), "constant expression expected.");
-        }
-        if (expr->getType()) {
-            if (expr->isLiteral()) {
-                if (expr->getType()->isInteger()) {
-                    auto literal = dynamic_cast<const IntegerLiteralNode *>(expr.get());
-                    if (literal->value() <= 0) {
-                        logger_.error(expr->pos(), "array dimension must be a positive value.");
+                  Ident *ident, vector<unique_ptr<ExpressionNode>> indices, TypeNode *type) {
+    vector<unsigned> lengths;
+    for (auto &expr : indices) {
+        if (expr) {
+            if (!expr->isConstant()) {
+                logger_.error(expr->pos(), "constant expression expected.");
+            }
+            if (expr->getType()) {
+                if (expr->isLiteral()) {
+                    if (expr->getType()->isInteger()) {
+                        auto literal = dynamic_cast<const IntegerLiteralNode *>(expr.get());
+                        if (literal->value() <= 0) {
+                            logger_.error(expr->pos(), "array dimension must be a positive value.");
+                        }
+                        lengths.push_back((unsigned) literal->value());
+                    } else {
+                        logger_.error(expr->pos(), "integer expression expected.");
                     }
-                    length = (unsigned) literal->value();
                 } else {
-                    logger_.error(expr->pos(), "integer expression expected.");
+                    logger_.error(expr->pos(), "constant integer expression expected.");
                 }
             } else {
-                logger_.error(expr->pos(), "constant integer expression expected.");
+                logger_.error(expr->pos(), "undefined array dimension type.");
             }
         } else {
-            logger_.error(expr->pos(), "undefined array dimension type.");
+            logger_.error(start, "undefined array dimension.");
         }
-    } else {
-        logger_.error(start, "undefined array dimension.");
     }
     if (!type) {
         logger_.error(start, "undefined member type.");
     } else if (type->isArray()) {
         logger_.warning(start, "nested array found, use multi-dimensional array instead.");
     }
-    auto res = context_->getOrInsertArrayType(start, end, ident, 1, { length }, type);
-    if (type && type->getSize() > 0 && length > 0) {
+    auto res = context_->getOrInsertArrayType(start, end, ident, lengths.size(), lengths, type);
+    if (type && type->getSize() > 0 && lengths.size() > 0) {
+        unsigned length = 1;
+        for (unsigned l : lengths) {
+            length *= l;
+        }
         res->setSize(length * type->getSize());
     }
     return res;

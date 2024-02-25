@@ -274,15 +274,19 @@ TypeNode* Parser::type(Ident* identifier) {
     return nullptr;
 }
 
-// TODO array_type = "ARRAY" expression { "," expression } "OF" type .
-// array_type = "ARRAY" expression "OF" type .
+// array_type = "ARRAY" expression { "," expression } "OF" type .
 ArrayTypeNode* Parser::array_type(Ident* identifier) {
     logger_.debug("array_type");
     FilePos pos = scanner_.next()->start(); // skip ARRAY keyword and get its position
-    auto expr = expression();
+    vector<unique_ptr<ExpressionNode>> indices;
+    indices.push_back(expression());
+    while (scanner_.peek()->type() == TokenType::comma) {
+        scanner_.next(); // skip comma
+        indices.push_back(expression());
+    }
     if (assertToken(scanner_.peek(), TokenType::kw_of)) {
         scanner_.next(); // skip OF keyword
-        return sema_.onArrayType(pos, EMPTY_POS, identifier, std::move(expr), type());
+        return sema_.onArrayType(pos, EMPTY_POS, identifier, std::move(indices), type());
     }
     // [<)>, <;>, <END>]
     resync({ TokenType::semicolon, TokenType::rparen, TokenType::kw_end });
