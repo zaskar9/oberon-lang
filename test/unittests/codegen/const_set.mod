@@ -1,18 +1,17 @@
 (*
-  RUN: %oberon -fenable-extern -fenable-varargs --run %s | filecheck %s
+  RUN: %oberon -I "%S%{pathsep}%inc" -L "%S%{pathsep}%lib" -l oberon --run %s | filecheck %s
   SET type not supported yet
 *)
 MODULE ConstSet;
+IMPORT Out;
 
 CONST
   WordSize = 32;
-  all = {0 .. WordSize-1}
-
-PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
+  all = {0 .. WordSize-1};
 
 PROCEDURE Test;
 BEGIN
-    printf("%X\n", ORD(all))
+    Out.Hex(ORD(all)); Out.Ln
 END Test;
 
 BEGIN

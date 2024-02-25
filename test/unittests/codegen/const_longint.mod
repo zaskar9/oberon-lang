@@ -14,8 +14,8 @@ CONST
 
 PROCEDURE Test;
 BEGIN
-  Out.Int(longintmax, 0); Out.Ln;
-  Out.Int(longintmin, 0); Out.Ln
+  Out.Long(longintmax, 0); Out.Ln;
+  Out.Long(longintmin, 0); Out.Ln
 END Test;
 
 BEGIN

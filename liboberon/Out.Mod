@@ -35,10 +35,15 @@ BEGIN
     rt_out_int(val, n)
 END Long;
 
-PROCEDURE Hex*(i: LONGINT);
+PROCEDURE Hex*(x: INTEGER);
 BEGIN
-    printf("%X", i)
+    printf("%08X", x)
 END Hex;
+
+PROCEDURE LongHex*(x: LONGINT);
+BEGIN
+    printf("%016llX", x)
+END LongHex;
 
 PROCEDURE Real*(x: REAL; n: INTEGER);
 BEGIN

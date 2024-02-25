@@ -32,5 +32,5 @@ END Const1.
     CHECK: '
     CHECK: Oberon
     CHECK: 'Oberon'
-    CHECK: 12.3
+    CHECK: 1.2E+01
 *)

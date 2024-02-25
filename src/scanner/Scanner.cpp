@@ -12,6 +12,7 @@
 #include <boost/convert/stream.hpp>
 
 #include <config.h>
+#include <boost/lexical_cast.hpp>
 #include "Scanner.h"
 #include "IdentToken.h"
 #include "LiteralToken.h"
@@ -317,29 +318,36 @@ unique_ptr<const Token> Scanner::scanNumber() {
     boost::cnv::cstream ccnv;
     auto num = ss.str();
     if (isFloat) {
-        double value = 0;
+        auto result = boost::convert<float>(num, ccnv(std::dec)(std::scientific));
+        if (result) {
+            return make_unique<FloatLiteralToken>(pos, current(), result.value());
+        }
+        double value;
         try {
-             value = boost::convert<double>(num, ccnv(std::dec)(std::scientific)).value();
+            value = boost::convert<double>(num, ccnv(std::dec)(std::scientific)).value();
         } catch (boost::bad_optional_access const&) {
             logger_.error(pos, "invalid real literal: " + num + ".");
-        }
-        if (value >= std::numeric_limits<float>::lowest() && value <= std::numeric_limits<float>::max()) {
-            return make_unique<FloatLiteralToken>(pos, current(), static_cast<float>(value));
+            value = 0;
         }
         return make_unique<DoubleLiteralToken>(pos, current(), value);
     } else {
+        bool isLong = true;
         long value;
         try {
             if (isHex) {
-                value = boost::convert<long>(num, ccnv(std::hex)).value();
+                auto res = boost::convert<unsigned long>(num, ccnv(std::hex)).value();
+                isLong = res > std::numeric_limits<unsigned int>::max();
+                value = static_cast<long>(res);
             } else {
-                value = boost::convert<long>(num, ccnv(std::dec)).value();
+                auto res = boost::convert<unsigned long>(num, ccnv(std::dec)).value();
+                isLong = res > std::numeric_limits<unsigned int>::max();
+                value = static_cast<long>(res);
             }
-        } catch (boost::bad_optional_access const&) {
+        } catch (boost::bad_optional_access const &e) {
             logger_.error(pos, "invalid integer literal: " + num + ".");
             value = 0;
         }
-        if (value >= std::numeric_limits<int>::lowest() && value <= std::numeric_limits<int>::max()) {
+        if (!isLong) {
             return make_unique<IntLiteralToken>(pos, current(), static_cast<int>(value));
         }
         return make_unique<LongLiteralToken>(pos, current(), value);

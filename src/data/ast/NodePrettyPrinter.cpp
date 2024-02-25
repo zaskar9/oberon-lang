@@ -191,7 +191,7 @@ void NodePrettyPrinter::selectors(std::vector<unique_ptr<Selector>> &selectors) 
 void NodePrettyPrinter::visit(ConstantDeclarationNode &node) {
     stream_ << *node.getIdentifier() << "(*" << node.getLevel() << "*) = ";
     node.getValue()->accept(*this);
-    stream_ << ';' << std::endl;
+    stream_ << "(*" << *node.getType()->getIdentifier() << "*);" << std::endl;
 }
 
 void NodePrettyPrinter::visit(FieldNode &node) {

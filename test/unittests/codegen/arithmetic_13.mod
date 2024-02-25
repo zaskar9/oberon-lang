@@ -12,7 +12,7 @@ BEGIN
   a := -7.5;
   b := 15.0;
   c := (a + b) / 2.0;
-  Out.Real(c); Out.Ln
+  Out.Real(c, 10); Out.Ln
 END Test;
 
 BEGIN
