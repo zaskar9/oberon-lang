@@ -170,14 +170,16 @@ void Parser::import(vector<unique_ptr<ImportNode>> &imports) {
     auto token = scanner_.peek();
     if (assertToken(token, TokenType::const_ident)) {
         auto identifier = ident();
+        FilePos start = identifier->start();
+        FilePos end = identifier->end();
         if (scanner_.peek()->type() == TokenType::op_becomes) {
             scanner_.next(); // skip := operator
             if (assertToken(scanner_.peek(), TokenType::const_ident)) {
                 auto name = ident();
-                imports.push_back(sema_.onImport(identifier->start(), identifier->end(), std::move(identifier), std::move(name)));
+                imports.push_back(sema_.onImport(start, end, std::move(identifier), std::move(name)));
             }
         } else {
-            imports.push_back(sema_.onImport(identifier->start(), identifier->end(), nullptr, std::move(identifier)));
+            imports.push_back(sema_.onImport(start, end, nullptr, std::move(identifier)));
         }
     }
 }
@@ -325,7 +327,9 @@ void Parser::field_list(vector<unique_ptr<FieldNode>> &fields) {
                 auto node = type();
                 unsigned index = 0;
                 for (auto &&ident: idents) {
-                    fields.push_back(sema_.onField(ident->start(), ident->end(), std::move(ident), node, index++));
+                    FilePos start = ident->start();
+                    FilePos end = ident->end();
+                    fields.push_back(sema_.onField(start, end, std::move(ident), node, index++));
                 }
             }
         }
@@ -370,7 +374,9 @@ void Parser::var_declarations(vector<unique_ptr<VariableDeclarationNode>> &vars)
             auto node = type();
             int index = 0;
             for (auto &&ident : idents) {
-                auto decl = sema_.onVariable(ident->start(), ident->end(), std::move(ident), node, index++);
+                FilePos start = ident->start();
+                FilePos end = ident->end();
+                auto decl = sema_.onVariable(start, end, std::move(ident), node, index++);
                 vars.push_back(std::move(decl));
             }
             token = scanner_.next();
@@ -546,7 +552,9 @@ void Parser::fp_section(vector<unique_ptr<ParameterNode>> &params, bool &varargs
         auto node = formal_type();
         unsigned index = 0;
         for (auto &&ident : idents) {
-            params.push_back(sema_.onParameter(ident->start(), ident->end(), std::move(ident), node, var, index++));
+            FilePos start = ident->start();
+            FilePos end = ident->end();
+            params.push_back(sema_.onParameter(start, end, std::move(ident), node, var, index++));
         }
     }
     // [<;>, <)>]
@@ -642,7 +650,9 @@ unique_ptr<StatementNode> Parser::statement() {
         if (follows.find(scanner_.peek()->type()) != follows.end()) {
             return sema_.onReturn(token_->start(), token_->end(), nullptr);
         }
-        return sema_.onReturn(token_->start(), token->end(), expression());
+        FilePos start = token_->start();
+        FilePos end = token->end();
+        return sema_.onReturn(start, end, expression());
     } else {
         logger_.error(token->start(), "unknown or empty statement.");
     }
@@ -655,7 +665,8 @@ unique_ptr<StatementNode> Parser::statement() {
 unique_ptr<StatementNode> Parser::assignment(unique_ptr<QualifiedExpression> lvalue) {
     logger_.debug("assignment");
     scanner_.next(); // skip assign operator
-    auto statement = sema_.onAssignment(lvalue->pos(), EMPTY_POS, std::move(lvalue), expression());
+    FilePos start = lvalue->pos();
+    auto statement = sema_.onAssignment(start, EMPTY_POS, std::move(lvalue), expression());
     // [<;>, <END>, <ELSIF>, <ELSE>, <UNTIL>]
     // resync({ TokenType::semicolon, TokenType::kw_end, TokenType::kw_elsif, TokenType::kw_else, TokenType::kw_until });
     return statement;
@@ -1037,7 +1048,8 @@ unique_ptr<ExpressionNode> Parser::element() {
     auto expr = expression();
     if (scanner_.peek()->type() == TokenType::range) {
         scanner_.next();   // skip range indicator
-        return sema_.onRangeExpression(expr->pos(), EMPTY_POS, std::move(expr), expression());
+        FilePos start = expr->pos();
+        return sema_.onRangeExpression(start, EMPTY_POS, std::move(expr), expression());
     }
     return expr;
 }

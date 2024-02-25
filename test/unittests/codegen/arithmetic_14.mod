@@ -1,5 +1,5 @@
 (*
-  RUN: %oberon -I "%S;%inc" -L "%S;%lib" -l oberon --run %s | filecheck %s
+  RUN: %oberon -I "%S%{pathsep}%inc" -L "%S%{pathsep}%lib" -l oberon --run %s | filecheck %s
 *)
 MODULE Arithmetic14;
 
@@ -12,7 +12,7 @@ BEGIN
   a := 7.5;
   b := 15.0;
   c := (a - b) / 2.0;
-  Out.Real(c); Out.Ln
+  Out.Real(c, 10); Out.Ln
 END Test;
 
 BEGIN

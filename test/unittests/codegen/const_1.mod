@@ -1,5 +1,5 @@
 (*
-  RUN: %oberon -I "%S;%inc" -L "%S;%lib" -l oberon --run %s | filecheck %s
+  RUN: %oberon -I "%S%{pathsep}%inc" -L "%S%{pathsep}%lib" -l oberon --run %s | filecheck %s
 *)
 MODULE Const1;
 
@@ -20,7 +20,7 @@ BEGIN
     Out.String(S); Out.Ln;
     Out.String(STR); Out.Ln;
     Out.String(SSTR); Out.Ln;
-    Out.Real(F); Out.Ln
+    Out.Real(F, 0); Out.Ln
 END Test;
 
 BEGIN
@@ -32,5 +32,5 @@ END Const1.
     CHECK: '
     CHECK: Oberon
     CHECK: 'Oberon'
-    CHECK: 12.3
+    CHECK: 1.2E+01
 *)

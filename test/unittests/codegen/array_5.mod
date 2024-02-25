@@ -1,5 +1,5 @@
 (*
-  RUN: %oberon -I "%S;%inc" -L "%S;%lib" -l oberon --run %s | filecheck %s
+  RUN: %oberon -I "%S%{pathsep}%inc" -L "%S%{pathsep}%lib" -l oberon --run %s | filecheck %s
   Fails with Segmentation fault
 *)
 MODULE Array5;
@@ -24,7 +24,7 @@ END Test;
 
 BEGIN
     Test
-END Array4.
+END Array5.
 (*
     CHECK: 1
     CHECK: 1

@@ -6,8 +6,8 @@
 MODULE ConstLongReal1;
 
 CONST
-  min = -1.7976931348623158D308
-  max = -2.2250738585072014D-308
+  min = -1.7976931348623158E308;
+  max = -2.2250738585072014E-308;
 
 PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
 
@@ -16,15 +16,15 @@ VAR
   val : LONGREAL;
 BEGIN
   val := min;
-  printf("%.9g\n", val);
+  printf("%.16g\n", val);
   val := max;
-  printf("%.9g\n", val)
+  printf("%.16g\n", val)
 END Test;
 
 BEGIN
     Test()
 END ConstLongReal1.
 (*
-    CHECK: -1.7976931348623158e308
-    CHECK: -2.2250738585072014e-308
+    CHECK: -1.797693134862316e+308
+    CHECK: -2.225073858507201e-308
 *)

@@ -8,7 +8,7 @@ VAR i: INTEGER;
     l: LONGINT;
     a: ARRAY 10 OF INTEGER;
     r: RECORD x: INTEGER END;
-    (* p: POINTER TO LONGINT; *)
+    p: POINTER TO RECORD x: INTEGER END;
 BEGIN
     i := 0;
     l := 0;
@@ -17,7 +17,14 @@ BEGIN
     Out.String("["); Out.Int(i, 0); Out.String(","); Out.Long(l, 0); Out.String("]"); Out.Ln;
     DEC(i, 5);
     DEC(l);
-    Out.String("["); Out.Int(i, 0); Out.String(","); Out.Long(l, 0); Out.String("]"); Out.Ln
+    Out.String("["); Out.Int(i, 0); Out.String(","); Out.Long(l, 0); Out.String("]"); Out.Ln;
+    INC(i, i);
+    INC(i, l); (* should trigger a warning *)
+    INC(l, i);
+    INC(l, l);
+    INC(a[0]);
+    INC(r.x);
+    INC(p.x)
 END IncDec;
 
 PROCEDURE NewFree;

@@ -1,11 +1,11 @@
 (*
-  RUN: %oberon -I "%S;%inc" -L "%S;%lib" -l oberon --run %s | filecheck %s
+  RUN: %oberon -I "%S%{pathsep}%inc" -L "%S%{pathsep}%lib" -l oberon --run %s | filecheck %s
 *)
 MODULE ControlFlow2;
 
 IMPORT Out;
 
-PROCEDURE Test : INTEGER;
+PROCEDURE Test(): INTEGER;
 BEGIN
   IF TRUE THEN RETURN 123
   ELSE RETURN 321 END

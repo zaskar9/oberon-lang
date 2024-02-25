@@ -1,5 +1,4 @@
 # Compiler settings
-# O7C = ..\out\build\$(CPU_ARCH)-Release\src\oberon-lang.exe
 O7C = ..\build\src\oberon-lang.exe
 CXX = cl.exe
 LIBX = lib.exe
@@ -7,7 +6,7 @@ LINK = link.exe
 LIB = ..\test\oberon\lib
 INC = ..\test\oberon\include
 
-O7CFLAGS = -q -O3 --reloc=pic # -fenable-extern -fenable-varargs
+O7CFLAGS = -q -O3 --reloc=pic -fenable-extern -fenable-varargs
 
 # Library settings
 NAME = oberon
@@ -22,7 +21,7 @@ clean:
 	@del /q *.ilk *.pdb *.obj *.exe
 
 .c.obj:
-	@$(CXX) /nologo /c $< >nul
+	@$(CXX) /nologo /GS- /c $< >nul
 
 .Mod.obj:
 	@$(O7C) $(O7CFLAGS) $<

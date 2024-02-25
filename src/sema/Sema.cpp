@@ -18,15 +18,16 @@ using std::string;
 Sema::Sema(CompilerConfig &config, ASTContext *context, OberonSystem *system) :
         config_(config), context_(context), system_(system), logger_(config_.logger()), forwards_(), module_(), procs_(),
         symbols_(system_->getSymbolTable()), importer_(config_, context), exporter_(config_, context) {
-    tBoolean_ = symbols_->getBasicType(to_string(TypeKind::BOOLEAN));
-    tByte_ = symbols_->getBasicType(to_string(TypeKind::BYTE));
-    tChar_ = symbols_->getBasicType(to_string(TypeKind::CHAR));
-    tInteger_ = symbols_->getBasicType(to_string(TypeKind::INTEGER));
-    tLongInt_ = symbols_->getBasicType(to_string(TypeKind::LONGINT));
-    tReal_ = symbols_->getBasicType(to_string(TypeKind::REAL));
-    tLongReal_ = symbols_->getBasicType(to_string(TypeKind::LONGREAL));
-    tString_ = symbols_->getBasicType(to_string(TypeKind::STRING));
-    tSet_ = symbols_->getBasicType(to_string(TypeKind::SET));
+    boolTy_ = symbols_->getBasicType(to_string(TypeKind::BOOLEAN));
+    byteTy = symbols_->getBasicType(to_string(TypeKind::BYTE));
+    charTy = symbols_->getBasicType(to_string(TypeKind::CHAR));
+    integerTy_ = symbols_->getBasicType(to_string(TypeKind::INTEGER));
+    longIntTy_ = symbols_->getBasicType(to_string(TypeKind::LONGINT));
+    realTy_ = symbols_->getBasicType(to_string(TypeKind::REAL));
+    longRealTy_ = symbols_->getBasicType(to_string(TypeKind::LONGREAL));
+    stringTy_ = symbols_->getBasicType(to_string(TypeKind::STRING));
+    setTy_ = symbols_->getBasicType(to_string(TypeKind::SET));
+    nullTy_ = system_->getBasicType(TypeKind::NOTYPE);
 }
 
 void
@@ -137,6 +138,8 @@ Sema::onType(const FilePos &start, [[maybe_unused]] const FilePos &end,
             pointer_t->setBase(type);
             forwards_.erase(it);
         }
+    } else {
+        node->setType(nullTy_);
     }
     return node;
 }
@@ -173,6 +176,7 @@ Sema::onArrayType(const FilePos &start, const FilePos &end,
     }
     if (!type) {
         logger_.error(start, "undefined member type.");
+        type = nullTy_;
     } else if (type->isArray()) {
         logger_.warning(start, "nested array found, use multi-dimensional array instead.");
     }
@@ -222,6 +226,7 @@ Sema::onParameter(const FilePos &start, [[maybe_unused]] const FilePos &end,
                   unique_ptr<Ident> ident, TypeNode *type, bool is_var, unsigned index) {
     if (!type) {
         logger_.error(start, "undefined parameter type.");
+        type = nullTy_;
     }
     auto node = make_unique<ParameterNode>(start, std::move(ident), type, is_var, index);
     assertUnique(node->getIdentifier(), node.get());
@@ -260,6 +265,7 @@ Sema::onField(const FilePos &start, [[maybe_unused]] const FilePos &end,
               unique_ptr<IdentDef> ident, TypeNode *type, unsigned index) {
     if (!type) {
         logger_.error(start, "undefined record field type.");
+        type = nullTy_;
     }
     return make_unique<FieldNode>(start, std::move(ident), type, index);
 }
@@ -296,6 +302,7 @@ Sema::onVariable(const FilePos &start, [[maybe_unused]] const FilePos &end,
                  unique_ptr<IdentDef> ident, TypeNode *type, int index) {
     if (!type) {
         logger_.error(start, "undefined variable type.");
+        type = nullTy_;
     }
     auto node = make_unique<VariableDeclarationNode>(start, std::move(ident), type, index);
     assertUnique(node->getIdentifier(), node.get());
@@ -432,7 +439,9 @@ Sema::onForLoop(const FilePos &start, [[maybe_unused]] const FilePos &end,
                 unique_ptr<ExpressionNode> low, unique_ptr<ExpressionNode> high, unique_ptr<ExpressionNode> step,
                 unique_ptr<StatementSequenceNode> stmts) {
     vector<unique_ptr<Selector>> selectors;
-    auto counter = onQualifiedExpression(var->start(), var->end(), std::move(var), std::move(selectors));
+    FilePos v_start = var->start();
+    FilePos v_end = var->end();
+    auto counter = onQualifiedExpression(v_start, v_end, std::move(var), std::move(selectors));
     if (!counter) {
         logger_.error(start, "undefined counter variable in for-loop.");
     }
@@ -696,7 +705,7 @@ TypeNode *Sema::onActualParameters(TypeNode *base, ActualParameters *sel) {
                 }
             }
         } else if (!proc->hasVarArgs()) {
-            logger_.error(expr->pos(), "more actual than formal parameters.");
+            logger_.error(sel->pos(), "more actual than formal parameters.");
             break;
         }
     }
@@ -716,8 +725,9 @@ TypeNode *Sema::onArrayIndex(TypeNode *base, ArrayIndex *sel) {
         auto type = index->getType();
         if (type && type->kind() == TypeKind::INTEGER) {
             if (index->isLiteral()) {
-                // TODO support for multi-dimensional arrays
-                assertInBounds(dynamic_cast<const IntegerLiteralNode *>(index.get()), 0, array->lengths()[0] - 1);
+            	// TODO support for multi-dimensional arrays
+                long length = (long) array->lengths()[0];
+                assertInBounds(dynamic_cast<const IntegerLiteralNode *>(index.get()), 0, length - 1);
             }
         } else {
             logger_.error(sel->pos(), "integer expression expected.");
@@ -777,7 +787,7 @@ Sema::onUnaryExpression(const FilePos &start, [[maybe_unused]] const FilePos &en
     auto type = expr->getType();
     if (!type) {
         logger_.error(start, "undefined type in unary expression.");
-        return nullptr;
+        type = nullTy_;
     }
     if (expr->isConstant()) {
         return fold(start, end, op, expr.get());
@@ -816,11 +826,11 @@ Sema::onBinaryExpression(const FilePos &start, [[maybe_unused]] const FilePos &e
         case OperatorType::GT:
         case OperatorType::GEQ:
             common = commonType(start, lhsType, rhsType);
-            result = tBoolean_;
+            result = boolTy_;
             break;
         case OperatorType::IN:
             common = nullptr;
-            result = tBoolean_;
+            result = boolTy_;
             if (!lhsType->isInteger()) {
                 logger_.error(lhs->pos(), "integer expression expected.");
             }
@@ -847,9 +857,9 @@ Sema::onBinaryExpression(const FilePos &start, [[maybe_unused]] const FilePos &e
             result = common;
             if (common->isInteger()) {
                 if (common->kind() == TypeKind::LONGINT) {
-                    result = this->tLongReal_;
+                    result = this->longRealTy_;
                 } else {
-                    result = this->tReal_;
+                    result = this->realTy_;
                 }
             }
             break;
@@ -858,7 +868,7 @@ Sema::onBinaryExpression(const FilePos &start, [[maybe_unused]] const FilePos &e
             if (!lhsType->isBoolean() || !rhsType->isBoolean()) {
                 logger_.error(start, "operator " + to_string(op) + " requires boolean arguments.");
             }
-            common = tBoolean_;
+            common = boolTy_;
             result = common;
             break;
         default:
@@ -962,7 +972,7 @@ unique_ptr<ExpressionNode> Sema::onSetExpression(const FilePos &start, [[maybe_u
             }
         }
     }
-    auto expr = make_unique<SetExpressionNode>(start, std::move(elements), tSet_);
+    auto expr = make_unique<SetExpressionNode>(start, std::move(elements), setTy_);
     if (expr->isConstant()) {
         bitset<32> result;
         for (auto &elem : expr->elements()) {
@@ -974,7 +984,7 @@ unique_ptr<ExpressionNode> Sema::onSetExpression(const FilePos &start, [[maybe_u
                 result.set(std::size_t(pos));
             }
         }
-        return make_unique<SetLiteralNode>(start, result, tSet_);
+        return make_unique<SetLiteralNode>(start, result, setTy_);
     }
     return expr;
 }
@@ -991,24 +1001,24 @@ long Sema::assertInBounds(const IntegerLiteralNode *literal, long lower, long up
 
 unique_ptr<BooleanLiteralNode>
 Sema::onBooleanLiteral(const FilePos &start, [[maybe_unused]] const FilePos &end, bool value) {
-    return make_unique<BooleanLiteralNode>(start, value, tBoolean_);
+    return make_unique<BooleanLiteralNode>(start, value, boolTy_);
 }
 
 unique_ptr<IntegerLiteralNode>
 Sema::onIntegerLiteral(const FilePos &start, [[maybe_unused]] const FilePos &end, long value, bool ext) {
-    TypeNode *type = ext ? tLongInt_ : tInteger_;
+    TypeNode *type = ext ? longIntTy_ : integerTy_;
     return make_unique<IntegerLiteralNode>(start, value, type);
 }
 
 unique_ptr<RealLiteralNode>
 Sema::onRealLiteral(const FilePos &start, [[maybe_unused]] const FilePos &end, double value, bool ext) {
-    TypeNode *type = ext ? tLongReal_ : tReal_;
+    TypeNode *type = ext ? longRealTy_ : realTy_;
     return make_unique<RealLiteralNode>(start, value, type);
 }
 
 unique_ptr<StringLiteralNode>
 Sema::onStringLiteral(const FilePos &start, [[maybe_unused]] const FilePos &end, const string &value) {
-    return make_unique<StringLiteralNode>(start, value, tString_);
+    return make_unique<StringLiteralNode>(start, value, stringTy_);
 }
 
 unique_ptr<NilLiteralNode>
@@ -1018,7 +1028,7 @@ Sema::onNilLiteral(const FilePos &start, [[maybe_unused]] const FilePos &end) {
 
 unique_ptr<SetLiteralNode>
 Sema::onSetLiteral(const FilePos &start, [[maybe_unused]] const FilePos &end, bitset<32> value) {
-    return make_unique<SetLiteralNode>(start, value, tSet_);
+    return make_unique<SetLiteralNode>(start, value, setTy_);
 }
 
 bool Sema::isDefined(Ident *ident) {
@@ -1133,8 +1143,12 @@ Sema::fold(const FilePos &start, [[maybe_unused]] const FilePos &end, OperatorTy
         switch (op) {
             case OperatorType::PLUS:
                 return make_unique<IntegerLiteralNode>(start, value, type, cast);
-            case OperatorType::NEG:
-                return make_unique<IntegerLiteralNode>(start, -value, type, cast);
+            case OperatorType::NEG: {
+                // negating an integer literal can change its type from LONGINT to INTEGER
+                auto literal = make_unique<IntegerLiteralNode>(start, -value, type, cast);
+                literal->setType(literal->isLong() ? longIntTy_ : integerTy_);
+                return literal;
+            }
             default:
                 logger_.error(start, "operator " + to_string(op) + " cannot be applied to integer values.");
         }
@@ -1173,6 +1187,10 @@ Sema::fold(const FilePos &start, [[maybe_unused]] const FilePos &end,
                     return make_unique<BooleanLiteralNode>(start, lvalue && rvalue, common);
                 case OperatorType::OR:
                     return make_unique<BooleanLiteralNode>(start, lvalue || rvalue, common);
+                case OperatorType::EQ:
+                    return make_unique<BooleanLiteralNode>(start, lvalue == rvalue, common);
+                case OperatorType::NEQ:
+                    return make_unique<BooleanLiteralNode>(start, lvalue != rvalue, common);
                 default:
                     logger_.error(start, "operator " + to_string(op) + " cannot be applied to boolean values.");
             }

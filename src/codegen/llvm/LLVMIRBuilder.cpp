@@ -328,7 +328,7 @@ void LLVMIRBuilder::visit(BooleanLiteralNode &node) {
 }
 
 void LLVMIRBuilder::visit(IntegerLiteralNode &node) {
-    if (node.isLong()) {
+    if (node.isLong() || node.getType()->kind() == TypeKind::LONGINT) {
         value_ = ConstantInt::getSigned(builder_.getInt64Ty(), node.value());
     } else {
         value_ = ConstantInt::getSigned(builder_.getInt32Ty(), (int) node.value());
@@ -337,7 +337,7 @@ void LLVMIRBuilder::visit(IntegerLiteralNode &node) {
 }
 
 void LLVMIRBuilder::visit(RealLiteralNode &node) {
-    if (node.isLong()) {
+    if (node.isLong() || node.getType()->kind() == TypeKind::LONGREAL) {
         value_ = ConstantFP::get(builder_.getDoubleTy(), node.value());
     } else {
         value_ = ConstantFP::get(builder_.getFloatTy(), (float) node.value());
@@ -781,7 +781,6 @@ void LLVMIRBuilder::cast(ExpressionNode &node) {
 Value *
 LLVMIRBuilder::predefinedCall(PredefinedProcedure *proc, QualIdent *ident,
                               ActualParameters *actuals, std::vector<Value *> &params) {
-    auto type = dynamic_cast<ProcedureTypeNode *>(proc->getType());
     ProcKind kind = proc->getKind();
     if (kind == ProcKind::NEW) {
         auto fun = module_->getFunction("malloc");
@@ -831,20 +830,22 @@ LLVMIRBuilder::predefinedCall(PredefinedProcedure *proc, QualIdent *ident,
             logger_.error(param->pos(), "more actual than formal parameters.");
             return value_;
         } else if (params.size() > 1) {
-            auto source = params[1]->getType();
-            auto param = actuals->parameters()[0].get();
-            if (!param->getType()->isInteger()) {
-                logger_.error(param->pos(), "type mismatch: expected integer type, found " +
-                                            to_string(param->getType()) + ".");
+            auto param0 = actuals->parameters()[0].get();
+            auto param1 = actuals->parameters()[1].get();
+            if (!param0->getType()->isInteger()) {
+                logger_.error(param0->pos(), "type mismatch: expected integer type, found " +
+                                             to_string(param0->getType()) + ".");
                 return value_;
             }
-            delta = params[1];
+            auto source = params[1]->getType();
             if (target->getIntegerBitWidth() > source->getIntegerBitWidth()) {
-                delta = builder_.CreateSExt(delta, target);
+                delta = builder_.CreateSExt(params[1], target);
             } else if (target->getIntegerBitWidth() < source->getIntegerBitWidth()) {
-                logger_.warning(param->pos(), "type mismatch: truncating " + to_string(param->getType()) + " to " +
-                                              to_string(type->parameters()[0]->getType()) + " may lose data.");
-                delta = builder_.CreateTrunc(delta, target);
+                logger_.warning(param1->pos(), "type mismatch: truncating " + to_string(param1->getType())
+                                               + " to " + to_string(param0->getType()) + " may lose data.");
+                delta = builder_.CreateTrunc(params[1], target);
+            } else {
+                delta = params[1];
             }
         } else {
             delta = ConstantInt::get(target, 1);

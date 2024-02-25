@@ -1,5 +1,5 @@
 (*
-  RUN: %oberon -I "%S;%inc" -L "%S;%lib" -l oberon --run %s | filecheck %s
+  RUN: %oberon -I "%S%{pathsep}%inc" -L "%S%{pathsep}%lib" -l oberon --run %s | filecheck %s
 *)
 MODULE Arithmetic16;
 
@@ -12,22 +12,22 @@ BEGIN
   a := -7.5;
   b := 3.5;
   c := a * b;
-  Out.Real(c); Out.Ln;
+  Out.Real(c, 10); Out.Ln;
   a := 7.5;
   b := 0;
   c := a * b;
-  Out.Real(c); Out.Ln;
+  Out.Real(c, 10); Out.Ln;
   a := 7.5;
   b := 3.5;
   c := a * b;
-  Out.Real(c); Out.Ln
+  Out.Real(c, 10); Out.Ln
 END Test;
 
 BEGIN
     Test
 END Arithmetic16.
 (*
-    CHECK: -26.25
+    CHECK: -2.63E+01
     CHECK: 0
-    CHECK: 26.25
+    CHECK: 2.63E+01
 *)

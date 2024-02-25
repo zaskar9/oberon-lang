@@ -44,7 +44,7 @@ private:
     SymbolTable *symbols_;
     SymbolImporter importer_;
     SymbolExporter exporter_;
-    TypeNode *tBoolean_, *tByte_, *tChar_, *tInteger_, *tLongInt_, *tReal_, *tLongReal_, *tString_, *tSet_;
+    TypeNode *boolTy_, *byteTy, *charTy, *integerTy_, *longIntTy_, *realTy_, *longRealTy_, *stringTy_, *setTy_, *nullTy_;
 
     bool assertEqual(Ident *, Ident *) const;
     void assertUnique(IdentDef *, DeclarationNode *);
