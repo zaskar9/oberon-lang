@@ -167,7 +167,7 @@ TypeNode *SymbolImporter::readArrayType(SymbolFile *file) {
     // read dimension
     // TODO support for multi-dimensional arrays
     auto length = (unsigned) file->readInt();
-    auto res = context_->getOrInsertArrayType(EMPTY_POS, EMPTY_POS, nullptr, 1, { length }, member_t);
+    auto res = context_->getOrInsertArrayType(EMPTY_POS, EMPTY_POS, nullptr, 1, { length }, { member_t });
     // read in size
     res->setSize((unsigned) file->readInt());
     return res;

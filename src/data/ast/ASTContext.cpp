@@ -23,17 +23,17 @@ void ASTContext::setTranslationUnit(unique_ptr<ModuleNode> module) {
 ArrayTypeNode *
 ASTContext::getOrInsertArrayType(const FilePos &start, const FilePos &end,
                                  Ident *ident, unsigned length, TypeNode *memberType) {
-    return getOrInsertArrayType(start, end, ident, 1, { length }, memberType);
+    return getOrInsertArrayType(start, end, ident, 1, { length }, { memberType });
 }
 
 ArrayTypeNode *
 ASTContext::getOrInsertArrayType(const FilePos &start, [[maybe_unused]] const FilePos &end,
-                                 Ident *ident, unsigned dimensions, vector<unsigned> lengths, TypeNode *memberType) {
+                                 Ident *ident, unsigned dimensions, vector<unsigned> lengths, vector<TypeNode *> types) {
     for (auto &type : array_ts_) {
-        if (type->dimensions() == dimensions && type->getMemberType() == memberType) {
+        if (type->dimensions() == dimensions) {
             bool found = true;
             for (unsigned i = 0; i < dimensions; i++) {
-                if (lengths[i] != type->lengths()[i]) {
+                if (lengths[i] != type->lengths()[i] || types[i] != type->types()[i]) {
                     found = false;
                     break;
                 }
@@ -43,7 +43,7 @@ ASTContext::getOrInsertArrayType(const FilePos &start, [[maybe_unused]] const Fi
             }
         }
     }
-    auto type = make_unique<ArrayTypeNode>(start, ident, dimensions, std::move(lengths), memberType);
+    auto type = make_unique<ArrayTypeNode>(start, ident, dimensions, std::move(lengths), std::move(types));
     auto res = type.get();
     array_ts_.push_back(std::move(type));
     return res;

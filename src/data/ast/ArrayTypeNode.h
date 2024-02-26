@@ -20,18 +20,21 @@ class ArrayTypeNode final : public TypeNode {
 private:
     unsigned dimensions_;
     vector<unsigned> lengths_;
-    TypeNode *memberType_;
+    vector<TypeNode *> types_;
+    // TypeNode *memberType_;
 
 public:
-    ArrayTypeNode(const FilePos &pos, Ident *ident, unsigned dimensions, vector<unsigned> lengths, TypeNode *memberType) :
+    ArrayTypeNode(const FilePos &pos, Ident *ident, unsigned dimensions,
+                  vector<unsigned> lengths, vector<TypeNode *> types) :
             TypeNode(NodeType::array_type, pos, ident, TypeKind::ARRAY, 0),
-            dimensions_(dimensions), lengths_(std::move(lengths)), memberType_(memberType) {};
+            dimensions_(dimensions), lengths_(std::move(lengths)), types_(types) {};
     ArrayTypeNode(const FilePos &pos, Ident *ident, unsigned length, TypeNode *memberType) :
-            ArrayTypeNode(pos, ident, 1, { length }, memberType) {};
+            ArrayTypeNode(pos, ident, 1, { length }, { memberType }) {};
     ~ArrayTypeNode() final = default;
 
     [[nodiscard]] unsigned dimensions() const;
     [[nodiscard]] const vector<unsigned> &lengths() const;
+    [[nodiscard]] const vector<TypeNode *> &types() const;
     [[nodiscard]] TypeNode *getMemberType() const;
 
     [[nodiscard]] bool isOpen() const;

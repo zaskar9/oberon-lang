@@ -6,8 +6,16 @@ CONST Dim = 10;
 TYPE
     Array = ARRAY Dim OF INTEGER;
     Matrix = ARRAY Dim, Dim OF INTEGER;
+    Cube = ARRAY Dim OF ARRAY Dim OF ARRAY Dim OF INTEGER;
 
 VAR l: Array;
+    m: Matrix;
+    c: Cube;
+
+PROCEDURE Len(a: ARRAY OF INTEGER): LONGINT;
+BEGIN
+    RETURN LEN(a)
+END Len;
 
 PROCEDURE Init(VAR l: Array; val: INTEGER);
 VAR i: INTEGER;
@@ -16,11 +24,6 @@ BEGIN
         l[i] := i * val
     END
 END Init;
-
-PROCEDURE Len(a: ARRAY OF INTEGER): LONGINT;
-BEGIN
-    RETURN LEN(a)
-END Len;
 
 PROCEDURE Print(l: Array);
 VAR i: INTEGER;
@@ -32,6 +35,16 @@ BEGIN
     END;
     Out.Ln
 END Print;
+
+PROCEDURE InitMatrix(VAR m: Matrix; val: INTEGER);
+VAR i, j: INTEGER;
+BEGIN
+    FOR i := 0 TO Dim - 1 DO
+        FOR j := 0 TO Dim - 1 DO
+            m[i, i] := val
+        END
+    END
+END InitMatrix;
 
 PROCEDURE Run();
 VAR l: Array;
@@ -45,5 +58,7 @@ BEGIN
     Print(l);
     Run;
     Print(l);
-    Len(l)
+    Len(l);
+    c[0][0][0] := 42;
+    Len(c)
 END Arrays.

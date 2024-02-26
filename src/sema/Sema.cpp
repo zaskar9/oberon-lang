@@ -148,6 +148,7 @@ ArrayTypeNode *
 Sema::onArrayType(const FilePos &start, const FilePos &end,
                   Ident *ident, vector<unique_ptr<ExpressionNode>> indices, TypeNode *type) {
     vector<unsigned> lengths;
+    vector<TypeNode *> types;
     for (auto &expr : indices) {
         if (expr) {
             if (!expr->isConstant()) {
@@ -176,12 +177,18 @@ Sema::onArrayType(const FilePos &start, const FilePos &end,
     }
     if (!type) {
         logger_.error(start, "undefined member type.");
-        type = nullTy_;
-    } else if (type->isArray()) {
+        types.push_back(nullTy_);
+    } else {
+        types.push_back(type);
+    }
+    if (type->isArray()) {
+        auto arrayTy = dynamic_cast<ArrayTypeNode *>(type);
+        lengths.insert(lengths.end(), arrayTy->lengths().begin(), arrayTy->lengths().end());
+        types.insert(types.end(), arrayTy->types().begin(), arrayTy->types().end());
         logger_.warning(start, "nested array found, use multi-dimensional array instead.");
     }
-    auto res = context_->getOrInsertArrayType(start, end, ident, lengths.size(), lengths, type);
-    if (type && type->getSize() > 0 && lengths.size() > 0) {
+    auto res = context_->getOrInsertArrayType(start, end, ident, lengths.size(), lengths, types);
+    if (type && type->getSize() > 0 && !lengths.empty()) {
         unsigned length = 1;
         for (unsigned l : lengths) {
             length *= l;
@@ -290,7 +297,7 @@ Sema::onTypeReference(const FilePos &start, const FilePos &end,
             return type;
         }
         vector<unsigned> lengths(dimensions, 0);
-        return context_->getOrInsertArrayType(start, end, nullptr, dimensions, lengths, type);
+        return context_->getOrInsertArrayType(start, end, nullptr, dimensions, lengths, { type });
     } else {
         logger_.error(start, "undefined type: " + to_string(*ident) + ".");
     }
@@ -718,22 +725,24 @@ TypeNode *Sema::onArrayIndex(TypeNode *base, ArrayIndex *sel) {
         return nullptr;
     }
     auto array = dynamic_cast<ArrayTypeNode *>(base);
-    if (sel->indices().size() > 1) {
-        logger_.error(sel->pos(), "multi-dimensional arrays are not yet supported.");
+    if (sel->indices().size() > array->lengths().size()) {
+        logger_.error(sel->pos(), "more indices than array dimensions: " + to_string(sel->indices().size()) + " > "
+                                  + to_string(array->lengths().size()) + ".");
     }
-    for (auto &index : sel->indices()) {
+    auto num = std::min(array->lengths().size(), sel->indices().size());
+    for (size_t i = 0; i < num; ++i) {
+        auto index = sel->indices()[i].get();
         auto type = index->getType();
-        if (type && type->kind() == TypeKind::INTEGER) {
+        if (type->kind() == TypeKind::INTEGER) {
             if (index->isLiteral()) {
-            	// TODO support for multi-dimensional arrays
-                long length = (long) array->lengths()[0];
-                assertInBounds(dynamic_cast<const IntegerLiteralNode *>(index.get()), 0, length - 1);
+                long length = (long) array->lengths()[i];
+                assertInBounds(dynamic_cast<const IntegerLiteralNode *>(index), 0, length - 1);
             }
         } else {
             logger_.error(sel->pos(), "integer expression expected.");
         }
     }
-    return array->getMemberType();
+    return array->types()[num];
 }
 
 TypeNode *Sema::onDereference(TypeNode *base, Dereference *sel) {

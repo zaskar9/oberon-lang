@@ -15,8 +15,15 @@ const vector<unsigned int> &ArrayTypeNode::lengths() const {
     return lengths_;
 }
 
+const vector<TypeNode *> &ArrayTypeNode::types() const {
+    return types_;
+}
+
 TypeNode *ArrayTypeNode::getMemberType() const {
-    return memberType_;
+    if (!types_.empty()) {
+        return types_[types_.size() - 1];
+    }
+    return nullptr;
 }
 
 bool ArrayTypeNode::isOpen() const {
