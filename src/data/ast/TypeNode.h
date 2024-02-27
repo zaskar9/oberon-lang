@@ -48,6 +48,7 @@ public:
 
     [[nodiscard]] bool isArray() const;
     [[nodiscard]] bool isRecord() const;
+    [[nodiscard]] bool isStructured() const;
     [[nodiscard]] bool isPointer() const;
     [[nodiscard]] bool isProcedure() const;
     [[nodiscard]] bool isBoolean() const;

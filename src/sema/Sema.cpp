@@ -655,9 +655,9 @@ Sema::assertAssignable(const ExpressionNode * expr, string &err) const {
         auto decl = dynamic_cast<const QualifiedExpression *>(expr)->dereference();
         if (decl->getNodeType() == NodeType::parameter) {
             auto type = decl->getType();
-            if (type->isArray() || type->isRecord() || type->isProcedure()) {
+            if (type->isStructured()) {
                 auto param = dynamic_cast<const ParameterNode *>(decl);
-                err = "a non-variable parameter";
+                err = "a non-variable structured parameter";
                 return param->isVar();
             }
         } else if (decl->getNodeType() == NodeType::constant) {
@@ -1435,9 +1435,20 @@ Sema::assertCompatible(const FilePos &pos, TypeNode *expected, TypeNode *actual,
     if (expected->isArray() && actual->isArray()) {
         auto exp_array = dynamic_cast<ArrayTypeNode *>(expected);
         auto act_array = dynamic_cast<ArrayTypeNode *>(actual);
-        // TODO support for multi-dimensional arrays
-        if ((exp_array->isOpen() || exp_array->lengths()[0] == act_array->lengths()[0])) {
-            return assertCompatible(pos, exp_array->getMemberType(), act_array->getMemberType(), var);
+        if (exp_array->dimensions() == act_array->dimensions()) {
+            if (exp_array->isOpen()) {
+                return assertCompatible(pos, exp_array->getMemberType(), act_array->getMemberType(), var);
+            } else {
+                for (size_t i = 0; i < exp_array->dimensions(); ++i) {
+                    if (!assertCompatible(pos, exp_array->types()[i], act_array->types()[i], var)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        } else {
+            logger_.error(pos, "type mismatch: different array dimensions, expected " +
+                    to_string(exp_array->dimensions()) + ", found " + to_string(act_array->dimensions()) + ".");
         }
     }
     // Check pointer type
