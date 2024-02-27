@@ -6,7 +6,7 @@ CONST Dim = 10;
 TYPE
     Array = ARRAY Dim OF INTEGER;
     Matrix = ARRAY Dim, Dim OF INTEGER;
-    Cube = ARRAY Dim OF ARRAY Dim OF ARRAY Dim OF INTEGER;
+    Cube = ARRAY Dim * Dim OF ARRAY Dim OF ARRAY Dim OF INTEGER;
 
 VAR l: Array;
     m: Matrix;
@@ -41,7 +41,7 @@ VAR i, j: INTEGER;
 BEGIN
     FOR i := 0 TO Dim - 1 DO
         FOR j := 0 TO Dim - 1 DO
-            m[i, i] := val
+            m[i, j] := val
         END
     END
 END InitMatrix;
@@ -59,6 +59,6 @@ BEGIN
     Run;
     Print(l);
     Len(l);
-    c[0][0][0] := 42;
-    Len(c)
+    c[0, 0, 0] := 42;
+    Out.Long(Len(c), 0); Out.Ln
 END Arrays.

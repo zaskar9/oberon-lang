@@ -147,9 +147,10 @@ Sema::onType(const FilePos &start, [[maybe_unused]] const FilePos &end,
 ArrayTypeNode *
 Sema::onArrayType(const FilePos &start, const FilePos &end,
                   Ident *ident, vector<unique_ptr<ExpressionNode>> indices, TypeNode *type) {
-    vector<unsigned> lengths;
+    vector<unsigned> lengths(indices.size(), 0);
     vector<TypeNode *> types;
-    for (auto &expr : indices) {
+    for (size_t i = 0; i < indices.size(); ++i) {
+        auto expr = indices[i].get();
         if (expr) {
             if (!expr->isConstant()) {
                 logger_.error(expr->pos(), "constant expression expected.");
@@ -157,11 +158,11 @@ Sema::onArrayType(const FilePos &start, const FilePos &end,
             if (expr->getType()) {
                 if (expr->isLiteral()) {
                     if (expr->getType()->isInteger()) {
-                        auto literal = dynamic_cast<const IntegerLiteralNode *>(expr.get());
+                        auto literal = dynamic_cast<const IntegerLiteralNode *>(expr);
                         if (literal->value() <= 0) {
                             logger_.error(expr->pos(), "array dimension must be a positive value.");
                         }
-                        lengths.push_back((unsigned) literal->value());
+                        lengths[i] = (unsigned) literal->value();
                     } else {
                         logger_.error(expr->pos(), "integer expression expected.");
                     }
@@ -177,9 +178,15 @@ Sema::onArrayType(const FilePos &start, const FilePos &end,
     }
     if (!type) {
         logger_.error(start, "undefined member type.");
-        types.push_back(nullTy_);
-    } else {
-        types.push_back(type);
+        type = nullTy_;
+    }
+    types.push_back(type);
+    if (indices.size() > 1) {
+        auto tmp = type;
+        for (size_t i = 1; i < indices.size(); ++i) {
+            tmp = context_->getOrInsertArrayType(EMPTY_POS, EMPTY_POS, nullptr, 1, { lengths[indices.size() - i - 1] }, { tmp });
+            types.insert(types.begin(), tmp);
+        }
     }
     if (type->isArray()) {
         auto arrayTy = dynamic_cast<ArrayTypeNode *>(type);
@@ -742,7 +749,7 @@ TypeNode *Sema::onArrayIndex(TypeNode *base, ArrayIndex *sel) {
             logger_.error(sel->pos(), "integer expression expected.");
         }
     }
-    return array->types()[num];
+    return array->types()[num - 1];
 }
 
 TypeNode *Sema::onDereference(TypeNode *base, Dereference *sel) {
