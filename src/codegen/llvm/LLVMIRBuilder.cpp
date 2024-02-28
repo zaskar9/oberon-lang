@@ -232,15 +232,17 @@ TypeNode *LLVMIRBuilder::selectors(TypeNode *base, SelectorIterator start, Selec
             value_ = builder_.CreateCall(::cast<FunctionType>(funTy), value, values);
             selector_t = type->getReturnType();
         } else if (sel->getNodeType() == NodeType::array_type) {
-            // handle array index access
-            indices.push_back(builder_.getInt32(1));   // the array is the second field in the struct
+            auto array =  dynamic_cast<ArrayIndex*>(sel);
+            auto type = dynamic_cast<ArrayTypeNode*>(selector_t);
             setRefMode(true);
-            // TODO support for multi-dimensional arrays
-            dynamic_cast<ArrayIndex*>(sel)->indices()[0]->accept(*this);
-            indices.push_back(value_);
+            for (auto &index: array->indices()) {
+                indices.push_back(builder_.getInt32(1));   // the array is the second field in the struct
+                index->accept(*this);
+                indices.push_back(value_);
+            }
             restoreRefMode();
             value = processGEP(base, value, indices);
-            selector_t = dynamic_cast<ArrayTypeNode*>(selector_t)->getMemberType();
+            selector_t = type->types()[array->indices().size() - 1];
             base = selector_t;
         } else if (sel->getNodeType() == NodeType::pointer_type) {
             // output the GEP up to the pointer
@@ -993,10 +995,8 @@ Type* LLVMIRBuilder::getLLVMType(TypeNode *type) {
         result = types_[type];
     } else if (type->getNodeType() == NodeType::array_type) {
         auto array_t = dynamic_cast<ArrayTypeNode *>(type);
-        // create a struct that stores the size and the elements of the array
-        // TODO support for multi-dimensional arrays
-        result = ArrayType::get(getLLVMType(array_t->getMemberType()), array_t->lengths()[0]);
-        // TODO create a human-readable name
+        // (recursively) create a struct that stores the size and the elements of the array
+        result = ArrayType::get(getLLVMType(array_t->types()[0]), array_t->lengths()[0]);
         result = StructType::create(builder_.getContext(), { builder_.getInt64Ty(), result });
         types_[type] = result;
     } else if (type->getNodeType() == NodeType::record_type) {

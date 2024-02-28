@@ -42,7 +42,8 @@ Sema::onTranslationUnitEnd(const string &name) {
     }
 }
 
-void Sema::onBlockStart() {
+void
+Sema::onBlockStart() {
     // O07.6.4: If a type P is defined as POINTER TO T, the identifier T can be declared textually
     // following the declaration of P, but, if so, it must lie within the same scope.
     if (!forwards_.empty()) {
@@ -55,7 +56,8 @@ void Sema::onBlockStart() {
     symbols_->openScope();
 }
 
-void Sema::onBlockEnd() {
+void
+Sema::onBlockEnd() {
     symbols_->closeScope();
 }
 
@@ -68,7 +70,8 @@ Sema::onModuleStart(const FilePos &start, unique_ptr<Ident> ident, vector<unique
     return module_.get();
 }
 
-unique_ptr<ModuleNode> Sema::onModuleEnd([[maybe_unused]] const FilePos &end, unique_ptr<Ident> ident) {
+unique_ptr<ModuleNode>
+Sema::onModuleEnd([[maybe_unused]] const FilePos &end, unique_ptr<Ident> ident) {
     onBlockEnd();
     if (*module_->getIdentifier() != *ident.get()) {
         logger_.error(ident->start(), "module name mismatch: expected " + to_string(*module_->getIdentifier()) +
@@ -76,7 +79,6 @@ unique_ptr<ModuleNode> Sema::onModuleEnd([[maybe_unused]] const FilePos &end, un
     }
     return std::move(module_);
 }
-
 
 unique_ptr<ImportNode>
 Sema::onImport(const FilePos &start, [[maybe_unused]] const FilePos &end,
@@ -147,8 +149,7 @@ Sema::onType(const FilePos &start, [[maybe_unused]] const FilePos &end,
 ArrayTypeNode *
 Sema::onArrayType(const FilePos &start, const FilePos &end,
                   Ident *ident, vector<unique_ptr<ExpressionNode>> indices, TypeNode *type) {
-    vector<unsigned> lengths(indices.size(), 0);
-    vector<TypeNode *> types;
+    vector<unsigned> values(indices.size(), 0);
     for (size_t i = 0; i < indices.size(); ++i) {
         auto expr = indices[i].get();
         if (expr) {
@@ -162,7 +163,7 @@ Sema::onArrayType(const FilePos &start, const FilePos &end,
                         if (literal->value() <= 0) {
                             logger_.error(expr->pos(), "array dimension must be a positive value.");
                         }
-                        lengths[i] = (unsigned) literal->value();
+                        values[i] = (unsigned) literal->value();
                     } else {
                         logger_.error(expr->pos(), "integer expression expected.");
                     }
@@ -180,29 +181,20 @@ Sema::onArrayType(const FilePos &start, const FilePos &end,
         logger_.error(start, "undefined member type.");
         type = nullTy_;
     }
-    types.push_back(type);
-    if (indices.size() > 1) {
-        auto tmp = type;
-        for (size_t i = 1; i < indices.size(); ++i) {
-            tmp = context_->getOrInsertArrayType(EMPTY_POS, EMPTY_POS, nullptr, 1, { lengths[indices.size() - i - 1] }, { tmp });
-            types.insert(types.begin(), tmp);
-        }
-    }
+    vector<unsigned> lengths;
+    vector<TypeNode *> types;
     if (type->isArray()) {
         auto arrayTy = dynamic_cast<ArrayTypeNode *>(type);
-        lengths.insert(lengths.end(), arrayTy->lengths().begin(), arrayTy->lengths().end());
-        types.insert(types.end(), arrayTy->types().begin(), arrayTy->types().end());
+        lengths.insert(lengths.begin(), arrayTy->lengths().begin(), arrayTy->lengths().end());
+        types.insert(types.begin(), arrayTy->types().begin(), arrayTy->types().end());
         logger_.warning(start, "nested array found, use multi-dimensional array instead.");
     }
-    auto res = context_->getOrInsertArrayType(start, end, ident, lengths.size(), lengths, types);
-    if (type && type->getSize() > 0 && !lengths.empty()) {
-        unsigned length = 1;
-        for (unsigned l : lengths) {
-            length *= l;
-        }
-        res->setSize(length * type->getSize());
+    for (size_t i = values.size(); i > 0; --i) {
+        lengths.insert(lengths.begin(), values[i - 1]);
+        types.insert(types.begin(), type);
+        type = context_->getOrInsertArrayType(start, end, (i == 1 ? ident : nullptr), lengths.size(), lengths, types);
     }
-    return res;
+    return dynamic_cast<ArrayTypeNode *>(type);
 }
 
 PointerTypeNode *
@@ -303,8 +295,14 @@ Sema::onTypeReference(const FilePos &start, const FilePos &end,
         if (dimensions == 0) {
             return type;
         }
-        vector<unsigned> lengths(dimensions, 0);
-        return context_->getOrInsertArrayType(start, end, nullptr, dimensions, lengths, { type });
+        vector<unsigned> lengths;
+        vector<TypeNode *> types;
+        for (size_t i = dimensions; i > 0; --i) {
+            lengths.insert(lengths.begin(), 0);
+            types.insert(types.begin(), type);
+            type = context_->getOrInsertArrayType(start, end, nullptr, lengths.size(), lengths, types);
+        }
+        return type;
     } else {
         logger_.error(start, "undefined type: " + to_string(*ident) + ".");
     }
@@ -376,7 +374,7 @@ Sema::onAssignment(const FilePos &start, [[maybe_unused]] const FilePos &end,
     }
     if (lvalue && rvalue) {
         // Type inference: check that types are compatible
-        if (assertCompatible(lvalue->pos(), lvalue->getType(), rvalue->getType())) {
+        if (assertCompatible(rvalue->pos(), lvalue->getType(), rvalue->getType())) {
             cast(rvalue.get(), lvalue->getType());
         }
     }
@@ -559,7 +557,7 @@ Sema::onQualifiedExpression(const FilePos &start, [[maybe_unused]] const FilePos
     DeclarationNode* sym = symbols_->lookup(ident.get());
     if (!sym) {
         logger_.error(ident->start(), "undefined identifier: " + to_string(*ident) + ".");
-        return make_unique<QualifiedExpression>(start, std::move(ident), std::move(selectors), sym, nullptr);
+        return make_unique<QualifiedExpression>(start, std::move(ident), std::move(selectors), sym, nullTy_);
     }
     // check variable or parameter reference
     if (sym->getNodeType() == NodeType::variable || sym->getNodeType() == NodeType::parameter) {
@@ -577,7 +575,7 @@ Sema::onQualifiedExpression(const FilePos &start, [[maybe_unused]] const FilePos
         return make_unique<QualifiedExpression>(start, std::move(ident), std::move(selectors), sym, type);
     }
     logger_.error(ident->start(), "variable, parameter, or function call expected.");
-    return make_unique<QualifiedExpression>(start, std::move(ident), std::move(selectors), sym, nullptr);;
+    return make_unique<QualifiedExpression>(start, std::move(ident), std::move(selectors), sym, nullTy_);;
 }
 
 unique_ptr<LiteralNode>
@@ -733,8 +731,8 @@ TypeNode *Sema::onArrayIndex(TypeNode *base, ArrayIndex *sel) {
     }
     auto array = dynamic_cast<ArrayTypeNode *>(base);
     if (sel->indices().size() > array->lengths().size()) {
-        logger_.error(sel->pos(), "more indices than array dimensions: " + to_string(sel->indices().size()) + " > "
-                                  + to_string(array->lengths().size()) + ".");
+        logger_.error(sel->pos(), "more indices than array dimensions: " + to_string(sel->indices().size())
+                                  + " > " + to_string(array->lengths().size()) + ".");
     }
     auto num = std::min(array->lengths().size(), sel->indices().size());
     for (size_t i = 0; i < num; ++i) {
@@ -742,8 +740,16 @@ TypeNode *Sema::onArrayIndex(TypeNode *base, ArrayIndex *sel) {
         auto type = index->getType();
         if (type->kind() == TypeKind::INTEGER) {
             if (index->isLiteral()) {
-                long length = (long) array->lengths()[i];
-                assertInBounds(dynamic_cast<const IntegerLiteralNode *>(index), 0, length - 1);
+                auto literal = dynamic_cast<const IntegerLiteralNode *>(index);
+                if (array->isOpen()) {
+                    if (literal->value() < 0) {
+                        logger_.error(literal->pos(), "negative value " + to_string(literal->value())
+                                                      + " is not a valid array index.");
+                    }
+                } else {
+                    long length = (long) array->lengths()[i];
+                    assertInBounds(literal, 0, length - 1);
+                }
             }
         } else {
             logger_.error(sel->pos(), "integer expression expected.");
@@ -1399,7 +1405,7 @@ Sema::assertCompatible(const FilePos &pos, TypeNode *expected, TypeNode *actual,
         return true;
     }
     // Check `ANYTYPE`
-    if (expected->kind() == TypeKind::ANYTYPE || expected->kind() == TypeKind::ANYTYPE) {
+    if (expected->kind() == TypeKind::ANYTYPE) {
         return true;
     }
     // Check declared types
@@ -1435,6 +1441,10 @@ Sema::assertCompatible(const FilePos &pos, TypeNode *expected, TypeNode *actual,
     if (expected->isArray() && actual->isArray()) {
         auto exp_array = dynamic_cast<ArrayTypeNode *>(expected);
         auto act_array = dynamic_cast<ArrayTypeNode *>(actual);
+        // Check `ANYTYPE`
+        if (exp_array->getMemberType()->kind() == TypeKind::ANYTYPE) {
+            return true;
+        }
         if (exp_array->dimensions() == act_array->dimensions()) {
             if (exp_array->isOpen()) {
                 return assertCompatible(pos, exp_array->getMemberType(), act_array->getMemberType(), var);
@@ -1447,8 +1457,9 @@ Sema::assertCompatible(const FilePos &pos, TypeNode *expected, TypeNode *actual,
                 return true;
             }
         } else {
-            logger_.error(pos, "type mismatch: different array dimensions, expected " +
+            logger_.error(pos, "type mismatch: incompatible array dimensions, expected " +
                     to_string(exp_array->dimensions()) + ", found " + to_string(act_array->dimensions()) + ".");
+            return false;
         }
     }
     // Check pointer type
@@ -1461,7 +1472,7 @@ Sema::assertCompatible(const FilePos &pos, TypeNode *expected, TypeNode *actual,
             return true;
         }
     }
-    // error logging
+    // Error logging
     logger_.error(pos, "type mismatch: expected " + format(expected, isPtr) + ", found " + format(actual, isPtr) + ".");
     return false;
 }
@@ -1490,15 +1501,23 @@ Sema::commonType(const FilePos &pos, TypeNode *lhsType, TypeNode *rhsType) const
 
 string
 Sema::format(const TypeNode *type, bool isPtr) {
-    auto name = isPtr ? string("POINTER TO ") : string();
-    if (type->getIdentifier()) {
-        name += to_string(*type->getIdentifier());
-    } else {
-        std::stringstream stream;
-        stream << *type;
-        name += stream.str();
+    std::stringstream stream;
+    if (isPtr) {
+        stream << "POINTER TO ";
     }
-    return name;
+    if (type->isArray()) {
+        auto array = dynamic_cast<const ArrayTypeNode *>(type);
+        stream << "ARRAY ";
+        string sep;
+        for (unsigned length: array->lengths()) {
+            stream << sep << length;
+            sep = ", ";
+        }
+        stream << " OF " << *array->getMemberType();
+    } else {
+        stream << *type;
+    }
+    return stream.str();
 }
 
 void Sema::cast(ExpressionNode *expr, TypeNode *expected) {

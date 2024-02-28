@@ -77,7 +77,7 @@ void NodePrettyPrinter::block(BlockNode& node, bool isGlobal) {
 
 void NodePrettyPrinter::visit(ModuleNode& node) {
     indent();
-    stream_ << "MODULE " << *node.getIdentifier() << "(*" << node.getLevel() << "*);" << std::endl;
+    stream_ << "MODULE " << *node.getIdentifier() << "(*Scope:" << node.getLevel() << "*);" << std::endl;
     if (node.getImportCount() > 0) {
         stream_ << "IMPORT ";
         for (size_t i = 0; i < node.getImportCount(); i++) {
@@ -100,7 +100,7 @@ void NodePrettyPrinter::visit(ModuleNode& node) {
 
 void NodePrettyPrinter::visit(ProcedureNode& node) {
     indent();
-    stream_ << "PROCEDURE " << *node.getIdentifier() << "(*" << node.getLevel() << "*)(";
+    stream_ << "PROCEDURE " << *node.getIdentifier() << "(*Scope:" << node.getLevel() << "*)(";
     auto type = dynamic_cast<ProcedureTypeNode *>(node.getType());
     string sep;
     for (auto &param : type->parameters()) {
@@ -189,9 +189,9 @@ void NodePrettyPrinter::selectors(std::vector<unique_ptr<Selector>> &selectors) 
 }
 
 void NodePrettyPrinter::visit(ConstantDeclarationNode &node) {
-    stream_ << *node.getIdentifier() << "(*" << node.getLevel() << "*) = ";
+    stream_ << *node.getIdentifier() << "(*Scope:" << node.getLevel() << "*) = ";
     node.getValue()->accept(*this);
-    stream_ << "(*" << *node.getType()->getIdentifier() << "*);" << std::endl;
+    stream_ << "(*Type:" << *node.getType()->getIdentifier() << "*);" << std::endl;
 }
 
 void NodePrettyPrinter::visit(FieldNode &node) {
@@ -201,19 +201,19 @@ void NodePrettyPrinter::visit(FieldNode &node) {
 
 void NodePrettyPrinter::visit(ParameterNode &node) {
     stream_ << (node.isVar() ? "VAR " : "");
-    stream_ << *node.getIdentifier() << "(*" << node.getLevel() << "*): ";
+    stream_ << *node.getIdentifier() << "(*Scope:" << node.getLevel() << "*): ";
     node.getType()->accept(*this);
 }
 
 void NodePrettyPrinter::visit(TypeDeclarationNode &node) {
-    stream_ << *node.getIdentifier() << "(*" << node.getLevel() << "*) = ";
+    stream_ << *node.getIdentifier() << "(*Scope:" << node.getLevel() << "*) = ";
     isDecl_ = true;
     node.getType()->accept(*this);
-    stream_ << ';' << std::endl;
+    stream_ << "(*Size:" << node.getType()->getSize() << "*);" << std::endl;
 }
 
 void NodePrettyPrinter::visit(VariableDeclarationNode &node) {
-    stream_ << *node.getIdentifier() << "(*" << node.getLevel() << "*): ";
+    stream_ << *node.getIdentifier() << "(*Scope:" << node.getLevel() << "*): ";
     node.getType()->accept(*this);
     stream_ << ';' << std::endl;
 }
@@ -310,13 +310,19 @@ void NodePrettyPrinter::visit(SetExpressionNode &node) {
 void NodePrettyPrinter::visit(ArrayTypeNode &node) {
     if (node.isAnonymous() || isDecl_) {
         isDecl_ = false;
-        stream_ << "ARRAY ";
-        string sep;
-        for (unsigned len : node.lengths()) {
-            stream_ << sep << len;
-            sep = ", ";
+        if (node.isOpen()) {
+            for (unsigned i = 0; i < node.dimensions(); ++i) {
+                stream_ << "ARRAY OF ";
+            }
+        } else {
+            stream_ << "ARRAY ";
+            string sep;
+            for (unsigned len: node.lengths()) {
+                stream_ << sep << len;
+                sep = ", ";
+            }
+            stream_ << " OF ";
         }
-        stream_ << " OF ";
         node.getMemberType()->accept(*this);
     } else {
         stream_ << *node.getIdentifier();
@@ -328,7 +334,7 @@ void NodePrettyPrinter::visit(BasicTypeNode &node) {
 }
 
 void NodePrettyPrinter::visit([[maybe_unused]] ProcedureTypeNode &node) {
-    // For the time being, handled by visit(ProcedureNode).
+    // handled by visit(ProcedureNode &).
 }
 
 void NodePrettyPrinter::visit(RecordTypeNode &node) {

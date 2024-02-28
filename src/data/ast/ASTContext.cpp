@@ -8,15 +8,18 @@
 using std::filesystem::path;
 using std::make_unique;
 
-const path &ASTContext::getSourceFileName() const {
+const path &
+ASTContext::getSourceFileName() const {
     return file_;
 }
 
-ModuleNode *ASTContext::getTranslationUnit() const {
+ModuleNode *
+ASTContext::getTranslationUnit() const {
     return module_.get();
 }
 
-void ASTContext::setTranslationUnit(unique_ptr<ModuleNode> module) {
+void
+ASTContext::setTranslationUnit(unique_ptr<ModuleNode> module) {
     module_ = std::move(module);
 }
 
@@ -43,7 +46,13 @@ ASTContext::getOrInsertArrayType(const FilePos &start, [[maybe_unused]] const Fi
             }
         }
     }
+    unsigned size = 1;
+    for (unsigned length : lengths) {
+        size *= length;
+    }
+    size *= types[types.size() - 1]->getSize();
     auto type = make_unique<ArrayTypeNode>(start, ident, dimensions, std::move(lengths), std::move(types));
+    type->setSize(size);
     auto res = type.get();
     array_ts_.push_back(std::move(type));
     return res;
