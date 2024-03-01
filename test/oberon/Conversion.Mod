@@ -114,7 +114,7 @@ BEGIN
     AssertLongRealEqual(d, i * l);
     n := NIL;
     AssertPointerEqual(n, NIL);
-    n := ReturnNilAsNode;
+    n := ReturnNilAsNode();
     AssertPointerEqual(n, NIL);
     VarParameter(l);
     Out.String("All assertions passed."); Out.Ln

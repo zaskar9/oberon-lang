@@ -87,6 +87,7 @@ private:
     void procedure_body(ProcedureNode *);
     void formal_parameters(vector<unique_ptr<ParameterNode>> &, bool &);
     void fp_section(vector<unique_ptr<ParameterNode>> &, bool &);
+    TypeNode *formal_type();
 
     void statement_sequence(StatementSequenceNode *);
     unique_ptr<StatementNode> statement();

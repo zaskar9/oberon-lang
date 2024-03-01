@@ -318,12 +318,18 @@ unique_ptr<const Token> Scanner::scanNumber() {
     boost::cnv::cstream ccnv;
     auto num = ss.str();
     if (isFloat) {
-        auto result = boost::convert<float>(num, ccnv(std::dec)(std::scientific));
-        if (result) {
-            return make_unique<FloatLiteralToken>(pos, current(), result.value());
-        }
         double value;
         try {
+            auto result = boost::convert<float>(num, ccnv(std::dec)(std::scientific));
+            if (result) {
+                if (result.value() == 0) {
+                    value = boost::convert<double>(num, ccnv(std::dec)(std::scientific)).value();
+                    if (value != 0) {
+                        return make_unique<DoubleLiteralToken>(pos, current(), value);
+                    }
+                }
+                return make_unique<FloatLiteralToken>(pos, current(), result.value());
+            }
             value = boost::convert<double>(num, ccnv(std::dec)(std::scientific)).value();
         } catch (boost::bad_optional_access const&) {
             logger_.error(pos, "invalid real literal: " + num + ".");

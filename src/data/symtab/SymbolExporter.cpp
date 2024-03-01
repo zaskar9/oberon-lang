@@ -128,8 +128,9 @@ void SymbolExporter::writeType(SymbolFile *file, TypeNode *type) {
 void SymbolExporter::writeArrayType(SymbolFile *file, ArrayTypeNode *type) {
     // write out member type
     writeType(file, type->getMemberType());
-    // write out dimension
-    file->writeInt((int) type->getDimension());
+    // write out length
+    // TODO support for multi-dimensional arrays
+    file->writeInt((int) type->lengths()[0]);
     // write out size
     file->writeInt((int) type->getSize());
 }

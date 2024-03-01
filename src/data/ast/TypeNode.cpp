@@ -62,6 +62,10 @@ bool TypeNode::isRecord() const {
     return kind_ == TypeKind::RECORD;
 }
 
+bool TypeNode::isStructured() const {
+    return kind_ == TypeKind::ARRAY || kind_ == TypeKind::RECORD;
+}
+
 bool TypeNode::isPointer() const {
     return kind_ == TypeKind::POINTER;
 }

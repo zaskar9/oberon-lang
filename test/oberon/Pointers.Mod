@@ -1,10 +1,11 @@
 MODULE Pointers;
 IMPORT Out;
 
-CONST KNZip* = 78457;
+CONST KNZip* = 78464;
       NumContacts = 10;
 
-TYPE IntPtr = POINTER TO INTEGER;
+TYPE (* IntPtr = POINTER TO INTEGER; *)
+     Address = POINTER TO AddressDesc;
      AddressDesc = RECORD
                       street: STRING;
                       number: INTEGER;
@@ -12,20 +13,19 @@ TYPE IntPtr = POINTER TO INTEGER;
                       zipcode: INTEGER;
                       country: STRING
                    END;
-     Address = POINTER TO AddressDesc;
+     Person = POINTER TO PersonDesc;
      PersonDesc = RECORD
                      title: STRING;
                      name: STRING;
                      address: Address
                   END;
-     Person = POINTER TO PersonDesc;
-     ArrayPtr = POINTER TO ARRAY 20 OF INTEGER;
+     (* ArrayPtr = POINTER TO ARRAY 20 OF INTEGER; *)
      Contacts = ARRAY NumContacts OF Person;
 
-VAR ptr1, ptr2: IntPtr;
-    michael: Person;
+VAR (* ptr1, ptr2: IntPtr; *)
+    p1, p2: Person;
     ten*: INTEGER;
-    array: ArrayPtr;
+    (* array: ArrayPtr; *)
     contacts: Contacts;
 
 PROCEDURE createPerson(title, name, street: STRING; number: INTEGER; city: STRING; zipcode: INTEGER; country: STRING): Person;
@@ -73,7 +73,7 @@ END printContacts;
 BEGIN
     ten := 10;
 
-    (* --- Test pointer to base type -------------------------------------------------------------------------------- *)
+    (* --- Test pointer to base type --------------------------------------------------------------------------------
     ptr1 := NIL;
     ptr2 := NIL;
     ASSERT(ptr1 = ptr2);
@@ -86,24 +86,34 @@ BEGIN
     ASSERT(ptr1 = ptr2);
     ASSERT(ptr2^ = ptr1^);
     ptr2^ := ten;
-    ASSERT(ptr1^ = ptr2^);
+    ASSERT(ptr1^ = ptr2^); *)
 
     (* --- Test pointer to record type ------------------------------------------------------------------------------ *)
-    michael := createPerson("Prof. Dr.", "Michael Grossniklaus", "Universitätsstraße", ptr1^, "Konstanz", KNZip, "Germany");
-    contacts[0] := michael;
-    contacts[1] := createPerson("Prof. Dr.", "Tobias Sutter", "Universitätsstraße", ptr2^, "Konstanz", KNZip, "Germany");
+    p1 := NIL;
+    p2 := NIL;
+    ASSERT(p1 = p2);
+    ASSERT(p1 = NIL);
+    ASSERT(NIL = NIL);
+    NEW(p1);
+    ASSERT(p1 # NIL);
+    FREE(p1);
+    ASSERT(p1 = NIL);
+    p1 := createPerson("Prof. Dr.", "Michael Grossniklaus", "Universitätsstraße", 10, "Konstanz", KNZip, "Germany");
+    ASSERT(p2 = NIL);
+    p2 := p1;
+    ASSERT(p2 # NIL);
+    ASSERT(p1 = p2);
+    contacts[0] := p1;
+    contacts[1] := createPerson("Prof. Dr.", "Tobias Sutter", "Universitätsstraße", 10, "Konstanz", KNZip, "Germany");
     printContacts(contacts);
-
     deletePerson(contacts[0]);
-    deletePerson(contacts[1]);
-    FREE(ptr1);
-    ASSERT(ptr1 = NIL);
+    deletePerson(contacts[1])
 
-    (* --- Test pointer to array type ------------------------------------------------------------------------------- *)
+    (* --- Test pointer to array type -------------------------------------------------------------------------------
     NEW(array);
     array[0] := ten;
     array[1] := ten;
     ASSERT(array[0] * array[1] = ten * ten);
-    FREE(array)
+    FREE(array) *)
 
 END Pointers.

@@ -11,6 +11,7 @@
 #include <map>
 #include <stack>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 #include <llvm/IR/DataLayout.h>
@@ -28,6 +29,7 @@ using namespace llvm;
 using std::map;
 using std::stack;
 using std::string;
+using std::unordered_set;
 using std::vector;
 
 class LLVMIRBuilder final : private NodeVisitor {
@@ -40,6 +42,7 @@ private:
     Value *value_;
     map<DeclarationNode*, Value*> values_;
     map<TypeNode*, Type*> types_;
+    unordered_set<TypeNode *> hasArray_;
     map<ProcedureNode*, Function*> functions_;
     map<string, Constant*> strings_;
     stack<bool> deref_ctx;
@@ -52,6 +55,8 @@ private:
     MaybeAlign getLLVMAlign(TypeNode *type);
 
     Value *processGEP(TypeNode *, Value *, vector<Value *> &);
+    void arrayInitializers(TypeNode *);
+    void arrayInitializers(TypeNode *, TypeNode *, vector<Value *> &);
 
     string qualifiedName(DeclarationNode *) const;
 
@@ -68,8 +73,28 @@ private:
     using SelectorIterator = Selectors::iterator;
     TypeNode *selectors(TypeNode *, SelectorIterator, SelectorIterator);
     void parameters(ProcedureTypeNode *, ActualParameters *, vector<Value *> &);
-    TypeNode *staticCall(ProcedureNode *, QualIdent *, Selectors &);
-    Value *predefinedCall(PredefinedProcedure *, QualIdent *, ActualParameters *, vector<Value *> &);
+
+    TypeNode *createStaticCall(ProcedureNode *, QualIdent *, Selectors &);
+    Value *createPredefinedCall(PredefinedProcedure *, QualIdent *,
+                                vector<unique_ptr<ExpressionNode>> &, vector<Value *> &);
+    Value *createAbortCall();
+    Value *createAsrCall(Value *, Value *);
+    Value *createAssertCall(Value *);
+    Value *createExitCall(Value *);
+    Value *createExclCall(Value *, Value *);
+    Value *createFreeCall(TypeNode *, Value *);
+    Value *createIncDecCall(ProcKind, vector<unique_ptr<ExpressionNode>> &, std::vector<Value *> &);
+    Value *createInclCall(Value *, Value *);
+    Value *createLenCall(vector<unique_ptr<ExpressionNode>> &, std::vector<Value *> &);
+    Value *createLslCall(Value *, Value *);
+    Value *createNewCall(TypeNode *, Value *);
+    Value *createOddCall(Value *);
+    Value *createOrdCall(ExpressionNode *, Value *);
+    Value *createRolCall(Value *, Value *);
+    Value *createRorCall(Value *, Value *);
+    Value *createTrapCall(unsigned);
+
+    Value *createInBoundsCheck(Value *, Value *, Value *);
 
     void visit(ModuleNode &) override;
     void visit(ProcedureNode &) override;

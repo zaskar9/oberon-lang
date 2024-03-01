@@ -10,22 +10,31 @@
 
 #include "TypeNode.h"
 #include "ExpressionNode.h"
-#include <memory>
 #include <utility>
+#include <vector>
+
+using std::vector;
 
 class ArrayTypeNode final : public TypeNode {
 
 private:
-    unsigned int dimension_;
-    TypeNode *memberType_;
+    unsigned dimensions_;
+    vector<unsigned> lengths_;
+    vector<TypeNode *> types_;
+    // TypeNode *memberType_;
 
 public:
-    ArrayTypeNode(Ident *ident, unsigned int dimension, TypeNode *memberType) :
-            TypeNode(NodeType::array_type, EMPTY_POS, ident, TypeKind::ARRAY, 0),
-            dimension_(dimension), memberType_(memberType) {};
+    ArrayTypeNode(const FilePos &pos, Ident *ident, unsigned dimensions,
+                  vector<unsigned> lengths, vector<TypeNode *> types) :
+            TypeNode(NodeType::array_type, pos, ident, TypeKind::ARRAY, 0),
+            dimensions_(dimensions), lengths_(std::move(lengths)), types_(types) {};
+    ArrayTypeNode(const FilePos &pos, Ident *ident, unsigned length, TypeNode *memberType) :
+            ArrayTypeNode(pos, ident, 1, { length }, { memberType }) {};
     ~ArrayTypeNode() final = default;
 
-    [[nodiscard]] unsigned int getDimension() const;
+    [[nodiscard]] unsigned dimensions() const;
+    [[nodiscard]] const vector<unsigned> &lengths() const;
+    [[nodiscard]] const vector<TypeNode *> &types() const;
     [[nodiscard]] TypeNode *getMemberType() const;
 
     [[nodiscard]] bool isOpen() const;

@@ -165,8 +165,9 @@ TypeNode *SymbolImporter::readArrayType(SymbolFile *file) {
     // read member type
     TypeNode *member_t = readType(file);
     // read dimension
-    auto dimension = (unsigned) file->readInt();
-    auto res = context_->getOrInsertArrayType(nullptr, dimension, member_t);
+    // TODO support for multi-dimensional arrays
+    auto length = (unsigned) file->readInt();
+    auto res = context_->getOrInsertArrayType(EMPTY_POS, EMPTY_POS, nullptr, 1, { length }, { member_t });
     // read in size
     res->setSize((unsigned) file->readInt());
     return res;
@@ -187,7 +188,7 @@ TypeNode *SymbolImporter::readProcedureType(SymbolFile *file) {
         // check for terminator
         ch = file->readChar();
     }
-    return context_->getOrInsertProcedureType(nullptr, std::move(params), false, return_t);
+    return context_->getOrInsertProcedureType(EMPTY_POS, EMPTY_POS, nullptr, std::move(params), false, return_t);
 }
 
 TypeNode *SymbolImporter::readRecordType(SymbolFile *file) {
@@ -216,7 +217,7 @@ TypeNode *SymbolImporter::readRecordType(SymbolFile *file) {
         // check for terminator
         ch = file->readChar();
     }
-    auto res = context_->getOrInsertRecordType(nullptr, std::move(fields));
+    auto res = context_->getOrInsertRecordType(EMPTY_POS, EMPTY_POS, nullptr, std::move(fields));
     res->setBaseType(base_t);
     res->setSize(size);
     return res;

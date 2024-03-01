@@ -49,6 +49,7 @@ private:
     bool assertEqual(Ident *, Ident *) const;
     void assertUnique(IdentDef *, DeclarationNode *);
     long assertInBounds(const IntegerLiteralNode *, long, long);
+    bool assertAssignable(const ExpressionNode *, string &) const;
 
     static void cast(ExpressionNode *, TypeNode *) ;
 
@@ -76,8 +77,9 @@ private:
 
     using Selectors = vector<unique_ptr<Selector>>;
     using SelectorIterator = Selectors::iterator;
-    static SelectorIterator &handleMissingParameters(TypeNode*, Selectors &, SelectorIterator &);
-    TypeNode *onSelectors(TypeNode*, Selectors &);
+    SelectorIterator &handleMissingParameters(const FilePos &, const FilePos &,
+                                              TypeNode*, Selectors &, SelectorIterator &);
+    TypeNode *onSelectors(const FilePos &, const FilePos &, TypeNode*, Selectors &);
     TypeNode *onActualParameters(TypeNode*, ActualParameters*);
     TypeNode *onArrayIndex(TypeNode*, ArrayIndex*);
     TypeNode *onDereference(TypeNode*, Dereference*);
@@ -102,7 +104,8 @@ public:
 
     unique_ptr<TypeDeclarationNode> onType(const FilePos &, const FilePos &,
                                            unique_ptr<IdentDef>, TypeNode *);
-    ArrayTypeNode *onArrayType(const FilePos &, const FilePos &, Ident *, unique_ptr<ExpressionNode>, TypeNode *);
+    ArrayTypeNode *onArrayType(const FilePos &, const FilePos &,
+                               Ident *, vector<unique_ptr<ExpressionNode>>, TypeNode *);
     PointerTypeNode *onPointerType(const FilePos &, const FilePos &, Ident *, unique_ptr<QualIdent>);
     PointerTypeNode *onPointerType(const FilePos &, const FilePos &, Ident *, TypeNode *);
     ProcedureTypeNode *onProcedureType(const FilePos &, const FilePos &,
@@ -113,7 +116,7 @@ public:
     RecordTypeNode *onRecordType(const FilePos &, const FilePos &, Ident *, vector<unique_ptr<FieldNode>>);
     unique_ptr<FieldNode> onField(const FilePos&, const FilePos&, unique_ptr<IdentDef>, TypeNode*, unsigned = 0);
 
-    TypeNode *onTypeReference(const FilePos &, const FilePos &, unique_ptr<QualIdent>);
+    TypeNode *onTypeReference(const FilePos &, const FilePos &, unique_ptr<QualIdent>, unsigned = 0);
 
     unique_ptr<VariableDeclarationNode> onVariable(const FilePos &, const FilePos &,
                                                    unique_ptr<IdentDef>, TypeNode*, int = 0);

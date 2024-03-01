@@ -9,10 +9,13 @@ TYPE
   Date = RECORD day, month, year: INTEGER END;
 
 VAR
-  d : Date;
+  d: Date;
 
-PROCEDURE Test(d : Date);
+PROCEDURE Test(d: Date);
 BEGIN
+  (* O07.9.1: If a value parameter is structured (of array or record type),
+   * no assignment to it or to its elements are permitted.
+   *)
   d.day := d.day - 1;
   Out.Int(d.year, 0); Out.Ln;
   Out.Int(d.month, 0); Out.Ln;

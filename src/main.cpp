@@ -41,7 +41,7 @@ int main(const int argc, const char **argv) {
             (",I", po::value<vector<string>>()->value_name("<directories>"), "Search paths for symbol files.")
             (",L", po::value<vector<string>>()->value_name("<directories>"), "Search paths for libraries.")
             (",l", po::value<vector<string>>()->value_name("<library>"), "Static or dynamic library.")
-            (",f", po::value<vector<string>>()->value_name("<flag>"), "Compiler config.")
+            (",f", po::value<vector<string>>()->value_name("<flag>"), "Compiler configuration flags.")
             (",O", po::value<int>()->value_name("<level>"), "Optimization level. [O0, O1, O2, O3]")
             (",o", po::value<string>()->value_name("<filename>"), "Name of the output file.")
             ("filetype", po::value<string>()->value_name("<type>"), "Set type of output file. [asm, bc, obj, ll]")

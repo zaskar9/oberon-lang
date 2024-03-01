@@ -149,28 +149,24 @@ BEGIN
     END
 END BubbleSort;
 
-PROCEDURE CreatePoint2D(x, y: INTEGER): Point2D;
-VAR p: Point2D;
+PROCEDURE CreatePoint2D(x, y: INTEGER; VAR p: Point2D);
 BEGIN
     p.x := x;
-    p.y := y;
-    RETURN p
+    p.y := y
 END CreatePoint2D;
 
-PROCEDURE CreatePoint3D(x, y, z: INTEGER): Point3D;
-VAR p: Point3D;
+PROCEDURE CreatePoint3D(x, y, z: INTEGER; VAR p: Point3D);
 BEGIN
     p.p2d.x := x;
     p.p2d.y := y;
-    p.z := z;
-    RETURN p
+    p.z := z
 END CreatePoint3D;
 
 PROCEDURE CreatePoints(VAR points: PointList);
 VAR i: INTEGER;
 BEGIN
     FOR i := 0 TO Dim - 1 DO
-        points[i] := CreatePoint3D(Random.Int(1000), Random.Int(1000), Random.Int(1000))
+        CreatePoint3D(Random.Int(1000), Random.Int(1000), Random.Int(1000), points[i])
     END
 END CreatePoints;
 
@@ -193,39 +189,13 @@ BEGIN
     END
 END WritePoints;
 
-PROCEDURE CreatePoly3D(r, g, b: INTEGER): Polygon3D;
-VAR poly3d: Polygon3D;
+PROCEDURE CreatePoly3D(r, g, b: INTEGER; VAR poly3d: Polygon3D);
 BEGIN
     CreatePoints(poly3d.points);
     poly3d.color.r := r;
     poly3d.color.g := g;
-    poly3d.color.b := b;
-    RETURN poly3d
+    poly3d.color.b := b
 END CreatePoly3D;
-
-(* PROCEDURE parent(x, y: INTEGER): INTEGER;
-VAR parent_i: INTEGER;
-
-    PROCEDURE _child(z: INTEGER): INTEGER;
-    VAR j: INTEGER;
-
-        PROCEDURE _grand_child(u, v: INTEGER): INTEGER;
-        VAR w: INTEGER;
-
-        BEGIN
-            w := parent_i;
-            RETURN u + v + w + j
-        END _grand_child;
-
-    BEGIN
-        j := _grand_child(parent_i, z);
-        RETURN j
-    END _child;
-
-BEGIN
-    parent_i := x;
-    RETURN _child(y)
-END parent; *)
 
 BEGIN
     Random.Randomize();
@@ -242,7 +212,7 @@ BEGIN
     Out.Int(rFib(x), 0); Out.Ln;
     Out.Int(rFac(z), 0); Out.Ln;
     Out.Int(iFac(z), 0); Out.Ln;
-    poly3d := CreatePoly3D(x, y, z);
+    CreatePoly3D(x, y, z, poly3d);
     WritePoints(poly3d.points);
     Init;
     Print;
