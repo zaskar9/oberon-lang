@@ -75,9 +75,23 @@ private:
     void parameters(ProcedureTypeNode *, ActualParameters *, vector<Value *> &);
 
     TypeNode *createStaticCall(ProcedureNode *, QualIdent *, Selectors &);
-    Value *createPredefinedCall(PredefinedProcedure *, QualIdent *, ActualParameters *, vector<Value *> &);
+    Value *createPredefinedCall(PredefinedProcedure *, QualIdent *,
+                                vector<unique_ptr<ExpressionNode>> &, vector<Value *> &);
     Value *createAbortCall();
+    Value *createAsrCall(Value *, Value *);
+    Value *createAssertCall(Value *);
     Value *createExitCall(Value *);
+    Value *createExclCall(Value *, Value *);
+    Value *createFreeCall(TypeNode *, Value *);
+    Value *createIncDecCall(ProcKind, vector<unique_ptr<ExpressionNode>> &, std::vector<Value *> &);
+    Value *createInclCall(Value *, Value *);
+    Value *createLenCall(vector<unique_ptr<ExpressionNode>> &, std::vector<Value *> &);
+    Value *createLslCall(Value *, Value *);
+    Value *createNewCall(TypeNode *, Value *);
+    Value *createOddCall(Value *);
+    Value *createOrdCall(ExpressionNode *, Value *);
+    Value *createRolCall(Value *, Value *);
+    Value *createRorCall(Value *, Value *);
     Value *createTrapCall(unsigned);
 
     Value *createInBoundsCheck(Value *, Value *, Value *);
