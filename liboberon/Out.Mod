@@ -50,9 +50,9 @@ BEGIN
     rt_out_real(x, n)
 END Real;
 
-PROCEDURE LongReal*(val: REAL);
+PROCEDURE LongReal*(val: LONGREAL);
 BEGIN
-    printf("%f", val)
+    printf("%E", val)
 END LongReal;
 
 PROCEDURE Set*(set: SET);

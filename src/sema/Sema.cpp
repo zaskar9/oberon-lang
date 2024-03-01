@@ -878,11 +878,8 @@ Sema::onBinaryExpression(const FilePos &start, [[maybe_unused]] const FilePos &e
             common = commonType(start, lhsType, rhsType);
             result = common;
             if (common->isInteger()) {
-                if (common->kind() == TypeKind::LONGINT) {
-                    result = this->longRealTy_;
-                } else {
-                    result = this->realTy_;
-                }
+                common = this->realTy_;
+                result = common;
             }
             break;
         case OperatorType::OR:
@@ -1428,12 +1425,16 @@ Sema::assertCompatible(const FilePos &pos, TypeNode *expected, TypeNode *actual,
             }
             return true;
         }
-        if ((expected->isInteger() && actual->isInteger()) || expected->isReal()) {
+        if ((expected->isInteger() && actual->isInteger())
+            || (expected->isReal() && actual->isReal())) {
             if (expected->getSize() < actual->getSize()) {
-                logger_.error(pos, "type mismatch: converting " + to_string(*actualId) +
+                logger_.error(pos, "type mismatch: converting from " + to_string(*actualId) +
                                    " to " + to_string(*expectedId) + " may lose data.");
                 return false;
             }
+            return true;
+        }
+        if (expected->isReal() && actual->isInteger()) {
             return true;
         }
     }

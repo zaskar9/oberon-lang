@@ -119,7 +119,7 @@ void Oberon07::initSymbolTable(SymbolTable *symbols) {
     this->createProcedure(ProcKind::ODD, "ODD", {{longType, false}}, boolType, false, true);
     this->createProcedure(ProcKind::HALT, "HALT", {{intType, false}}, nullptr, false, true);
     this->createProcedure(ProcKind::ASSERT, "ASSERT", {{boolType, false}}, nullptr, false, true);
-    this->createProcedure(ProcKind::LEN, "LEN", {{this->createArrayType(anyType, 0), false}}, longType, false, true);
+    this->createProcedure(ProcKind::LEN, "LEN", {{this->createArrayType(anyType, 0), false}}, longType, true, true);
     this->createProcedure(ProcKind::INCL, "INCL", {{setType, true}, {intType, false}}, nullptr, false, true);
     this->createProcedure(ProcKind::EXCL, "EXCL", {{setType, true}, {intType, false}}, nullptr, false, true);
     this->createProcedure(ProcKind::ORD, "ORD", {{anyType, false}}, intType, false, true);

@@ -3,6 +3,28 @@ IMPORT Out;
 
 VAR i: INTEGER;
 
+PROCEDURE Trap(): BOOLEAN;
+BEGIN
+    ASSERT(FALSE);
+    RETURN TRUE
+END Trap;
+
+PROCEDURE CheckTrap;
+VAR i, j: INTEGER;
+BEGIN
+    i := 0;
+    IF (i = 0) OR Trap() THEN
+        ASSERT((i = 0) OR Trap())
+    END;
+    IF (i # 0) & Trap() THEN
+        ASSERT((i # 0) & Trap())
+    END;
+    j := 1;
+    IF (i = 0) & (j = 1) OR Trap() THEN
+       ASSERT((i = 0) & (j = 1) OR Trap())
+    END
+END CheckTrap;
+
 PROCEDURE checkOne(i: INTEGER): BOOLEAN;
 BEGIN
     Out.String("1 ");
@@ -62,5 +84,7 @@ BEGIN
     Out.Ln;
     check(-1);
     Out.Ln;
-    check(1)
+    check(1);
+    CheckTrap;
+    Out.String("All assertions passed."); Out.Ln
 END ShortCircuit.

@@ -11,6 +11,7 @@
 #include <map>
 #include <stack>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 #include <llvm/IR/DataLayout.h>
@@ -28,6 +29,7 @@ using namespace llvm;
 using std::map;
 using std::stack;
 using std::string;
+using std::unordered_set;
 using std::vector;
 
 class LLVMIRBuilder final : private NodeVisitor {
@@ -40,6 +42,7 @@ private:
     Value *value_;
     map<DeclarationNode*, Value*> values_;
     map<TypeNode*, Type*> types_;
+    unordered_set<TypeNode *> hasArray_;
     map<ProcedureNode*, Function*> functions_;
     map<string, Constant*> strings_;
     stack<bool> deref_ctx;
@@ -66,14 +69,18 @@ private:
 
     void procedure(ProcedureNode &);
 
-
-
     using Selectors = vector<unique_ptr<Selector>>;
     using SelectorIterator = Selectors::iterator;
     TypeNode *selectors(TypeNode *, SelectorIterator, SelectorIterator);
     void parameters(ProcedureTypeNode *, ActualParameters *, vector<Value *> &);
-    TypeNode *staticCall(ProcedureNode *, QualIdent *, Selectors &);
-    Value *predefinedCall(PredefinedProcedure *, QualIdent *, ActualParameters *, vector<Value *> &);
+
+    TypeNode *createStaticCall(ProcedureNode *, QualIdent *, Selectors &);
+    Value *createPredefinedCall(PredefinedProcedure *, QualIdent *, ActualParameters *, vector<Value *> &);
+    Value *createAbortCall();
+    Value *createExitCall(Value *);
+    Value *createTrapCall(unsigned);
+
+    Value *createInBoundsCheck(Value *, Value *, Value *);
 
     void visit(ModuleNode &) override;
     void visit(ProcedureNode &) override;
