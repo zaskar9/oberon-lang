@@ -6,6 +6,7 @@
 
 #include "LLVMIRBuilder.h"
 
+#include <csignal>
 #include <vector>
 #include <llvm/IR/Verifier.h>
 #include "system/PredefinedProcedure.h"
