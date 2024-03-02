@@ -8,14 +8,18 @@
 #define OBERON_LLVM_LOADER_H
 
 
+#include <filesystem>
+
 #include "scanner/Scanner.h"
 #include "Grammar.h"
+
+namespace fs = std::filesystem;
 
 class Loader {
 
 private:
-    Logger *logger_;
-    std::unique_ptr<Scanner> scanner_;
+    Logger &logger_;
+    Scanner scanner_;
     unsigned int id_;
 
     [[nodiscard]] std::string getNextId();
@@ -28,8 +32,7 @@ private:
     [[nodiscard]] NonTerminal * optional(Grammar *grammar);
 
 public:
-    explicit Loader(boost::filesystem::path path, Logger *logger) : logger_(logger),
-            scanner_(std::make_unique<Scanner>(path, logger)), id_(0) { };
+    Loader(CompilerConfig &config, fs::path path) : logger_(config.logger()), scanner_(config, path), id_(0) {};
     ~Loader() = default;
 
     [[nodiscard]] std::unique_ptr<Grammar> load();

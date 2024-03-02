@@ -1,3 +1,5 @@
+(* This is a generated file. Do not edit. *)
+
 MODULE UnnestedSort(*0*);
 
    CONST Dim(*1*) = 50;
@@ -59,16 +61,6 @@ MODULE UnnestedSort(*0*);
       a := b;
       b := t
    END Swap;
-
-   PROCEDURE INC(*1*)(VAR v(*2*): INTEGER);
-   BEGIN
-      v := v + 1
-   END INC;
-
-   PROCEDURE DEC(*1*)(VAR v(*2*): INTEGER);
-   BEGIN
-      v := v - 1
-   END DEC;
 
    PROCEDURE InsertionSort(*1*)(VAR a(*2*): Vector);
       VAR i(*2*): INTEGER;

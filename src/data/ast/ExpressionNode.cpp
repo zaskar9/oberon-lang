@@ -17,6 +17,8 @@ std::ostream& operator<<(std::ostream &stream, const OperatorType &op) {
         case OperatorType::GT: result = ">"; break;
         case OperatorType::GEQ: result = ">="; break;
         case OperatorType::LEQ: result = "<="; break;
+        case OperatorType::IN: result = "IN"; break;
+        case OperatorType::IS: result = "IS"; break;
         case OperatorType::TIMES: result = "*"; break;
         case OperatorType::DIVIDE: result = "/"; break;
         case OperatorType::DIV: result = "DIV"; break;
@@ -41,6 +43,8 @@ int precedence(const OperatorType &op) {
         case OperatorType::GT:
         case OperatorType::GEQ:
         case OperatorType::LEQ:
+        case OperatorType::IN:
+        case OperatorType::IS:
             return 0;
         case OperatorType::PLUS:
         case OperatorType::MINUS:
@@ -79,8 +83,9 @@ TypeNode *ExpressionNode::getCast() const {
     return cast_;
 }
 
+
 bool UnaryExpressionNode::isConstant() const {
-    return expr_->isConstant();
+    return expr_ && expr_->isConstant();
 }
 
 int UnaryExpressionNode::getPrecedence() const {
@@ -91,11 +96,7 @@ OperatorType UnaryExpressionNode::getOperator() const {
     return op_;
 }
 
-void UnaryExpressionNode::setExpression(std::unique_ptr<ExpressionNode> expr) {
-    expr_ = std::move(expr);
-}
-
-ExpressionNode* UnaryExpressionNode::getExpression() const {
+ExpressionNode *UnaryExpressionNode::getExpression() const {
     return expr_.get();
 }
 
@@ -121,19 +122,11 @@ OperatorType BinaryExpressionNode::getOperator() const {
     return op_;
 }
 
-void BinaryExpressionNode::setLeftExpression(std::unique_ptr<ExpressionNode> expr) {
-    lhs_ = std::move(expr);
-}
-
-ExpressionNode* BinaryExpressionNode::getLeftExpression() const {
+ExpressionNode *BinaryExpressionNode::getLeftExpression() const {
     return lhs_.get();
 }
 
-void BinaryExpressionNode::setRightExpression(std::unique_ptr<ExpressionNode> expr) {
-    rhs_ = std::move(expr);
-}
-
-ExpressionNode* BinaryExpressionNode::getRightExpression() const {
+ExpressionNode *BinaryExpressionNode::getRightExpression() const {
     return rhs_.get();
 }
 
@@ -148,6 +141,71 @@ void BinaryExpressionNode::print(std::ostream &stream) const {
     stream << " ";
     rhs_->print(stream);
 }
+
+
+bool RangeExpressionNode::isConstant() const {
+    return lower_ && lower_->isConstant() && upper_ && upper_->isConstant();
+}
+
+int RangeExpressionNode::getPrecedence() const {
+    return 4;
+}
+
+ExpressionNode *RangeExpressionNode::getLower() const {
+    return lower_.get();
+}
+
+ExpressionNode *RangeExpressionNode::getUpper() const {
+    return upper_.get();
+}
+
+void RangeExpressionNode::accept(NodeVisitor &visitor) {
+    visitor.visit(*this);
+}
+
+void RangeExpressionNode::print(std::ostream &stream) const {
+    lower_->print(stream);
+    stream << " .. ";
+    upper_->print(stream);
+}
+
+
+bool SetExpressionNode::isConstant() const {
+    for (auto &element : elements_) {
+        if (!element->isConstant()) {
+            return false;
+        }
+    }
+    return true;
+}
+
+int SetExpressionNode::getPrecedence() const {
+    return 4;
+}
+
+const vector<unique_ptr<ExpressionNode>> &SetExpressionNode::elements() const {
+    return elements_;
+}
+
+bool SetExpressionNode::isEmptySet() const {
+    return elements_.empty();
+}
+
+void SetExpressionNode::accept(NodeVisitor &visitor) {
+    visitor.visit(*this);
+}
+
+void SetExpressionNode::print(std::ostream &stream) const {
+    stream << "{ ";
+    string sep;
+    for (auto &element : elements_) {
+        stream << sep;
+        element->print(stream);
+        sep = ", ";
+    }
+    stream << " }";
+}
+
 
 bool LiteralNode::isConstant() const {
     return true;
@@ -164,6 +222,7 @@ TypeKind LiteralNode::kind() const {
 int LiteralNode::getPrecedence() const {
     return 4;
 }
+
 
 bool BooleanLiteralNode::value() const {
     return value_;
@@ -224,10 +283,45 @@ void StringLiteralNode::print(std::ostream &stream) const {
     stream << value_;
 }
 
+
 void NilLiteralNode::accept(NodeVisitor &visitor) {
     visitor.visit(*this);
 }
 
 void NilLiteralNode::print(std::ostream &stream) const {
     stream << "NIL";
+}
+
+
+bitset<32> SetLiteralNode::value() const {
+    return value_;
+}
+
+void SetLiteralNode::print(std::ostream &stream) const {
+    stream << value_;
+}
+
+void SetLiteralNode::accept(NodeVisitor &visitor) {
+    visitor.visit(*this);
+}
+
+
+bitset<32> RangeLiteralNode::value() const {
+    return value_;
+}
+
+long RangeLiteralNode::lower() const {
+    return lower_;
+}
+
+long RangeLiteralNode::upper() const {
+    return upper_;
+}
+
+void RangeLiteralNode::print(std::ostream &stream) const {
+    stream << value_;
+}
+
+void RangeLiteralNode::accept(NodeVisitor &visitor) {
+    visitor.visit(*this);
 }

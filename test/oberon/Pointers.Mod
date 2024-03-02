@@ -1,10 +1,11 @@
 MODULE Pointers;
 IMPORT Out;
 
-CONST KNZip* = 78457;
+CONST KNZip* = 78464;
       NumContacts = 10;
 
-TYPE IntPtr = POINTER TO INTEGER;
+TYPE (* IntPtr = POINTER TO INTEGER; *)
+     Address = POINTER TO AddressDesc;
      AddressDesc = RECORD
                       street: STRING;
                       number: INTEGER;
@@ -12,20 +13,19 @@ TYPE IntPtr = POINTER TO INTEGER;
                       zipcode: INTEGER;
                       country: STRING
                    END;
-     Address = POINTER TO AddressDesc;
+     Person = POINTER TO PersonDesc;
      PersonDesc = RECORD
                      title: STRING;
                      name: STRING;
                      address: Address
                   END;
-     Person = POINTER TO PersonDesc;
-     ArrayPtr = POINTER TO ARRAY 20 OF INTEGER;
+     (* ArrayPtr = POINTER TO ARRAY 20 OF INTEGER; *)
      Contacts = ARRAY NumContacts OF Person;
 
-VAR ptr1, ptr2: IntPtr;
-    michael: Person;
+VAR (* ptr1, ptr2: IntPtr; *)
+    p1, p2: Person;
     ten*: INTEGER;
-    array: ArrayPtr;
+    (* array: ArrayPtr; *)
     contacts: Contacts;
 
 PROCEDURE createPerson(title, name, street: STRING; number: INTEGER; city: STRING; zipcode: INTEGER; country: STRING): Person;
@@ -45,11 +45,17 @@ BEGIN
     RETURN person
 END createPerson;
 
+PROCEDURE deletePerson(person: Person);
+BEGIN
+    FREE(person.address);
+    FREE(person)
+END deletePerson;
+
 PROCEDURE printPerson(person: Person);
 BEGIN
     Out.String(person.title); Out.String(" "); Out.String(person.name); Out.Ln;
-    Out.String(person.address.street); Out.String(" "); Out.Int(person.address.number); Out.Ln;
-    Out.Int(person.address.zipcode); Out.String(" "); Out.String(person.address.city); Out.Ln;
+    Out.String(person.address.street); Out.String(" "); Out.Int(person.address.number, 0); Out.Ln;
+    Out.Int(person.address.zipcode, 5); Out.String(" "); Out.String(person.address.city); Out.Ln;
     Out.String(person.address.country); Out.Ln
 END printPerson;
 
@@ -58,7 +64,7 @@ VAR current: INTEGER;
 BEGIN
     current := 0;
     WHILE (contacts[current] # NIL) DO
-        Out.String("<"); Out.Int(current + 1); Out.String(">"); Out.Ln;
+        Out.String("<"); Out.Int(current + 1, 0); Out.String(">"); Out.Ln;
         printPerson(contacts[current]);
         current := current + 1
     END
@@ -67,31 +73,47 @@ END printContacts;
 BEGIN
     ten := 10;
 
-    (* --- Test pointer to base type -------------------------------------------------------------------------------- *)
+    (* --- Test pointer to base type --------------------------------------------------------------------------------
     ptr1 := NIL;
     ptr2 := NIL;
-    IF (ptr1 = ptr2) THEN Out.String("Pointers are equal (NIL)."); Out.Ln END;
-    IF (ptr1 = NIL) THEN Out.String("Pointer (ptr1) is NIL."); Out.Ln END;
-    IF (NIL = NIL) THEN Out.String("NIL equality."); Out.Ln END;
+    ASSERT(ptr1 = ptr2);
+    ASSERT(ptr1 = NIL);
+    ASSERT(NIL = NIL);
     NEW(ptr1);
-    IF (ptr1 # NIL) THEN Out.String("Pointer (ptr1) is ~NIL."); Out.Ln END;
+    ASSERT(ptr1 # NIL);
     ptr1^ := 2 * ten;
     ptr2 := ptr1;
-    IF (ptr1 = ptr2) THEN Out.String("Pointers are equal (~NIL)."); Out.Ln END;
-    Out.Int(ptr2^); Out.Ln;
+    ASSERT(ptr1 = ptr2);
+    ASSERT(ptr2^ = ptr1^);
     ptr2^ := ten;
-    Out.Int(ptr1^); Out.Ln;
+    ASSERT(ptr1^ = ptr2^); *)
 
     (* --- Test pointer to record type ------------------------------------------------------------------------------ *)
-    michael := createPerson("Prof. Dr.", "Michael Grossniklaus", "Universitätsstraße", ptr1^, "Konstanz", KNZip, "Germany");
-    contacts[0] := michael;
-    contacts[1] := createPerson("Prof. Dr.", "Tobias Sutter", "Universitätsstraße", ptr2^, "Konstanz", KNZip, "Germany");
+    p1 := NIL;
+    p2 := NIL;
+    ASSERT(p1 = p2);
+    ASSERT(p1 = NIL);
+    ASSERT(NIL = NIL);
+    NEW(p1);
+    ASSERT(p1 # NIL);
+    FREE(p1);
+    ASSERT(p1 = NIL);
+    p1 := createPerson("Prof. Dr.", "Michael Grossniklaus", "Universitätsstraße", 10, "Konstanz", KNZip, "Germany");
+    ASSERT(p2 = NIL);
+    p2 := p1;
+    ASSERT(p2 # NIL);
+    ASSERT(p1 = p2);
+    contacts[0] := p1;
+    contacts[1] := createPerson("Prof. Dr.", "Tobias Sutter", "Universitätsstraße", 10, "Konstanz", KNZip, "Germany");
     printContacts(contacts);
+    deletePerson(contacts[0]);
+    deletePerson(contacts[1])
 
-    (* --- Test pointer to array type ------------------------------------------------------------------------------- *)
+    (* --- Test pointer to array type -------------------------------------------------------------------------------
     NEW(array);
     array[0] := ten;
     array[1] := ten;
-    Out.Int(array[0] * array[1]); Out.Ln
+    ASSERT(array[0] * array[1] = ten * ten);
+    FREE(array) *)
 
 END Pointers.

@@ -8,45 +8,44 @@
 #define OBERON0C_MODULENODE_H
 
 
-#include "BlockNode.h"
-#include "ImportNode.h"
 #include <memory>
 #include <string>
+#include <vector>
 
-class ModuleNode final : public DeclarationNode, public BlockNode {
+#include "BlockNode.h"
+#include "ImportNode.h"
+
+using std::make_unique;
+using std::string;
+using std::unique_ptr;
+using std::vector;
+
+class ModuleNode final : public BlockNode {
 
 private:
-    std::vector<std::unique_ptr<ImportNode>> imports_;
-    std::vector<std::unique_ptr<ModuleNode>> modules_;
-    std::vector<ProcedureNode*> extprocs_;
     std::string alias_;
+    vector<unique_ptr<ImportNode>> imports_;
 
 public:
-    explicit ModuleNode(const FilePos &pos, std::unique_ptr<Ident> name) :
-            DeclarationNode(NodeType::module, pos, std::move(name), nullptr),
-            BlockNode(pos), imports_(), modules_(), extprocs_(), alias_() {};
+    // ctor for use in sema / parser
+    ModuleNode(const FilePos &pos, unique_ptr<Ident> name, vector<unique_ptr<ImportNode>> imports) :
+            BlockNode(NodeType::module, pos, make_unique<IdentDef>(name->start(), name->end(), name->name()), nullptr),
+            alias_(), imports_(std::move(imports)) {};
+    // ctor for use in symbol importer
+    explicit ModuleNode(unique_ptr<Ident> name) :
+            BlockNode(NodeType::module, EMPTY_POS, make_unique<IdentDef>(name->start(), name->end(), name->name()), nullptr),
+            alias_(), imports_() {};
     ~ModuleNode() override = default;
 
-    [[nodiscard]] NodeType getNodeType() const override {
-        return DeclarationNode::getNodeType();
-    }
+    void setAlias(string alias);
+    [[nodiscard]] string getAlias() const;
 
-    void addImport(std::unique_ptr<ImportNode> import);
+    void addImport(unique_ptr<ImportNode> import);
     [[nodiscard]] ImportNode* getImport(size_t num) const;
     [[nodiscard]] size_t getImportCount() const;
 
-    // mainly for memory management as an anchor for smart pointers
-    void addExternalModule(std::unique_ptr<ModuleNode> module);
-
-    void addExternalProcedure(ProcedureNode *proc);
-    [[nodiscard]] ProcedureNode *getExternalProcedure(size_t num) const;
-    [[nodiscard]] size_t getExternalProcedureCount() const;
-
-    void setAlias(std::string alias);
-    [[nodiscard]] std::string getAlias() const;
 
     void accept(NodeVisitor& visitor) override;
-
     void print(std::ostream &stream) const override;
 
 };

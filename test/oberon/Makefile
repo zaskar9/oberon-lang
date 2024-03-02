@@ -13,16 +13,21 @@ else
 endif
 
 # Compiler and linker settings
+# TGT = aarch64-linux-gnu
+# TGT = x86_64-linux-gnu
 LIB = ./lib
-INC = ".;./include"
+INC = .:./include
 O7C = ../../cmake-build-release/src/oberon-lang
-O7CFLAGS = -O3 -I$(INC)
+O7CFLAGS = -O3 -I$(INC) -L$(LIB) -loberon -fenable-main # --target $(TGT)
 LDFLAGS = -loberon
+PFX =
 ifeq ($(OS), macos)
 	CXX = clang
+	# CXXFLAGS += -target $(TGT)
 	LDFLAGS += -rpath @executable_path/lib
+	PFX = _
 else ifeq ($(OS), linux)
-	CXX = gcc
+	CXX = gcc # x86_64-linux-gnu-gcc
 	O7CFLAGS += --reloc=pic
 	LDFLAGS += -lm -Wl,-rpath,$(LIB)
 endif
@@ -33,13 +38,13 @@ endif
 clean:
 	@rm -f *.s *.o *.ll *.bc *.smb
 ifeq ($(OS), macos)
-	@find . -depth 1 -type f -perm +111 -delete
+	@find . -depth 1 -type f ! -name "*.*" -perm +111 -delete
 else ifeq ($(OS), linux)
-	@find . -maxdepth 1 -type f -executable -delete
+	@find . -maxdepth 1 -type f ! -name "*.*" -executable -delete
 endif
 
 % : %.o
-	@$(CXX) $< -o $@ -L$(LIB) $(LDFLAGS)
+	@$(CXX) $(CXXFLAGS) $< -o $@ -L$(LIB) $(LDFLAGS) # -Wl,-e,$(PFX)$(basename $<)
 
 %.o : %.Mod
 	@$(O7C) $(O7CFLAGS) $<

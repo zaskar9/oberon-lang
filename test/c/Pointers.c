@@ -25,18 +25,27 @@ void printPerson(struct person *person) {
     printf("%s\n", name);
 }
 
+int assertEqual(int *ptr1, int *ptr2) {
+    return ptr1 == ptr2;
+}
+
 int main(int argc, const char* argv[]) {
 
-//    ptr1 = NULL;
-//    ptr2 = NULL;
+    ptr1 = NULL;
+    ptr2 = NULL;
+    assertEqual(ptr1, ptr2);
+    assertEqual(ptr1, NULL);
 //    ptr1 = (int*) malloc(sizeof(int));
 //    *ptr1 = 10;
 //    ptr2 = ptr1;
 //    printf("%d\n", *ptr2);
 
-    michael = (struct person *) malloc(sizeof(struct person));
-    michael->name = "Michael Grossniklaus";
-    printPerson(michael);
+//    michael = (struct person *) malloc(sizeof(struct person));
+//    michael->name = "Michael Grossniklaus";
+//    printPerson(michael);
+//
+//    free(michael);
+//    michael = NULL;
 
 //    root = (struct node *) malloc(sizeof(struct node));
 //    root->value = 5;

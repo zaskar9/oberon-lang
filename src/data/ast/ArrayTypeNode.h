@@ -10,30 +10,34 @@
 
 #include "TypeNode.h"
 #include "ExpressionNode.h"
-#include <memory>
 #include <utility>
+#include <vector>
+
+using std::vector;
 
 class ArrayTypeNode final : public TypeNode {
 
 private:
-    std::unique_ptr<ExpressionNode> expr_;
-    unsigned int dim_;
-    TypeNode *memberType_;
+    unsigned dimensions_;
+    vector<unsigned> lengths_;
+    vector<TypeNode *> types_;
+    // TypeNode *memberType_;
 
 public:
-    explicit ArrayTypeNode() : ArrayTypeNode(EMPTY_POS, nullptr, nullptr, nullptr) {};
-    explicit ArrayTypeNode(const FilePos &pos, Ident *ident, std::unique_ptr<ExpressionNode> expr, TypeNode *memberType) :
+    ArrayTypeNode(const FilePos &pos, Ident *ident, unsigned dimensions,
+                  vector<unsigned> lengths, vector<TypeNode *> types) :
             TypeNode(NodeType::array_type, pos, ident, TypeKind::ARRAY, 0),
-            expr_(std::move(expr)), dim_(0), memberType_(memberType) {};
+            dimensions_(dimensions), lengths_(std::move(lengths)), types_(types) {};
+    ArrayTypeNode(const FilePos &pos, Ident *ident, unsigned length, TypeNode *memberType) :
+            ArrayTypeNode(pos, ident, 1, { length }, { memberType }) {};
     ~ArrayTypeNode() final = default;
 
-    [[nodiscard]] ExpressionNode *getExpression() const;
-
-    void setDimension(unsigned int dim);
-    [[nodiscard]] unsigned int getDimension() const;
-
-    void setMemberType(TypeNode *memberType);
+    [[nodiscard]] unsigned dimensions() const;
+    [[nodiscard]] const vector<unsigned> &lengths() const;
+    [[nodiscard]] const vector<TypeNode *> &types() const;
     [[nodiscard]] TypeNode *getMemberType() const;
+
+    [[nodiscard]] bool isOpen() const;
 
     void accept(NodeVisitor &visitor) final;
 

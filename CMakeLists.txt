@@ -1,13 +1,14 @@
 cmake_minimum_required(VERSION 3.26)
 
-project(oberon-lang VERSION 0.0.1)
+project(oberon-lang VERSION 0.1.0)
+set(SMB_FILE_VERSION 2)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     # warning level 4
     add_compile_options(/Wall /W4 /external:anglebrackets /external:W0)
 else ()
     # lots of warnings and all warnings as errors -Wglobal-constructors -Wexit-time-destructors
-    add_compile_options(-W -Wall -Wextra -Werror -Wpedantic -Wunreachable-code -Wshadow -Woverloaded-virtual -Winvalid-pch -Wcast-align -Wformat=2 -Wformat-nonliteral -Wmissing-declarations -Wmissing-noreturn -Wmissing-format-attribute -Wmissing-include-dirs -Wredundant-decls -Wswitch-default -Wsign-conversion)
+    add_compile_options(-W -Wall -Wextra -Werror -Wpedantic -Wno-error=deprecated -Wunreachable-code -Woverloaded-virtual -Winvalid-pch -Wcast-align -Wformat=2 -Wformat-nonliteral -Wmissing-declarations -Wmissing-noreturn -Wmissing-format-attribute -Wmissing-include-dirs -Wredundant-decls -Wswitch-default -Wsign-conversion)
     if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         add_compile_options(-Wweak-vtables)
         # add_link_options(-fuse-ld=lld)
@@ -31,3 +32,4 @@ set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
 add_subdirectory(src)
 # add_subdirectory(docs)
+add_subdirectory(test)

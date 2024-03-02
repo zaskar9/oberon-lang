@@ -13,8 +13,12 @@ int main(int argc, const char* argv[]) {
     i2 = (int) l1;
     double d1 = 3.141592654;
     float f1 = (float) d1;
+    printf("%f\n", f1);
     f1 = i1;
+    printf("%d\n", i1);
 
     float pi = 3.141592654;
     printf("%f\n", pi);
+
+    exit(0);
 }

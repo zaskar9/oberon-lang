@@ -8,10 +8,12 @@
 #define OBERON_LLVM_ANALYZER_H
 
 
-#include "data/ast/Node.h"
-#include "logging/Logger.h"
 #include <memory>
 #include <vector>
+
+#include "compiler/CompilerConfig.h"
+#include "data/ast/Node.h"
+#include "logging/Logger.h"
 
 class Analysis {
 
@@ -19,7 +21,7 @@ public:
     explicit Analysis() = default;
     virtual ~Analysis();
 
-    virtual void run(Logger *logger, Node *node) = 0;
+    virtual void run(Logger &logger, Node *node) = 0;
 
 };
 
@@ -27,11 +29,12 @@ public:
 class Analyzer {
 
 private:
-    Logger *logger_;
+    CompilerConfig &config_;
+    Logger &logger_;
     std::vector<std::unique_ptr<Analysis>> analyses_;
 
 public:
-    explicit Analyzer(Logger *logger) : logger_(logger), analyses_() { };
+    explicit Analyzer(CompilerConfig &config) : config_(config), logger_(config_.logger()), analyses_() { };
     ~Analyzer() = default;
 
     void add(std::unique_ptr<Analysis> analysis);

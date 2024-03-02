@@ -4,52 +4,11 @@
  * Created by Michael Grossniklaus on 3/5/18.
  */
 
-#include <algorithm>
 #include "ProcedureNode.h"
 #include "NodeVisitor.h"
 
-ProcedureNode::ProcedureNode(const FilePos &pos, std::unique_ptr<Ident> ident) :
-        DeclarationNode(NodeType::procedure, pos, std::move(ident), nullptr), BlockNode(pos),
-        extern_(false) {
-    proctype_ = std::make_unique<ProcedureTypeNode>(pos, ident.get());
-    this->setType(proctype_.get());
-    extern_ = false;
-}
-
-ProcedureTypeNode *ProcedureNode::proctype() const {
-    return dynamic_cast<ProcedureTypeNode*>(this->getType());
-}
-
-void ProcedureNode::addFormalParameter(std::unique_ptr<ParameterNode> parameter) {
-    return proctype()->addFormalParameter(std::move(parameter));
-}
-
-ParameterNode *ProcedureNode::getFormalParameter(const std::string &name) {
-    return proctype()->getFormalParameter(name);
-}
-
-ParameterNode *ProcedureNode::getFormalParameter(size_t num) const {
-    return proctype()->getFormalParameter(num);
-}
-
-size_t ProcedureNode::getFormalParameterCount() const {
-    return proctype()->getFormalParameterCount();
-}
-
-void ProcedureNode::setVarArgs(bool value) {
-    proctype()->setVarArgs(value);
-}
-
-bool ProcedureNode::hasVarArgs() const {
-    return proctype()->hasVarArgs();
-}
-
-void ProcedureNode::setReturnType(TypeNode *type) {
-    proctype()->setReturnType(type);
-}
-
-TypeNode *ProcedureNode::getReturnType() const {
-    return proctype()->getReturnType();
+ProcedureTypeNode *ProcedureNode::getType() const {
+    return dynamic_cast<ProcedureTypeNode*>(DeclarationNode::getType());
 }
 
 void ProcedureNode::setExtern(bool value) {
@@ -65,5 +24,5 @@ void ProcedureNode::accept(NodeVisitor &visitor) {
 }
 
 void ProcedureNode::print(std::ostream &stream) const {
-    stream << "PROCEDURE " << getIdentifier() << ";";
+    stream << "PROCEDURE " << *getIdentifier() << ";";
 }

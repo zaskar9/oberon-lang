@@ -8,6 +8,8 @@
 
 #include <fstream>
 
+#include <config.h>
+
 class SymbolFile {
 
 private:
@@ -39,7 +41,7 @@ public:
     void flush();
     void close();
 
-    static const int VERSION = 1;
+    static const int VERSION = SMB_FILE_VERSION;
 
 };
 

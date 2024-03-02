@@ -24,7 +24,7 @@ BEGIN
       i := i + 1
     UNTIL i * i > n;
     FOR i := 2 TO n DO
-        IF ~del[i] THEN Out.Int(i); Out.String(" ") END
+        IF ~del[i] THEN Out.Int(i, 0); Out.String(" ") END
     END
 END sieve;
 
@@ -46,11 +46,13 @@ BEGIN
 END isPrime;
 
 BEGIN
+    ASSERT(~isPrime(16));
     n := 17;
-    Out.String("The number "); Out.Int(n); Out.String(" is ");
+    Out.String("The number "); Out.Int(n, 0); Out.String(" is ");
     IF ~isPrime(n) THEN
         Out.String("not ")
     END;
     Out.String("a prime number."); Out.Ln;
+    ASSERT(isPrime(17));
     sieve(200); Out.Ln
 END Primes.

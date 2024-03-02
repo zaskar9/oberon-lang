@@ -1,35 +1,38 @@
 # Compiler settings
-O7C = ..\out\build\$(CPU_ARCH)-Release\src\oberon-lang.exe
+O7C = ..\build\src\oberon-lang.exe
 CXX = cl.exe
 LIBX = lib.exe
+LINK = link.exe
 LIB = ..\test\oberon\lib
 INC = ..\test\oberon\include
 
+O7CFLAGS = -q -O3 --reloc=pic -fenable-extern -fenable-varargs
+
 # Library settings
-NAME = liboberon
+NAME = oberon
 EXT = lib
 
 .PRECIOUS:
 .SUFFIXES: .Mod
 
-all: lib inc
+all: lib inc clean
 
 clean:
 	@del /q *.ilk *.pdb *.obj *.exe
 
 .c.obj:
-	@$(CXX) /nologo /c $< >nul
+	@$(CXX) /nologo /GS- /c $< >nul
 
 .Mod.obj:
-	@$(O7C) -q -O3 $<
+	@$(O7C) $(O7CFLAGS) $<
 
 .smb.Mod:
-	@$(O7C) -q -O3 $<
+	@$(O7C) $(O7CFLAGS) $<
 
 lib: runtime.obj Oberon.obj Out.obj Random.obj Math.obj
 	@$(LIBX) /nologo /machine:$(CPU_ARCH) /out:$(LIB)\$(NAME).$(EXT) runtime.obj Oberon.obj Out.obj Random.obj Math.obj
 
-inc: Oberon.smb Out.smb Random.smb Math.smb
+inc:
 	@move Oberon.smb $(INC) >nul
 	@move Out.smb $(INC) >nul
 	@move Random.smb $(INC) >nul

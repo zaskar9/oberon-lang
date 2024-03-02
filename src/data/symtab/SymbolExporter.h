@@ -6,19 +6,23 @@
 #define OBERON_LANG_SYMBOLEXPORTER_H
 
 
-#include "logging/Logger.h"
+#include <boost/filesystem.hpp>
+
 #include "SymbolTable.h"
 #include "SymbolFile.h"
+#include "compiler/CompilerConfig.h"
+#include "data/ast/ASTContext.h"
 #include "data/ast/ArrayTypeNode.h"
 #include "data/ast/ProcedureTypeNode.h"
 #include "data/ast/RecordTypeNode.h"
-#include <boost/filesystem.hpp>
+#include "logging/Logger.h"
 
 class SymbolExporter {
 
 private:
-    Logger *logger_;
-    boost::filesystem::path path_;
+    CompilerConfig &config_;
+    ASTContext *context_;
+    Logger &logger_;
     int ref_;
 
     void writeDeclaration(SymbolFile *file, DeclarationNode *decl);
@@ -29,8 +33,8 @@ private:
     void writeParameter(SymbolFile *file, ParameterNode *param);
 
 public:
-    explicit SymbolExporter(Logger *logger, boost::filesystem::path &path) :
-            logger_(logger), path_(std::move(path)), ref_() {};
+    explicit SymbolExporter(CompilerConfig &config, ASTContext *context) :
+            config_(config), context_(context), logger_(config_.logger()), ref_() {};
     ~SymbolExporter() = default;
 
     void write(const std::string &module, SymbolTable *symbols);

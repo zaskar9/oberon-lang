@@ -12,32 +12,38 @@
 #include <string>
 #include <iostream>
 
+using std::cerr;
+using std::cout;
+using std::ostream;
+using std::string;
+
 enum class LogLevel : unsigned int { DEBUG = 1, INFO = 2, WARNING = 3, ERROR = 4, QUIET = 5 };
 
 class Logger {
 
 private:
     LogLevel level_;
-    std::ostream *out_, *err_;
+    ostream &out_, &err_;
     int counts_[(unsigned int) LogLevel::QUIET];
 
-    void log(LogLevel level, const std::string &fileName, int lineNo, int charNo, const std::string &msg);
-    void log(LogLevel level, const std::string &fileName, const std::string &msg);
+    void log(LogLevel level, const string &fileName, int lineNo, int charNo, const string &msg);
+    void log(LogLevel level, const string &fileName, const string &msg);
+    void log(LogLevel level, const string &msg);
 
 public:
-
-    explicit Logger() : Logger(LogLevel::ERROR, &std::cout, &std::cerr) { };
-    explicit Logger(LogLevel level, std::ostream *out) : Logger(level, out, out) { };
-    explicit Logger(LogLevel level, std::ostream *out, std::ostream *err) :
-            level_(level), out_(out), err_(err), counts_() { };
+    Logger() : Logger(LogLevel::ERROR, cout, cerr) {};
+    Logger(LogLevel level, ostream &out) : Logger(level, out, out) {};
+    Logger(LogLevel level, ostream &out, ostream &err) : level_(level), out_(out), err_(err), counts_() {};
+    Logger(const Logger &) = delete;
+    Logger& operator=(const LogLevel&) = delete;
     ~Logger() = default;
 
-    void error(const FilePos &pos, const std::string &msg);
-    void error(const std::string &fileName, const std::string &msg);
-    void warning(const FilePos &pos, const std::string &msg);
-    void warning(const std::string &fileName, const std::string &msg);
-    void info(const std::string &fileName, const std::string &msg);
-    void debug(const std::string &fileName, const std::string &msg);
+    void error(const FilePos &pos, const string &msg);
+    void error(const string &fileName, const string &msg);
+    void warning(const FilePos &pos, const string &msg);
+    void warning(const string &fileName, const string &msg);
+    void info(const string &msg);
+    void debug(const string &msg);
 
     [[nodiscard]] int getDebugCount() const;
     [[nodiscard]] int getInfoCount() const;

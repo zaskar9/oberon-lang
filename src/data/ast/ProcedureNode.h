@@ -8,43 +8,45 @@
 #define OBERON0C_PROCEDURENODE_H
 
 
-#include "BlockNode.h"
-#include "DeclarationNode.h"
-#include "ProcedureTypeNode.h"
 #include <memory>
 #include <vector>
 
-class ProcedureNode final : public DeclarationNode, public BlockNode {
+#include "BlockNode.h"
+#include "DeclarationNode.h"
+#include "ProcedureTypeNode.h"
+#include "ModuleNode.h"
+
+using std::make_unique;
+using std::unique_ptr;
+using std::vector;
+
+class ProcedureNode : public BlockNode {
 
 private:
-    std::unique_ptr<ProcedureTypeNode> proctype_;
     bool extern_;
 
-    ProcedureTypeNode *proctype() const;
-
 public:
-    explicit ProcedureNode(const FilePos &pos, std::unique_ptr<Ident> ident);
+    // ctor for use in sema / parser
+    ProcedureNode(const FilePos &pos, unique_ptr<IdentDef> ident, bool external = false) :
+            BlockNode(NodeType::procedure, pos, std::move(ident), nullptr),
+            extern_(external) {};
+    // ctor for use in symbol importer
+    ProcedureNode(unique_ptr<IdentDef> ident, ProcedureTypeNode *type, bool external = false) :
+            BlockNode(NodeType::procedure, EMPTY_POS, std::move(ident), type),
+            extern_(external) {};
     ~ProcedureNode() override = default;
 
-    [[nodiscard]] NodeType getNodeType() const override {
-        return DeclarationNode::getNodeType();
-    }
-
-    void addFormalParameter(std::unique_ptr<ParameterNode> parameter);
-    [[nodiscard]] ParameterNode *getFormalParameter(const std::string &name);
-    [[nodiscard]] ParameterNode *getFormalParameter(size_t num) const;
-    [[nodiscard]] size_t getFormalParameterCount() const;
-
-    void setVarArgs(bool value);
-    [[nodiscard]] bool hasVarArgs() const;
-
-    void setReturnType(TypeNode *type);
-    [[nodiscard]] TypeNode *getReturnType() const;
+    [[nodiscard]] ProcedureTypeNode *getType() const;
 
     void setExtern(bool value);
     [[nodiscard]] bool isExtern() const;
 
+    [[nodiscard]] virtual bool isPredefined() const {
+        return false;
+    }
+
     void accept(NodeVisitor &visitor) override;
+
     void print(std::ostream &stream) const override;
 
 };

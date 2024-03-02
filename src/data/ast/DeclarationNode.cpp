@@ -7,10 +7,19 @@
 #include "DeclarationNode.h"
 #include "NodeVisitor.h"
 
-void DeclarationNode::setIdentifier(std::unique_ptr<Ident> name) {
+void DeclarationNode::setModule(ModuleNode *module) {
+    module_ = module;
+}
+
+ModuleNode *DeclarationNode::getModule() const {
+    return module_;
+}
+
+void DeclarationNode::setIdentifier(std::unique_ptr<IdentDef> name) {
     ident_ = std::move(name);
 }
-Ident* DeclarationNode::getIdentifier() const {
+
+IdentDef* DeclarationNode::getIdentifier() const {
     return ident_.get();
 }
 
@@ -24,6 +33,10 @@ TypeNode* DeclarationNode::getType() const {
 
 void DeclarationNode::print(std::ostream &stream) const {
     stream << *getIdentifier() << ": " << *getType();
+}
+
+unsigned int DeclarationNode::index() const {
+    return index_;
 }
 
 void DeclarationNode::setLevel(unsigned int level) {

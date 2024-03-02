@@ -5,39 +5,44 @@
 #ifndef OBERON_LANG_SYMBOLIMPORTER_H
 #define OBERON_LANG_SYMBOLIMPORTER_H
 
+#include <memory>
+#include <string>
+#include <vector>
 
-#include "logging/Logger.h"
-#include "compiler/CompilerFlags.h"
+#include "SymbolFile.h"
+#include "SymbolTable.h"
+#include "compiler/CompilerConfig.h"
+#include "data/ast/ASTContext.h"
 #include "data/ast/ModuleNode.h"
 #include "data/ast/TypeNode.h"
-#include "SymbolTable.h"
-#include "SymbolFile.h"
-#include <boost/filesystem.hpp>
+#include "logging/Logger.h"
+
+using std::string;
+using std::vector;
+using std::unique_ptr;
 
 class SymbolImporter {
 
 private:
-    Logger *logger_;
-    CompilerFlags *flags_;
-    boost::filesystem::path path_;
-    std::vector<TypeNode*> types_;
+    CompilerConfig &config_;
+    ASTContext *context_;
+    Logger &logger_;
+    vector<TypeNode*> types_;
     SymbolTable *symbols_;
-    std::unique_ptr<ModuleNode> module_;
 
-    void readDeclaration(SymbolFile *file, NodeType nodeType);
-    TypeNode *readType(SymbolFile *file);
-    TypeNode *readArrayType(SymbolFile *file);
-    TypeNode *readProcedureType(SymbolFile *file);
-    TypeNode *readRecordType(SymbolFile *file);
-    TypeNode *readParameter(SymbolFile *file);
+    void readDeclaration(SymbolFile *, NodeType, ModuleNode *);
+    TypeNode *readType(SymbolFile *);
+    TypeNode *readArrayType(SymbolFile *);
+    TypeNode *readProcedureType(SymbolFile *);
+    TypeNode *readRecordType(SymbolFile *);
 
 public:
-    explicit SymbolImporter(Logger *logger, CompilerFlags *flags, boost::filesystem::path &path) :
-            logger_(logger), flags_(flags), path_(std::move(path)), types_(), symbols_(), module_() {};
+    explicit SymbolImporter(CompilerConfig &config, ASTContext *context) :
+            config_(config), context_(context), logger_(config.logger()), types_(), symbols_() {};
     ~SymbolImporter() = default;
 
-    std::unique_ptr<ModuleNode> read(const std::string &module, SymbolTable *symbols);
-    std::unique_ptr<ModuleNode> read(const std::string &alias, const std::string &module, SymbolTable *symbols);
+    unique_ptr<ModuleNode> read(const string &module, SymbolTable *symbols);
+    unique_ptr<ModuleNode> read(const string &alias, const string &name, SymbolTable *symbols);
 
 };
 

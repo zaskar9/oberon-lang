@@ -13,6 +13,9 @@
 #include "NodeVisitor.h"
 #include <iostream>
 #include <iomanip>
+#include <vector>
+
+using std::vector;
 
 class NodePrettyPrinter final : private NodeVisitor {
 
@@ -22,48 +25,51 @@ private:
     bool isDecl_;
 
     void indent();
-    void block(BlockNode &node, bool isGlobal);
-    void call(ProcedureNodeReference &node);
+    void block(BlockNode &, bool isGlobal);
+    void selectors(vector<unique_ptr<Selector>> &);
 
-    void visit(ModuleNode &node) override;
-    void visit(ProcedureNode &node) override;
+    void visit(ModuleNode &) override;
+    void visit(ProcedureNode &) override;
 
-    void visit(ImportNode &node) override;
+    void visit(ImportNode &) override;
 
-    void visit(ConstantDeclarationNode &node) override;
-    void visit(FieldNode &node) override;
-    void visit(ParameterNode &node) override;
-    void visit(TypeDeclarationNode &node) override;
-    void visit(VariableDeclarationNode &node) override;
+    void visit(ConstantDeclarationNode &) override;
+    void visit(FieldNode &) override;
+    void visit(ParameterNode &) override;
+    void visit(TypeDeclarationNode &) override;
+    void visit(VariableDeclarationNode &) override;
 
-    void visit(ValueReferenceNode &node) override;
-    void visit(TypeReferenceNode &node) override;
+    void visit(QualifiedStatement &) override;
+    void visit(QualifiedExpression &) override;
 
-    void visit(BooleanLiteralNode &node) override;
-    void visit(IntegerLiteralNode &node) override;
-    void visit(RealLiteralNode &node) override;
-    void visit(StringLiteralNode &node) override;
-    void visit(NilLiteralNode &node) override;
+    void visit(BooleanLiteralNode &) override;
+    void visit(IntegerLiteralNode &) override;
+    void visit(RealLiteralNode &) override;
+    void visit(StringLiteralNode &) override;
+    void visit(NilLiteralNode &) override;
+    void visit(SetLiteralNode &) override;
+    void visit(RangeLiteralNode &) override;
 
-    void visit(UnaryExpressionNode &node) override;
-    void visit(BinaryExpressionNode &node) override;
+    void visit(UnaryExpressionNode &) override;
+    void visit(BinaryExpressionNode &) override;
+    void visit(RangeExpressionNode &) override;
+    void visit(SetExpressionNode &) override;
 
-    void visit(ArrayTypeNode &node) override;
-    void visit(BasicTypeNode &node) override;
-    void visit(ProcedureTypeNode &node) override;
-    void visit(RecordTypeNode &node) override;
-    void visit(PointerTypeNode &node) override;
+    void visit(ArrayTypeNode &) override;
+    void visit(BasicTypeNode &) override;
+    void visit(ProcedureTypeNode &) override;
+    void visit(RecordTypeNode &) override;
+    void visit(PointerTypeNode &) override;
 
-    void visit(StatementSequenceNode &node) override;
-    void visit(AssignmentNode &node) override;
-    void visit(IfThenElseNode &node) override;
-    void visit(ElseIfNode &node) override;
-    void visit(ProcedureCallNode &node) override;
-    void visit(LoopNode &node) override;
-    void visit(WhileLoopNode &node) override;
-    void visit(RepeatLoopNode &node) override;
-    void visit(ForLoopNode &node) override;
-    void visit(ReturnNode &node) override;
+    void visit(StatementSequenceNode &) override;
+    void visit(AssignmentNode &) override;
+    void visit(IfThenElseNode &) override;
+    void visit(ElseIfNode &) override;
+    void visit(LoopNode &) override;
+    void visit(WhileLoopNode &) override;
+    void visit(RepeatLoopNode &) override;
+    void visit(ForLoopNode &) override;
+    void visit(ReturnNode &) override;
 
 public:
     explicit NodePrettyPrinter(std::ostream &stream) : indent_(0), stream_(stream), isDecl_(false) { };

@@ -13,29 +13,43 @@ else
 endif
 
 # Compiler and linker settings
+# TGT = aarch64-linux-gnu
+# TGT = x86_64-linux-gnu
 LIB = ../test/oberon/lib
 INC = ../test/oberon/include
-O7C = ../cmake-build-release/src/oberon-lang
-O7CFLAGS = -q -O3 --reloc=pic
+ifeq ($(OS), windows)
+	O7C = ../cmake-build-release/src/oberon-lang.exe
+else
+	O7C = ../cmake-build-release/src/oberon-lang
+endif
+ifeq ($(OS), windows)
+	O7CFLAGS = -q -O3 -fenable-extern -fenable-varargs # --target $(TGT)
+else
+	O7CFLAGS = -q -O3 --reloc=pic -fenable-extern -fenable-varargs # --target $(TGT)
+endif
 LDFLAGS =
 
 # Library settings
 LIBNAME = liboberon
 
-ifeq ($(OS), macos)
+ifeq ($(OS), windows)
+	CXX = clang
+	EXT = dll
+	LDFLAGS += -shared
+else ifeq ($(OS), macos)
 	EXT = dylib
 	CXX = clang
 	LDFLAGS += -dynamiclib -install_name @rpath/$(LIBNAME).$(EXT)
 else ifeq ($(OS), linux)
 	EXT = so
-	CXX = gcc
+	CXX = gcc # x86_64-linux-gnu-gcc
 	LDFLAGS += -shared
 endif
 
 .PHONY: all clean dist install
 .DEFAULT_GOAL = dist
 
-all : dist install
+all : dist install clean
 
 clean :
 	@rm -f *.o *.smb *.$(EXT)
@@ -52,13 +66,17 @@ clean :
 dist : runtime.o Oberon.o Out.o Random.o Math.o
 	@echo -n Building library...
 	@$(CXX) $(LDFLAGS) -o $(LIBNAME).$(EXT) runtime.o Oberon.o Out.o Random.o Math.o
+	@ar rcs $(LIBNAME).a runtime.o Oberon.o Out.o Random.o Math.o
 	@echo ' done.'
 
 install : dist Oberon.smb Out.smb Random.smb Math.smb
 	@echo -n Installing library...
+	@mkdir -p $(LIB)
 	@mv $(LIBNAME).$(EXT) $(LIB)
+	@mv $(LIBNAME).a $(LIB)
 	@echo ' done.'
 	@echo -n Installing symbol files...
+	@mkdir -p $(INC)
 	@mv Oberon.smb $(INC)
 	@mv Out.smb $(INC)
 	@mv Random.smb $(INC)

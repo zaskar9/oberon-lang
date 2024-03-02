@@ -29,7 +29,7 @@ BEGIN
     Out.String("[");
     i := 0;
     WHILE i < Dim DO
-        Out.Int(a[i]);
+        Out.Int(a[i], 0);
         IF i + 1 < Dim THEN Out.String(",") END;
         i := i + 1
     END;
@@ -45,18 +45,6 @@ BEGIN
     a := b;
     b := t
 END Swap;
-
-(* Increments the given parameter value by 1. *)
-PROCEDURE INC(VAR v: INTEGER);
-BEGIN
-    v := v + 1
-END INC;
-
-(* Decrements the given parameter value by 1. *)
-PROCEDURE DEC(VAR v: INTEGER);
-BEGIN
-    v := v - 1
-END DEC;
 
 (* ------------------------------------------------- InsertionSort ------------------------------------------------ *)
 PROCEDURE InsertionSort(VAR a: Vector);
@@ -200,5 +188,5 @@ BEGIN
     Print(list);
     QuickSort(list);
     Print(list);
-    Out.String("--- Elapsed Time: "); Out.Long(Oberon.TimeMicros() - start); Out.String(" μs."); Out.Ln
+    Out.String("--- Elapsed Time: "); Out.Long(Oberon.TimeMicros() - start, 0); Out.String(" μs."); Out.Ln
 END Sort.

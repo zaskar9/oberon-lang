@@ -11,6 +11,11 @@ const int MAXVAL = 10 * SIZE;
 
 int a[5000];
 
+struct Array {
+    int dim;
+    int vec[];
+};
+
 void print(int value[]) {
     for (int i = 0; i < SIZE; i++) {
         printf("%d ", value[i]);
@@ -23,14 +28,31 @@ void destroy(int value[]) {
     }
 }
 
+void Len(struct Array *arr) {
+    arr->dim = 100;
+    arr->vec[99] = 20;
+}
+
+struct Array getArray() {
+    struct Array s;
+    return s;
+}
+
+void setArray(struct Array s) {
+    s.dim = 100;
+    s.vec[99] = 20;
+}
+
 int main(int argc, const char* argv[]) {
-    // int a[SIZE];
-    srand(time(NULL));
-    for (int i = 0; i < SIZE; i++) {
-        a[i] = rand() % 100 + 1;
-    }
-    print(a);
-    destroy(a);
-    print(a);
+//    int a[SIZE];
+//    srand(time(NULL));
+//    for (int i = 0; i < SIZE; i++) {
+//        a[i] = rand() % 100 + 1;
+//    }
+//    print(a);
+//    destroy(a);
+//    print(a);
+    struct Array s;
+    setArray(s);
     return 0;
 }

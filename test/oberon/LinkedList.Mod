@@ -40,7 +40,7 @@ BEGIN
     Out.String("[");
     current := l.first;
     WHILE current # NIL DO
-        Out.Int(current.value);
+        Out.Int(current.value, 0);
         IF current # list.last THEN Out.String(", ") END;
         current := current.next
     END;

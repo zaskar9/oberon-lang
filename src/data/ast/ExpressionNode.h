@@ -8,12 +8,22 @@
 #define OBERON0C_EXPRESSIONNODE_H
 
 
+#include <bitset>
+#include <memory>
+#include <string>
+#include <vector>
+
 #include "Node.h"
 #include "TypeNode.h"
 #include "BasicTypeNode.h"
 
+using std::bitset;
+using std::unique_ptr;
+using std::string;
+using std::vector;
+
 enum class OperatorType : char {
-    EQ, NEQ, LT, GT, GEQ, LEQ,
+    EQ, NEQ, LT, GT, GEQ, LEQ, IN, IS,
     TIMES, DIVIDE, DIV, MOD, PLUS, MINUS,
     AND, OR, NOT,
     NEG
@@ -29,18 +39,17 @@ private:
     TypeNode *cast_;
 
 public:
-    explicit ExpressionNode(const NodeType nodeType, const FilePos &pos, TypeNode *type = nullptr,
-                            TypeNode *cast = nullptr) :
-            Node(nodeType, pos), type_(type), cast_(cast) { };
+    ExpressionNode(const NodeType nodeType, const FilePos &pos, TypeNode *type, TypeNode *cast = nullptr) :
+            Node(nodeType, pos), type_(type), cast_(cast) {};
+
     ~ExpressionNode() override;
 
     [[nodiscard]] virtual bool isConstant() const = 0;
-    [[nodiscard]] virtual bool isLiteral() const {
-        return false;
-    };
+    [[nodiscard]] virtual int getPrecedence() const = 0;
+    [[nodiscard]] virtual bool isLiteral() const { return false; };
+
     void setType(TypeNode *type);
     [[nodiscard]] virtual TypeNode *getType() const;
-    [[nodiscard]] virtual int getPrecedence() const = 0;
 
     void setCast(TypeNode *cast);
     [[nodiscard]] TypeNode *getCast() const;
@@ -54,19 +63,18 @@ class UnaryExpressionNode final : public ExpressionNode {
 
 private:
     OperatorType op_;
-    std::unique_ptr<ExpressionNode> expr_;
+    unique_ptr<ExpressionNode> expr_;
 
 public:
-    UnaryExpressionNode(const FilePos &pos, OperatorType op, std::unique_ptr<ExpressionNode> expr) :
-            ExpressionNode(NodeType::unary_expression, pos), op_(op), expr_(std::move(expr)) {};
+    UnaryExpressionNode(const FilePos& start, OperatorType op, unique_ptr<ExpressionNode> expr, TypeNode *type) :
+            ExpressionNode(NodeType::unary_expression, start, type),
+            op_(op), expr_(std::move(expr)) {};
     ~UnaryExpressionNode() final = default;
 
     [[nodiscard]] bool isConstant() const final;
     [[nodiscard]] int getPrecedence() const final;
 
     [[nodiscard]] OperatorType getOperator() const;
-
-    void setExpression(std::unique_ptr<ExpressionNode> expr);
     [[nodiscard]] ExpressionNode *getExpression() const;
 
     void accept(NodeVisitor &visitor) final;
@@ -80,23 +88,68 @@ class BinaryExpressionNode final : public ExpressionNode {
 
 private:
     OperatorType op_;
-    std::unique_ptr<ExpressionNode> lhs_, rhs_;
+    unique_ptr<ExpressionNode> lhs_, rhs_;
 
 public:
-    BinaryExpressionNode(const FilePos &pos, OperatorType op, std::unique_ptr<ExpressionNode> lhs, std::unique_ptr<ExpressionNode> rhs) :
-            ExpressionNode(NodeType::binary_expression, pos), op_(op), lhs_(std::move(lhs)), rhs_(std::move(rhs)) {};
+    BinaryExpressionNode(const FilePos &start, OperatorType op,
+                         unique_ptr<ExpressionNode> lhs, unique_ptr<ExpressionNode> rhs, TypeNode *type) :
+            ExpressionNode(NodeType::binary_expression, start, type),
+            op_(op), lhs_(std::move(lhs)), rhs_(std::move(rhs)) {};
     ~BinaryExpressionNode() final = default;
 
     [[nodiscard]] bool isConstant() const final;
     [[nodiscard]] int getPrecedence() const final;
 
     [[nodiscard]] OperatorType getOperator() const;
-
-    void setLeftExpression(std::unique_ptr<ExpressionNode> expr);
     [[nodiscard]] ExpressionNode *getLeftExpression() const;
-
-    void setRightExpression(std::unique_ptr<ExpressionNode> expr);
     [[nodiscard]] ExpressionNode *getRightExpression() const;
+
+    void accept(NodeVisitor &visitor) final;
+
+    void print(std::ostream &stream) const final;
+
+};
+
+
+class RangeExpressionNode final : public ExpressionNode {
+
+private:
+    unique_ptr<ExpressionNode> lower_, upper_;
+
+public:
+    RangeExpressionNode(const FilePos &start, unique_ptr<ExpressionNode> lower, unique_ptr<ExpressionNode> upper,
+                        TypeNode *type) :
+            ExpressionNode(NodeType::range_expression, start, type),
+            lower_(std::move(lower)), upper_(std::move(upper)) {};
+
+    [[nodiscard]] bool isConstant() const final;
+    [[nodiscard]] int getPrecedence() const final;
+
+    [[nodiscard]] ExpressionNode *getLower() const;
+    [[nodiscard]] ExpressionNode *getUpper() const;
+
+    void accept(NodeVisitor &visitor) final;
+
+    void print(std::ostream &stream) const final;
+
+};
+
+
+class SetExpressionNode final : public ExpressionNode {
+
+private:
+    vector<unique_ptr<ExpressionNode>> elements_;
+
+public:
+    SetExpressionNode(const FilePos &start, vector<unique_ptr<ExpressionNode>> elements, TypeNode *type) :
+            ExpressionNode(NodeType::set_expression, start, type),
+            elements_(std::move(elements)) {};
+
+    [[nodiscard]] bool isConstant() const final;
+    [[nodiscard]] int getPrecedence() const final;
+
+    [[nodiscard]] const vector<unique_ptr<ExpressionNode>> &elements() const;
+    [[nodiscard]] bool isEmptySet() const;
 
     void accept(NodeVisitor &visitor) final;
 
@@ -111,7 +164,7 @@ private:
     TypeKind kind_;
 
 public:
-    explicit LiteralNode(const NodeType nodeType, const FilePos &pos, TypeKind kind, TypeNode *type = nullptr,
+    LiteralNode(const NodeType nodeType, const FilePos &pos, TypeKind kind, TypeNode *type = nullptr,
                          TypeNode *cast = nullptr) :
             ExpressionNode(nodeType, pos, type, cast), kind_(kind) {};
     ~LiteralNode() override = default;
@@ -133,7 +186,7 @@ private:
     bool value_;
 
 public:
-    explicit BooleanLiteralNode(const FilePos &pos, bool value, TypeNode *type = nullptr, TypeNode *cast = nullptr) :
+    BooleanLiteralNode(const FilePos &pos, bool value, TypeNode *type = nullptr, TypeNode *cast = nullptr) :
             LiteralNode(NodeType::boolean, pos, TypeKind::BOOLEAN, type, cast), value_(value) {};
     ~BooleanLiteralNode() final = default;
 
@@ -151,7 +204,7 @@ private:
     long value_;
 
 public:
-    explicit IntegerLiteralNode(const FilePos &pos, long value, TypeNode *type = nullptr, TypeNode *cast = nullptr) :
+    IntegerLiteralNode(const FilePos &pos, long value, TypeNode *type = nullptr, TypeNode *cast = nullptr) :
             LiteralNode(NodeType::integer, pos, TypeKind::INTEGER, type, cast), value_(value) {};
     ~IntegerLiteralNode() final = default;
 
@@ -170,7 +223,7 @@ private:
     double value_;
 
 public:
-    explicit RealLiteralNode(const FilePos &pos, double value, TypeNode *type = nullptr, TypeNode *cast = nullptr) :
+    RealLiteralNode(const FilePos &pos, double value, TypeNode *type = nullptr, TypeNode *cast = nullptr) :
             LiteralNode(NodeType::real, pos, TypeKind::REAL, type, cast), value_(value) {};
     ~RealLiteralNode() final = default;
 
@@ -186,29 +239,68 @@ public:
 class StringLiteralNode final : public LiteralNode {
 
 private:
-    std::string value_;
+    string value_;
 
 public:
-    explicit StringLiteralNode(const FilePos &pos, std::string value, TypeNode *type = nullptr, TypeNode *cast = nullptr) :
+    StringLiteralNode(const FilePos &pos, string value, TypeNode *type = nullptr, TypeNode *cast = nullptr) :
             LiteralNode(NodeType::string, pos, TypeKind::STRING, type, cast), value_(std::move(value)) {};
     ~StringLiteralNode() final = default;
 
-    [[nodiscard]] std::string value() const;
+    [[nodiscard]] string value() const;
 
     void accept(NodeVisitor &visitor) final;
     void print(std::ostream &stream) const final;
 
 };
+
 
 class NilLiteralNode final : public LiteralNode {
 
 public:
-    explicit NilLiteralNode(const FilePos &pos) :
-            LiteralNode(NodeType::pointer, pos, TypeKind::POINTER, nullptr, nullptr) {};
+    NilLiteralNode(const FilePos &pos, TypeNode *type = nullptr) :
+            LiteralNode(NodeType::pointer, pos, TypeKind::POINTER, type, nullptr) {};
 
     void accept(NodeVisitor &visitor) final;
     void print(std::ostream &stream) const final;
 };
 
+
+class SetLiteralNode final : public LiteralNode {
+
+private:
+    bitset<32> value_;
+
+public:
+    SetLiteralNode(const FilePos &pos, bitset<32> value, TypeNode *type = nullptr, TypeNode *cast = nullptr) :
+            LiteralNode(NodeType::set, pos, TypeKind::SET, type, cast), value_(value) {};
+
+    [[nodiscard]] bitset<32> value() const;
+
+    void accept(NodeVisitor &visitor) final;
+    void print(std::ostream &stream) const final;
+
+};
+
+
+class RangeLiteralNode final : public LiteralNode {
+
+private:
+    bitset<32> value_;
+    long lower_;
+    long upper_;
+
+public:
+    RangeLiteralNode(const FilePos &pos, bitset<32> value, long lower, long upper,
+                     TypeNode *type = nullptr, TypeNode *cast = nullptr) :
+            LiteralNode(NodeType::range, pos, TypeKind::SET, type, cast), value_(value), lower_(lower), upper_(upper) {};
+
+    [[nodiscard]] bitset<32> value() const;
+    [[nodiscard]] long lower() const;
+    [[nodiscard]] long upper() const;
+
+    void accept(NodeVisitor &visitor) final;
+    void print(std::ostream &stream) const final;
+
+};
 
 #endif //OBERON0C_EXPRESSIONNODE_H
