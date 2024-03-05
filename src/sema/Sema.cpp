@@ -19,8 +19,8 @@ Sema::Sema(CompilerConfig &config, ASTContext *context, OberonSystem *system) :
         config_(config), context_(context), system_(system), logger_(config_.logger()), forwards_(), module_(), procs_(),
         symbols_(system_->getSymbolTable()), importer_(config_, context), exporter_(config_, context) {
     boolTy_ = symbols_->getBasicType(to_string(TypeKind::BOOLEAN));
-    byteTy = symbols_->getBasicType(to_string(TypeKind::BYTE));
-    charTy = symbols_->getBasicType(to_string(TypeKind::CHAR));
+    byteTy_ = symbols_->getBasicType(to_string(TypeKind::BYTE));
+    charTy_ = symbols_->getBasicType(to_string(TypeKind::CHAR));
     integerTy_ = symbols_->getBasicType(to_string(TypeKind::INTEGER));
     longIntTy_ = symbols_->getBasicType(to_string(TypeKind::LONGINT));
     realTy_ = symbols_->getBasicType(to_string(TypeKind::REAL));
@@ -726,7 +726,7 @@ TypeNode *Sema::onActualParameters(TypeNode *base, ActualParameters *sel) {
 
 TypeNode *Sema::onArrayIndex(TypeNode *base, ArrayIndex *sel) {
     if (!base->isArray()) {
-        logger_.error(sel->pos(), "array " + to_string(base) + " is not an array array.");
+        logger_.error(sel->pos(), format(base) + " is not an array.");
         return nullptr;
     }
     auto array = dynamic_cast<ArrayTypeNode *>(base);
@@ -738,7 +738,7 @@ TypeNode *Sema::onArrayIndex(TypeNode *base, ArrayIndex *sel) {
     for (size_t i = 0; i < num; ++i) {
         auto index = sel->indices()[i].get();
         auto type = index->getType();
-        if (type->kind() == TypeKind::INTEGER) {
+        if (type->isInteger()) {
             if (index->isLiteral()) {
                 auto literal = dynamic_cast<const IntegerLiteralNode *>(index);
                 if (array->isOpen()) {
@@ -1038,6 +1038,11 @@ Sema::onRealLiteral(const FilePos &start, [[maybe_unused]] const FilePos &end, d
 unique_ptr<StringLiteralNode>
 Sema::onStringLiteral(const FilePos &start, [[maybe_unused]] const FilePos &end, const string &value) {
     return make_unique<StringLiteralNode>(start, value, stringTy_);
+}
+
+unique_ptr<CharLiteralNode>
+Sema::onCharLiteral(const FilePos &start, [[maybe_unused]] const FilePos &end, const unsigned char value) {
+    return make_unique<CharLiteralNode>(start, value, charTy_);
 }
 
 unique_ptr<NilLiteralNode>
@@ -1439,28 +1444,39 @@ Sema::assertCompatible(const FilePos &pos, TypeNode *expected, TypeNode *actual,
         }
     }
     // Check array type
-    if (expected->isArray() && actual->isArray()) {
+    if (expected->isArray()) {
         auto exp_array = dynamic_cast<ArrayTypeNode *>(expected);
-        auto act_array = dynamic_cast<ArrayTypeNode *>(actual);
-        // Check `ANYTYPE`
-        if (exp_array->getMemberType()->kind() == TypeKind::ANYTYPE) {
-            return true;
-        }
-        if (exp_array->dimensions() == act_array->dimensions()) {
-            if (exp_array->isOpen()) {
-                return assertCompatible(pos, exp_array->getMemberType(), act_array->getMemberType(), var);
-            } else {
-                for (size_t i = 0; i < exp_array->dimensions(); ++i) {
-                    if (!assertCompatible(pos, exp_array->types()[i], act_array->types()[i], var)) {
-                        return false;
+        if (actual->isArray()) {
+            auto act_array = dynamic_cast<ArrayTypeNode *>(actual);
+            // Check `ANYTYPE`
+            // if (exp_array->getMemberType()->kind() == TypeKind::ANYTYPE) {
+            //    return true;
+            // }
+            if (exp_array->dimensions() >= act_array->dimensions()) {
+                if (exp_array->isOpen()) {
+                    return assertCompatible(pos, exp_array->getMemberType(), act_array->getMemberType(), var);
+                } else {
+                    for (size_t i = 0; i < exp_array->dimensions(); ++i) {
+                        if (!assertCompatible(pos, exp_array->types()[i], act_array->types()[i], var)) {
+                            return false;
+                        }
                     }
+                    return true;
                 }
-                return true;
+            } else {
+                logger_.error(pos, "type mismatch: incompatible array dimensions, expected " +
+                                   to_string(exp_array->dimensions()) + ", found " +
+                                   to_string(act_array->dimensions()) + ".");
+                return false;
             }
-        } else {
-            logger_.error(pos, "type mismatch: incompatible array dimensions, expected " +
-                    to_string(exp_array->dimensions()) + ", found " + to_string(act_array->dimensions()) + ".");
-            return false;
+        } else if ((actual->isString() || actual->isChar()) &&
+                (exp_array->getMemberType()->isChar() || exp_array->getMemberType()->kind() == TypeKind::ANYTYPE)) {
+            if (exp_array->dimensions() == 1) {
+                return true;
+            } else {
+                logger_.error(pos, "type mismatch: cannot assign string to multi-dimensional array.");
+                return false;
+            }
         }
     }
     // Check pointer type
@@ -1472,6 +1488,10 @@ Sema::assertCompatible(const FilePos &pos, TypeNode *expected, TypeNode *actual,
         } else if (actual->kind() == TypeKind::NILTYPE) {
             return true;
         }
+    }
+    // Check string and character type
+    if (expected->isString() && actual->isChar()) {
+        return true;
     }
     // Error logging
     logger_.error(pos, "type mismatch: expected " + format(expected, isPtr) + ", found " + format(actual, isPtr) + ".");
@@ -1508,13 +1528,17 @@ Sema::format(const TypeNode *type, bool isPtr) {
     }
     if (type->isArray()) {
         auto array = dynamic_cast<const ArrayTypeNode *>(type);
-        stream << "ARRAY ";
-        string sep;
-        for (unsigned length: array->lengths()) {
-            stream << sep << length;
-            sep = ", ";
+        stream << "ARRAY";
+        if (!array->isOpen()) {
+            string sep = " ";
+            for (unsigned length: array->lengths()) {
+                stream << sep << length;
+                sep = ", ";
+            }
         }
-        stream << " OF " << *array->getMemberType();
+        stream << " OF " << format(array->getMemberType());
+    } else if (type->kind() == TypeKind::NOTYPE) {
+        stream << "undefined type";
     } else {
         stream << *type;
     }

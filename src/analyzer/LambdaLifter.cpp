@@ -227,6 +227,8 @@ void LambdaLifter::visit(RealLiteralNode &) {}
 
 void LambdaLifter::visit(StringLiteralNode &) {}
 
+void LambdaLifter::visit(CharLiteralNode &) {}
+
 void LambdaLifter::visit(NilLiteralNode &) {}
 
 void LambdaLifter::visit(SetLiteralNode &) {}

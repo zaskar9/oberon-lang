@@ -234,6 +234,11 @@ void NodePrettyPrinter::visit(StringLiteralNode &node) {
     stream_ << "\"" << Scanner::escape(node.value()) << "\"";
 }
 
+void NodePrettyPrinter::visit(CharLiteralNode &node) {
+    string str(1, static_cast<char>(node.value()));
+    stream_ << "\"" << Scanner::escape(str) << "\"";
+}
+
 void NodePrettyPrinter::visit(NilLiteralNode &) {
     stream_ << "NIL";
 }

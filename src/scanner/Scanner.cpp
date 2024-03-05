@@ -289,10 +289,10 @@ unique_ptr<const Token> Scanner::scanIdent() {
 unique_ptr<const Token> Scanner::scanNumber() {
     bool isHex = false;
     bool isFloat = false;
+    bool isChar = false;
     FilePos pos = current();
     std::stringstream ss;
-    while (((ch_ >= '0') && (ch_ <= '9')) ||
-           ((toupper(ch_) >= 'A') && (toupper(ch_) <= 'F'))) {
+    while ((ch_ >= '0' && ch_ <= '9') || (toupper(ch_) >= 'A' && toupper(ch_) <= 'F')) {
         ss << ch_;
         read();
         if (ch_ == '.') {
@@ -305,14 +305,18 @@ unique_ptr<const Token> Scanner::scanNumber() {
             read();
         }
     }
-    if (ch_ == 'H') {
+    if (ch_ == 'H' || ch_ == 'X') {
         if (isFloat) {
             logger_.error(pos, "undefined number.");
             auto token = make_unique<UndefinedToken>(pos, ch_);
             read();
             return token;
         }
-        isHex = true;
+        if (ch_ == 'H') {
+            isHex = true;
+        } else {
+            isChar = true;
+        }
         read();
     }
     boost::cnv::cstream ccnv;
@@ -331,11 +335,21 @@ unique_ptr<const Token> Scanner::scanNumber() {
                 return make_unique<FloatLiteralToken>(pos, current(), result.value());
             }
             value = boost::convert<double>(num, ccnv(std::dec)(std::scientific)).value();
-        } catch (boost::bad_optional_access const&) {
+        } catch (boost::bad_optional_access const &) {
             logger_.error(pos, "invalid real literal: " + num + ".");
             value = 0;
         }
         return make_unique<DoubleLiteralToken>(pos, current(), value);
+    } else if (isChar) {
+        unsigned char value;
+        auto result = boost::convert<unsigned>(num, ccnv(std::hex));
+        if (result && result.value() < 256) {
+            value = static_cast<unsigned char>(result.value());
+        } else {
+            logger_.error(pos, "invalid character literal: " + num + ".");
+            value = 0;
+        }
+        return make_unique<CharLiteralToken>(pos, current(), value);
     } else {
         bool isLong = true;
         long value;
@@ -373,8 +387,12 @@ unique_ptr<const Token> Scanner::scanString() {
         read();
     }
     read();
-    std::string str = ss.str();
-    return make_unique<StringLiteralToken>(p, current(), unescape(str));
+    std::string str = unescape(ss.str());
+    if (str.length() <= 1) {
+        unsigned char value = str.empty() ? '\0' : static_cast<unsigned char>(str[0]);
+        return make_unique<CharLiteralToken>(p, current(), value);
+    }
+    return make_unique<StringLiteralToken>(p, current(), str);
 }
 
 std::string Scanner::escape(std::string str) {
@@ -391,7 +409,6 @@ std::string Scanner::escape(std::string str) {
     boost::replace_all(str, "\t", "\\t");
     boost::replace_all(str, "\v", "\\v");
     return str;
-
 }
 
 std::string Scanner::unescape(std::string str) {

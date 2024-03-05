@@ -46,6 +46,7 @@ private:
     void visit(IntegerLiteralNode &) override;
     void visit(RealLiteralNode &) override;
     void visit(StringLiteralNode &) override;
+    void visit(CharLiteralNode &) override;
     void visit(NilLiteralNode &) override;
     void visit(SetLiteralNode &) override;
     void visit(RangeLiteralNode &) override;

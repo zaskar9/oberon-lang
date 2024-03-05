@@ -254,6 +254,24 @@ public:
 };
 
 
+class CharLiteralNode final : public LiteralNode {
+
+private:
+    unsigned char value_;
+
+public:
+    CharLiteralNode(const FilePos &pos, unsigned char value, TypeNode *type = nullptr, TypeNode *cast = nullptr) :
+            LiteralNode(NodeType::integer, pos, TypeKind::CHAR, type, cast), value_(value) {};
+    ~CharLiteralNode() final = default;
+
+    [[nodiscard]] unsigned char value() const;
+
+    void accept(NodeVisitor &visitor) final;
+    void print(std::ostream &stream) const final;
+
+};
+
+
 class NilLiteralNode final : public LiteralNode {
 
 public:

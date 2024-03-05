@@ -44,7 +44,7 @@ private:
     SymbolTable *symbols_;
     SymbolImporter importer_;
     SymbolExporter exporter_;
-    TypeNode *boolTy_, *byteTy, *charTy, *integerTy_, *longIntTy_, *realTy_, *longRealTy_, *stringTy_, *setTy_, *nullTy_;
+    TypeNode *boolTy_, *byteTy_, *charTy_, *integerTy_, *longIntTy_, *realTy_, *longRealTy_, *stringTy_, *setTy_, *nullTy_;
 
     bool assertEqual(Ident *, Ident *) const;
     void assertUnique(IdentDef *, DeclarationNode *);
@@ -174,6 +174,7 @@ public:
     unique_ptr<IntegerLiteralNode> onIntegerLiteral(const FilePos &, const FilePos &, long, bool = false);
     unique_ptr<RealLiteralNode> onRealLiteral(const FilePos &, const FilePos &, double, bool = false);
     unique_ptr<StringLiteralNode> onStringLiteral(const FilePos &, const FilePos &, const string &);
+    unique_ptr<CharLiteralNode> onCharLiteral(const FilePos &, const FilePos &, const unsigned char);
     unique_ptr<NilLiteralNode> onNilLiteral(const FilePos &, const FilePos &);
     unique_ptr<SetLiteralNode> onSetLiteral(const FilePos &, const FilePos &, bitset<32>);
 

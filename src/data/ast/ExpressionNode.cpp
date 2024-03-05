@@ -284,6 +284,19 @@ void StringLiteralNode::print(std::ostream &stream) const {
 }
 
 
+unsigned char CharLiteralNode::value() const {
+    return value_;
+}
+
+void CharLiteralNode::accept(NodeVisitor &visitor) {
+    visitor.visit(*this);
+}
+
+void CharLiteralNode::print(std::ostream &stream) const {
+    stream << value_;
+}
+
+
 void NilLiteralNode::accept(NodeVisitor &visitor) {
     visitor.visit(*this);
 }
