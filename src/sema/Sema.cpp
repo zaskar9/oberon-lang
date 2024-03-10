@@ -86,10 +86,18 @@ Sema::onImport(const FilePos &start, [[maybe_unused]] const FilePos &end,
     auto node = make_unique<ImportNode>(start, std::move(alias), std::move(ident));
     // TODO check duplicate imports
     std::unique_ptr<ModuleNode> module;
-    if (node->getAlias()) {
-        module = importer_.read(node->getAlias()->name(), node->getModule()->name(), symbols_);
+    auto name = node->getModule()->name();
+    if (name == "SYSTEM") {
+        module = std::make_unique<ModuleNode>(std::make_unique<Ident>(name));
+        if (node->getAlias()) {
+            module->setAlias(node->getAlias()->name());
+        }
     } else {
-        module = importer_.read(node->getModule()->name(), symbols_);
+        if (node->getAlias()) {
+            module = importer_.read(node->getAlias()->name(), name, symbols_);
+        } else {
+            module = importer_.read(name, symbols_);
+        }
     }
     if (module) {
         context_->addExternalModule(std::move(module));

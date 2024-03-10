@@ -196,6 +196,9 @@ void LLVMIRBuilder::arrayInitializers(TypeNode *base, TypeNode *type, vector<Val
 
 void LLVMIRBuilder::visit(ImportNode &node) {
     std::string name = node.getModule()->name();
+    if (name == "SYSTEM") {
+        return; /* no initialization for pseudo modules */
+    }
     auto type = FunctionType::get(builder_.getInt32Ty(), {});
     auto fun = module_->getOrInsertFunction(name, type);
     if (fun) {
@@ -844,6 +847,14 @@ LLVMIRBuilder::createPredefinedCall(PredefinedProcedure *proc, QualIdent *ident,
             return createExclCall(params[0], params[1]);
         case ProcKind::ORD:
             return createOrdCall(actuals[0].get(), params[0]);
+        case ProcKind::SYSTEM_ADR:
+            return createSystemAdrCall(actuals, params);
+        case ProcKind::SYSTEM_GET:
+            return createSystemGetCall(actuals, params);
+        case ProcKind::SYSTEM_PUT:
+            return createSystemPutCall(actuals, params);
+        case ProcKind::SYSTEM_COPY:
+            return createSystemCopyCall(params[0], params[1], params[2]);
         default:
             logger_.error(ident->start(), "unsupported predefined procedure: " + to_string(*ident) + ".");
             // to generate correct LLVM IR, the current value is returned (no-op).
@@ -993,7 +1004,7 @@ LLVMIRBuilder::createLenCall(vector<unique_ptr<ExpressionNode>> &actuals, std::v
                 logger_.error(param1->pos(), "array dimension cannot be a negative value.");
                 return value_;
             }
-            if (value >= arrayTy->dimensions()) {
+            if (value >= (long)arrayTy->dimensions()) {
                 logger_.error(param1->pos(), "value exceeds number of array dimensions.");
                 return value_;
             }
@@ -1098,6 +1109,57 @@ LLVMIRBuilder::createRorCall(llvm::Value *param, llvm::Value *shift) {
     Value *delta = builder_.CreateSub(builder_.getInt64(64), shift);
     Value *rhs = builder_.CreateShl(param, delta);
     return builder_.CreateOr(lhs, rhs);
+}
+
+Value *
+LLVMIRBuilder::createSystemAdrCall(vector<unique_ptr<ExpressionNode>> &actuals, std::vector<Value *> &params) {
+    // TODO : Support other types
+    auto param = actuals[0].get();
+    auto type = param->getType();
+    if (!type->isNumeric()) {
+        logger_.error(param->pos(), "expected numeric type");
+        return value_;
+    }
+    return builder_.CreatePtrToInt(params[0], builder_.getInt64Ty());
+}
+
+Value *
+LLVMIRBuilder::createSystemGetCall(vector<unique_ptr<ExpressionNode>> &actuals, std::vector<Value *> &params) {
+    // TODO : Support other types
+    auto param = actuals[1].get();
+    auto type = param->getType();
+    if (!type->isNumeric()) {
+        logger_.error(param->pos(), "expected numeric type");
+        return value_;
+    }
+    auto base = getLLVMType(type);
+    auto ptrtype = PointerType::get(base, 0);
+    auto ptr = builder_.CreateIntToPtr(params[0], ptrtype);
+    auto value = builder_.CreateLoad(base, ptr, true);
+    return builder_.CreateStore(value, params[1]);
+}
+
+Value *
+LLVMIRBuilder::createSystemPutCall(vector<unique_ptr<ExpressionNode>> &actuals, std::vector<Value *> &params) {
+    // TODO : Support other types
+    auto param = actuals[1].get();
+    auto type = param->getType();
+    if (!type->isNumeric()) {
+        logger_.error(param->pos(), "expected numeric type");
+        return value_;
+    }
+    auto base = getLLVMType(type);
+    auto ptrtype = PointerType::get(base, 0);
+    auto ptr = builder_.CreateIntToPtr(params[0], ptrtype);
+    return builder_.CreateStore(params[1], ptr, true);
+}
+
+Value *
+LLVMIRBuilder::createSystemCopyCall(llvm::Value *src, llvm::Value *dst, llvm::Value *n) {
+    auto ptrtype = builder_.getPtrTy();
+    auto srcptr = builder_.CreateIntToPtr(src, ptrtype);
+    auto dstptr = builder_.CreateIntToPtr(dst, ptrtype);
+    return builder_.CreateMemCpy(dstptr, MaybeAlign(), srcptr, MaybeAlign(), n, true);
 }
 
 Value *

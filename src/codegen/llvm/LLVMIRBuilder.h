@@ -92,8 +92,13 @@ private:
     Value *createOrdCall(ExpressionNode *, Value *);
     Value *createRolCall(Value *, Value *);
     Value *createRorCall(Value *, Value *);
+    
+    Value *createSystemAdrCall(vector<unique_ptr<ExpressionNode>> &, std::vector<Value *> &);
+    Value *createSystemGetCall(vector<unique_ptr<ExpressionNode>> &, std::vector<Value *> &);
+    Value *createSystemPutCall(vector<unique_ptr<ExpressionNode>> &, std::vector<Value *> &);
+    Value *createSystemCopyCall(Value *, Value *, Value *);
+    
     Value *createTrapCall(unsigned);
-
     Value *createInBoundsCheck(Value *, Value *, Value *);
 
     void visit(ModuleNode &) override;

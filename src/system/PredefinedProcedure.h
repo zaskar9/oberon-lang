@@ -21,7 +21,8 @@ using std::vector;
 
 enum class ProcKind {
     ABS, ASH, ASR, ASSERT, CAP, CHR, COPY, DEC, ENTIER, EXCL, FLOOR, FLT, FREE, HALT, INC, INCL, LEN, LONG, LSL,
-    MAX, MIN, NEW, ODD, ORD, PACK, ROL, ROR, SHORT, SIZE, UNPK
+    MAX, MIN, NEW, ODD, ORD, PACK, ROL, ROR, SHORT, SIZE, UNPK,
+    SYSTEM_ADR, SYSTEM_GET, SYSTEM_PUT, SYSTEM_SIZE, SYSTEM_BIT, SYSTEM_COPY, SYSTEM_VAL
 };
 
 class PredefinedProcedure final : public ProcedureNode {

@@ -17,6 +17,7 @@ private:
     std::vector<std::unique_ptr<DeclarationNode>> decls_;
     std::vector<std::unique_ptr<TypeNode>> types_;
     std::unordered_map<std::string, BasicTypeNode *> baseTypes_;
+    std::string module_;
 
     TypeDeclarationNode *createTypeDeclaration(TypeNode *);
 
@@ -27,6 +28,9 @@ protected:
 public:
     explicit OberonSystem() : symbols_(), decls_(), types_(), baseTypes_() {};
     virtual ~OberonSystem();
+    
+    void createNamespace(const std::string &module);
+    void leaveNamespace();
 
     void createBasicTypes(const std::vector<std::pair<std::pair<TypeKind, unsigned int>, bool>>& types);
     BasicTypeNode *createBasicType(TypeKind kind, unsigned int size);
