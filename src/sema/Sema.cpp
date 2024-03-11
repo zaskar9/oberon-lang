@@ -890,6 +890,7 @@ Sema::onBinaryExpression(const FilePos &start, [[maybe_unused]] const FilePos &e
                 }
                 break;
             }
+            [[fallthrough]];
         case OperatorType::MINUS:
         case OperatorType::TIMES:
             if ((lhsType->isNumeric() && rhsType->isNumeric())

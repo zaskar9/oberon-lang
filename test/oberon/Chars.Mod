@@ -116,6 +116,8 @@ BEGIN
 
     ASSERT(ORD("A") = 65);
     ASSERT(CHR(ORD("A")) = "A");
-    ASSERT(ORD(s1[0]) = ORD("M"))
+    ASSERT(ORD(s1[0]) = ORD("M"));
+
+    Out.String("All assertions passed."); Out.Ln
 
 END Chars.

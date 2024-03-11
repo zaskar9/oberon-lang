@@ -6,14 +6,12 @@
 
 #include "NodePrettyPrinter.h"
 
-#include <format>
 #include <memory>
 #include <string>
 #include <vector>
 
 #include "scanner/Scanner.h"
 
-using std::format;
 using std::string;
 using std::unique_ptr;
 using std::vector;
@@ -231,7 +229,7 @@ void NodePrettyPrinter::visit(IntegerLiteralNode &node) {
 }
 
 void NodePrettyPrinter::visit(RealLiteralNode &node) {
-    stream_ << format("{:G}", node.value()) << (node.isLong() ? "(*D*)" : "(*F*)");
+    stream_ << node.value() << (node.isLong() ? "(*D*)" : "(*F*)");
 }
 
 void NodePrettyPrinter::visit(StringLiteralNode &node) {
@@ -239,7 +237,7 @@ void NodePrettyPrinter::visit(StringLiteralNode &node) {
 }
 
 void NodePrettyPrinter::visit(CharLiteralNode &node) {
-    stream_ << format("{:02X}", node.value()) << "X";
+    stream_ << node.value() << "(*C*)";
 }
 
 void NodePrettyPrinter::visit(NilLiteralNode &) {
