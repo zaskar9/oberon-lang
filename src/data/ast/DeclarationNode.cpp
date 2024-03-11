@@ -48,10 +48,6 @@ unsigned int DeclarationNode::getLevel() const {
 }
 
 
-void ConstantDeclarationNode::setValue(std::unique_ptr<ExpressionNode> value) {
-    value_ = std::move(value);
-}
-
 ExpressionNode * ConstantDeclarationNode::getValue() const {
     return value_.get();
 }

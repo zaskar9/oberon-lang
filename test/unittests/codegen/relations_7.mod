@@ -10,12 +10,12 @@ BEGIN
   IF "z" = "z" THEN
     IF "z" > "a" THEN
       IF "a" < "z" THEN
-        Out.String("PASS");
+        Out.String("PASS"); Out.Ln;
         RETURN
       END
     END
   END;
-  Out.String("FAIL")
+  Out.String("FAIL"); Out.Ln
 END Test;
 
 BEGIN

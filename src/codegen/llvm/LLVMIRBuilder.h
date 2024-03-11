@@ -72,7 +72,7 @@ private:
     using Selectors = vector<unique_ptr<Selector>>;
     using SelectorIterator = Selectors::iterator;
     TypeNode *selectors(TypeNode *, SelectorIterator, SelectorIterator);
-    void parameters(ProcedureTypeNode *, ActualParameters *, vector<Value *> &);
+    void parameters(ProcedureTypeNode *, ActualParameters *, vector<Value *> &, bool = false);
 
     TypeNode *createStaticCall(ProcedureNode *, QualIdent *, Selectors &);
     Value *createPredefinedCall(PredefinedProcedure *, QualIdent *,
@@ -80,6 +80,7 @@ private:
     Value *createAbortCall();
     Value *createAsrCall(Value *, Value *);
     Value *createAssertCall(Value *);
+    Value *createChrCall(Value *);
     Value *createExitCall(Value *);
     Value *createExclCall(Value *, Value *);
     Value *createFreeCall(TypeNode *, Value *);
@@ -113,6 +114,7 @@ private:
     void visit(IntegerLiteralNode &) override;
     void visit(RealLiteralNode &) override;
     void visit(StringLiteralNode &) override;
+    void visit(CharLiteralNode &) override;
     void visit(NilLiteralNode &) override;
     void visit(SetLiteralNode &) override;
     void visit(RangeLiteralNode &) override;

@@ -87,7 +87,7 @@ void Oberon07::initSymbolTable(SymbolTable *symbols) {
                     {{TypeKind::ANYTYPE,  0}, false},
                     {{TypeKind::NOTYPE,   0}, false},
                     {{TypeKind::NILTYPE,  8}, false},
-                    {{TypeKind::ENTIRE,  0}, false},
+                    {{TypeKind::ENTIRE,   0}, false},
                     {{TypeKind::BOOLEAN,  1}, true},
                     {{TypeKind::BYTE,     1}, true},
                     {{TypeKind::CHAR,     1}, true},
@@ -96,7 +96,7 @@ void Oberon07::initSymbolTable(SymbolTable *symbols) {
                     {{TypeKind::REAL,     4}, true},
                     {{TypeKind::LONGREAL, 8}, true},
                     {{TypeKind::SET,      4}, true},
-                    {{TypeKind::STRING,   8}, true}
+                    {{TypeKind::STRING,   8}, false}
             }
     );
 
@@ -107,6 +107,7 @@ void Oberon07::initSymbolTable(SymbolTable *symbols) {
     auto intType = this->getBasicType(TypeKind::INTEGER);
     auto longType = this->getBasicType(TypeKind::LONGINT);
     auto setType = this->getBasicType(TypeKind::SET);
+    auto charType = this->getBasicType(TypeKind::CHAR);
 
     this->createProcedure(ProcKind::NEW, "NEW", {{this->createPointerType(anyType), true}}, nullptr, false, true);
     this->createProcedure(ProcKind::FREE, "FREE", {{this->createPointerType(anyType), true}}, nullptr, false, true);
@@ -123,5 +124,6 @@ void Oberon07::initSymbolTable(SymbolTable *symbols) {
     this->createProcedure(ProcKind::INCL, "INCL", {{setType, true}, {intType, false}}, nullptr, false, true);
     this->createProcedure(ProcKind::EXCL, "EXCL", {{setType, true}, {intType, false}}, nullptr, false, true);
     this->createProcedure(ProcKind::ORD, "ORD", {{anyType, false}}, intType, false, true);
+    this->createProcedure(ProcKind::CHR, "CHR", {{intType, false}}, charType, false, true);
 
 }

@@ -21,3 +21,5 @@ FloatLiteralToken::~FloatLiteralToken() noexcept = default;
 DoubleLiteralToken::~DoubleLiteralToken() noexcept = default;
 
 StringLiteralToken::~StringLiteralToken() noexcept = default;
+
+CharLiteralToken::~CharLiteralToken() noexcept = default;

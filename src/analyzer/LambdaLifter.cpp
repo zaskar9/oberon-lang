@@ -72,6 +72,7 @@ void LambdaLifter::visit(ProcedureNode &node) {
                 auto lhs = make_unique<QualifiedExpression>(env_);
                 auto field = type->getField(param->getIdentifier()->name());
                 lhs->selectors().push_back(make_unique<RecordField>(EMPTY_POS, field));
+                lhs->setType(field->getType());
                 auto rhs = make_unique<QualifiedExpression>(param);
                 node.statements()->insertStatement(i, make_unique<AssignmentNode>(EMPTY_POS, std::move(lhs), std::move(rhs)));
             }
@@ -87,6 +88,7 @@ void LambdaLifter::visit(ProcedureNode &node) {
                     auto rhs = make_unique<QualifiedExpression>(env_);
                     auto field = type->getField(param->getIdentifier()->name());
                     rhs->selectors().push_back(make_unique<RecordField>(EMPTY_POS, field));
+                    rhs->setType(field->getType());
                     node.statements()->addStatement(make_unique<AssignmentNode>(EMPTY_POS, std::move(lhs), std::move(rhs)));
                 }
             }
@@ -98,6 +100,7 @@ void LambdaLifter::visit(ProcedureNode &node) {
                     auto rhs = make_unique<QualifiedExpression>(env_);
                     auto field = type->getField(SUPER_);
                     rhs->selectors().push_back(make_unique<RecordField>(EMPTY_POS, field));
+                    rhs->setType(field->getType());
                     node.statements()->addStatement(make_unique<AssignmentNode>(EMPTY_POS, std::move(lhs), std::move(rhs)));
                 }
             }
@@ -226,6 +229,8 @@ void LambdaLifter::visit(IntegerLiteralNode &) {}
 void LambdaLifter::visit(RealLiteralNode &) {}
 
 void LambdaLifter::visit(StringLiteralNode &) {}
+
+void LambdaLifter::visit(CharLiteralNode &) {}
 
 void LambdaLifter::visit(NilLiteralNode &) {}
 

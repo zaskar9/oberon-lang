@@ -936,6 +936,9 @@ unique_ptr<ExpressionNode> Parser::basic_factor() {
     } else if (token->type() == TokenType::string_literal) {
         auto string = dynamic_cast<const StringLiteralToken *>(tmp.get());
         return sema_.onStringLiteral(string->start(), string->end(), string->value());
+    } else if (token->type() == TokenType::char_literal) {
+        auto character = dynamic_cast<const CharLiteralToken *>(tmp.get());
+        return sema_.onCharLiteral(character->start(), character->end(), character->value());
     } else if (token->type() == TokenType::boolean_literal) {
         auto boolean = dynamic_cast<const BooleanLiteralToken *>(tmp.get());
         return sema_.onBooleanLiteral(boolean->start(), boolean->end(), boolean->value());

@@ -39,6 +39,7 @@ public:
     virtual void visit(IntegerLiteralNode &) = 0;
     virtual void visit(RealLiteralNode &) = 0;
     virtual void visit(StringLiteralNode &) = 0;
+    virtual void visit(CharLiteralNode &) = 0;
     virtual void visit(NilLiteralNode &) = 0;
     virtual void visit(SetLiteralNode &) = 0;
     virtual void visit(RangeLiteralNode &) = 0;

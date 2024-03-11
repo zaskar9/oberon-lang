@@ -63,7 +63,7 @@ bool TypeNode::isRecord() const {
 }
 
 bool TypeNode::isStructured() const {
-    return kind_ == TypeKind::ARRAY || kind_ == TypeKind::RECORD;
+    return isArray() || isRecord();
 }
 
 bool TypeNode::isPointer() const {
@@ -78,19 +78,20 @@ bool TypeNode::isBoolean() const {
     return kind_ == TypeKind::BOOLEAN;
 }
 
-bool TypeNode::isNumeric() const {
-    return this->isInteger() || this->isReal();
-}
-
 bool TypeNode::isInteger() const {
-    return kind_ == TypeKind::BYTE || kind_ == TypeKind::CHAR ||
-           kind_ == TypeKind::INTEGER || kind_ == TypeKind::LONGINT ||
+    return kind_ == TypeKind::INTEGER ||
+           kind_ == TypeKind::LONGINT ||
            kind_ == TypeKind::ENTIRE;
 }
 
 bool TypeNode::isReal() const {
-    return kind_ == TypeKind::REAL || kind_ == TypeKind::LONGREAL ||
+    return kind_ == TypeKind::REAL ||
+           kind_ == TypeKind::LONGREAL ||
            kind_ == TypeKind::FLOATING;
+}
+
+bool TypeNode::isNumeric() const {
+    return isInteger() || isReal();
 }
 
 bool TypeNode::isString() const {
@@ -103,6 +104,10 @@ bool TypeNode::isSet() const {
 
 bool TypeNode::isChar() const {
     return kind_ == TypeKind::CHAR;
+}
+
+bool TypeNode::isBasic() const {
+    return isBoolean() || isNumeric() || isSet();
 }
 
 void TypeNode::setRef(int ref) {
