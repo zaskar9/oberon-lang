@@ -25,7 +25,7 @@ endif
 ifeq ($(OS), windows)
 	O7CFLAGS = -q -O3 -fenable-extern -fenable-varargs # --target $(TGT)
 else
-	O7CFLAGS = -O3 --reloc=pic -fenable-extern -fenable-varargs # --target $(TGT)
+	O7CFLAGS = -q -O3 --reloc=pic -fenable-extern -fenable-varargs # --target $(TGT)
 endif
 LDFLAGS =
 

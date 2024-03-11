@@ -87,7 +87,7 @@ void Oberon07::initSymbolTable(SymbolTable *symbols) {
                     {{TypeKind::ANYTYPE,  0}, false},
                     {{TypeKind::NOTYPE,   0}, false},
                     {{TypeKind::NILTYPE,  8}, false},
-                    {{TypeKind::ENTIRE,  0}, false},
+                    {{TypeKind::ENTIRE,   0}, false},
                     {{TypeKind::BOOLEAN,  1}, true},
                     {{TypeKind::BYTE,     1}, true},
                     {{TypeKind::CHAR,     1}, true},
@@ -96,7 +96,7 @@ void Oberon07::initSymbolTable(SymbolTable *symbols) {
                     {{TypeKind::REAL,     4}, true},
                     {{TypeKind::LONGREAL, 8}, true},
                     {{TypeKind::SET,      4}, true},
-                    {{TypeKind::STRING,   8}, true}
+                    {{TypeKind::STRING,   8}, false}
             }
     );
 

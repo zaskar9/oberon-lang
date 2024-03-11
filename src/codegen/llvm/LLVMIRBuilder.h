@@ -72,7 +72,7 @@ private:
     using Selectors = vector<unique_ptr<Selector>>;
     using SelectorIterator = Selectors::iterator;
     TypeNode *selectors(TypeNode *, SelectorIterator, SelectorIterator);
-    void parameters(ProcedureTypeNode *, ActualParameters *, vector<Value *> &);
+    void parameters(ProcedureTypeNode *, ActualParameters *, vector<Value *> &, bool = false);
 
     TypeNode *createStaticCall(ProcedureNode *, QualIdent *, Selectors &);
     Value *createPredefinedCall(PredefinedProcedure *, QualIdent *,

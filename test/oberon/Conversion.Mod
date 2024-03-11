@@ -89,21 +89,21 @@ BEGIN
     i := 0;
     AssertIntEqual(i, 0);
     Out.Int(i, 0); Out.Ln;
-    Out.String("INTEGER"); Out.Ln;
+    Out.String("INTEGER assertions passed."); Out.Ln;
     l := 0;
     AssertLongIntEqual(i, 0);
     AssertLongIntEqual(l, 0);
     AssertLongIntEqual(l, i);
     Out.Long(i, 0); Out.Ln;
     Out.Long(l, 0); Out.Ln;
-    Out.String("LONGINT"); Out.Ln;
+    Out.String("LONGINT assertions passed."); Out.Ln;
     f := 0;
     f := i;
     AssertRealEqual(f, 0);
     AssertRealEqual(f, i);
     Out.Real(i, 16); Out.Ln;
     Out.Real(f, 16); Out.Ln;
-    Out.String("REAL"); Out.Ln;
+    Out.String("REAL assertions passed."); Out.Ln;
     d := 0;
     d := i;
     d := l;
@@ -115,12 +115,12 @@ BEGIN
     AssertLongRealEqual(d, f);
     d := i * l;
     AssertLongRealEqual(d, i * l);
-    Out.String("LONGREAL"); Out.Ln;
+    Out.String("LONGREAL assertions passed."); Out.Ln;
     n := NIL;
     AssertPointerEqual(n, NIL);
     n := ReturnNilAsNode();
     AssertPointerEqual(n, NIL);
-    Out.String("POINTER"); Out.Ln;
+    Out.String("POINTER assertions passed."); Out.Ln;
     VarParameter(l);
     Out.String("All assertions passed."); Out.Ln
 END Conversion.

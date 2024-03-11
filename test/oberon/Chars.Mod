@@ -2,37 +2,61 @@ MODULE Chars;
 IMPORT Out;
 
 TYPE String = ARRAY 256 OF CHAR;
-     ShortStr = ARRAY 100 OF CHAR;
+     ShortString = ARRAY 50 OF CHAR;
      PersonDesc = RECORD
-        first: STRING;
-        last: String
+        first: ShortString;
+        last: ShortString
      END;
      Person = POINTER TO PersonDesc;
+     People = ARRAY 10 OF Person;
 
-VAR s1, s2: String;
-    s3: ShortStr;
-    s4, s5: STRING;
+VAR s1: ShortString;
+    s2: String;
+    s3: ShortString;
+    s4: ARRAY 5 OF CHAR;
     i: INTEGER;
     ch: CHAR;
     p1, p2: Person;
+    pd: PersonDesc;
+    people: People;
+    f: REAL;
+    l: LONGINT;
 
-(* Import `printf` function from C <stdio.h> library. *)
-PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
-
-PROCEDURE OutString(s: ARRAY OF CHAR);
+PROCEDURE CreatePerson(first, last: ARRAY OF CHAR): Person;
+VAR p: Person;
 BEGIN
-    printf("%s", s)
-END OutString;
+    NEW(p);
+    p.first := first;
+    p.last := last;
+    RETURN p
+END CreatePerson;
 
-PROCEDURE OutString0(s: ARRAY OF CHAR);
-VAR i: LONGINT;
+PROCEDURE PrintPerson(p: Person);
 BEGIN
-    i := 0;
-    WHILE (i < LEN(s)) & (s[i] # "\0") DO
-        Out.Char(s[i]);
-        INC(i)
-    END
-END OutString0;
+    Out.String(p.last); Out.String(", "); Out.String(p.first)
+END PrintPerson;
+
+PROCEDURE CreatePerson0(first, last: ARRAY OF CHAR; VAR p: PersonDesc);
+BEGIN
+    p.first := first;
+    p.last := last
+END CreatePerson0;
+
+PROCEDURE PrintPerson0(p: PersonDesc);
+BEGIN
+    Out.String(p.last); Out.String(", "); Out.String(p.first)
+END PrintPerson0;
+
+PROCEDURE PrintPeople(people: ARRAY OF Person);
+BEGIN
+    PrintPerson(people[0]); Out.Ln;
+    PrintPerson(people[1])
+END PrintPeople;
+
+PROCEDURE HelloWorld(VAR str: ARRAY OF CHAR);
+BEGIN
+    str := "Hello World!"
+END HelloWorld;
 
 BEGIN
     s1[0] := 4FX;
@@ -49,30 +73,58 @@ BEGIN
 
     s3 := "Hello World!";
 
-    s4 := "Hoi Niklaus!";
-    s5 := s4;
+    Out.String("s1: "); Out.String(s1); Out.Ln;
+    Out.String("s2: "); Out.String(s2); Out.Ln;
+    Out.String("s3: "); Out.String(s3); Out.Ln;
 
-    printf("s1: %s\n", s1);
-    printf("s2: %s\n", s2);
-    printf("s3: %s\n", s3);
-    printf("s4: %s\n", s4);
-    printf("s5: %s\n\n", s5);
+    Out.String("This is a test."); Out.Ln;
 
-    OutString(s1); Out.Ln;
-    OutString0(s1); Out.Ln; Out.Ln;
+    Out.Long(LEN("This is a test."), 0); Out.Ln;
 
-    OutString("This is a test."); Out.Ln;
-    OutString0("This is a test."); Out.Ln; Out.Ln;
+    s3 := "\n";
 
-    Out.Long(LEN("This is a test."), 0); Out.Ln; Out.Ln;
+    Out.String("["); Out.String("Test"); Out.Char("]"); Out.String(s3);
 
-    Out.String("["); Out.Char("]"); Out.Ln;
+    s4 := "supercalifragilisticexpialidocious";
+    s4 := "otto";
+
+    f := 1;
+    Out.Real(1, 0); Out.Ln;
+
+    l := 1;
+    Out.Long(1, 0); Out.Ln;
+
+    i := 10;
+    i := i * i;
+    Out.Int(i, 0); Out.Ln;
 
     NEW(p1);
     p1.first := "Harry";
     p1.last := "Potter";
-    Out.String(p1.first); Out.String(" "); OutString(p1.last); Out.Char("\n");
-    FREE(p1)
+    people[0] := p1;
+    p2 := CreatePerson("Hermione", "Granger");
+    people[1] := p2;
+    PrintPeople(people); Out.Ln;
+    PrintPerson(people[0]); Out.Ln;
+    PrintPerson(people[1]); Out.Ln;
+    FREE(p2);
+    FREE(p1);
 
+    CreatePerson0("Hermione", "Granger", pd);
+    PrintPerson0(pd); Out.Ln;
+
+    pd.first := s1;
+    pd.last := "Hello";
+    PrintPerson0(pd); Out.Ln;
+
+    pd.first[6] := "?";
+    PrintPerson0(pd); Out.Ln;
+
+    HelloWorld(s1);
+    s1[0] := "M";
+    Out.String(s1); Out.Ln;
+    Out.String("Hello World!"); Out.Ln;
+
+    Out.String("ü"); Out.Ln
 
 END Chars.

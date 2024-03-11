@@ -79,13 +79,14 @@ bool TypeNode::isBoolean() const {
 }
 
 bool TypeNode::isInteger() const {
-    return kind_ == TypeKind::BYTE || kind_ == TypeKind::CHAR ||
-           kind_ == TypeKind::INTEGER || kind_ == TypeKind::LONGINT ||
+    return kind_ == TypeKind::INTEGER ||
+           kind_ == TypeKind::LONGINT ||
            kind_ == TypeKind::ENTIRE;
 }
 
 bool TypeNode::isReal() const {
-    return kind_ == TypeKind::REAL || kind_ == TypeKind::LONGREAL ||
+    return kind_ == TypeKind::REAL ||
+           kind_ == TypeKind::LONGREAL ||
            kind_ == TypeKind::FLOATING;
 }
 

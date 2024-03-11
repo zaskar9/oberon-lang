@@ -51,7 +51,8 @@ private:
     long assertInBounds(const IntegerLiteralNode *, long, long);
     bool assertAssignable(const ExpressionNode *, string &) const;
 
-    static void cast(ExpressionNode *, TypeNode *) ;
+    static void cast(ExpressionNode *, TypeNode *);
+    void castLiteral(unique_ptr<ExpressionNode> &, TypeNode *);
 
     void checkExport(DeclarationNode *);
 
@@ -62,15 +63,17 @@ private:
 
     bool foldBoolean(const FilePos &, const FilePos &, ExpressionNode *);
     long foldInteger(const FilePos &, const FilePos &, ExpressionNode *);
+    unsigned char foldChar(const FilePos &, const FilePos &, ExpressionNode *);
     double foldReal(const FilePos &, const FilePos &, ExpressionNode *);
     string foldString(const FilePos &, const FilePos &, ExpressionNode *);
     bitset<32> foldSet(const FilePos &, const FilePos &, ExpressionNode *);
-    bitset<32> foldRange(const FilePos &, const FilePos &, ExpressionNode *);
     unique_ptr<LiteralNode> fold(const FilePos &, const FilePos &, ExpressionNode *);
     unique_ptr<LiteralNode> fold(const FilePos &, const FilePos &,
                                  OperatorType, ExpressionNode *);
     unique_ptr<LiteralNode> fold(const FilePos &, const FilePos &,
                                  OperatorType, ExpressionNode *, ExpressionNode *, TypeNode *);
+    template<typename T>
+    unique_ptr<BooleanLiteralNode> foldRelation(const FilePos &, OperatorType, T lhs, T rhs, TypeNode *);
 
     void onBlockStart();
     void onBlockEnd();

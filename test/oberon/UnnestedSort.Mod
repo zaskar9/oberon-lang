@@ -11,11 +11,11 @@ MODULE UnnestedSort(*0*);
 
    VAR list(*1*): Vector;
 
-   PROCEDURE printf(*1*)(format(*2*): STRING; ...): INTEGER; EXTERN;
+   PROCEDURE printf(*1*)(format(*2*): ARRAY OF CHAR; ...): INTEGER; EXTERN;
 
    PROCEDURE rand(*1*)(): INTEGER; EXTERN;
 
-   PROCEDURE Write(*1*)(str(*2*): STRING);
+   PROCEDURE Write(*1*)(str(*2*): ARRAY OF CHAR);
    BEGIN
       printf(str)
    END Write;

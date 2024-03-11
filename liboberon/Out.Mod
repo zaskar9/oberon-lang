@@ -1,10 +1,10 @@
 MODULE Out;
 
 (* Import `printf` function from C <stdio.h> library. *)
-PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
+PROCEDURE printf(format: ARRAY OF CHAR; ...): INTEGER; EXTERN;
 
 (* Import `putchar` function from C <stdio.h> library. *)
-PROCEDURE putchar(ch: INTEGER): INTEGER; EXTERN;
+PROCEDURE putchar(ch: CHAR): INTEGER; EXTERN;
 
 (* Import `void rt_out_int(long, int)` from Oberon runtime library. *)
 PROCEDURE rt_out_int(i: LONGINT; n: INTEGER); EXTERN;
@@ -66,7 +66,7 @@ END Real;
 
 PROCEDURE LongReal*(val: LONGREAL);
 BEGIN
-    printf("%E", val)
+    printf("%.16G", val)
 END LongReal;
 
 PROCEDURE Set*(set: SET);

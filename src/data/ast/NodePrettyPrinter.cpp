@@ -6,12 +6,14 @@
 
 #include "NodePrettyPrinter.h"
 
+#include <format>
 #include <memory>
 #include <string>
 #include <vector>
 
 #include "scanner/Scanner.h"
 
+using std::format;
 using std::string;
 using std::unique_ptr;
 using std::vector;
@@ -119,7 +121,7 @@ void NodePrettyPrinter::visit(ProcedureNode& node) {
     stream_ << ";";
     if (node.isExtern()) {
         stream_ << " EXTERN;" << std::endl;
-    } else {
+    } else if (!node.isImported()) {
         stream_ << std::endl;
         block(node, false);
         if (node.statements()->getStatementCount() > 0) {
@@ -131,6 +133,8 @@ void NodePrettyPrinter::visit(ProcedureNode& node) {
         }
         indent();
         stream_ << "END " << *node.getIdentifier() << ';' << std::endl;
+    } else {
+        stream_ << std::endl;
     }
 }
 
@@ -223,11 +227,11 @@ void NodePrettyPrinter::visit(BooleanLiteralNode &node) {
 }
 
 void NodePrettyPrinter::visit(IntegerLiteralNode &node) {
-    stream_ << node.value();
+    stream_ << node.value() << (node.isLong() ? "(*L*)" : "(*I*)");
 }
 
 void NodePrettyPrinter::visit(RealLiteralNode &node) {
-    stream_ << node.value();
+    stream_ << format("{:G}", node.value()) << (node.isLong() ? "(*D*)" : "(*F*)");
 }
 
 void NodePrettyPrinter::visit(StringLiteralNode &node) {
@@ -235,8 +239,7 @@ void NodePrettyPrinter::visit(StringLiteralNode &node) {
 }
 
 void NodePrettyPrinter::visit(CharLiteralNode &node) {
-    string str(1, static_cast<char>(node.value()));
-    stream_ << "\"" << Scanner::escape(str) << "\"";
+    stream_ << format("{:02X}", node.value()) << "X";
 }
 
 void NodePrettyPrinter::visit(NilLiteralNode &) {

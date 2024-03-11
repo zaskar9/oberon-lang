@@ -356,11 +356,13 @@ unique_ptr<const Token> Scanner::scanNumber() {
         try {
             if (isHex) {
                 auto res = boost::convert<unsigned long>(num, ccnv(std::hex)).value();
+                // Hexadecimal integers are unsigned
                 isLong = res > std::numeric_limits<unsigned int>::max();
                 value = static_cast<long>(res);
             } else {
                 auto res = boost::convert<unsigned long>(num, ccnv(std::dec)).value();
-                isLong = res > std::numeric_limits<unsigned int>::max();
+                // Decimal integers are signed
+                isLong = res > std::numeric_limits<int>::max();
                 value = static_cast<long>(res);
             }
         } catch (boost::bad_optional_access const &e) {

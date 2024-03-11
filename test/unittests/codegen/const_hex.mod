@@ -1,21 +1,21 @@
 (*
-  RUN: %oberon -fenable-extern -fenable-varargs --run %s | filecheck %s
+  RUN: %oberon -I "%S%{pathsep}%inc" -L "%S%{pathsep}%lib" -l oberon --run %s | filecheck %s
   32bit hex constants not correctly parsed
 *)
 MODULE ConstHex;
+IMPORT Out;
 
 CONST
   hexmax = 0FFFFFFFFH;
   hexdbg = 0DEADBEEFH;
   hexmin = 080000000H;
 
-PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
 
 PROCEDURE Test;
 BEGIN
-  printf("%X\n", hexmax);
-  printf("%X\n", hexdbg);
-  printf("%X\n", hexmin)
+  Out.Hex(hexmax); Out.Ln;
+  Out.Hex(hexdbg); Out.Ln;
+  Out.Hex(hexmin); Out.Ln
 END Test;
 
 BEGIN

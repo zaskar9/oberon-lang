@@ -261,7 +261,7 @@ private:
 
 public:
     CharLiteralNode(const FilePos &pos, unsigned char value, TypeNode *type = nullptr, TypeNode *cast = nullptr) :
-            LiteralNode(NodeType::integer, pos, TypeKind::CHAR, type, cast), value_(value) {};
+            LiteralNode(NodeType::character, pos, TypeKind::CHAR, type, cast), value_(value) {};
     ~CharLiteralNode() final = default;
 
     [[nodiscard]] unsigned char value() const;
