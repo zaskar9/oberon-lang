@@ -35,7 +35,7 @@ unique_ptr<ModuleNode> SymbolImporter::read(const string &alias, const string &n
         }
     }
     logger_.debug("Symbol file found: '" + fp.string() + "'.");
-    auto file = std::make_unique<SymbolFile>();
+    auto file = make_unique<SymbolFile>();
     file->open(fp.string(), std::ios::in);
 
     // read symbol file header
@@ -53,7 +53,7 @@ unique_ptr<ModuleNode> SymbolImporter::read(const string &alias, const string &n
     // create namespace for name
     symbols_ = symbols;
     symbols_->createNamespace(alias);
-    auto module = std::make_unique<ModuleNode>(std::make_unique<Ident>(name));
+    auto module = make_unique<ModuleNode>(make_unique<Ident>(name));
     module->setAlias(alias);
     auto ch = file->readChar();
     while (ch != 0 && !file->eof()) {
@@ -71,7 +71,7 @@ unique_ptr<ModuleNode> SymbolImporter::read(const string &alias, const string &n
     file->flush();
     file->close();
 #ifdef _DEBUG
-    auto printer = std::make_unique<NodePrettyPrinter>(std::cout);
+    auto printer = make_unique<NodePrettyPrinter>(std::cout);
     printer->print(module.get());
 #endif
     return module;
@@ -90,44 +90,44 @@ void SymbolImporter::readDeclaration(SymbolFile *file, NodeType nodeType, Module
             std::unique_ptr<ExpressionNode> expr;
             switch (kind) {
                 case TypeKind::STRING:
-                    expr = std::make_unique<StringLiteralNode>(EMPTY_POS, file->readString(), type);
+                    expr = make_unique<StringLiteralNode>(EMPTY_POS, file->readString(), type);
                     break;
                 case TypeKind::INTEGER:
-                    expr = std::make_unique<IntegerLiteralNode>(EMPTY_POS, file->readInt(), type);
+                    expr = make_unique<IntegerLiteralNode>(EMPTY_POS, file->readInt(), type);
                     break;
                 case TypeKind::LONGINT:
-                    expr = std::make_unique<IntegerLiteralNode>(EMPTY_POS, file->readLong(), type);
+                    expr = make_unique<IntegerLiteralNode>(EMPTY_POS, file->readLong(), type);
                     break;
                 case TypeKind::REAL:
-                    expr = std::make_unique<RealLiteralNode>(EMPTY_POS, file->readFloat(), type);
+                    expr = make_unique<RealLiteralNode>(EMPTY_POS, file->readFloat(), type);
                     break;
                 case TypeKind::LONGREAL:
-                    expr = std::make_unique<RealLiteralNode>(EMPTY_POS, file->readDouble(), type);
+                    expr = make_unique<RealLiteralNode>(EMPTY_POS, file->readDouble(), type);
                     break;
                 default:
                     logger_.error(file->path(), "Cannot import constant " + name + ".");
             }
             if (expr) {
-                auto decl = std::make_unique<ConstantDeclarationNode>(EMPTY_POS, std::move(ident), std::move(expr));
+                auto decl = make_unique<ConstantDeclarationNode>(std::move(ident), std::move(expr));
                 symbols_->import(module->getAlias(), name, decl.get());
                 decl->setModule(module);
                 module->constants().push_back(std::move(decl));
             }
         }
     } else if (nodeType == NodeType::type) {
-        auto decl = std::make_unique<TypeDeclarationNode>(EMPTY_POS, std::move(ident), type);
+        auto decl = make_unique<TypeDeclarationNode>(EMPTY_POS, std::move(ident), type);
         symbols_->import(module->getAlias(), name, decl.get());
         decl->setModule(module);
         module->types().push_back(std::move(decl));
     } else if (nodeType == NodeType::variable) {
         // read in export number
         [[maybe_unused]] auto exno = file->readInt();
-        auto decl = std::make_unique<VariableDeclarationNode>(EMPTY_POS, std::move(ident), type);
+        auto decl = make_unique<VariableDeclarationNode>(EMPTY_POS, std::move(ident), type);
         symbols_->import(module->getAlias(), name, decl.get());
         decl->setModule(module);
         module->variables().push_back(std::move(decl));
     } else if (nodeType == NodeType::procedure) {
-        auto decl = std::make_unique<ProcedureNode>(std::move(ident), dynamic_cast<ProcedureTypeNode *>(type), true);
+        auto decl = make_unique<ProcedureNode>(std::move(ident), dynamic_cast<ProcedureTypeNode *>(type));
         symbols_->import(module->getAlias(), name, decl.get());
         decl->setModule(module);
         module->procedures().push_back(std::move(decl));

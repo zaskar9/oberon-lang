@@ -1,7 +1,10 @@
 MODULE Out;
 
 (* Import `printf` function from C <stdio.h> library. *)
-PROCEDURE printf(format: STRING; ...): INTEGER; EXTERN;
+PROCEDURE printf(format: ARRAY OF CHAR; ...): INTEGER; EXTERN;
+
+(* Import `putchar` function from C <stdio.h> library. *)
+PROCEDURE putchar(ch: CHAR): INTEGER; EXTERN;
 
 (* Import `void rt_out_int(long, int)` from Oberon runtime library. *)
 PROCEDURE rt_out_int(i: LONGINT; n: INTEGER); EXTERN;
@@ -9,16 +12,27 @@ PROCEDURE rt_out_int(i: LONGINT; n: INTEGER); EXTERN;
 (* Import `void rt_out_real(float, int)` from Oberon runtime library. *)
 PROCEDURE rt_out_real(x: REAL; n: INTEGER); EXTERN;
 
-(* Writes a string value to standard out. *)
-PROCEDURE String*(str: STRING);
+(* Writes a character to standard out. *)
+PROCEDURE Char*(ch: CHAR);
 BEGIN
-    printf(str)
+    putchar(ch)
+END Char;
+
+(* Writes a string to standard out. *)
+PROCEDURE String*(s: ARRAY OF CHAR);
+VAR i: LONGINT;
+BEGIN
+    i := 0;
+    WHILE (i < LEN(s)) & (s[i] # "\0") DO
+        Char(s[i]);
+        INC(i)
+    END
 END String;
 
 (* Writes a newline to standard out. *)
 PROCEDURE Ln*;
 BEGIN
-    printf("\n")
+    Char("\n")
 END Ln;
 
 (* Write the integer `val` in `n` field positions. *)
@@ -52,7 +66,7 @@ END Real;
 
 PROCEDURE LongReal*(val: LONGREAL);
 BEGIN
-    printf("%E", val)
+    printf("%.16G", val)
 END LongReal;
 
 PROCEDURE Set*(set: SET);
@@ -61,10 +75,10 @@ BEGIN
     String("{ ");
     FOR i := 0 TO 31 DO
         IF i IN set THEN
-            Int(i, 0); String(" ")
+            Int(i, 0); Char(" ")
         END
     END;
-    String("}")
+    Char("}")
 END Set;
 
 END Out.

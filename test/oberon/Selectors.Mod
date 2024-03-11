@@ -6,6 +6,7 @@ CONST
     Two = 2;
 
 TYPE
+    String = ARRAY 255 OF CHAR;
     Node = POINTER TO NodeDesc;
     NodeDesc = RECORD
         val: INTEGER;
@@ -18,15 +19,15 @@ TYPE
     END;
     Person = POINTER TO PersonDesc;
     PersonDesc = RECORD
-        name: STRING;
-        title: ARRAY Two OF STRING;
+        name: String;
+        title: ARRAY Two OF String;
         address: Array;
         zipcode: INTEGER;
         spouse: Person
     END;
     Matrix = ARRAY Two OF Vector;
     NamedMatrix = RECORD
-        name: STRING;
+        name: String;
         matrix: Matrix
     END;
     NamedMatrixArray = ARRAY Two OF NamedMatrix;

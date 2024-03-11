@@ -1,6 +1,8 @@
 MODULE Predefines;
 IMPORT Out;
 
+TYPE String = ARRAY 255 OF CHAR;
+
 VAR a, b: INTEGER;
 
 PROCEDURE IncDec;
@@ -30,8 +32,8 @@ END IncDec;
 PROCEDURE NewFree;
 TYPE Person = POINTER TO PersonDesc;
      PersonDesc = RECORD
-                      name: STRING;
-                      title: ARRAY 3 OF STRING;
+                      name: String;
+                      title: ARRAY 3 OF String;
                       zipcode: INTEGER
                   END;
 VAR p: Person;

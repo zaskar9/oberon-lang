@@ -48,16 +48,18 @@ public:
 
     [[nodiscard]] bool isArray() const;
     [[nodiscard]] bool isRecord() const;
-    [[nodiscard]] bool isStructured() const;
     [[nodiscard]] bool isPointer() const;
     [[nodiscard]] bool isProcedure() const;
     [[nodiscard]] bool isBoolean() const;
-    [[nodiscard]] bool isNumeric() const;
     [[nodiscard]] bool isInteger() const;
     [[nodiscard]] bool isReal() const;
     [[nodiscard]] bool isString() const;
     [[nodiscard]] bool isSet() const;
     [[nodiscard]] bool isChar() const;
+
+    [[nodiscard]] bool isBasic() const;
+    [[nodiscard]] bool isNumeric() const;
+    [[nodiscard]] bool isStructured() const;
 
     void setRef(int);
     [[nodiscard]] int getRef() const;

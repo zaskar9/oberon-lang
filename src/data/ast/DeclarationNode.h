@@ -62,12 +62,17 @@ private:
     unique_ptr<ExpressionNode> value_;
 
 public:
-    explicit ConstantDeclarationNode(const FilePos &pos, unique_ptr<IdentDef> ident, unique_ptr<ExpressionNode> value) :
-            DeclarationNode(NodeType::constant, pos, std::move(ident), value->getType(), 0),
-            value_(std::move(value)) { };
+    // ctor for use in sema / parser
+    ConstantDeclarationNode(const FilePos &pos,
+                            unique_ptr<IdentDef> ident, unique_ptr<ExpressionNode> value, TypeNode *type) :
+            DeclarationNode(NodeType::constant, pos, std::move(ident), type, 0),
+            value_(std::move(value)) {};
+    // ctor for use in symbol importer
+    ConstantDeclarationNode(unique_ptr<IdentDef> ident, unique_ptr<ExpressionNode> value) :
+            DeclarationNode(NodeType::constant, EMPTY_POS, std::move(ident), value->getType(), 0),
+            value_(std::move(value)) {};
     ~ConstantDeclarationNode() final = default;
 
-    void setValue(unique_ptr<ExpressionNode> value);
     [[nodiscard]] ExpressionNode * getValue() const;
 
     void accept(NodeVisitor& visitor) final;

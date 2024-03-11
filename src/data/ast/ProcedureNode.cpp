@@ -19,6 +19,10 @@ bool ProcedureNode::isExtern() const {
     return extern_;
 }
 
+bool ProcedureNode::isImported() const {
+    return imported_;
+}
+
 void ProcedureNode::accept(NodeVisitor &visitor) {
     visitor.visit(*this);
 }

@@ -119,7 +119,7 @@ void NodePrettyPrinter::visit(ProcedureNode& node) {
     stream_ << ";";
     if (node.isExtern()) {
         stream_ << " EXTERN;" << std::endl;
-    } else {
+    } else if (!node.isImported()) {
         stream_ << std::endl;
         block(node, false);
         if (node.statements()->getStatementCount() > 0) {
@@ -131,6 +131,8 @@ void NodePrettyPrinter::visit(ProcedureNode& node) {
         }
         indent();
         stream_ << "END " << *node.getIdentifier() << ';' << std::endl;
+    } else {
+        stream_ << std::endl;
     }
 }
 
@@ -223,15 +225,20 @@ void NodePrettyPrinter::visit(BooleanLiteralNode &node) {
 }
 
 void NodePrettyPrinter::visit(IntegerLiteralNode &node) {
-    stream_ << node.value();
+    stream_ << node.value() << (node.isLong() ? "(*L*)" : "(*I*)");
 }
 
 void NodePrettyPrinter::visit(RealLiteralNode &node) {
-    stream_ << node.value();
+    stream_ << node.value() << (node.isLong() ? "(*D*)" : "(*F*)");
 }
 
 void NodePrettyPrinter::visit(StringLiteralNode &node) {
     stream_ << "\"" << Scanner::escape(node.value()) << "\"";
+}
+
+void NodePrettyPrinter::visit(CharLiteralNode &node) {
+    string str { static_cast<char>(node.value()) };
+    stream_ << "\"" << Scanner::escape(str) << "\"(*C*)";
 }
 
 void NodePrettyPrinter::visit(NilLiteralNode &) {

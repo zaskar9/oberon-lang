@@ -1,16 +1,16 @@
 (*
   RUN: %oberon -I "%S%{pathsep}%inc" -L "%S%{pathsep}%lib" -l oberon --run %s | filecheck %s
-  Segmentation fault
 *)
-MODULE Relations6;
-
+MODULE Relations7;
 IMPORT Out;
+
+VAR a, z: CHAR;
 
 PROCEDURE Test;
 BEGIN
-  IF 0AX = 0AX THEN
-    IF 0FX > 0AX THEN
-      IF 0AX < 0FX THEN
+  IF z = z THEN
+    IF z > a THEN
+      IF a < z THEN
         Out.String("PASS"); Out.Ln;
         RETURN
       END
@@ -20,8 +20,10 @@ BEGIN
 END Test;
 
 BEGIN
+    a := "a";
+    z := "z";
     Test
-END Relations6.
+END Relations7.
 (*
     CHECK-NOT: FAIL
     CHECK: PASS

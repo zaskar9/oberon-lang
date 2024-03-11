@@ -24,22 +24,24 @@ class ProcedureNode : public BlockNode {
 
 private:
     bool extern_;
+    bool imported_;
 
 public:
     // ctor for use in sema / parser
-    ProcedureNode(const FilePos &pos, unique_ptr<IdentDef> ident, bool external = false) :
+    ProcedureNode(const FilePos &pos, unique_ptr<IdentDef> ident) :
             BlockNode(NodeType::procedure, pos, std::move(ident), nullptr),
-            extern_(external) {};
+            extern_(false), imported_(false) {};
     // ctor for use in symbol importer
-    ProcedureNode(unique_ptr<IdentDef> ident, ProcedureTypeNode *type, bool external = false) :
+    ProcedureNode(unique_ptr<IdentDef> ident, ProcedureTypeNode *type) :
             BlockNode(NodeType::procedure, EMPTY_POS, std::move(ident), type),
-            extern_(external) {};
+            extern_(false), imported_(true) {};
     ~ProcedureNode() override = default;
 
     [[nodiscard]] ProcedureTypeNode *getType() const;
 
     void setExtern(bool value);
     [[nodiscard]] bool isExtern() const;
+    [[nodiscard]] bool isImported() const;
 
     [[nodiscard]] virtual bool isPredefined() const {
         return false;

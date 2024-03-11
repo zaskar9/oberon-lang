@@ -44,14 +44,15 @@ private:
     SymbolTable *symbols_;
     SymbolImporter importer_;
     SymbolExporter exporter_;
-    TypeNode *boolTy_, *byteTy, *charTy, *integerTy_, *longIntTy_, *realTy_, *longRealTy_, *stringTy_, *setTy_, *nullTy_;
+    TypeNode *boolTy_, *byteTy_, *charTy_, *integerTy_, *longIntTy_, *realTy_, *longRealTy_, *stringTy_, *setTy_, *nullTy_;
 
     bool assertEqual(Ident *, Ident *) const;
     void assertUnique(IdentDef *, DeclarationNode *);
     long assertInBounds(const IntegerLiteralNode *, long, long);
     bool assertAssignable(const ExpressionNode *, string &) const;
 
-    static void cast(ExpressionNode *, TypeNode *) ;
+    static void cast(ExpressionNode *, TypeNode *);
+    void castLiteral(unique_ptr<ExpressionNode> &, TypeNode *);
 
     void checkExport(DeclarationNode *);
 
@@ -62,15 +63,17 @@ private:
 
     bool foldBoolean(const FilePos &, const FilePos &, ExpressionNode *);
     long foldInteger(const FilePos &, const FilePos &, ExpressionNode *);
+    unsigned char foldChar(const FilePos &, const FilePos &, ExpressionNode *);
     double foldReal(const FilePos &, const FilePos &, ExpressionNode *);
     string foldString(const FilePos &, const FilePos &, ExpressionNode *);
     bitset<32> foldSet(const FilePos &, const FilePos &, ExpressionNode *);
-    bitset<32> foldRange(const FilePos &, const FilePos &, ExpressionNode *);
     unique_ptr<LiteralNode> fold(const FilePos &, const FilePos &, ExpressionNode *);
     unique_ptr<LiteralNode> fold(const FilePos &, const FilePos &,
                                  OperatorType, ExpressionNode *);
     unique_ptr<LiteralNode> fold(const FilePos &, const FilePos &,
                                  OperatorType, ExpressionNode *, ExpressionNode *, TypeNode *);
+    template<typename T>
+    unique_ptr<BooleanLiteralNode> foldRelation(const FilePos &, OperatorType, T lhs, T rhs, TypeNode *);
 
     void onBlockStart();
     void onBlockEnd();
@@ -174,6 +177,7 @@ public:
     unique_ptr<IntegerLiteralNode> onIntegerLiteral(const FilePos &, const FilePos &, long, bool = false);
     unique_ptr<RealLiteralNode> onRealLiteral(const FilePos &, const FilePos &, double, bool = false);
     unique_ptr<StringLiteralNode> onStringLiteral(const FilePos &, const FilePos &, const string &);
+    unique_ptr<CharLiteralNode> onCharLiteral(const FilePos &, const FilePos &, const unsigned char);
     unique_ptr<NilLiteralNode> onNilLiteral(const FilePos &, const FilePos &);
     unique_ptr<SetLiteralNode> onSetLiteral(const FilePos &, const FilePos &, bitset<32>);
 

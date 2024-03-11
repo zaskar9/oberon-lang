@@ -5,18 +5,19 @@ CONST KNZip* = 78464;
       NumContacts = 10;
 
 TYPE (* IntPtr = POINTER TO INTEGER; *)
+     String = ARRAY 50 OF CHAR;
      Address = POINTER TO AddressDesc;
      AddressDesc = RECORD
-                      street: STRING;
+                      street: String;
                       number: INTEGER;
-                      city: STRING;
+                      city: String;
                       zipcode: INTEGER;
-                      country: STRING
+                      country: String
                    END;
      Person = POINTER TO PersonDesc;
      PersonDesc = RECORD
-                     title: STRING;
-                     name: STRING;
+                     title: ARRAY 10 OF CHAR;
+                     name: String;
                      address: Address
                   END;
      (* ArrayPtr = POINTER TO ARRAY 20 OF INTEGER; *)
@@ -28,7 +29,11 @@ VAR (* ptr1, ptr2: IntPtr; *)
     (* array: ArrayPtr; *)
     contacts: Contacts;
 
-PROCEDURE createPerson(title, name, street: STRING; number: INTEGER; city: STRING; zipcode: INTEGER; country: STRING): Person;
+PROCEDURE createPerson(title, name, street: ARRAY OF CHAR;
+                       number: INTEGER;
+                       city: ARRAY OF CHAR;
+                       zipcode: INTEGER;
+                       country: ARRAY OF CHAR): Person;
 VAR person: Person;
     address: Address;
 BEGIN
