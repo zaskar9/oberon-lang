@@ -379,6 +379,10 @@ Sema::onAssignment(const FilePos &start, [[maybe_unused]] const FilePos &end,
                 if (rvalue->isLiteral()) {
                     castLiteral(rvalue, lvalue->getType());
                 } else {
+                    // Type inference: compatibility does not check if the `CHAR` value is a literal
+                    if (lvalue->getType()->isArray() && rvalue->getType()->isChar()) {
+                        logger_.error(lvalue->pos(), "type mismatch: cannot assign a non-constant character value to a string variable.");
+                    }
                     cast(rvalue.get(), lvalue->getType());
                 }
             }
@@ -723,6 +727,10 @@ TypeNode *Sema::onActualParameters(TypeNode *base, ActualParameters *sel) {
                         if (expr->isLiteral()) {
                             castLiteral(sel->parameters()[cnt], param->getType());
                         } else {
+                            // Type inference: compatibility does not check if the `CHAR` value is a literal
+                            if (param->getType()->isArray() && expr->getType()->isChar()) {
+                                logger_.error(expr->pos(), "type mismatch: cannot pass a non-constant character value to a string parameter.");
+                            }
                             cast(expr, param->getType());
                         }
                     }
@@ -759,7 +767,7 @@ TypeNode *Sema::onArrayIndex(TypeNode *base, ArrayIndex *sel) {
                                                       + " is not a valid array index.");
                     }
                 } else {
-                    long length = (long) array->lengths()[i];
+                    long length = static_cast<long>(array->lengths()[i]);
                     assertInBounds(literal, 0, length - 1);
                 }
             }
@@ -933,7 +941,7 @@ Sema::onBinaryExpression(const FilePos &start, [[maybe_unused]] const FilePos &e
         result = nullTy_;
     }
     // Folding
-    if (lhs->isConstant() && rhs->isConstant()) {
+    if (result != nullTy_ && lhs->isConstant() && rhs->isConstant()) {
         return fold(start, end, op, lhs.get(), rhs.get(), result);
     }
     if (common) {
@@ -1540,8 +1548,6 @@ Sema::assertCompatible(const FilePos &pos, TypeNode *expected, TypeNode *actual,
             }
         } else if ((actual->isString() || actual->isChar()) &&
                 (exp_array->getMemberType()->isChar() || exp_array->getMemberType()->kind() == TypeKind::ANYTYPE)) {
-            // TODO we can only know for strings that it is a literal
-            // TODO the length of the literal needs to be checked w.r.t. length of the array somewhere (not here)
             if (exp_array->dimensions() == 1) {
                 return true;
             } else {
@@ -1560,11 +1566,6 @@ Sema::assertCompatible(const FilePos &pos, TypeNode *expected, TypeNode *actual,
             return true;
         }
     }
-    // Check string and character type
-    // if (expected->isString() && actual->isChar()) {
-    //     return true;
-    // }
-    // Error logging
     logger_.error(pos, "type mismatch: expected " + format(expected, isPtr) + ", found " + format(actual, isPtr) + ".");
     return false;
 }

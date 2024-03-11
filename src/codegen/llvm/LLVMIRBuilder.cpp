@@ -329,8 +329,6 @@ LLVMIRBuilder::parameters(ProcedureTypeNode *proc, ActualParameters *actuals, ve
             if (expected->isVar()           // VAR parameter
                 || type->isStructured()     // ARRAY or RECORD
                 || type->isString()) {      // STRING literal parameter
-                // TODO CHAR conversion should be taken care of before code generation
-                // || (type->isChar() && expected->getType()->isArray())) {    // CHAR parameter passed to ARRAY
                 setRefMode(false);
             } else {
                 setRefMode(true);
@@ -910,6 +908,8 @@ LLVMIRBuilder::createPredefinedCall(PredefinedProcedure *proc, QualIdent *ident,
             return createExclCall(params[0], params[1]);
         case ProcKind::ORD:
             return createOrdCall(actuals[0].get(), params[0]);
+        case ProcKind::CHR:
+            return createChrCall(params[0]);
         default:
             logger_.error(ident->start(), "unsupported predefined procedure: " + to_string(*ident) + ".");
             // to generate correct LLVM IR, the current value is returned (no-op).
@@ -943,6 +943,12 @@ LLVMIRBuilder::createAssertCall(Value *param) {
     builder_.SetInsertPoint(abort);
     value_ = createAbortCall();
     builder_.SetInsertPoint(tail);
+    return value_;
+}
+
+Value *
+LLVMIRBuilder::createChrCall(llvm::Value *param) {
+    value_ = builder_.CreateTrunc(param, builder_.getInt8Ty());
     return value_;
 }
 
@@ -1064,7 +1070,7 @@ LLVMIRBuilder::createLenCall(vector<unique_ptr<ExpressionNode>> &actuals, std::v
                 logger_.error(param1->pos(), "array dimension cannot be a negative value.");
                 return value_;
             }
-            if (value >= arrayTy->dimensions()) {
+            if (static_cast<unsigned long>(value) >= arrayTy->dimensions()) {
                 logger_.error(param1->pos(), "value exceeds number of array dimensions.");
                 return value_;
             }
@@ -1146,7 +1152,7 @@ LLVMIRBuilder::createOrdCall(ExpressionNode *actual, llvm::Value *param) {
         builder_.SetInsertPoint(tail);
         value_ = builder_.CreateLoad(builder_.getInt32Ty(), value);
     } else if (actual->getType()->isChar()) {
-        logger_.error(actual->pos(), "type CHAR is not yet supported.");
+        value_ = builder_.CreateZExt(param, builder_.getInt32Ty());
     } else if (actual->getType()->isSet()) {
         value_ = param;
     } else {

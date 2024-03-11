@@ -77,26 +77,13 @@ BEGIN
     Out.String("s2: "); Out.String(s2); Out.Ln;
     Out.String("s3: "); Out.String(s3); Out.Ln;
 
-    Out.String("This is a test."); Out.Ln;
-
-    Out.Long(LEN("This is a test."), 0); Out.Ln;
+    ASSERT(LEN("This is a test.") = 16);
 
     s3 := "\n";
-
-    Out.String("["); Out.String("Test"); Out.Char("]"); Out.String(s3);
+    Out.String("["); Out.Char("]"); Out.String(s3);
 
     s4 := "supercalifragilisticexpialidocious";
     s4 := "otto";
-
-    f := 1;
-    Out.Real(1, 0); Out.Ln;
-
-    l := 1;
-    Out.Long(1, 0); Out.Ln;
-
-    i := 10;
-    i := i * i;
-    Out.Int(i, 0); Out.Ln;
 
     NEW(p1);
     p1.first := "Harry";
@@ -117,14 +104,18 @@ BEGIN
     pd.last := "Hello";
     PrintPerson0(pd); Out.Ln;
 
-    pd.first[6] := "?";
+    pd.first[6] := CHR(63);
     PrintPerson0(pd); Out.Ln;
 
     HelloWorld(s1);
     s1[0] := "M";
+    (*s1 := s1[0];*)
     Out.String(s1); Out.Ln;
+    (*Out.String(s1[0]);*)
     Out.String("Hello World!"); Out.Ln;
 
-    Out.String("ü"); Out.Ln
+    ASSERT(ORD("A") = 65);
+    ASSERT(CHR(ORD("A")) = "A");
+    ASSERT(ORD(s1[0]) = ORD("M"))
 
 END Chars.

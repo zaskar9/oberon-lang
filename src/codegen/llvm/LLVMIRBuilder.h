@@ -80,6 +80,7 @@ private:
     Value *createAbortCall();
     Value *createAsrCall(Value *, Value *);
     Value *createAssertCall(Value *);
+    Value *createChrCall(Value *);
     Value *createExitCall(Value *);
     Value *createExclCall(Value *, Value *);
     Value *createFreeCall(TypeNode *, Value *);
