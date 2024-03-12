@@ -26,7 +26,7 @@ BEGIN
     INC(l, l);
     INC(a[0]);
     INC(r.x);
-    INC(p.x)
+    NEW(p); p.x := 0; INC(p.x); FREE(p)
 END IncDec;
 
 PROCEDURE NewFree;
@@ -88,9 +88,8 @@ BEGIN
     ASSERT(~ODD(0));
     ASSERT(ODD(1));
     ASSERT(a > b);
-    Out.String("Passed assertion."); Out.Ln;
     IF (a < b) THEN HALT(1) END;
-    Out.String("Passed halt."); Out.Ln;
+    Out.String("Passed all assertions."); Out.Ln;
     HALT(0);
-    Out.String("Unreachable!")
+    Out.String("Error: Unreachable!")
 END Predefines.
