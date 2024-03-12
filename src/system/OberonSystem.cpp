@@ -111,7 +111,8 @@ void Oberon07::initSymbolTable(SymbolTable *symbols) {
                     {{TypeKind::REAL,     4}, true},
                     {{TypeKind::LONGREAL, 8}, true},
                     {{TypeKind::SET,      4}, true},
-                    {{TypeKind::STRING,   8}, false}
+                    {{TypeKind::STRING,   8}, false},
+                    {{TypeKind::TYPE,     0}, false}
             }
     );
 
@@ -123,6 +124,7 @@ void Oberon07::initSymbolTable(SymbolTable *symbols) {
     auto longType = this->getBasicType(TypeKind::LONGINT);
     auto setType = this->getBasicType(TypeKind::SET);
     auto charType = this->getBasicType(TypeKind::CHAR);
+    auto typeType = this->getBasicType(TypeKind::TYPE);
 
     this->createProcedure(ProcKind::NEW, "NEW", {{this->createPointerType(anyType), true}}, nullptr, false, true);
     this->createProcedure(ProcKind::FREE, "FREE", {{this->createPointerType(anyType), true}}, nullptr, false, true);
@@ -140,6 +142,7 @@ void Oberon07::initSymbolTable(SymbolTable *symbols) {
     this->createProcedure(ProcKind::EXCL, "EXCL", {{setType, true}, {intType, false}}, nullptr, false, true);
     this->createProcedure(ProcKind::ORD, "ORD", {{anyType, false}}, intType, false, true);
     this->createProcedure(ProcKind::CHR, "CHR", {{intType, false}}, charType, false, true);
+    this->createProcedure(ProcKind::SIZE, "SIZE", {{typeType, false}}, intType, false, true);
 
     createNamespace("SYSTEM");
     this->createProcedure(ProcKind::SYSTEM_ADR, "ADR", {{anyType, true}}, longType, false, true);
