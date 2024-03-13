@@ -168,5 +168,9 @@ void SymbolTable::closeScope() {
 }
 
 unsigned int SymbolTable::getLevel() const {
-    return scope_->getLevel();
+    if (scope_ == nullptr) {
+        return GLOBAL_LEVEL;
+    } else {
+        return scope_->getLevel();
+    }
 }

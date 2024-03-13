@@ -24,6 +24,17 @@ SymbolTable *OberonSystem::getSymbolTable() {
     return symbols_.get();
 }
 
+void OberonSystem::createNamespace(const std::string &module) {
+    module_ = module;
+    symbols_->createNamespace(module, true);
+    symbols_->openScope();
+}
+
+void OberonSystem::leaveNamespace() {
+    module_ = "";
+    symbols_->closeScope();
+}
+
 TypeDeclarationNode *OberonSystem::createTypeDeclaration(TypeNode *type) {
     auto decl = make_unique<TypeDeclarationNode>(EMPTY_POS, make_unique<IdentDef>(type->getIdentifier()->name()), type);
     auto ptr = decl.get();
@@ -76,7 +87,11 @@ void OberonSystem::createProcedure(ProcKind kind, const string& name, const vect
     auto ptr = proc.get();
     decls_.push_back(std::move(proc));
     if (toSymbols) {
-        symbols_->insertGlobal(ptr->getIdentifier()->name(), ptr);
+        if (symbols_->getLevel() == SymbolTable::GLOBAL_LEVEL) {
+            symbols_->insertGlobal(ptr->getIdentifier()->name(), ptr);
+        } else {
+            symbols_->import(module_, ptr->getIdentifier()->name(), ptr);
+        }
     }
 }
 
@@ -96,7 +111,8 @@ void Oberon07::initSymbolTable(SymbolTable *symbols) {
                     {{TypeKind::REAL,     4}, true},
                     {{TypeKind::LONGREAL, 8}, true},
                     {{TypeKind::SET,      4}, true},
-                    {{TypeKind::STRING,   8}, false}
+                    {{TypeKind::STRING,   8}, false},
+                    {{TypeKind::TYPE,     0}, false}
             }
     );
 
@@ -108,6 +124,7 @@ void Oberon07::initSymbolTable(SymbolTable *symbols) {
     auto longType = this->getBasicType(TypeKind::LONGINT);
     auto setType = this->getBasicType(TypeKind::SET);
     auto charType = this->getBasicType(TypeKind::CHAR);
+    auto typeType = this->getBasicType(TypeKind::TYPE);
 
     this->createProcedure(ProcKind::NEW, "NEW", {{this->createPointerType(anyType), true}}, nullptr, false, true);
     this->createProcedure(ProcKind::FREE, "FREE", {{this->createPointerType(anyType), true}}, nullptr, false, true);
@@ -125,5 +142,12 @@ void Oberon07::initSymbolTable(SymbolTable *symbols) {
     this->createProcedure(ProcKind::EXCL, "EXCL", {{setType, true}, {intType, false}}, nullptr, false, true);
     this->createProcedure(ProcKind::ORD, "ORD", {{anyType, false}}, intType, false, true);
     this->createProcedure(ProcKind::CHR, "CHR", {{intType, false}}, charType, false, true);
+    this->createProcedure(ProcKind::SIZE, "SIZE", {{typeType, false}}, intType, false, true);
 
+    createNamespace("SYSTEM");
+    this->createProcedure(ProcKind::SYSTEM_ADR, "ADR", {{anyType, true}}, longType, false, true);
+    this->createProcedure(ProcKind::SYSTEM_GET, "GET", {{longType, false}, {anyType, true}}, nullptr, false, true);
+    this->createProcedure(ProcKind::SYSTEM_PUT, "PUT", {{longType, false}, {anyType, false}}, nullptr, false, true);
+    this->createProcedure(ProcKind::SYSTEM_COPY, "COPY", {{longType, false}, {longType, false}, {intType, false}}, nullptr, false, true);
+    leaveNamespace();
 }

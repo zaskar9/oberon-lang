@@ -624,7 +624,7 @@ unique_ptr<StatementNode> Parser::statement() {
     if (token->type() == TokenType::const_ident) {
         FilePos pos = token->start();
         vector<unique_ptr<Selector>> selectors;
-        auto ident = this->designator(selectors);
+        auto ident = designator(selectors);
         token = scanner_.peek();
         if (token->type() == TokenType::op_eq) {
             logger_.error(token->start(), "unexpected operator = found, use operator := instead.");
@@ -904,7 +904,7 @@ unique_ptr<ExpressionNode> Parser::basic_factor() {
     if (token->type() == TokenType::const_ident) {
         FilePos pos = token->start();
         vector<unique_ptr<Selector>> selectors;
-        auto ident = this->designator(selectors);
+        auto ident = designator(selectors);
         if (sema_.isConstant(ident.get())) {
             return sema_.onQualifiedConstant(pos, EMPTY_POS, std::move(ident), std::move(selectors));
         }
@@ -954,12 +954,13 @@ unique_ptr<ExpressionNode> Parser::basic_factor() {
 unique_ptr<QualIdent> Parser::designator(vector<unique_ptr<Selector>> &selectors) {
     logger_.debug("designator");
     auto ident = qualident();
+    bool proc = sema_.isProcedure(ident.get());
     auto token = scanner_.peek();
     while (token->type() == TokenType::period ||
            token->type() == TokenType::lbrack ||
            token->type() == TokenType::caret ||
            token->type() == TokenType::lparen) {
-        auto sel = selector();
+        auto sel = selector(proc);
         if (sel) {
             selectors.push_back(std::move(sel));
         } else {
@@ -971,7 +972,7 @@ unique_ptr<QualIdent> Parser::designator(vector<unique_ptr<Selector>> &selectors
 }
 
 // selector = "." ident | "[" expression_list "]" | "^" | "(" qualident | [ expression_list ] ")" .
-unique_ptr<Selector> Parser::selector() {
+unique_ptr<Selector> Parser::selector(bool &) {
     logger_.debug("selector");
     auto token = scanner_.peek();
     if (token->type() == TokenType::period) {
