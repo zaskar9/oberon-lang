@@ -70,7 +70,7 @@ private:
     unique_ptr<ExpressionNode> factor();
     unique_ptr<ExpressionNode> basic_factor();
     unique_ptr<QualIdent> designator(vector<unique_ptr<Selector>> &);
-    unique_ptr<Selector> selector();
+    unique_ptr<Selector> selector(bool &);
     unique_ptr<ExpressionNode> set();
     unique_ptr<ExpressionNode> element();
 
