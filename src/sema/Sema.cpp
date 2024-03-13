@@ -559,7 +559,7 @@ Sema::onQualifiedStatement(const FilePos &start, [[maybe_unused]] const FilePos 
             // a fully-qualified external reference needs to be added to module for code generation
             context_->addExternalProcedure(proc);
         }
-        auto type = onSelectors(ident->start(), ident->end(), sym->getType(), selectors);
+        auto type = onSelectors(ident->start(), ident->end(), sym, sym->getType(), selectors);
         if (type) {
             logger_.warning(ident->start(), "discarded expression value.");
         }
@@ -579,7 +579,7 @@ Sema::onQualifiedExpression(const FilePos &start, [[maybe_unused]] const FilePos
     }
     // check variable or parameter reference
     if (sym->getNodeType() == NodeType::variable || sym->getNodeType() == NodeType::parameter) {
-        auto type = onSelectors(ident->start(), ident->end(), sym->getType(), selectors);
+        auto type = onSelectors(ident->start(), ident->end(), sym, sym->getType(), selectors);
         return make_unique<QualifiedExpression>(start, std::move(ident), std::move(selectors), sym, type);
     }
     // check procedure reference
@@ -589,7 +589,7 @@ Sema::onQualifiedExpression(const FilePos &start, [[maybe_unused]] const FilePos
             // a fully-qualified external reference needs to be added to module for code generation
             context_->addExternalProcedure(proc);
         }
-        auto type = onSelectors(ident->start(), ident->end(), sym->getType(), selectors);
+        auto type = onSelectors(ident->start(), ident->end(), sym, sym->getType(), selectors);
         return make_unique<QualifiedExpression>(start, std::move(ident), std::move(selectors), sym, type);
     }
     logger_.error(ident->start(), "variable, parameter, or function call expected.");
@@ -619,9 +619,10 @@ Sema::onQualifiedConstant(const FilePos &start, const FilePos &end,
 
 TypeNode *
 Sema::onSelectors(const FilePos &start, const FilePos &end,
-                  TypeNode *base, vector<unique_ptr<Selector>> &selectors) {
+                  DeclarationNode *sym, TypeNode *base, vector<unique_ptr<Selector>> &selectors) {
     auto it = selectors.begin();
     it = handleMissingParameters(start, end, base, selectors, it);
+    auto context = sym;
     while (it != selectors.end()) {
         auto sel = (*it).get();
         if (!base) {
@@ -647,10 +648,11 @@ Sema::onSelectors(const FilePos &start, const FilePos &end,
                 base = onDereference(base, dynamic_cast<Dereference *>(sel));
                 break;
             case NodeType::record_type:
-                base = onRecordField(base, dynamic_cast<RecordField *>(sel));
+                context = onRecordField(base, dynamic_cast<RecordField *>(sel));
+                base = context->getType();
                 break;
             case NodeType::type:
-                base = onTypeguard(base, dynamic_cast<Typeguard *>(sel));
+                base = onTypeguard(context, base, dynamic_cast<Typeguard *>(sel));
                 break;
             default:
                 logger_.error(sel->pos(), "unexpected selector.");
@@ -795,7 +797,7 @@ TypeNode *Sema::onDereference(TypeNode *base, Dereference *sel) {
     return pointer->getBase();
 }
 
-TypeNode *Sema::onRecordField(TypeNode *base, RecordField *sel) {
+FieldNode *Sema::onRecordField(TypeNode *base, RecordField *sel) {
     if (!base->isRecord()) {
         logger_.error(sel->pos(), "record " + to_string(base) + " is not a record record.");
         return nullptr;
@@ -808,18 +810,24 @@ TypeNode *Sema::onRecordField(TypeNode *base, RecordField *sel) {
         return nullptr;
     } else {
         ref->setField(field);
-        return field->getType();
+        return field;
     }
 }
 
-TypeNode *Sema::onTypeguard([[maybe_unused]] TypeNode *base, Typeguard *sel) {
-    auto sym = symbols_->lookup(sel->ident());
-    if (sym) {
-        if (sym->getNodeType() == NodeType::type) {
-            // TODO check if type-guard is compatible with base type.
-            return dynamic_cast<TypeDeclarationNode *>(sym)->getType();
+TypeNode *Sema::onTypeguard(DeclarationNode *sym, [[maybe_unused]] TypeNode *base, Typeguard *sel) {
+    auto type = symbols_->lookup(sel->ident());
+    if (type) {
+        // O07.8.1: in v(T), v is a variable parameter of record type, or v is a pointer.
+        if ((sym->getNodeType() == NodeType::parameter && dynamic_cast<ParameterNode *>(sym)->isVar() &&
+             sym->getType()->isRecord()) || sym->getType()->isPointer()) {
+            if (type->getNodeType() == NodeType::type) {
+                // TODO check if type-guard is compatible with base type.
+                return dynamic_cast<TypeDeclarationNode *>(type)->getType();
+            } else {
+                logger_.error(sel->pos(), "unexpected selector.");
+            }
         } else {
-            logger_.error(sel->pos(), "unexpected selector.");
+            logger_.error(sel->pos(), "a type guard can only be applied to a variable parameter of record type or a pointer.");
         }
     } else {
         logger_.error(sel->pos(), "undefined identifier: " + to_string(*sel->ident()) + ".");

@@ -82,12 +82,12 @@ private:
     using SelectorIterator = Selectors::iterator;
     SelectorIterator &handleMissingParameters(const FilePos &, const FilePos &,
                                               TypeNode*, Selectors &, SelectorIterator &);
-    TypeNode *onSelectors(const FilePos &, const FilePos &, TypeNode*, Selectors &);
+    TypeNode *onSelectors(const FilePos &, const FilePos &, DeclarationNode *, TypeNode*, Selectors &);
     TypeNode *onActualParameters(TypeNode*, ActualParameters*);
     TypeNode *onArrayIndex(TypeNode*, ArrayIndex*);
     TypeNode *onDereference(TypeNode*, Dereference*);
-    TypeNode *onRecordField(TypeNode*, RecordField*);
-    TypeNode *onTypeguard(TypeNode*, Typeguard*);
+    FieldNode *onRecordField(TypeNode*, RecordField*);
+    TypeNode *onTypeguard(DeclarationNode*, TypeNode*, Typeguard*);
 
 public:
     Sema(CompilerConfig &, ASTContext *, OberonSystem *);
