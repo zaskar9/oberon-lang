@@ -211,6 +211,10 @@ void LLVMIRBuilder::visit(QualifiedStatement &node) {
 
 void LLVMIRBuilder::visit(QualifiedExpression &node) {
     auto decl = node.dereference();
+    if (decl->getNodeType() == NodeType::type) {
+        // If the qualified expression refers to a type, no code has to be generated.
+        return;
+    }
     auto level = decl->getLevel();
     if (level == 0 || level == 1) /* universe or global level */ {
         value_ = values_[decl];
@@ -911,6 +915,9 @@ LLVMIRBuilder::createPredefinedCall(PredefinedProcedure *proc, QualIdent *ident,
             return createExclCall(params[0], params[1]);
         case ProcKind::ORD:
             return createOrdCall(actuals[0].get(), params[0]);
+        case ProcKind::SIZE:
+        case ProcKind::SYSTEM_SIZE:
+            return createSizeCall(actuals[0].get());
         case ProcKind::SYSTEM_ADR:
             return createSystemAdrCall(actuals, params);
         case ProcKind::SYSTEM_GET:
@@ -1188,6 +1195,14 @@ LLVMIRBuilder::createRorCall(llvm::Value *param, llvm::Value *shift) {
     return builder_.CreateOr(lhs, rhs);
 }
 
+Value *LLVMIRBuilder::createSizeCall(ExpressionNode *expr) {
+    auto decl = dynamic_cast<QualifiedExpression *>(expr)->dereference();
+    auto type = dynamic_cast<TypeDeclarationNode *>(decl);
+    auto size = type->getType()->getSize();
+    value_ = builder_.getInt32(size);
+    return value_;
+}
+
 Value *
 LLVMIRBuilder::createSystemAdrCall(vector<unique_ptr<ExpressionNode>> &actuals, std::vector<Value *> &params) {
     // TODO : Support other types
@@ -1236,7 +1251,7 @@ LLVMIRBuilder::createSystemCopyCall(llvm::Value *src, llvm::Value *dst, llvm::Va
     auto ptrtype = builder_.getPtrTy();
     auto srcptr = builder_.CreateIntToPtr(src, ptrtype);
     auto dstptr = builder_.CreateIntToPtr(dst, ptrtype);
-    return builder_.CreateMemCpy(dstptr, MaybeAlign(), srcptr, MaybeAlign(), n, true);
+    return builder_.CreateMemCpy(dstptr, {}, srcptr, {}, n, true);
 }
 
 Value *

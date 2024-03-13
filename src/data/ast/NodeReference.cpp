@@ -14,10 +14,6 @@ void NodeReference::resolve(DeclarationNode *node) {
     node_ = node;
 }
 
-bool NodeReference::isResolved() const {
-    return node_ != nullptr;
-}
-
 DeclarationNode *NodeReference::dereference() const {
     return node_;
 }

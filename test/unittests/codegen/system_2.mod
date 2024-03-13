@@ -15,8 +15,7 @@ BEGIN
     FOR i := 0 TO 3 DO y[i] := -(i + 1) END;
     xadr := SYSTEM.ADR(x[0]);
     yadr := SYSTEM.ADR(y[0]);
-    (* TODO : SYSTEM.COPY(xadr, yadr, LEN(x) * SYSTEM.SIZE(INTEGER)); *)
-    SYSTEM.COPY(xadr, yadr, 4 * 4);
+    SYSTEM.COPY(xadr, yadr, LEN(x) * SYSTEM.SIZE(INTEGER));
     FOR i := 0 TO 3 DO Out.Int(y[i], 0); Out.Ln END
 END Test;
 
