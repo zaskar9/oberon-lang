@@ -87,7 +87,7 @@ void OberonSystem::createProcedure(ProcKind kind, const string& name, const vect
     auto ptr = proc.get();
     decls_.push_back(std::move(proc));
     if (toSymbols) {
-        if (symbols_->getLevel() == symbols_->GLOBAL_LEVEL) {
+        if (symbols_->getLevel() == SymbolTable::GLOBAL_LEVEL) {
             symbols_->insertGlobal(ptr->getIdentifier()->name(), ptr);
         } else {
             symbols_->import(module_, ptr->getIdentifier()->name(), ptr);

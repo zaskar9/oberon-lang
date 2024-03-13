@@ -555,7 +555,7 @@ Sema::onQualifiedStatement(const FilePos &start, [[maybe_unused]] const FilePos 
     // check procedure reference
     if (sym->getNodeType() == NodeType::procedure) {
         auto proc = dynamic_cast<ProcedureNode *>(sym);
-        if (ident->isQualified() && (proc->isExtern() || proc->isImported())) {
+        if (ident->isQualified() && !proc->isPredefined() && (proc->isExtern() || proc->isImported())) {
             // a fully-qualified external reference needs to be added to module for code generation
             context_->addExternalProcedure(proc);
         }
@@ -585,7 +585,7 @@ Sema::onQualifiedExpression(const FilePos &start, [[maybe_unused]] const FilePos
     // check procedure reference
     if (sym->getNodeType() == NodeType::procedure) {
         auto proc = dynamic_cast<ProcedureNode *>(sym);
-        if (ident->isQualified() && (proc->isExtern() || proc->isImported())) {
+        if (ident->isQualified() && !proc->isPredefined() && (proc->isExtern() || proc->isImported())) {
             // a fully-qualified external reference needs to be added to module for code generation
             context_->addExternalProcedure(proc);
         }
