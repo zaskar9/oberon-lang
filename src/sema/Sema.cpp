@@ -28,6 +28,7 @@ Sema::Sema(CompilerConfig &config, ASTContext *context, OberonSystem *system) :
     stringTy_ = system_->getBasicType(TypeKind::STRING);
     setTy_ = system_->getBasicType(TypeKind::SET);
     nullTy_ = system_->getBasicType(TypeKind::NOTYPE);
+    typeTy_ = system_->getBasicType(TypeKind::TYPE);
 }
 
 void
@@ -582,6 +583,13 @@ Sema::onQualifiedExpression(const FilePos &start, [[maybe_unused]] const FilePos
         auto type = onSelectors(ident->start(), ident->end(), sym, sym->getType(), selectors);
         return make_unique<QualifiedExpression>(start, std::move(ident), std::move(selectors), sym, type);
     }
+    // check type reference
+    if (sym->getNodeType() == NodeType::type) {
+        if (!selectors.empty()) {
+            logger_.error(selectors[0]->pos(), "unexpected selector.");
+        }
+        return make_unique<QualifiedExpression>(start, std::move(ident), std::move(selectors), sym, typeTy_);
+    }
     // check procedure reference
     if (sym->getNodeType() == NodeType::procedure) {
         auto proc = dynamic_cast<ProcedureNode *>(sym);
@@ -592,7 +600,7 @@ Sema::onQualifiedExpression(const FilePos &start, [[maybe_unused]] const FilePos
         auto type = onSelectors(ident->start(), ident->end(), sym, sym->getType(), selectors);
         return make_unique<QualifiedExpression>(start, std::move(ident), std::move(selectors), sym, type);
     }
-    logger_.error(ident->start(), "variable, parameter, or function call expected.");
+    logger_.error(ident->start(), "variable, parameter, type, or function call expected.");
     return make_unique<QualifiedExpression>(start, std::move(ident), std::move(selectors), sym, nullTy_);;
 }
 
@@ -632,10 +640,29 @@ Sema::onSelectors(const FilePos &start, const FilePos &end,
         // check for implicit pointer de-referencing
         if (base->isPointer() && (sel->getNodeType() == NodeType::array_type ||
                                   sel->getNodeType() == NodeType::record_type)) {
-            auto caret = std::make_unique<Dereference>(sel->pos());
+            auto caret = make_unique<Dereference>(sel->pos());
             // place caret before the current element
             it = selectors.insert(it, std::move(caret));
             sel = (*it).get();
+        }
+        // if necessary, convert from actual parameters to type guard
+        if (sel->getNodeType() == NodeType::parameter && !base->isProcedure()) {
+            auto params = dynamic_cast<ActualParameters *>(sel);
+            if (params->parameters().size() == 1) {
+                auto param = params->parameters()[0].get();
+                if (param->getNodeType() == NodeType::qualified_expression &&
+                    param->getType()->kind() == TypeKind::TYPE) {
+                    auto expr = dynamic_cast<QualifiedExpression *>(param);
+                    (*it) = make_unique<Typeguard>(params->pos(), make_unique<QualIdent>(expr->ident()));
+                    sel = (*it).get();
+                } else {
+                    logger_.error(params->pos(), "unexpected selector: illegal type guard.");
+                    return nullptr;
+                }
+            } else {
+                logger_.error(params->pos(), "unexpected selector: illegal type guard.");
+                return nullptr;
+            }
         }
         switch (sel->getNodeType()) {
             case NodeType::parameter:

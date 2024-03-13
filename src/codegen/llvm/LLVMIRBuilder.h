@@ -93,6 +93,7 @@ private:
     Value *createOrdCall(ExpressionNode *, Value *);
     Value *createRolCall(Value *, Value *);
     Value *createRorCall(Value *, Value *);
+    Value *createSizeCall(ExpressionNode *);
     
     Value *createSystemAdrCall(vector<unique_ptr<ExpressionNode>> &, std::vector<Value *> &);
     Value *createSystemGetCall(vector<unique_ptr<ExpressionNode>> &, std::vector<Value *> &);

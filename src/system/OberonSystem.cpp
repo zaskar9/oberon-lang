@@ -148,6 +148,7 @@ void Oberon07::initSymbolTable(SymbolTable *symbols) {
     this->createProcedure(ProcKind::SYSTEM_ADR, "ADR", {{anyType, true}}, longType, false, true);
     this->createProcedure(ProcKind::SYSTEM_GET, "GET", {{longType, false}, {anyType, true}}, nullptr, false, true);
     this->createProcedure(ProcKind::SYSTEM_PUT, "PUT", {{longType, false}, {anyType, false}}, nullptr, false, true);
-    this->createProcedure(ProcKind::SYSTEM_COPY, "COPY", {{longType, false}, {longType, false}, {intType, false}}, nullptr, false, true);
+    this->createProcedure(ProcKind::SYSTEM_COPY, "COPY", {{longType, false}, {longType, false}, {longType, false}}, nullptr, false, true);
+    this->createProcedure(ProcKind::SYSTEM_SIZE, "SIZE", {{typeType, false}}, intType, false, true);
     leaveNamespace();
 }

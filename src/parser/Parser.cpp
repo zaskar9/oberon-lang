@@ -954,13 +954,12 @@ unique_ptr<ExpressionNode> Parser::basic_factor() {
 unique_ptr<QualIdent> Parser::designator(vector<unique_ptr<Selector>> &selectors) {
     logger_.debug("designator");
     auto ident = qualident();
-    bool proc = sema_.isProcedure(ident.get());
     auto token = scanner_.peek();
     while (token->type() == TokenType::period ||
            token->type() == TokenType::lbrack ||
            token->type() == TokenType::caret ||
            token->type() == TokenType::lparen) {
-        auto sel = selector(proc);
+        auto sel = selector();
         if (sel) {
             selectors.push_back(std::move(sel));
         } else {
@@ -972,7 +971,7 @@ unique_ptr<QualIdent> Parser::designator(vector<unique_ptr<Selector>> &selectors
 }
 
 // selector = "." ident | "[" expression_list "]" | "^" | "(" qualident | [ expression_list ] ")" .
-unique_ptr<Selector> Parser::selector(bool &) {
+unique_ptr<Selector> Parser::selector() {
     logger_.debug("selector");
     auto token = scanner_.peek();
     if (token->type() == TokenType::period) {
@@ -987,40 +986,26 @@ unique_ptr<Selector> Parser::selector(bool &) {
         if (expressions.empty()) {
             logger_.error(token_->start(), "expression expected.");
         }
-        auto sel = make_unique<ArrayIndex>(pos, std::move(expressions));
         token_ = scanner_.next();
         if (token_->type() != TokenType::rbrack) {
             logger_.error(token_->start(), "] expected, found " + to_string(token_->type()) + ".");
         }
-        return sel;
+        return make_unique<ArrayIndex>(pos, std::move(expressions));
     } else if (token->type() == TokenType::caret) {
         token_ = scanner_.next();
         return make_unique<Dereference>(token_->start());
     } else if (token->type() == TokenType::lparen) {
         token_ = scanner_.next(); // skip left parenthesis
         FilePos start = token_->start();
-        unique_ptr<Selector> sel = nullptr;
-        if (scanner_.peek()->type() == TokenType::const_ident) {
-            auto ident = qualident();
-            if (sema_.isType(ident.get())) {
-                logger_.debug("typeguard");
-                sel = make_unique<Typeguard>(start, std::move(ident));
-            } else {
-                scanner_.seek(ident->start());
-            }
+        vector<std::unique_ptr<ExpressionNode>> params;
+        auto debug = scanner_.peek()->type();
+        if (debug != TokenType::rparen) {
+            expression_list(params);
         }
-        if (!sel) {
-            vector<std::unique_ptr<ExpressionNode>> params;
-            auto debug = scanner_.peek()->type();
-            if (debug != TokenType::rparen) {
-                expression_list(params);
-            }
-            logger_.debug("actual_parameters");
-            sel = make_unique<ActualParameters>(start, std::move(params));
-        }
+        logger_.debug("actual_parameters");
         token_ = scanner_.next(); // skip right parenthesis
         assertToken(token_.get(), TokenType::rparen);
-        return sel;
+        return make_unique<ActualParameters>(start, std::move(params));;
     }
     logger_.error(token_->start(), "selector expected.");
     return nullptr;

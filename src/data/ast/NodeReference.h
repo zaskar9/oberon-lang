@@ -30,7 +30,6 @@ public:
     virtual ~NodeReference();
 
     virtual void resolve(DeclarationNode *node);
-    [[nodiscard]] virtual bool isResolved() const;
     [[nodiscard]] virtual DeclarationNode *dereference() const;
 
 };
