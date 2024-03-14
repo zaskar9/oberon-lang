@@ -253,11 +253,33 @@ Sema::onParameter(const FilePos &start, [[maybe_unused]] const FilePos &end,
 }
 
 RecordTypeNode *
-Sema::onRecordType(const FilePos &start, const FilePos &end, vector<unique_ptr<FieldNode>> fields) {
-    auto node = context_->getOrInsertRecordType(start, end, std::move(fields));
+Sema::onRecordType(const FilePos &start, const FilePos &end,
+                   unique_ptr<QualIdent> ident, vector<unique_ptr<FieldNode>> fields) {
+    RecordTypeNode *base = nullptr;
+    if (ident) {
+        auto sym = symbols_->lookup(ident.get());
+        if (sym && sym->getNodeType() == NodeType::type) {
+            auto type = dynamic_cast<TypeDeclarationNode *>(sym)->getType();
+            if (type->isRecord()) {
+                base = dynamic_cast<RecordTypeNode *>(type);
+            } else {
+                logger_.error(ident->start(), "base type must be a record type.");
+            }
+        } else {
+            logger_.error(start, "undefined type: " + to_string(*ident) + ".");
+        }
+    }
+    auto node = context_->getOrInsertRecordType(start, end, base, std::move(fields));
     set<string> names;
     for (size_t i = 0; i < node->getFieldCount(); i++) {
         auto field = node->getField(i);
+        if (field->getIdentifier()->isExported()) {
+            if (symbols_->getLevel() != SymbolTable::MODULE_LEVEL) {
+                logger_.error(field->pos(), "only top-level declarations can be exported.");
+            } else if (!node->getIdentifier()->isExported()) {
+                logger_.error(field->pos(), "cannot export fields of non-exported record type.");
+            }
+        }
         if (names.count(field->getIdentifier()->name())) {
             logger_.error(field->pos(), "duplicate record field: " + to_string(*field->getIdentifier()) + ".");
         } else {
@@ -869,14 +891,29 @@ FieldNode *Sema::onRecordField(TypeNode *base, RecordField *sel) {
 }
 
 TypeNode *Sema::onTypeguard(DeclarationNode *sym, [[maybe_unused]] TypeNode *base, Typeguard *sel) {
-    auto type = symbols_->lookup(sel->ident());
-    if (type) {
+    auto decl = symbols_->lookup(sel->ident());
+    if (decl) {
         // O07.8.1: in v(T), v is a variable parameter of record type, or v is a pointer.
         if ((sym->getNodeType() == NodeType::parameter && dynamic_cast<ParameterNode *>(sym)->isVar() &&
              sym->getType()->isRecord()) || sym->getType()->isPointer()) {
-            if (type->getNodeType() == NodeType::type) {
+            if (decl->getNodeType() == NodeType::type) {
+                auto type = dynamic_cast<TypeDeclarationNode *>(decl)->getType();
                 // TODO check if type-guard is compatible with base type.
-                return dynamic_cast<TypeDeclarationNode *>(type)->getType();
+                if (type->isPointer()) {
+                    type = dynamic_cast<PointerTypeNode *>(type)->getBase();
+                }
+                if (type->isRecord()) {
+                    auto actual = dynamic_cast<RecordTypeNode *>(sym->getType());
+                    auto guard = dynamic_cast<RecordTypeNode *>(type);
+                    if (guard->instanceOf(actual)) {
+                        return guard;
+                    } else {
+                        logger_.error(sel->pos(), "type mismatch: " + format(guard) + " is not an extension of "
+                                                  + format(actual) + ".");
+                    }
+                } else {
+                    logger_.error(sel->pos(), "record type or pointer to record type expected.");
+                }
             } else {
                 logger_.error(sel->pos(), "unexpected selector.");
             }

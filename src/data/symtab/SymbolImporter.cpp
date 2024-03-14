@@ -303,7 +303,7 @@ TypeNode *SymbolImporter::readRecordType(SymbolFile *file) {
         // check for terminator
         ch = file->readChar();
     }
-    auto res = context_->getOrInsertRecordType(EMPTY_POS, EMPTY_POS, std::move(fields));
+    auto res = context_->getOrInsertRecordType(EMPTY_POS, EMPTY_POS, base_t, std::move(fields));
     res->setBaseType(base_t);
     res->setSize(size);
     return res;
