@@ -321,13 +321,18 @@ TypeNode *LLVMIRBuilder::selectors(TypeNode *base, SelectorIterator start, Selec
             // handle record field access
             auto field = dynamic_cast<RecordField *>(sel)->getField();
             auto record_t = dynamic_cast<RecordTypeNode *>(selector_t);
+            auto recordTy = getLLVMType(record_t);
+            value = processGEP(base, value, indices);
+            // get address of first field
+            auto layout = module_->getDataLayout().getStructLayout((StructType *)recordTy);
+            auto offset = layout->getElementOffset(0);
             for (size_t pos = 0; pos < record_t->getFieldCount(); pos++) {
                 if (field == record_t->getField(pos)) {
-                    indices.push_back(builder_.getInt32(pos));
+                    offset = layout->getElementOffset(pos) - offset;
+                    value = builder_.CreateInBoundsGEP(builder_.getInt8Ty(), value, {builder_.getInt64(offset)});
                     break;
                 }
             }
-            value = processGEP(base, value, indices);
             selector_t = field->getType();
             base = selector_t;
         } else if (sel->getNodeType() == NodeType::type) {

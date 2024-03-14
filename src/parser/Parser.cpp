@@ -303,23 +303,32 @@ ArrayTypeNode* Parser::array_type() {
     return nullptr;
 }
 
-// TODO record_type = "RECORD" [ "(" qualident ")" ] [ field_list { ";" field_list } ] END.
-// record_type = "RECORD" field_list { ";" field_list } "END" .
-RecordTypeNode* Parser::record_type() {
+// record_type = "RECORD" [ "(" qualident ")" ] [ field_list { ";" field_list } ] END.
+RecordTypeNode* Parser::record_type(Ident* identifier) {
     logger_.debug("record_type");
-    FilePos pos = scanner_.next()->start();  // skip RECORD keyword and get its position
+    FilePos pos = scanner_.next()->start(); // skip RECORD keyword and get its position
+    unique_ptr<QualIdent> base;
+    if (scanner_.peek()->type() == TokenType::lparen) {
+        scanner_.next(); // skip left parenthesis
+        base = qualident();
+        if (assertToken(scanner_.peek(), TokenType::rparen)) {
+            scanner_.next(); // skip right parenthesis
+        }
+    }
     vector<unique_ptr<FieldNode>> fields;
-    field_list(fields);
-    while (scanner_.peek()->type() == TokenType::semicolon) {
-        token_ = scanner_.next();  // skip semicolon but keep token for error reporting in `Parser::field_list`
+    if (scanner_.peek()->type() == TokenType::const_ident) {
         field_list(fields);
+        while (scanner_.peek()->type() == TokenType::semicolon) {
+            scanner_.next(); // skip semicolon
+            field_list(fields);
+        }
     }
     if (assertToken(scanner_.peek(), TokenType::kw_end)) {
         scanner_.next();  // skip END keyword
     }
     // [<)>, <;>, <END>]
     // resync({ TokenType::semicolon, TokenType::rparen, TokenType::kw_end });
-    return sema_.onRecordType(pos, EMPTY_POS, std::move(fields));
+    return sema_.onRecordType(pos, EMPTY_POS, identifier, std::move(base), std::move(fields));
 }
 
 // field_list = ident_list ":" type .
