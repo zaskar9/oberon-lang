@@ -55,7 +55,7 @@ void LambdaLifter::visit(ProcedureNode &node) {
                 auto ident = make_unique<IdentDef>(var->getIdentifier()->name());
                 fields.push_back(make_unique<FieldNode>(EMPTY_POS, std::move(ident), var->getType()));
             }
-            auto type = context_->getOrInsertRecordType(EMPTY_POS, EMPTY_POS, std::move(fields));
+            auto type = context_->getOrInsertRecordType(EMPTY_POS, EMPTY_POS, nullptr, std::move(fields));
             auto decl = make_unique<TypeDeclarationNode>(EMPTY_POS, std::move(identifier), type);
             decl->setModule(module_);
             decl->setLevel(module_->getLevel() + 1);
