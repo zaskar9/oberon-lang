@@ -28,9 +28,9 @@ private:
     RecordTypeNode *base_;
 
 public:
-    RecordTypeNode(const FilePos &pos, vector<unique_ptr<FieldNode>> fields) :
+    RecordTypeNode(const FilePos &pos, RecordTypeNode *base, vector<unique_ptr<FieldNode>> fields) :
             TypeNode(NodeType::record_type, pos, TypeKind::RECORD, 0),
-            fields_(std::move(fields)), base_() {};
+            fields_(std::move(fields)), base_(base) {};
     ~RecordTypeNode() final = default;
 
     [[nodiscard]] unsigned int getSize() const final;
@@ -39,7 +39,8 @@ public:
     [[nodiscard]] FieldNode *getField(size_t num) const;
     [[nodiscard]] size_t getFieldCount();
 
-    void setBaseType(RecordTypeNode *base);
+    [[nodiscard]] bool isExtened() const;
+    [[nodiscard]] bool instanceOf(RecordTypeNode *) const;
     [[nodiscard]] RecordTypeNode *getBaseType() const;
 
     void accept(NodeVisitor &visitor) final;
