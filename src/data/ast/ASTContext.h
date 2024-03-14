@@ -47,11 +47,12 @@ public:
     [[nodiscard]] ModuleNode *getTranslationUnit() const;
     void setTranslationUnit(unique_ptr<ModuleNode>);
 
-    [[deprecated]]
-    ArrayTypeNode *getOrInsertArrayType(const FilePos &, const FilePos &, Ident *, unsigned, TypeNode *);
-    ArrayTypeNode *getOrInsertArrayType(const FilePos &, const FilePos &, Ident *, unsigned, vector<unsigned>, vector<TypeNode *>);
-    RecordTypeNode *getOrInsertRecordType(const FilePos &, const FilePos &, Ident *, vector<unique_ptr<FieldNode>>);
-    PointerTypeNode *getOrInsertPointerType(const FilePos &, const FilePos &, Ident *, TypeNode *);
+    ArrayTypeNode *getOrInsertArrayType(const FilePos &, const FilePos &,
+                                        Ident *, unsigned, vector<unsigned>, vector<TypeNode *>);
+    RecordTypeNode *getOrInsertRecordType(const FilePos &, const FilePos &,
+                                          Ident *, RecordTypeNode *, vector<unique_ptr<FieldNode>>);
+    PointerTypeNode *getOrInsertPointerType(const FilePos &, const FilePos &,
+                                            Ident *, TypeNode *);
     ProcedureTypeNode *getOrInsertProcedureType(const FilePos &, const FilePos &,
                                                 Ident *, vector<unique_ptr<ParameterNode>>, bool, TypeNode *);
 

@@ -117,7 +117,8 @@ public:
 
     unique_ptr<ParameterNode> onParameter(const FilePos &, const FilePos &, unique_ptr<Ident>, TypeNode *, bool, unsigned = 0);
 
-    RecordTypeNode *onRecordType(const FilePos &, const FilePos &, Ident *, vector<unique_ptr<FieldNode>>);
+    RecordTypeNode *onRecordType(const FilePos &, const FilePos &,
+                                 Ident *, unique_ptr<QualIdent>, vector<unique_ptr<FieldNode>>);
     unique_ptr<FieldNode> onField(const FilePos&, const FilePos&, unique_ptr<IdentDef>, TypeNode*, unsigned = 0);
 
     TypeNode *onTypeReference(const FilePos &, const FilePos &, unique_ptr<QualIdent>, unsigned = 0);

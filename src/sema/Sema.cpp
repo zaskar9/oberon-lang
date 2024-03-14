@@ -231,7 +231,7 @@ Sema::onPointerType([[maybe_unused]] const FilePos &start, const FilePos &end,
 }
 
 ProcedureTypeNode *
-Sema::onProcedureType([[maybe_unused]] const FilePos &start, const FilePos &end,
+Sema::onProcedureType(const FilePos &start, const FilePos &end,
                       Ident *ident, vector<unique_ptr<ParameterNode>> params, bool varargs, TypeNode *ret) {
     return context_->getOrInsertProcedureType(start, end, ident, std::move(params), varargs, ret);
 }
@@ -251,11 +251,25 @@ Sema::onParameter(const FilePos &start, [[maybe_unused]] const FilePos &end,
 
 RecordTypeNode *
 Sema::onRecordType(const FilePos &start, const FilePos &end,
-                  Ident *ident, vector<unique_ptr<FieldNode>> fields) {
-    if (fields.empty()) {
-        logger_.error(start, "records needs at least one field.");
+                   Ident *name, unique_ptr<QualIdent> ident, vector<unique_ptr<FieldNode>> fields) {
+    RecordTypeNode *base = nullptr;
+    if (ident) {
+        auto sym = symbols_->lookup(ident.get());
+        if (sym && sym->getNodeType() == NodeType::type) {
+            auto type = dynamic_cast<TypeDeclarationNode *>(sym)->getType();
+            if (type->isRecord()) {
+                base = dynamic_cast<RecordTypeNode *>(type);
+            } else {
+                logger_.error(ident->start(), "base type must be a record type.");
+            }
+        } else {
+            logger_.error(start, "undefined type: " + to_string(*ident) + ".");
+        }
     }
-    auto node = context_->getOrInsertRecordType(start, end, ident, std::move(fields));
+//    if (fields.empty()) {
+//        logger_.error(start, "records needs at least one field.");
+//    }
+    auto node = context_->getOrInsertRecordType(start, end, name, base, std::move(fields));
     set<string> names;
     for (size_t i = 0; i < node->getFieldCount(); i++) {
         auto field = node->getField(i);
@@ -698,16 +712,18 @@ Sema::assertAssignable(const ExpressionNode *expr, string &err) const {
         return false;
     } else if (expr->getNodeType() == NodeType::qualified_expression) {
         auto decl = dynamic_cast<const QualifiedExpression *>(expr)->dereference();
-        if (decl->getNodeType() == NodeType::parameter) {
-            auto type = decl->getType();
-            if (type->isStructured()) {
-                auto param = dynamic_cast<const ParameterNode *>(decl);
-                err = "a non-variable structured parameter";
-                return param->isVar();
+        if (decl) {
+            if (decl->getNodeType() == NodeType::parameter) {
+                auto type = decl->getType();
+                if (type->isStructured()) {
+                    auto param = dynamic_cast<const ParameterNode *>(decl);
+                    err = "a non-variable structured parameter";
+                    return param->isVar();
+                }
+            } else if (decl->getNodeType() == NodeType::constant) {
+                err = "a constant";
+                return false;
             }
-        } else if (decl->getNodeType() == NodeType::constant) {
-            err = "a constant";
-            return false;
         }
         err = "";
         return true;
@@ -842,14 +858,29 @@ FieldNode *Sema::onRecordField(TypeNode *base, RecordField *sel) {
 }
 
 TypeNode *Sema::onTypeguard(DeclarationNode *sym, [[maybe_unused]] TypeNode *base, Typeguard *sel) {
-    auto type = symbols_->lookup(sel->ident());
-    if (type) {
+    auto decl = symbols_->lookup(sel->ident());
+    if (decl) {
         // O07.8.1: in v(T), v is a variable parameter of record type, or v is a pointer.
         if ((sym->getNodeType() == NodeType::parameter && dynamic_cast<ParameterNode *>(sym)->isVar() &&
              sym->getType()->isRecord()) || sym->getType()->isPointer()) {
-            if (type->getNodeType() == NodeType::type) {
+            if (decl->getNodeType() == NodeType::type) {
+                auto type = dynamic_cast<TypeDeclarationNode *>(decl)->getType();
                 // TODO check if type-guard is compatible with base type.
-                return dynamic_cast<TypeDeclarationNode *>(type)->getType();
+                if (type->isPointer()) {
+                    type = dynamic_cast<PointerTypeNode *>(type)->getBase();
+                }
+                if (type->isRecord()) {
+                    auto actual = dynamic_cast<RecordTypeNode *>(sym->getType());
+                    auto guard = dynamic_cast<RecordTypeNode *>(type);
+                    if (guard->instanceOf(actual)) {
+                        return guard;
+                    } else {
+                        logger_.error(sel->pos(), "type mismatch: " + format(guard) + " is not an extension of "
+                                                  + format(actual) + ".");
+                    }
+                } else {
+                    logger_.error(sel->pos(), "record type or pointer to record type expected.");
+                }
             } else {
                 logger_.error(sel->pos(), "unexpected selector.");
             }

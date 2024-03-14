@@ -24,12 +24,6 @@ ASTContext::setTranslationUnit(unique_ptr<ModuleNode> module) {
 }
 
 ArrayTypeNode *
-ASTContext::getOrInsertArrayType(const FilePos &start, const FilePos &end,
-                                 Ident *ident, unsigned length, TypeNode *memberType) {
-    return getOrInsertArrayType(start, end, ident, 1, { length }, { memberType });
-}
-
-ArrayTypeNode *
 ASTContext::getOrInsertArrayType(const FilePos &start, [[maybe_unused]] const FilePos &end,
                                  Ident *ident, unsigned dimensions, vector<unsigned> lengths, vector<TypeNode *> types) {
     for (auto &type : array_ts_) {
@@ -60,8 +54,8 @@ ASTContext::getOrInsertArrayType(const FilePos &start, [[maybe_unused]] const Fi
 
 RecordTypeNode *
 ASTContext::getOrInsertRecordType(const FilePos &start, [[maybe_unused]] const FilePos &end,
-                                  Ident *ident, vector<unique_ptr<FieldNode>> fields) {
-    auto type = make_unique<RecordTypeNode>(start, ident, std::move(fields));
+                                  Ident *ident, RecordTypeNode *base, vector<unique_ptr<FieldNode>> fields) {
+    auto type = make_unique<RecordTypeNode>(start, ident, base, std::move(fields));
     auto res = type.get();
     record_ts_.push_back(std::move(type));
     return res;
