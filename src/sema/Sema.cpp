@@ -281,15 +281,9 @@ Sema::onRecordType(const FilePos &start, const FilePos &end,
                 continue;
             } else if (!node->getIdentifier()->isExported()) {
                 logger_.error(field->pos(), "cannot export fields of non-exported record type.");
-                continue;
             }
         }
-        auto name = field->getIdentifier()->name();
-        if (base && base->getField(name)) {
-            logger_.error(field->pos(), "redefinition of record field: " + to_string(*field->getIdentifier()) + ".");
-            continue;
-        }
-        if (names.count(name)) {
+        if (names.count(field->getIdentifier()->name())) {
             logger_.error(field->pos(), "duplicate record field: " + to_string(*field->getIdentifier()) + ".");
             continue;
         } else {
@@ -1023,25 +1017,29 @@ FieldNode *Sema::onRecordField(TypeNode *base, RecordField *sel) {
 }
 
 TypeNode *Sema::onTypeguard(DeclarationNode *sym, [[maybe_unused]] TypeNode *base, Typeguard *sel) {
-    FilePos start = sel->ident()->start();
     auto decl = symbols_->lookup(sel->ident());
     if (decl) {
         // O07.8.1: in v(T), v is a variable parameter of record type, or v is a pointer.
-        if (sym->getType()->isPointer() || (sym->getType()->isRecord() &&
-                                            sym->getNodeType() == NodeType::parameter &&
-                                            dynamic_cast<ParameterNode *>(sym)->isVar())) {
-            TypeNode *actual = sym->getType();
+        if ((sym->getNodeType() == NodeType::parameter && dynamic_cast<ParameterNode *>(sym)->isVar() &&
+             sym->getType()->isRecord()) || sym->getType()->isPointer()) {
             if (decl->getNodeType() == NodeType::type) {
-                auto guard = dynamic_cast<TypeDeclarationNode *>(decl)->getType();
-                if (guard->isPointer() || guard->isRecord()) {
-                    if (!guard->extends(actual)) {
-                        logger_.error(start, "type mismatch: " + format(guard) + " is not an extension of "
-                                             + format(actual) + ".");
+                auto type = dynamic_cast<TypeDeclarationNode *>(decl)->getType();
+                // TODO check if type-guard is compatible with base type.
+                if (type->isPointer()) {
+                    type = dynamic_cast<PointerTypeNode *>(type)->getBase();
+                }
+                if (type->isRecord()) {
+                    auto actual = dynamic_cast<RecordTypeNode *>(sym->getType());
+                    auto guard = dynamic_cast<RecordTypeNode *>(type);
+                    if (guard->instanceOf(actual)) {
+                        return guard;
+                    } else {
+                        logger_.error(sel->pos(), "type mismatch: " + format(guard) + " is not an extension of "
+                                                  + format(actual) + ".");
                     }
                 } else {
-                    logger_.error(start, "type mismatch: record type or pointer to record type expected.");
+                    logger_.error(sel->pos(), "record type or pointer to record type expected.");
                 }
-                return guard;
             } else {
                 logger_.error(start, "unexpected selector.");
             }
