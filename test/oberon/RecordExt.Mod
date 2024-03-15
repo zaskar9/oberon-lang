@@ -5,8 +5,11 @@ TYPE
     ObjectDesc = RECORD END;
     Node = POINTER TO NodeDesc;
     NodeDesc = RECORD (ObjectDesc)
-        int: INTEGER;
         next: Node
+    END;
+    IntNode = POINTER TO IntNodeDesc;
+    IntNodeDesc = RECORD (NodeDesc)
+        val: INTEGER
     END;
     Point2D = RECORD (ObjectDesc)
         x, y: INTEGER
@@ -26,8 +29,10 @@ TYPE
         radius: REAL
     END;
 
-VAR nd: NodeDesc;
+VAR nd: IntNodeDesc;
     circ: Circle;
+    node: Node;
+    inode: IntNode;
 
 PROCEDURE Init(VAR c: Shape; r: REAL);
 BEGIN
@@ -38,5 +43,8 @@ END Init;
 BEGIN
     nd.int := 0;
     Init(circ, 3.141);
-    Out.Real(circ.radius, 0); Out.Ln
+    Out.Real(circ.radius, 0); Out.Ln;
+    NEW(inode);
+    node := inode;
+    node(IntNode).val := 42
 END RecordExt.
