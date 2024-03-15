@@ -4,10 +4,18 @@
 
 #include "SymbolExporter.h"
 
+using std::filesystem::path;
+
 void SymbolExporter::write(const std::string &name, SymbolTable *symbols) {
     ref_ = ((int) TypeKind::STRING) + 1;
-    auto path = context_->getSourceFileName().parent_path();
-    auto fp = (path / name).replace_extension(".smb");
+    path pth;
+    auto symdir = config_.getSymDir();
+    if (symdir == "") {
+        pth = context_->getSourceFileName().parent_path();
+    } else {
+        pth = symdir;
+    }
+    auto fp = (pth / name).replace_extension(".smb");
     auto file = std::make_unique<SymbolFile>();
     file->open(fp.string(), std::ios::out);
     // write symbol file header

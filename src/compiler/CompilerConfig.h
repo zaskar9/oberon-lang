@@ -43,6 +43,7 @@ private:
     vector<path> infiles_;
     string outfile_;
     string target_;
+    string symdir_;
     OutputFileType type_;
     OptimizationLevel level_;
     RelocationModel model_;
@@ -56,7 +57,7 @@ private:
 
 public:
     CompilerConfig() : logger_(LogLevel::INFO, cout),
-            infiles_(), outfile_(), target_(), type_(OutputFileType::ObjectFile), level_(OptimizationLevel::O0),
+            infiles_(), outfile_(), target_(), symdir_(), type_(OutputFileType::ObjectFile), level_(OptimizationLevel::O0),
             model_(RelocationModel::DEFAULT), incpaths_(), libpaths_(), libs_(), flags_(0), jit_(false) {
 #ifdef _DEBUG
         logger_.setLevel(LogLevel::DEBUG);
@@ -74,6 +75,9 @@ public:
     void setOutputFile(const string &file);
     [[nodiscard]] string getOutputFile() const;
 
+    void setSymDir(const string &dir);
+    [[nodiscard]] string getSymDir() const;
+    
     void setTargetTriple(const string &target);
     [[nodiscard]] string getTargetTriple() const;
 

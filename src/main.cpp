@@ -44,6 +44,7 @@ int main(const int argc, const char **argv) {
             (",f", po::value<vector<string>>()->value_name("<flag>"), "Compiler configuration flags.")
             (",O", po::value<int>()->value_name("<level>"), "Optimization level. [O0, O1, O2, O3]")
             (",o", po::value<string>()->value_name("<filename>"), "Name of the output file.")
+            ("sym-dir", po::value<string>()->value_name("<directory>"), "Set output path for generated .smb files.")
             ("filetype", po::value<string>()->value_name("<type>"), "Set type of output file. [asm, bc, obj, ll]")
             ("reloc", po::value<string>()->value_name("<model>"), "Set relocation model. [default, static, pic]")
             ("target", po::value<string>()->value_name("<triple>"), "Target triple for cross compilation.")
@@ -199,6 +200,13 @@ int main(const int argc, const char **argv) {
         }
         if (vm.count("-o")) {
             config.setOutputFile(vm["-o"].as<string>());
+        }
+        if (vm.count("sym-dir")) {
+            config.setSymDir(vm["sym-dir"].as<string>());
+            auto path = std::filesystem::path(config.getSymDir());
+            if (!std::filesystem::is_directory(path)) {
+                logger.error(PROJECT_NAME, "sym-dir path not valid");
+            }
         }
         if (vm.count("target")) {
             if (config.isJit()) {
