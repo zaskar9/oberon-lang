@@ -1017,29 +1017,31 @@ FieldNode *Sema::onRecordField(TypeNode *base, RecordField *sel) {
 }
 
 TypeNode *Sema::onTypeguard(DeclarationNode *sym, [[maybe_unused]] TypeNode *base, Typeguard *sel) {
+    FilePos start = sel->ident()->start();
     auto decl = symbols_->lookup(sel->ident());
     if (decl) {
         // O07.8.1: in v(T), v is a variable parameter of record type, or v is a pointer.
         if ((sym->getNodeType() == NodeType::parameter && dynamic_cast<ParameterNode *>(sym)->isVar() &&
              sym->getType()->isRecord()) || sym->getType()->isPointer()) {
             if (decl->getNodeType() == NodeType::type) {
+                RecordTypeNode *actual;
                 auto type = dynamic_cast<TypeDeclarationNode *>(decl)->getType();
-                // TODO check if type-guard is compatible with base type.
                 if (type->isPointer()) {
                     type = dynamic_cast<PointerTypeNode *>(type)->getBase();
                 }
                 if (type->isRecord()) {
-                    auto actual = dynamic_cast<RecordTypeNode *>(sym->getType());
+                    actual = dynamic_cast<RecordTypeNode *>(sym->getType());
                     auto guard = dynamic_cast<RecordTypeNode *>(type);
                     if (guard->instanceOf(actual)) {
                         return guard;
                     } else {
-                        logger_.error(sel->pos(), "type mismatch: " + format(guard) + " is not an extension of "
+                        logger_.error(start, "type mismatch: " + format(guard) + " is not an extension of "
                                                   + format(actual) + ".");
                     }
                 } else {
-                    logger_.error(sel->pos(), "record type or pointer to record type expected.");
+                    logger_.error(start, "record type or pointer to record type expected.");
                 }
+                return type;
             } else {
                 logger_.error(start, "unexpected selector.");
             }
