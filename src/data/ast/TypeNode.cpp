@@ -110,6 +110,10 @@ bool TypeNode::isBasic() const {
     return isBoolean() || isNumeric() || isSet();
 }
 
+bool TypeNode::extends([[maybe_unused]] TypeNode *base) const {
+    return false;
+}
+
 void TypeNode::setRef(int ref) {
     ref_ = ref;
 }

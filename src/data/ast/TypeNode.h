@@ -61,6 +61,8 @@ public:
     [[nodiscard]] bool isNumeric() const;
     [[nodiscard]] bool isStructured() const;
 
+    [[nodiscard]] virtual bool extends(TypeNode *) const;
+
     void setRef(int);
     [[nodiscard]] int getRef() const;
 

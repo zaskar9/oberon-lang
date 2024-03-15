@@ -862,32 +862,26 @@ TypeNode *Sema::onTypeguard(DeclarationNode *sym, [[maybe_unused]] TypeNode *bas
     auto decl = symbols_->lookup(sel->ident());
     if (decl) {
         // O07.8.1: in v(T), v is a variable parameter of record type, or v is a pointer.
-        if ((sym->getNodeType() == NodeType::parameter && dynamic_cast<ParameterNode *>(sym)->isVar() &&
-             sym->getType()->isRecord()) || sym->getType()->isPointer()) {
+        if (sym->getType()->isPointer() || (sym->getType()->isRecord() &&
+                                            sym->getNodeType() == NodeType::parameter &&
+                                            dynamic_cast<ParameterNode *>(sym)->isVar())) {
+            TypeNode *actual = sym->getType();
             if (decl->getNodeType() == NodeType::type) {
-                RecordTypeNode *actual;
-                auto type = dynamic_cast<TypeDeclarationNode *>(decl)->getType();
-                if (type->isPointer()) {
-                    type = dynamic_cast<PointerTypeNode *>(type)->getBase();
-                }
-                if (type->isRecord()) {
-                    actual = dynamic_cast<RecordTypeNode *>(sym->getType());
-                    auto guard = dynamic_cast<RecordTypeNode *>(type);
-                    if (guard->instanceOf(actual)) {
-                        return guard;
-                    } else {
+                auto guard = dynamic_cast<TypeDeclarationNode *>(decl)->getType();
+                if (guard->isPointer() || guard->isRecord()) {
+                    if (!guard->extends(actual)) {
                         logger_.error(start, "type mismatch: " + format(guard) + " is not an extension of "
-                                                  + format(actual) + ".");
+                                             + format(actual) + ".");
                     }
                 } else {
-                    logger_.error(start, "record type or pointer to record type expected.");
+                    logger_.error(start, "type mismatch: record type or pointer to record type expected.");
                 }
-                return type;
+                return guard;
             } else {
                 logger_.error(start, "unexpected selector.");
             }
         } else {
-            logger_.error(start, "a type guard can only be applied to a variable parameter of record type or a pointer.");
+            logger_.error(start, "type mismatch: a type guard can only be applied to a variable parameter of record type or a pointer.");
         }
     } else {
         logger_.error(start, "undefined identifier: " + to_string(*sel->ident()) + ".");
@@ -1633,9 +1627,18 @@ Sema::assertCompatible(const FilePos &pos, TypeNode *expected, TypeNode *actual,
             }
         }
     }
+    // Check record type
+    if (expected->isRecord() && actual->isRecord()) {
+        if (var) {
+            return actual->extends(expected);
+        }
+    }
     // Check pointer type
     if (expected->isPointer()) {
         if (actual->isPointer()) {
+            if (actual->extends(expected)) {
+                return true;
+            }
             auto exp_ptr = dynamic_cast<PointerTypeNode *>(expected);
             auto act_ptr = dynamic_cast<PointerTypeNode *>(actual);
             return assertCompatible(pos, exp_ptr->getBase(), act_ptr->getBase(), var, true);
