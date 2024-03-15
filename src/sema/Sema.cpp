@@ -690,7 +690,7 @@ Sema::onSelectors(const FilePos &start, const FilePos &end,
                 break;
             case NodeType::record_type:
                 context = onRecordField(base, dynamic_cast<RecordField *>(sel));
-                base = context->getType();
+                base = context ? context->getType() : nullTy_;
                 break;
             case NodeType::type:
                 base = onTypeguard(context, base, dynamic_cast<Typeguard *>(sel));
@@ -858,39 +858,41 @@ FieldNode *Sema::onRecordField(TypeNode *base, RecordField *sel) {
 }
 
 TypeNode *Sema::onTypeguard(DeclarationNode *sym, [[maybe_unused]] TypeNode *base, Typeguard *sel) {
+    FilePos start = sel->ident()->start();
     auto decl = symbols_->lookup(sel->ident());
     if (decl) {
         // O07.8.1: in v(T), v is a variable parameter of record type, or v is a pointer.
         if ((sym->getNodeType() == NodeType::parameter && dynamic_cast<ParameterNode *>(sym)->isVar() &&
              sym->getType()->isRecord()) || sym->getType()->isPointer()) {
             if (decl->getNodeType() == NodeType::type) {
+                RecordTypeNode *actual;
                 auto type = dynamic_cast<TypeDeclarationNode *>(decl)->getType();
-                // TODO check if type-guard is compatible with base type.
                 if (type->isPointer()) {
                     type = dynamic_cast<PointerTypeNode *>(type)->getBase();
                 }
                 if (type->isRecord()) {
-                    auto actual = dynamic_cast<RecordTypeNode *>(sym->getType());
+                    actual = dynamic_cast<RecordTypeNode *>(sym->getType());
                     auto guard = dynamic_cast<RecordTypeNode *>(type);
                     if (guard->instanceOf(actual)) {
                         return guard;
                     } else {
-                        logger_.error(sel->pos(), "type mismatch: " + format(guard) + " is not an extension of "
+                        logger_.error(start, "type mismatch: " + format(guard) + " is not an extension of "
                                                   + format(actual) + ".");
                     }
                 } else {
-                    logger_.error(sel->pos(), "record type or pointer to record type expected.");
+                    logger_.error(start, "record type or pointer to record type expected.");
                 }
+                return type;
             } else {
-                logger_.error(sel->pos(), "unexpected selector.");
+                logger_.error(start, "unexpected selector.");
             }
         } else {
-            logger_.error(sel->pos(), "a type guard can only be applied to a variable parameter of record type or a pointer.");
+            logger_.error(start, "a type guard can only be applied to a variable parameter of record type or a pointer.");
         }
     } else {
-        logger_.error(sel->pos(), "undefined identifier: " + to_string(*sel->ident()) + ".");
+        logger_.error(start, "undefined identifier: " + to_string(*sel->ident()) + ".");
     }
-    return nullptr;
+    return nullTy_;
 }
 
 unique_ptr<ExpressionNode>
