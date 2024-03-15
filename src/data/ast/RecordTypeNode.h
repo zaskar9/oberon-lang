@@ -26,11 +26,12 @@ class RecordTypeNode final : public TypeNode {
 private:
     vector<unique_ptr<FieldNode>> fields_;
     RecordTypeNode *base_;
+    unsigned short level_;
 
 public:
     RecordTypeNode(const FilePos &pos, RecordTypeNode *base, vector<unique_ptr<FieldNode>> fields) :
             TypeNode(NodeType::record_type, pos, TypeKind::RECORD, 0),
-            fields_(std::move(fields)), base_(base) {};
+            fields_(std::move(fields)), base_(base), level_(base ? base->level() + 1 : 0) {};
     ~RecordTypeNode() final = default;
 
     [[nodiscard]] unsigned int getSize() const final;
@@ -39,9 +40,11 @@ public:
     [[nodiscard]] FieldNode *getField(size_t num) const;
     [[nodiscard]] size_t getFieldCount();
 
-    [[nodiscard]] bool isExtened() const;
-    [[nodiscard]] bool instanceOf(RecordTypeNode *) const;
     [[nodiscard]] RecordTypeNode *getBaseType() const;
+    [[nodiscard]] bool isExtened() const;
+    [[nodiscard]] bool extends(TypeNode *) const override;
+
+    [[nodiscard]] unsigned short level() const;
 
     void accept(NodeVisitor &visitor) final;
     void print(ostream &out) const final;

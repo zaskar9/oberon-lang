@@ -20,9 +20,9 @@ TYPE
     Shape = RECORD (ObjectDesc)
         area: REAL
     END;
-    Circle = RECORD (Shape)
+    Circle* = RECORD (Shape)
         centre: Point2D;
-        radius: REAL
+        radius*: REAL
     END;
     Sphere = RECORD (ObjectDesc)
         centre: Point3D;
@@ -36,15 +36,16 @@ VAR nd: IntNodeDesc;
 
 PROCEDURE Init(VAR c: Shape; r: REAL);
 BEGIN
-    c(Circle).radius := r;
-    c(Sphere).radius := r
+    c(Circle).radius := r
+    (*c(Sphere).radius := r*)
 END Init;
 
 BEGIN
-    nd.int := 0;
+    nd.val := 0;
     Init(circ, 3.141);
     Out.Real(circ.radius, 0); Out.Ln;
     NEW(inode);
     node := inode;
+    (*inode := node;*)
     node(IntNode).val := 42
 END RecordExt.
