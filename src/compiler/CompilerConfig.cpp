@@ -17,6 +17,14 @@ string CompilerConfig::getOutputFile() const {
     return outfile_;
 }
 
+void CompilerConfig::setSymDir(const string &dir) {
+    symdir_ = dir;
+}
+
+string CompilerConfig::getSymDir() const {
+    return symdir_;
+}
+
 void CompilerConfig::setTargetTriple(const string &target) {
     target_ = target;
 }
