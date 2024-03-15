@@ -32,19 +32,23 @@ size_t RecordTypeNode::getFieldCount() {
     return fields_.size();
 }
 
+RecordTypeNode *RecordTypeNode::getBaseType() const {
+    return base_;
+}
+
 bool RecordTypeNode::isExtened() const {
     return base_ != nullptr;
 }
 
-bool RecordTypeNode::instanceOf(RecordTypeNode *type) const {
-    if (this != type && base_) {
-        return base_->instanceOf(type);
+bool RecordTypeNode::extends(TypeNode *base) const {
+    if (this != base && base_) {
+        return base_->extends(base);
     }
-    return this == type;
+    return this == base;
 }
 
-RecordTypeNode *RecordTypeNode::getBaseType() const {
-    return base_;
+unsigned short RecordTypeNode::level() const {
+    return level_;
 }
 
 void RecordTypeNode::accept(NodeVisitor &visitor) {
