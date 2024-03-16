@@ -6,10 +6,10 @@
 MODULE BuiltinHalt1;
 
 PROCEDURE Test;
-BEGIN HALT(0)
+BEGIN
+    HALT(0)
 END Test;
 
 BEGIN
     Test
-END MODULE BuiltinHalt1;
-.
+END BuiltinHalt1.

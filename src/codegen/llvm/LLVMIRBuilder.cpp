@@ -979,8 +979,9 @@ LLVMIRBuilder::createExitCall(Value *param) {
         fun->addFnAttr(Attribute::NoReturn);
         fun->addParamAttr(0, Attribute::NoUndef);
     }
-    builder_.CreateCall(FunctionCallee(fun), { param });
-    return builder_.CreateUnreachable();
+    return builder_.CreateCall(FunctionCallee(fun), { param });
+    // TODO the code following exit should be marked as unreachable but this requires more analysis
+    // return builder_.CreateUnreachable();
 }
 
 Value *

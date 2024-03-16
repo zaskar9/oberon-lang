@@ -1,5 +1,7 @@
 MODULE Out;
 
+CONST nl* = "\n";
+
 (* Import `printf` function from C <stdio.h> library. *)
 PROCEDURE printf(format: ARRAY OF CHAR; ...): INTEGER; EXTERN;
 
@@ -32,7 +34,7 @@ END String;
 (* Writes a newline to standard out. *)
 PROCEDURE Ln*;
 BEGIN
-    Char("\n")
+    Char(nl)
 END Ln;
 
 (* Write the integer `val` in `n` field positions. *)

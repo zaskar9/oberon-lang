@@ -7,7 +7,8 @@
 MODULE BuiltinHalt2;
 
 PROCEDURE Test;
-BEGIN HALT(1)
+BEGIN
+    HALT(1)
 END Test;
 
 BEGIN

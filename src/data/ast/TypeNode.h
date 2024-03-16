@@ -17,8 +17,8 @@ enum class TypeKind : char {
     ANYTYPE = 0, NOTYPE = 1, NILTYPE = 2, ENTIRE = 3, FLOATING = 4, NUMERIC = 5,
     ARRAY = 6, POINTER = 7, PROCEDURE = 8, RECORD = 9, SET = 10,
     BOOLEAN = 11,
-    BYTE = 12, CHAR = 13, INTEGER = 14, LONGINT = 15, REAL = 16, LONGREAL = 17,
-    STRING = 18, TYPE = 19
+    BYTE = 12, CHAR = 13, INTEGER = 14, LONGINT = 15, REAL = 16, LONGREAL = 17, STRING = 18,
+    TYPE = 19
 };
 
 std::ostream &operator<<(std::ostream &stream, const TypeKind &kind);
