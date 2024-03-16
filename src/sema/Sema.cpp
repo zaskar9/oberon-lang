@@ -38,7 +38,7 @@ Sema::onTranslationUnitStart(const string &name) {
 
 void
 Sema::onTranslationUnitEnd(const string &name) {
-    if (logger_.getErrorCount() == 0) {
+    if (logger_.getErrorCount() == 0 && !config_.isJit()) {
         exporter_.write(name, symbols_);
     }
 }
