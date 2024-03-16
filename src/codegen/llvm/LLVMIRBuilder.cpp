@@ -1199,52 +1199,89 @@ LLVMIRBuilder::createRorCall(llvm::Value *param, llvm::Value *shift) {
 Value *LLVMIRBuilder::createSizeCall(ExpressionNode *expr) {
     auto decl = dynamic_cast<QualifiedExpression *>(expr)->dereference();
     auto type = dynamic_cast<TypeDeclarationNode *>(decl);
+    // TODO : This is the logical type and does not account for padding.
     auto size = type->getType()->getSize();
-    value_ = builder_.getInt32(size);
+    value_ = builder_.getInt64(size);
     return value_;
 }
 
 Value *
 LLVMIRBuilder::createSystemAdrCall(vector<unique_ptr<ExpressionNode>> &actuals, std::vector<Value *> &params) {
-    // TODO : Support other types
-    auto param = actuals[0].get();
-    auto type = param->getType();
-    if (!type->isNumeric()) {
-        logger_.error(param->pos(), "expected numeric type");
-        return value_;
+    // TODO : procedure reference.
+    auto actual = actuals[0].get();
+    auto type = actual->getType();
+    if (type->isChar() || type->isBasic()) {
+        value_ = builder_.CreatePtrToInt(params[0], builder_.getInt64Ty());
+    } else if (type->isArray() || type->isString()) {
+        auto arrayTy = getLLVMType(type);
+        vector<Value *> indices;
+        indices.push_back(builder_.getInt32(0));
+        if (type->isString() && actual->isLiteral()) {
+            auto str = dynamic_cast<StringLiteralNode *>(actual);
+            auto stringTy = ArrayType::get(builder_.getInt8Ty(), str->value().size() + 1);
+            arrayTy = StructType::get(builder_.getInt64Ty(), stringTy);
+            indices.push_back(builder_.getInt32(1));
+            indices.push_back(builder_.getInt32(0));
+        } else {
+            auto atype = dynamic_cast<ArrayTypeNode *>(type);
+            if (!atype->getMemberType()->isChar() &&  !atype->getMemberType()->isBasic()) {
+                logger_.error(actual->pos(), "expected array of basic type or CHAR");
+                return value_;
+            }
+            for (size_t i = 0; i < atype->dimensions(); ++i) {
+                indices.push_back(builder_.getInt32(1));   // the array is the second field in the struct
+                indices.push_back(builder_.getInt32(0));
+            }
+        }
+        value_ = builder_.CreateInBoundsGEP(arrayTy, params[0], indices);
+    } else if (type->isRecord()) {
+        auto recordTy = getLLVMType(type);
+        vector<Value *> indices;
+        indices.push_back(builder_.getInt32(0));
+        auto rtype = dynamic_cast<RecordTypeNode *>(type);
+        for (size_t i = 0; i < rtype->getFieldCount(); i++) {
+            auto fieldTy = rtype->getField(i)->getType();
+            if (!fieldTy->isChar() &&  !fieldTy->isBasic()) {
+                logger_.error(actual->pos(), "expected record of basic type or CHAR");
+                return value_;
+            }
+        }
+        value_ = builder_.CreateInBoundsGEP(recordTy, params[0], indices);
+    } else {
+        logger_.error(actual->pos(), "type missmatch");
     }
-    return builder_.CreatePtrToInt(params[0], builder_.getInt64Ty());
+    return value_;
 }
 
 Value *
 LLVMIRBuilder::createSystemGetCall(vector<unique_ptr<ExpressionNode>> &actuals, std::vector<Value *> &params) {
-    // TODO : Support other types
     auto param = actuals[1].get();
     auto type = param->getType();
-    if (!type->isNumeric()) {
-        logger_.error(param->pos(), "expected numeric type");
-        return value_;
+    if (type->isChar() || type->isBasic()) {
+        auto base = getLLVMType(type);
+        auto ptrtype = PointerType::get(base, 0);
+        auto ptr = builder_.CreateIntToPtr(params[0], ptrtype);
+        auto value = builder_.CreateLoad(base, ptr, true);
+        value_ = builder_.CreateStore(value, params[1]);
+    } else {
+        logger_.error(param->pos(), "expected basic or char type");
     }
-    auto base = getLLVMType(type);
-    auto ptrtype = PointerType::get(base, 0);
-    auto ptr = builder_.CreateIntToPtr(params[0], ptrtype);
-    auto value = builder_.CreateLoad(base, ptr, true);
-    return builder_.CreateStore(value, params[1]);
+    return value_;
 }
 
 Value *
 LLVMIRBuilder::createSystemPutCall(vector<unique_ptr<ExpressionNode>> &actuals, std::vector<Value *> &params) {
-    // TODO : Support other types
     auto param = actuals[1].get();
     auto type = param->getType();
-    if (!type->isNumeric()) {
-        logger_.error(param->pos(), "expected numeric type");
-        return value_;
+    if (type->isChar() || type->isBasic()) {
+        auto base = getLLVMType(type);
+        auto ptrtype = PointerType::get(base, 0);
+        auto ptr = builder_.CreateIntToPtr(params[0], ptrtype);
+        value_ = builder_.CreateStore(params[1], ptr, true);
+    } else {
+        logger_.error(param->pos(), "expected basic or char type");
     }
-    auto base = getLLVMType(type);
-    auto ptrtype = PointerType::get(base, 0);
-    auto ptr = builder_.CreateIntToPtr(params[0], ptrtype);
-    return builder_.CreateStore(params[1], ptr, true);
+    return value_;
 }
 
 Value *
@@ -1252,7 +1289,7 @@ LLVMIRBuilder::createSystemCopyCall(llvm::Value *src, llvm::Value *dst, llvm::Va
     auto ptrtype = builder_.getPtrTy();
     auto srcptr = builder_.CreateIntToPtr(src, ptrtype);
     auto dstptr = builder_.CreateIntToPtr(dst, ptrtype);
-    return builder_.CreateMemCpy(dstptr, {}, srcptr, {}, n, true);
+    return builder_.CreateMemCpy(dstptr, {}, srcptr, {}, builder_.CreateShl(n, 2), true);
 }
 
 Value *
