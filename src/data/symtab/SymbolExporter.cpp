@@ -70,6 +70,9 @@ void SymbolExporter::writeDeclaration(SymbolFile *file, DeclarationNode *decl) {
                 case TypeKind::STRING:
                     file->writeString(dynamic_cast<StringLiteralNode*>(con->getValue())->value());
                     break;
+                case TypeKind::CHAR:
+                    file->writeChar(static_cast<char>(dynamic_cast<CharLiteralNode *>(con->getValue())->value()));
+                    break;
                 case TypeKind::INTEGER:
                     file->writeInt(dynamic_cast<IntegerLiteralNode*>(con->getValue())->value());
                     break;
@@ -81,6 +84,9 @@ void SymbolExporter::writeDeclaration(SymbolFile *file, DeclarationNode *decl) {
                     break;
                 case TypeKind::LONGREAL:
                     file->writeDouble(dynamic_cast<RealLiteralNode*>(con->getValue())->value());
+                    break;
+                case TypeKind::SET:
+                    file->writeInt(static_cast<int>(dynamic_cast<SetLiteralNode *>(con->getValue())->value().to_ulong()));
                     break;
                 default:
                     logger_.error(file->path(), "Cannot export constant " + to_string(*decl->getIdentifier()) + ".");

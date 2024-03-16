@@ -7,4 +7,4 @@ for file in *.Mod; do
     echo "$file: [1m[91merror:[97m finished with exit code $code.[0m" >&2
   fi
 done
-rm *.smb
+#rm *.smb
