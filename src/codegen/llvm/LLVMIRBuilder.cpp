@@ -21,7 +21,9 @@ LLVMIRBuilder::LLVMIRBuilder(CompilerConfig &config, LLVMContext &builder, Modul
         .addAttribute(Attribute::NoInline)
         .addAttribute(Attribute::NoUnwind)
         .addAttribute(Attribute::OptimizeNone)
+#ifndef __MINGW32__
         .addAttribute(Attribute::StackProtect)
+#endif
 #ifndef _LLVM_LEGACY
         .addAttribute(Attribute::getWithUWTableKind(builder, UWTableKind::Default))
 #endif
