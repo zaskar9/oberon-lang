@@ -21,6 +21,7 @@ Sema::Sema(CompilerConfig &config, ASTContext *context, OberonSystem *system) :
     boolTy_ = system_->getBasicType(TypeKind::BOOLEAN);
     byteTy_ = system_->getBasicType(TypeKind::BYTE);
     charTy_ = system_->getBasicType(TypeKind::CHAR);
+    shortIntTy_ = system->getBasicType(TypeKind::SHORTINT);
     integerTy_ = system_->getBasicType(TypeKind::INTEGER);
     longIntTy_ = system_->getBasicType(TypeKind::LONGINT);
     realTy_ = system_->getBasicType(TypeKind::REAL);
@@ -491,7 +492,7 @@ Sema::onForLoop(const FilePos &start, [[maybe_unused]] const FilePos &end,
         }
         auto type = decl->getType();
         if (type && type->kind() != TypeKind::INTEGER) {
-            logger_.error(ident->start(), "integer variable expected.");
+            logger_.error(ident->start(), "type mismatch: expected INTEGER, found " + format(type) + ".");
         }
     } else {
         logger_.error(ident->start(), to_string(*ident) + " cannot be used as a loop counter.");
@@ -499,26 +500,21 @@ Sema::onForLoop(const FilePos &start, [[maybe_unused]] const FilePos &end,
     if (!low) {
         logger_.error(start, "undefined low value in for-loop.");
     }
-    auto type = low->getType();
-    if (type && type->kind() != TypeKind::INTEGER) {
-        logger_.error(low->pos(), "integer expression expected.");
-    }
+    assertCompatible(low->pos(), integerTy_, low->getType());
     if (!high) {
         logger_.error(start, "undefined high value in for-loop.");
     }
-    type = high->getType();
-    if (type && type->kind() != TypeKind::INTEGER) {
-        logger_.error(high->pos(), "integer expression expected.");
-    }
+    assertCompatible(high->pos(), integerTy_, high->getType());
     if (step && step->isLiteral()) {
-        type = step->getType();
-        if (type && type->kind() == TypeKind::INTEGER && step->isConstant()) {
-            auto val = dynamic_cast<IntegerLiteralNode *>(step.get())->value();
-            if (val == 0) {
-                logger_.error(step->pos(), "step value cannot be zero.");
+        if (assertCompatible(step->pos(), integerTy_, step->getType())) {
+            if (step->isConstant()) {
+                auto val = dynamic_cast<IntegerLiteralNode *>(step.get())->value();
+                if (val == 0) {
+                    logger_.error(step->pos(), "step value cannot be zero.");
+                }
+            } else {
+                logger_.error(step->pos(), "constant expression expected.");
             }
-        } else {
-            logger_.error(step->pos(), "constant integer expression expected.");
         }
     }
     return make_unique<ForLoopNode>(start, std::move(counter), std::move(low), std::move(high), std::move(step),
@@ -670,7 +666,7 @@ Sema::onSelectors(const FilePos &start, const FilePos &end,
         }
         switch (sel->getNodeType()) {
             case NodeType::parameter:
-                base = onActualParameters(base, dynamic_cast<ActualParameters *>(sel));
+                base = onActualParameters(context, base, dynamic_cast<ActualParameters *>(sel));
                 break;
             case NodeType::array_type:
                 base = onArrayIndex(base, dynamic_cast<ArrayIndex *>(sel));
@@ -741,7 +737,8 @@ Sema::handleMissingParameters(const FilePos &start, [[maybe_unused]] const FileP
     return it;
 }
 
-TypeNode *Sema::onActualParameters(TypeNode *base, ActualParameters *sel) {
+TypeNode *
+Sema::onActualParameters(DeclarationNode *context, TypeNode *base, ActualParameters *sel) {
     if (!base->isProcedure()) {
         logger_.error(sel->pos(), "type " + to_string(base) + " is not a procedure type.");
         return nullptr;
@@ -750,6 +747,7 @@ TypeNode *Sema::onActualParameters(TypeNode *base, ActualParameters *sel) {
     if (sel->parameters().size() < proc->parameters().size()) {
         logger_.error(sel->pos(), "fewer actual than formal parameters.");
     }
+    vector<TypeNode *> types;
     for (size_t cnt = 0; cnt < sel->parameters().size(); cnt++) {
         auto expr = sel->parameters()[cnt].get();
         if (!expr) {
@@ -776,10 +774,25 @@ TypeNode *Sema::onActualParameters(TypeNode *base, ActualParameters *sel) {
                         }
                     }
                 }
+                types.push_back(sel->parameters()[cnt]->getType());
+            } else {
+                types.push_back(nullTy_);
             }
         } else if (!proc->hasVarArgs()) {
             logger_.error(sel->pos(), "more actual than formal parameters.");
             break;
+        }
+    }
+    if (context->getNodeType() == NodeType::procedure) {
+        auto decl = dynamic_cast<ProcedureNode *>(context);
+        if (decl->isPredefined()) {
+            auto predefined = dynamic_cast<PredefinedProcedure *>(decl);
+            if (predefined->isOverloaded()) {
+                auto signature = predefined->dispatch(types);
+                if (signature) {
+                    return signature->getReturnType();
+                }
+            }
         }
     }
     return proc->getReturnType();
@@ -1118,14 +1131,27 @@ Sema::onBooleanLiteral(const FilePos &start, [[maybe_unused]] const FilePos &end
 }
 
 unique_ptr<IntegerLiteralNode>
-Sema::onIntegerLiteral(const FilePos &start, [[maybe_unused]] const FilePos &end, long value, bool ext) {
-    TypeNode *type = ext ? longIntTy_ : integerTy_;
+Sema::onIntegerLiteral(const FilePos &start, [[maybe_unused]] const FilePos &end, long value, TypeKind kind) {
+    TypeNode *type;
+    switch (kind) {
+        case TypeKind::SHORTINT: type = shortIntTy_; break;
+        case TypeKind::INTEGER: type = integerTy_; break;
+        case TypeKind::LONGINT: type = longIntTy_; break;
+        default:
+            type = nullTy_;
+    }
     return make_unique<IntegerLiteralNode>(start, value, type);
 }
 
 unique_ptr<RealLiteralNode>
-Sema::onRealLiteral(const FilePos &start, [[maybe_unused]] const FilePos &end, double value, bool ext) {
-    TypeNode *type = ext ? longRealTy_ : realTy_;
+Sema::onRealLiteral(const FilePos &start, [[maybe_unused]] const FilePos &end, double value, TypeKind kind) {
+    TypeNode *type;
+    switch (kind) {
+        case TypeKind::REAL: type = realTy_; break;
+        case TypeKind::LONGREAL: type = longRealTy_; break;
+        default:
+            type = nullTy_;
+    }
     return make_unique<RealLiteralNode>(start, value, type);
 }
 
@@ -1263,9 +1289,12 @@ Sema::fold(const FilePos &start, const FilePos &end, ExpressionNode *expr) {
             auto cast = expr->getCast();
             if (type->kind() == TypeKind::CHAR) {
                 return make_unique<CharLiteralNode>(expr->pos(), foldChar(start, end, expr), type, cast);
-            } else if (type->kind() == TypeKind::INTEGER || type->kind() == TypeKind::LONGINT) {
+            } else if (type->kind() == TypeKind::SHORTINT ||
+                       type->kind() == TypeKind::INTEGER ||
+                       type->kind() == TypeKind::LONGINT) {
                 return make_unique<IntegerLiteralNode>(expr->pos(), foldInteger(start, end, expr), type, cast);
-            } else if (type->kind() == TypeKind::REAL || type->kind() == TypeKind::LONGREAL) {
+            } else if (type->kind() == TypeKind::REAL ||
+                       type->kind() == TypeKind::LONGREAL) {
                 return make_unique<RealLiteralNode>(expr->pos(), foldReal(start, end, expr), type, cast);
             } else if (type->kind() == TypeKind::BOOLEAN) {
                 return make_unique<BooleanLiteralNode>(expr->pos(), foldBoolean(start, end, expr), type, cast);
@@ -1300,9 +1329,9 @@ Sema::fold(const FilePos &start, [[maybe_unused]] const FilePos &end, OperatorTy
             case OperatorType::PLUS:
                 return make_unique<IntegerLiteralNode>(start, value, type, cast);
             case OperatorType::NEG: {
-                // negating an integer literal can change its type from LONGINT to INTEGER
+                // negating an integer literal can change its type from LONGINT to INTEGER or INTEGER to SHORTINT
                 auto literal = make_unique<IntegerLiteralNode>(start, -value, type, cast);
-                literal->setType(literal->isLong() ? longIntTy_ : integerTy_);
+                literal->setType(literal->isLong() ? longIntTy_ : (literal->isShort() ? shortIntTy_ : integerTy_));
                 return literal;
             }
             default:
@@ -1537,10 +1566,14 @@ Sema::assertCompatible(const FilePos &pos, TypeNode *expected, TypeNode *actual,
     }
     // Check numeric types
     if (expected->isNumeric() && actual->isNumeric()) {
+        // Check virtual numeric compound types
+        if ((expected->kind() == TypeKind::ENTIRE && actual->isInteger()) ||
+            (expected->kind() == TypeKind::FLOATING && actual->isReal()) ||
+            (expected->kind() == TypeKind::NUMERIC)) {
+            return true;
+        }
         if (var) {
-            if (expected->kind() == TypeKind::ENTIRE && actual->isInteger()) {
-                return true;
-            }
+            // The types of variable parameters need to be an exact match as they are read-write parameters
             if (expected->kind() != actual->kind()) {
                 logger_.error(pos, "type mismatch: cannot pass " + to_string(*actualId) +
                                    " to " + to_string(*expectedId) + " by reference.");
@@ -1548,8 +1581,9 @@ Sema::assertCompatible(const FilePos &pos, TypeNode *expected, TypeNode *actual,
             }
             return true;
         }
-        if ((expected->isInteger() && actual->isInteger())
-            || (expected->isReal() && actual->isReal())) {
+        // Both expected and actual type are concrete types: assure legal conversion and promotion
+        if ((expected->isInteger() && actual->isInteger()) ||
+            (expected->isReal() && actual->isReal())) {
             if (expected->getSize() < actual->getSize()) {
                 logger_.error(pos, "type mismatch: converting from " + to_string(*actualId) +
                                    " to " + to_string(*expectedId) + " may lose data.");
@@ -1669,7 +1703,7 @@ Sema::format(const TypeNode *type, bool isPtr) {
 }
 
 void Sema::cast(ExpressionNode *expr, TypeNode *expected) {
-    if (expr->getType() != expected) {
+    if (expr->getType() != expected && !expected->isVirtual()) {
         expr->setCast(expected);
     }
 }

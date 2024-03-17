@@ -30,12 +30,13 @@ BEGIN
 END IncDec;
 
 PROCEDURE NewFree;
-TYPE Person = POINTER TO PersonDesc;
-     PersonDesc = RECORD
-                      name: String;
-                      title: ARRAY 3 OF String;
-                      zipcode: INTEGER
-                  END;
+TYPE
+    Person = POINTER TO PersonDesc;
+    PersonDesc = RECORD
+        name: String;
+        title: ARRAY 3 OF String;
+        zipcode: INTEGER
+    END;
 VAR p: Person;
 BEGIN
     NEW(p);
@@ -75,6 +76,76 @@ BEGIN
     Out.Ln
 END Odd;
 
+PROCEDURE Short;
+VAR s: SHORTINT;
+    i: INTEGER;
+    l: LONGINT;
+    f: REAL;
+    d: LONGREAL;
+BEGIN
+    l := 47;
+    i := SHORT(l);
+    s := SHORT(i);
+    ASSERT(s = l);
+    d := 4.2;
+    f := SHORT(d);
+    ASSERT(f = d)
+END Short;
+
+PROCEDURE Long;
+VAR s: SHORTINT;
+    i: INTEGER;
+    l: LONGINT;
+    f: REAL;
+    d: LONGREAL;
+BEGIN
+    s := 42;
+    i := LONG(s);
+    l := LONG(i);
+    ASSERT(l = s);
+    f := 4.2;
+    d := LONG(f);
+    ASSERT(d = f)
+END Long;
+
+PROCEDURE Entier;
+VAR f: REAL;
+    d: LONGREAL;
+    l: LONGINT;
+BEGIN
+    f := 4.2;
+    l := ENTIER(f);
+    ASSERT(l = 4);
+    f := -4.2;
+    l := ENTIER(f);
+    ASSERT(l = -5);
+    d := 4.7;
+    l := ENTIER(d);
+    ASSERT(l = 4);
+    d := -4.7;
+    l := ENTIER(d);
+    ASSERT(l = -5)
+END Entier;
+
+PROCEDURE Abs;
+VAR s: SHORTINT;
+    i: INTEGER;
+    l: LONGINT;
+    f: REAL;
+    d: LONGREAL;
+BEGIN
+    s := -42;
+    ASSERT(ABS(s) = -s);
+    i := -47;
+    ASSERT(ABS(i) = -i);
+    l := -1893;
+    ASSERT(ABS(l) = -l);
+    f := -3.1415926;
+    ASSERT(ABS(f) = -f);
+    d := -226.1976;
+    ASSERT(ABS(d) = -d)
+END Abs;
+
 BEGIN
     a := 1;
     b := 0;
@@ -89,6 +160,10 @@ BEGIN
     ASSERT(ODD(1));
     ASSERT(a > b);
     IF (a < b) THEN HALT(1) END;
+    Short;
+    Long;
+    Entier;
+    Abs;
     Out.String("Passed all assertions."); Out.Ln;
     HALT(0);
     Out.String("Error: Unreachable!")

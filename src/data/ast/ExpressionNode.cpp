@@ -236,6 +236,12 @@ void BooleanLiteralNode::print(std::ostream &stream) const {
     stream << (value_ ? "TRUE" : "FALSE");
 }
 
+bool IntegerLiteralNode::isShort() const {
+    if (getCast()) {
+        return getCast()->kind() == TypeKind::SHORTINT;
+    }
+    return value_ >= std::numeric_limits<short>::lowest() || value_ <= std::numeric_limits<short>::max();
+}
 
 bool IntegerLiteralNode::isLong() const {
     if (getCast()) {

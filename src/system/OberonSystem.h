@@ -40,8 +40,9 @@ public:
 
     ArrayTypeNode *createArrayType(TypeNode *memberType, unsigned int dimension);
 
-    void createProcedure(ProcKind type, const std::string& name, const std::vector<std::pair<TypeNode *, bool>>& params,
-                         TypeNode *ret, bool varargs, bool toSymbols);
+    PredefinedProcedure* createProcedure(ProcKind type, const std::string& name,
+                                         const std::vector<std::pair<TypeNode *, bool>>& params,
+                                         TypeNode *ret, bool varargs, bool toSymbols);
 
     SymbolTable *getSymbolTable();
 

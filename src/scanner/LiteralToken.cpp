@@ -12,6 +12,8 @@ void BooleanLiteralToken::print(std::ostream &stream) const {
     stream << this->type() << ": " << (value() ? "TRUE" : "FALSE");
 }
 
+ShortLiteralToken::~ShortLiteralToken() noexcept = default;
+
 IntLiteralToken::~IntLiteralToken() noexcept = default;
 
 LongLiteralToken::~LongLiteralToken() noexcept = default;

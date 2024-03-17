@@ -44,8 +44,8 @@ private:
     SymbolTable *symbols_;
     SymbolImporter importer_;
     SymbolExporter exporter_;
-    TypeNode *boolTy_, *byteTy_, *charTy_, *integerTy_, *longIntTy_, *realTy_, *longRealTy_, *stringTy_, *setTy_,
-             *nullTy_, *typeTy_;
+    TypeNode *boolTy_, *byteTy_, *charTy_, *shortIntTy_, *integerTy_, *longIntTy_, *realTy_, *longRealTy_,
+             *stringTy_, *setTy_, *nullTy_, *typeTy_;
 
     bool assertEqual(Ident *, Ident *) const;
     void assertUnique(IdentDef *, DeclarationNode *);
@@ -84,7 +84,7 @@ private:
     SelectorIterator &handleMissingParameters(const FilePos &, const FilePos &,
                                               TypeNode*, Selectors &, SelectorIterator &);
     TypeNode *onSelectors(const FilePos &, const FilePos &, DeclarationNode *, TypeNode*, Selectors &);
-    TypeNode *onActualParameters(TypeNode*, ActualParameters*);
+    TypeNode *onActualParameters(DeclarationNode*, TypeNode*, ActualParameters*);
     TypeNode *onArrayIndex(TypeNode*, ArrayIndex*);
     TypeNode *onDereference(TypeNode*, Dereference*);
     FieldNode *onRecordField(TypeNode*, RecordField*);
@@ -175,8 +175,8 @@ public:
                                                vector<unique_ptr<ExpressionNode>>);
 
     unique_ptr<BooleanLiteralNode> onBooleanLiteral(const FilePos &, const FilePos &, bool);
-    unique_ptr<IntegerLiteralNode> onIntegerLiteral(const FilePos &, const FilePos &, long, bool = false);
-    unique_ptr<RealLiteralNode> onRealLiteral(const FilePos &, const FilePos &, double, bool = false);
+    unique_ptr<IntegerLiteralNode> onIntegerLiteral(const FilePos &, const FilePos &, long, TypeKind = TypeKind::INTEGER);
+    unique_ptr<RealLiteralNode> onRealLiteral(const FilePos &, const FilePos &, double, TypeKind = TypeKind::REAL);
     unique_ptr<StringLiteralNode> onStringLiteral(const FilePos &, const FilePos &, const string &);
     unique_ptr<CharLiteralNode> onCharLiteral(const FilePos &, const FilePos &, const unsigned char);
     unique_ptr<NilLiteralNode> onNilLiteral(const FilePos &, const FilePos &);

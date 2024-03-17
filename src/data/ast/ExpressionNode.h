@@ -208,6 +208,7 @@ public:
             LiteralNode(NodeType::integer, pos, TypeKind::INTEGER, type, cast), value_(value) {};
     ~IntegerLiteralNode() final = default;
 
+    [[nodiscard]] bool isShort() const;
     [[nodiscard]] bool isLong() const;
     [[nodiscard]] long value() const;
 
