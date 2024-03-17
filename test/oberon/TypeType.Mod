@@ -13,9 +13,8 @@ VAR p: Node;
     v: INTEGER;
 
 BEGIN
-    Out.Int(SIZE(INTEGER), 0); Out.Ln;
-    Out.Int(SIZE(String), 0); Out.Ln;
-    Out.Int(SIZE(Node), 0); Out.Ln;
-    Out.Int(SIZE(NodeDesc), 0); Out.Ln
-    (* v := p(Node).val *)
+    Out.Long(SIZE(INTEGER), 0); Out.Ln;
+    Out.Long(SIZE(String), 0); Out.Ln;
+    Out.Long(SIZE(Node), 0); Out.Ln;
+    Out.Long(SIZE(NodeDesc), 0); Out.Ln
 END TypeType.

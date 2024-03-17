@@ -111,5 +111,11 @@ int main(int argc, const char** argv) {
     swap(&a, &b);
     printf("%d, %d\n", a, b);
 
+    TString str;
+    str.len = 25;
+    memcpy(&str.str, &hermione.str, hermione.len);
+    printf("%s\n", str.str);
+
+    int c = a > b ? a : b;
     exit(0);
 }
