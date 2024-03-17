@@ -21,6 +21,7 @@ Sema::Sema(CompilerConfig &config, ASTContext *context, OberonSystem *system) :
     boolTy_ = system_->getBasicType(TypeKind::BOOLEAN);
     byteTy_ = system_->getBasicType(TypeKind::BYTE);
     charTy_ = system_->getBasicType(TypeKind::CHAR);
+    shortIntTy_ = system->getBasicType(TypeKind::SHORTINT);
     integerTy_ = system_->getBasicType(TypeKind::INTEGER);
     longIntTy_ = system_->getBasicType(TypeKind::LONGINT);
     realTy_ = system_->getBasicType(TypeKind::REAL);
@@ -1135,14 +1136,27 @@ Sema::onBooleanLiteral(const FilePos &start, [[maybe_unused]] const FilePos &end
 }
 
 unique_ptr<IntegerLiteralNode>
-Sema::onIntegerLiteral(const FilePos &start, [[maybe_unused]] const FilePos &end, long value, bool ext) {
-    TypeNode *type = ext ? longIntTy_ : integerTy_;
+Sema::onIntegerLiteral(const FilePos &start, [[maybe_unused]] const FilePos &end, long value, TypeKind kind) {
+    TypeNode *type;
+    switch (kind) {
+        case TypeKind::SHORTINT: type = shortIntTy_; break;
+        case TypeKind::INTEGER: type = integerTy_; break;
+        case TypeKind::LONGINT: type = longIntTy_; break;
+        default:
+            type = nullTy_;
+    }
     return make_unique<IntegerLiteralNode>(start, value, type);
 }
 
 unique_ptr<RealLiteralNode>
-Sema::onRealLiteral(const FilePos &start, [[maybe_unused]] const FilePos &end, double value, bool ext) {
-    TypeNode *type = ext ? longRealTy_ : realTy_;
+Sema::onRealLiteral(const FilePos &start, [[maybe_unused]] const FilePos &end, double value, TypeKind kind) {
+    TypeNode *type;
+    switch (kind) {
+        case TypeKind::REAL: type = realTy_; break;
+        case TypeKind::LONGREAL: type = longRealTy_; break;
+        default:
+            type = nullTy_;
+    }
     return make_unique<RealLiteralNode>(start, value, type);
 }
 

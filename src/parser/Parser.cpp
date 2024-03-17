@@ -921,18 +921,21 @@ unique_ptr<ExpressionNode> Parser::basic_factor() {
         return expr;
     }
     auto tmp = scanner_.next();
-    if (token->type() == TokenType::int_literal) {
+    if (token->type() == TokenType::short_literal) {
+        auto number = dynamic_cast<const ShortLiteralToken *>(tmp.get());
+        return sema_.onIntegerLiteral(number->start(), number->end(), number->value(), TypeKind::SHORTINT);
+    } else if (token->type() == TokenType::int_literal) {
         auto number = dynamic_cast<const IntLiteralToken *>(tmp.get());
-        return sema_.onIntegerLiteral(number->start(), number->end(), number->value());
+        return sema_.onIntegerLiteral(number->start(), number->end(), number->value(), TypeKind::INTEGER);
     } else if (token->type() == TokenType::long_literal) {
         auto number = dynamic_cast<const LongLiteralToken *>(tmp.get());
-        return sema_.onIntegerLiteral(number->start(), number->end(), number->value(), true);
+        return sema_.onIntegerLiteral(number->start(), number->end(), number->value(), TypeKind::LONGINT);
     } else if (token->type() == TokenType::float_literal) {
         auto number = dynamic_cast<const FloatLiteralToken *>(tmp.get());
-        return sema_.onRealLiteral(number->start(), number->end(), number->value());
+        return sema_.onRealLiteral(number->start(), number->end(), number->value(), TypeKind::REAL);
     } else if (token->type() == TokenType::double_literal) {
         auto number = dynamic_cast<const DoubleLiteralToken *>(tmp.get());
-        return sema_.onRealLiteral(number->start(), number->end(), number->value(), true);
+        return sema_.onRealLiteral(number->start(), number->end(), number->value(), TypeKind::LONGREAL);
     } else if (token->type() == TokenType::string_literal) {
         auto string = dynamic_cast<const StringLiteralToken *>(tmp.get());
         return sema_.onStringLiteral(string->start(), string->end(), string->value());

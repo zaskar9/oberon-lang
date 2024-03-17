@@ -225,7 +225,7 @@ void NodePrettyPrinter::visit(BooleanLiteralNode &node) {
 }
 
 void NodePrettyPrinter::visit(IntegerLiteralNode &node) {
-    stream_ << node.value() << (node.isLong() ? "(*L*)" : "(*I*)");
+    stream_ << node.value() << (node.isLong() ? "(*L*)" : (node.isShort() ? "(*S*)" : "(*I*)"));
 }
 
 void NodePrettyPrinter::visit(RealLiteralNode &node) {

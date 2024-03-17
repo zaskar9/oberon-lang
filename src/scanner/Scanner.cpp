@@ -352,27 +352,33 @@ unique_ptr<const Token> Scanner::scanNumber() {
         return make_unique<CharLiteralToken>(pos, current(), value);
     } else {
         bool isLong = true;
+        bool isInt = true;
         long value;
         try {
             if (isHex) {
                 auto res = boost::convert<unsigned long>(num, ccnv(std::hex)).value();
                 // Hexadecimal integers are unsigned
                 isLong = res > std::numeric_limits<unsigned int>::max();
+                isInt = res > std::numeric_limits<unsigned short>::max();
                 value = static_cast<long>(res);
             } else {
                 auto res = boost::convert<unsigned long>(num, ccnv(std::dec)).value();
                 // Decimal integers are signed
                 isLong = res > std::numeric_limits<int>::max();
+                isInt = res > std::numeric_limits<short>::max();
                 value = static_cast<long>(res);
             }
         } catch (boost::bad_optional_access const &e) {
             logger_.error(pos, "invalid integer literal: " + num + ".");
             value = 0;
         }
-        if (!isLong) {
+        if (isLong) {
+            return make_unique<LongLiteralToken>(pos, current(), value);
+        } else if (isInt) {
             return make_unique<IntLiteralToken>(pos, current(), static_cast<int>(value));
+        } else {
+            return make_unique<ShortLiteralToken>(pos, current(), static_cast<short>(value));
         }
-        return make_unique<LongLiteralToken>(pos, current(), value);
     }
 }
 

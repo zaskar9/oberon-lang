@@ -77,7 +77,7 @@ BEGIN
 END Odd;
 
 PROCEDURE Short;
-VAR (*s: SHORTINT;*)
+VAR s: SHORTINT;
     i: INTEGER;
     l: LONGINT;
     f: REAL;
@@ -85,24 +85,24 @@ VAR (*s: SHORTINT;*)
 BEGIN
     l := 47;
     i := SHORT(l);
-    (*s := SHORT(i);*)
-    ASSERT(i = l);
+    s := SHORT(i);
+    ASSERT(s = l);
     d := 4.2;
     f := SHORT(d);
     ASSERT(f = d)
 END Short;
 
 PROCEDURE Long;
-VAR (*s: SHORTINT;*)
+VAR s: SHORTINT;
     i: INTEGER;
     l: LONGINT;
     f: REAL;
     d: LONGREAL;
 BEGIN
-    (*s := 42;*)
-    i := 42; (*LONG(s);*)
+    s := 42;
+    i := LONG(s);
     l := LONG(i);
-    ASSERT(l = i);
+    ASSERT(l = s);
     f := 4.2;
     d := LONG(f);
     ASSERT(d = f)
@@ -143,7 +143,7 @@ BEGIN
     IF (a < b) THEN HALT(1) END;
     Short;
     Long;
-    (*Entier;*)
+    Entier;
     Out.String("Passed all assertions."); Out.Ln;
     HALT(0);
     Out.String("Error: Unreachable!")

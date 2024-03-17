@@ -13,8 +13,10 @@
 
 enum class TokenType : char {
     eof, undef,
-    boolean_literal, byte_literal, char_literal, int_literal, long_literal,
-    float_literal, double_literal, string_literal,
+    boolean_literal, byte_literal, char_literal,
+    short_literal, int_literal, long_literal,
+    float_literal, double_literal,
+    string_literal,
     const_ident,
     period, comma, colon, semicolon, rparen, lparen, lbrack, rbrack, lbrace, rbrace, caret,
     varargs, pipe, range,

@@ -17,7 +17,7 @@ private:
     T value_;
 
 public:
-    explicit LiteralToken(const TokenType type, const FilePos &start, const FilePos &end, T value) :
+    LiteralToken(const TokenType type, const FilePos &start, const FilePos &end, T value) :
             Token(type, start, end), value_(value) {};
     ~LiteralToken() override = default;
 
@@ -35,20 +35,27 @@ public:
 class BooleanLiteralToken : public LiteralToken<bool> {
 
 public:
-    explicit BooleanLiteralToken(const FilePos &start, const FilePos &end, bool value) :
-            LiteralToken(TokenType::boolean_literal, start, end, value) {};
+    BooleanLiteralToken(const FilePos &start, const FilePos &end, bool value) :
+            LiteralToken<bool>(TokenType::boolean_literal, start, end, value) {};
     ~BooleanLiteralToken() noexcept override;
 
     void print(std::ostream &stream) const override;
 
 };
 
+class ShortLiteralToken final : public LiteralToken<short> {
+
+public:
+    ShortLiteralToken(const FilePos &start, const FilePos &end, short value) :
+            LiteralToken<short>(TokenType::short_literal, start, end, value) {};
+    ~ShortLiteralToken() noexcept override;
+};
 
 class IntLiteralToken final : public LiteralToken<int> {
 
 public:
-    explicit IntLiteralToken(const FilePos &start, const FilePos &end, int value) :
-            LiteralToken(TokenType::int_literal, start, end, value) {};
+    IntLiteralToken(const FilePos &start, const FilePos &end, int value) :
+            LiteralToken<int>(TokenType::int_literal, start, end, value) {};
     ~IntLiteralToken() noexcept override;
 
 };
@@ -57,8 +64,8 @@ public:
 class LongLiteralToken final : public LiteralToken<long> {
 
 public:
-    explicit LongLiteralToken(const FilePos &start, const FilePos &end, long value) :
-            LiteralToken(TokenType::long_literal, start, end, value) {};
+    LongLiteralToken(const FilePos &start, const FilePos &end, long value) :
+            LiteralToken<long>(TokenType::long_literal, start, end, value) {};
     ~LongLiteralToken() noexcept override;
 
 };
@@ -67,8 +74,8 @@ public:
 class FloatLiteralToken final : public LiteralToken<float> {
 
 public:
-    explicit FloatLiteralToken(const FilePos &start, const FilePos &end, float value) :
-            LiteralToken(TokenType::float_literal, start, end, value) {};
+    FloatLiteralToken(const FilePos &start, const FilePos &end, float value) :
+            LiteralToken<float>(TokenType::float_literal, start, end, value) {};
     ~FloatLiteralToken() noexcept override;
 
 };
@@ -77,8 +84,8 @@ public:
 class DoubleLiteralToken final : public LiteralToken<double> {
 
 public:
-    explicit DoubleLiteralToken(const FilePos &start, const FilePos &end, double value) :
-            LiteralToken(TokenType::double_literal, start, end, value) {};
+    DoubleLiteralToken(const FilePos &start, const FilePos &end, double value) :
+            LiteralToken<double>(TokenType::double_literal, start, end, value) {};
     ~DoubleLiteralToken() noexcept override;
 
 };
@@ -87,8 +94,8 @@ public:
 class StringLiteralToken final : public LiteralToken<std::string> {
 
 public:
-    explicit StringLiteralToken(const FilePos &start, const FilePos &end, std::string value) :
-            LiteralToken(TokenType::string_literal, start, end, std::move(value)) {};
+    StringLiteralToken(const FilePos &start, const FilePos &end, std::string value) :
+            LiteralToken<std::string>(TokenType::string_literal, start, end, std::move(value)) {};
     ~StringLiteralToken() noexcept override;
 
 };
@@ -96,8 +103,8 @@ public:
 class CharLiteralToken final : public LiteralToken<unsigned char> {
 
 public:
-    explicit CharLiteralToken(const FilePos &start, const FilePos &end, unsigned char value) :
-            LiteralToken(TokenType::char_literal, start, end, value) {};
+    CharLiteralToken(const FilePos &start, const FilePos &end, unsigned char value) :
+            LiteralToken<unsigned char>(TokenType::char_literal, start, end, value) {};
     ~CharLiteralToken() noexcept override;
 
 };
