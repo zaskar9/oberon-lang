@@ -491,7 +491,7 @@ Sema::onForLoop(const FilePos &start, [[maybe_unused]] const FilePos &end,
         }
         auto type = decl->getType();
         if (type && type->kind() != TypeKind::INTEGER) {
-            logger_.error(ident->start(), "integer variable expected.");
+            logger_.error(ident->start(), "type mismatch: expected INTEGER, found " + format(type) + ".");
         }
     } else {
         logger_.error(ident->start(), to_string(*ident) + " cannot be used as a loop counter.");
@@ -501,14 +501,14 @@ Sema::onForLoop(const FilePos &start, [[maybe_unused]] const FilePos &end,
     }
     auto type = low->getType();
     if (type && type->kind() != TypeKind::INTEGER) {
-        logger_.error(low->pos(), "integer expression expected.");
+        logger_.error(low->pos(), "type mismatch: expected INTEGER, found " + format(type) + ".");
     }
     if (!high) {
         logger_.error(start, "undefined high value in for-loop.");
     }
     type = high->getType();
     if (type && type->kind() != TypeKind::INTEGER) {
-        logger_.error(high->pos(), "integer expression expected.");
+        logger_.error(high->pos(), "type mismatch: expected INTEGER, found " + format(type) + ".");
     }
     if (step && step->isLiteral()) {
         type = step->getType();
@@ -670,7 +670,7 @@ Sema::onSelectors(const FilePos &start, const FilePos &end,
         }
         switch (sel->getNodeType()) {
             case NodeType::parameter:
-                base = onActualParameters(base, dynamic_cast<ActualParameters *>(sel));
+                base = onActualParameters(context, base, dynamic_cast<ActualParameters *>(sel));
                 break;
             case NodeType::array_type:
                 base = onArrayIndex(base, dynamic_cast<ArrayIndex *>(sel));
@@ -741,7 +741,8 @@ Sema::handleMissingParameters(const FilePos &start, [[maybe_unused]] const FileP
     return it;
 }
 
-TypeNode *Sema::onActualParameters(TypeNode *base, ActualParameters *sel) {
+TypeNode *
+Sema::onActualParameters(DeclarationNode *context, TypeNode *base, ActualParameters *sel) {
     if (!base->isProcedure()) {
         logger_.error(sel->pos(), "type " + to_string(base) + " is not a procedure type.");
         return nullptr;
@@ -750,6 +751,7 @@ TypeNode *Sema::onActualParameters(TypeNode *base, ActualParameters *sel) {
     if (sel->parameters().size() < proc->parameters().size()) {
         logger_.error(sel->pos(), "fewer actual than formal parameters.");
     }
+    vector<TypeNode *> types;
     for (size_t cnt = 0; cnt < sel->parameters().size(); cnt++) {
         auto expr = sel->parameters()[cnt].get();
         if (!expr) {
@@ -776,10 +778,25 @@ TypeNode *Sema::onActualParameters(TypeNode *base, ActualParameters *sel) {
                         }
                     }
                 }
+                types.push_back(sel->parameters()[cnt]->getType());
+            } else {
+                types.push_back(nullTy_);
             }
         } else if (!proc->hasVarArgs()) {
             logger_.error(sel->pos(), "more actual than formal parameters.");
             break;
+        }
+    }
+    if (context->getNodeType() == NodeType::procedure) {
+        auto decl = dynamic_cast<ProcedureNode *>(context);
+        if (decl->isPredefined()) {
+            auto predefined = dynamic_cast<PredefinedProcedure *>(decl);
+            if (predefined->isOverloaded()) {
+                auto signature = predefined->dispatch(types);
+                if (signature) {
+                    return signature->getReturnType();
+                }
+            }
         }
     }
     return proc->getReturnType();
@@ -1537,10 +1554,14 @@ Sema::assertCompatible(const FilePos &pos, TypeNode *expected, TypeNode *actual,
     }
     // Check numeric types
     if (expected->isNumeric() && actual->isNumeric()) {
+        // Check virtual numeric compound types
+        if ((expected->kind() == TypeKind::ENTIRE && actual->isInteger()) ||
+            (expected->kind() == TypeKind::FLOATING && actual->isReal()) ||
+            (expected->kind() == TypeKind::NUMERIC)) {
+            return true;
+        }
         if (var) {
-            if (expected->kind() == TypeKind::ENTIRE && actual->isInteger()) {
-                return true;
-            }
+            // The types of variable parameters need to be an exact match as they are read-write parameters
             if (expected->kind() != actual->kind()) {
                 logger_.error(pos, "type mismatch: cannot pass " + to_string(*actualId) +
                                    " to " + to_string(*expectedId) + " by reference.");
@@ -1548,8 +1569,9 @@ Sema::assertCompatible(const FilePos &pos, TypeNode *expected, TypeNode *actual,
             }
             return true;
         }
-        if ((expected->isInteger() && actual->isInteger())
-            || (expected->isReal() && actual->isReal())) {
+        // Both expected and actual type are concrete types: assure legal conversion and promotion
+        if ((expected->isInteger() && actual->isInteger()) ||
+            (expected->isReal() && actual->isReal())) {
             if (expected->getSize() < actual->getSize()) {
                 logger_.error(pos, "type mismatch: converting from " + to_string(*actualId) +
                                    " to " + to_string(*expectedId) + " may lose data.");
@@ -1669,7 +1691,7 @@ Sema::format(const TypeNode *type, bool isPtr) {
 }
 
 void Sema::cast(ExpressionNode *expr, TypeNode *expected) {
-    if (expr->getType() != expected) {
+    if (expr->getType() != expected && !expected->isVirtual()) {
         expr->setCast(expected);
     }
 }

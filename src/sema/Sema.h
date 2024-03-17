@@ -84,7 +84,7 @@ private:
     SelectorIterator &handleMissingParameters(const FilePos &, const FilePos &,
                                               TypeNode*, Selectors &, SelectorIterator &);
     TypeNode *onSelectors(const FilePos &, const FilePos &, DeclarationNode *, TypeNode*, Selectors &);
-    TypeNode *onActualParameters(TypeNode*, ActualParameters*);
+    TypeNode *onActualParameters(DeclarationNode*, TypeNode*, ActualParameters*);
     TypeNode *onArrayIndex(TypeNode*, ArrayIndex*);
     TypeNode *onDereference(TypeNode*, Dereference*);
     FieldNode *onRecordField(TypeNode*, RecordField*);

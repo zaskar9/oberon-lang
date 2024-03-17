@@ -81,18 +81,21 @@ private:
     Value *createAsrCall(Value *, Value *);
     Value *createAssertCall(Value *);
     Value *createChrCall(Value *);
+    Value *createEntireCall(Value *);
     Value *createExitCall(Value *);
     Value *createExclCall(Value *, Value *);
     Value *createFreeCall(TypeNode *, Value *);
     Value *createIncDecCall(ProcKind, vector<unique_ptr<ExpressionNode>> &, std::vector<Value *> &);
     Value *createInclCall(Value *, Value *);
     Value *createLenCall(vector<unique_ptr<ExpressionNode>> &, std::vector<Value *> &);
+    Value *createLongCall(ExpressionNode *, Value *);
     Value *createLslCall(Value *, Value *);
     Value *createNewCall(TypeNode *, Value *);
     Value *createOddCall(Value *);
     Value *createOrdCall(ExpressionNode *, Value *);
     Value *createRolCall(Value *, Value *);
     Value *createRorCall(Value *, Value *);
+    Value *createShortCall(ExpressionNode *, Value *);
     Value *createSizeCall(ExpressionNode *);
     
     Value *createSystemAdrCall(vector<unique_ptr<ExpressionNode>> &, std::vector<Value *> &);

@@ -28,12 +28,16 @@ enum class ProcKind {
 class PredefinedProcedure final : public ProcedureNode {
 
 private:
-    unique_ptr<ProcedureTypeNode> type_;
+    vector<unique_ptr<ProcedureTypeNode>> types_;
     ProcKind kind_;
 
 public:
     explicit PredefinedProcedure(ProcKind, const string &, const vector<pair<TypeNode*, bool>> &, bool, TypeNode *);
     ~PredefinedProcedure() override;
+
+    ProcedureTypeNode* overload(const vector<pair<TypeNode*, bool>> &, bool, TypeNode *);
+    ProcedureTypeNode* dispatch(vector<TypeNode*>) const;
+    [[nodiscard]] bool isOverloaded() const;
 
     [[nodiscard]] ProcKind getKind() const;
 

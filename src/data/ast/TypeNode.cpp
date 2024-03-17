@@ -23,6 +23,7 @@ std::ostream &operator<<(std::ostream &stream, const TypeKind &kind) {
         case TypeKind::BOOLEAN: result = "BOOLEAN"; break;
         case TypeKind::BYTE: result = "BYTE"; break;
         case TypeKind::CHAR: result = "CHAR"; break;
+        case TypeKind::SHORTINT: result = "SHORTINT"; break;
         case TypeKind::INTEGER: result = "INTEGER"; break;
         case TypeKind::LONGINT: result = "LONGINT"; break;
         case TypeKind::REAL: result = "REAL"; break;
@@ -79,7 +80,8 @@ bool TypeNode::isBoolean() const {
 }
 
 bool TypeNode::isInteger() const {
-    return kind_ == TypeKind::INTEGER ||
+    return kind_ == TypeKind::SHORTINT ||
+           kind_ == TypeKind::INTEGER ||
            kind_ == TypeKind::LONGINT ||
            kind_ == TypeKind::ENTIRE;
 }
@@ -91,7 +93,9 @@ bool TypeNode::isReal() const {
 }
 
 bool TypeNode::isNumeric() const {
-    return isInteger() || isReal();
+    return isInteger() ||
+           isReal() ||
+           kind_ == TypeKind::NUMERIC;
 }
 
 bool TypeNode::isString() const {
@@ -104,6 +108,15 @@ bool TypeNode::isSet() const {
 
 bool TypeNode::isChar() const {
     return kind_ == TypeKind::CHAR;
+}
+
+bool TypeNode::isVirtual() const {
+    return kind_ == TypeKind::ANYTYPE ||
+           kind_ == TypeKind::NOTYPE ||
+           kind_ == TypeKind::TYPE ||
+           kind_ == TypeKind::NUMERIC ||
+           kind_ == TypeKind::ENTIRE ||
+           kind_ == TypeKind::FLOATING;
 }
 
 bool TypeNode::isBasic() const {

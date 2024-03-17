@@ -941,6 +941,14 @@ LLVMIRBuilder::createPredefinedCall(PredefinedProcedure *proc, QualIdent *ident,
             return createExclCall(params[0], params[1]);
         case ProcKind::ORD:
             return createOrdCall(actuals[0].get(), params[0]);
+        case ProcKind::CHR:
+            return createChrCall(params[0]);
+        case ProcKind::SHORT:
+            return createShortCall(actuals[0].get(), params[0]);
+        case ProcKind::LONG:
+            return createLongCall(actuals[0].get(), params[0]);
+        case ProcKind::ENTIER:
+            return createEntireCall(params[0]);
         case ProcKind::SIZE:
         case ProcKind::SYSTEM_SIZE:
             return createSizeCall(actuals[0].get());
@@ -954,8 +962,6 @@ LLVMIRBuilder::createPredefinedCall(PredefinedProcedure *proc, QualIdent *ident,
             return createSystemBitCall(actuals, params);
         case ProcKind::SYSTEM_COPY:
             return createSystemCopyCall(params[0], params[1], params[2]);
-        case ProcKind::CHR:
-            return createChrCall(params[0]);
         default:
             logger_.error(ident->start(), "unsupported predefined procedure: " + to_string(*ident) + ".");
             // to generate correct LLVM IR, the current value is returned (no-op).
@@ -995,6 +1001,13 @@ LLVMIRBuilder::createAssertCall(Value *param) {
 Value *
 LLVMIRBuilder::createChrCall(llvm::Value *param) {
     value_ = builder_.CreateTrunc(param, builder_.getInt8Ty());
+    return value_;
+}
+
+Value *
+LLVMIRBuilder::createEntireCall(llvm::Value *param) {
+    Value *value = builder_.CreateIntrinsic(Intrinsic::floor, {param->getType()}, param);
+    value_ = builder_.CreateFPToSI(value, builder_.getInt64Ty());
     return value_;
 }
 
@@ -1148,6 +1161,27 @@ LLVMIRBuilder::createLenCall(vector<unique_ptr<ExpressionNode>> &actuals, std::v
 }
 
 Value *
+LLVMIRBuilder::createLongCall(ExpressionNode *expr, llvm::Value *param) {
+    auto type = expr->getType();
+    if (type->isInteger()) {
+        if (type->kind() == TypeKind::SHORTINT) {
+            value_ = builder_.CreateSExt(param, builder_.getInt32Ty());
+        } else if (type->kind() == TypeKind::INTEGER) {
+            value_ = builder_.CreateSExt(param, builder_.getInt64Ty());
+        } else {
+            logger_.error(expr->pos(), "illegal integer expression.");
+        }
+    } else {
+        if (type->kind() == TypeKind::REAL) {
+            value_ = builder_.CreateFPExt(param, builder_.getDoubleTy());
+        } else {
+            logger_.error(expr->pos(), "illegal floating-point expression.");
+        }
+    }
+    return value_;
+}
+
+Value *
 LLVMIRBuilder::createLslCall(llvm::Value *param, llvm::Value *shift) {
     return builder_.CreateShl(param, shift);
 }
@@ -1224,7 +1258,29 @@ LLVMIRBuilder::createRorCall(llvm::Value *param, llvm::Value *shift) {
     return builder_.CreateOr(lhs, rhs);
 }
 
-Value *LLVMIRBuilder::createSizeCall(ExpressionNode *expr) {
+Value *
+LLVMIRBuilder::createShortCall(ExpressionNode *expr, llvm::Value *param) {
+    auto type = expr->getType();
+    if (type->isInteger()) {
+        if (type->kind() == TypeKind::INTEGER) {
+            value_ = builder_.CreateTrunc(param, builder_.getInt16Ty());
+        } else if (type->kind() == TypeKind::LONGINT) {
+            value_ = builder_.CreateTrunc(param, builder_.getInt32Ty());
+        } else {
+            logger_.error(expr->pos(), "illegal integer expression.");
+        }
+    } else {
+        if (type->kind() == TypeKind::LONGREAL) {
+            value_ = builder_.CreateFPTrunc(param, builder_.getFloatTy());
+        } else {
+            logger_.error(expr->pos(), "illegal floating-point expression.");
+        }
+    }
+    return value_;
+}
+
+Value *
+LLVMIRBuilder::createSizeCall(ExpressionNode *expr) {
     auto decl = dynamic_cast<QualifiedExpression *>(expr)->dereference();
     auto type = dynamic_cast<TypeDeclarationNode *>(decl);
     auto layout = module_->getDataLayout();
@@ -1448,6 +1504,8 @@ Type* LLVMIRBuilder::getLLVMType(TypeNode *type) {
             result = builder_.getInt1Ty();
         } else if (type->kind() == TypeKind::BYTE || type->kind() == TypeKind::CHAR) {
             result = builder_.getInt8Ty();
+        } else if (type->kind() == TypeKind::SHORTINT) {
+            result = builder_.getInt16Ty();
         } else if (type->kind() == TypeKind::INTEGER) {
             result = builder_.getInt32Ty();
         } else if (type->kind() == TypeKind::LONGINT) {
@@ -1464,7 +1522,7 @@ Type* LLVMIRBuilder::getLLVMType(TypeNode *type) {
         types_[type] = result;
     }
     if (result == nullptr) {
-        logger_.error(type->pos(), "cannot map type to LLVM intermediate representation.");
+        logger_.error(type->pos(), "cannot map " + to_string(type->kind()) + " to LLVM intermediate representation.");
         exit(1);
     }
     return result;

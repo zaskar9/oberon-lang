@@ -46,6 +46,20 @@ BEGIN
     b := t
 END Swap;
 
+PROCEDURE IsSorted(a: Vector): BOOLEAN;
+VAR i, current: INTEGER;
+BEGIN
+    current := a[0];
+    FOR i := 1 TO SHORT(LEN(a) - 1) DO
+        IF current > a[i] THEN
+            RETURN FALSE
+        ELSE
+            current := a[i]
+        END
+    END;
+    RETURN TRUE
+END IsSorted;
+
 (* ------------------------------------------------- InsertionSort ------------------------------------------------ *)
 PROCEDURE InsertionSort(VAR a: Vector);
 VAR i, j: INTEGER;
@@ -168,25 +182,30 @@ BEGIN
     Print(list);
     BubbleSort(list);
     Print(list);
+    ASSERT(IsSorted(list));
     Out.String("--- Insertion Sort"); Out.Ln;
     Init(list);
     Print(list);
     InsertionSort(list);
     Print(list);
+    ASSERT(IsSorted(list));
     Out.String("--- Selection Sort"); Out.Ln;
     Init(list);
     Print(list);
     SelectionSort(list);
     Print(list);
+    ASSERT(IsSorted(list));
     Out.String("--- Merge Sort"); Out.Ln;
     Init(list);
     Print(list);
     MergeSort(list);
     Print(list);
+    ASSERT(IsSorted(list));
     Out.String("--- Quick Sort"); Out.Ln;
     Init(list);
     Print(list);
     QuickSort(list);
     Print(list);
+    ASSERT(IsSorted(list));
     Out.String("--- Elapsed Time: "); Out.Long(Oberon.TimeMicros() - start, 0); Out.String(" μs."); Out.Ln
 END Sort.

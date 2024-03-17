@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.26)
 
 project(oberon-lang VERSION 0.1.0)
-set(SMB_FILE_VERSION 2)
+set(SMB_FILE_VERSION 3)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     # warning level 4
