@@ -98,6 +98,7 @@ private:
     Value *createSystemAdrCall(vector<unique_ptr<ExpressionNode>> &, std::vector<Value *> &);
     Value *createSystemGetCall(vector<unique_ptr<ExpressionNode>> &, std::vector<Value *> &);
     Value *createSystemPutCall(vector<unique_ptr<ExpressionNode>> &, std::vector<Value *> &);
+    Value *createSystemBitCall(vector<unique_ptr<ExpressionNode>> &, std::vector<Value *> &);
     Value *createSystemCopyCall(Value *, Value *, Value *);
     
     Value *createTrapCall(unsigned);
