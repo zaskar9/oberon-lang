@@ -176,6 +176,12 @@ void Oberon07::initSymbolTable(SymbolTable *symbols) {
     proc->overload({{intType, false}}, false, longIntType);
     proc->overload({{realType, false}}, false, longRealType);
     this->createProcedure(ProcKind::ENTIER, "ENTIER", {{floatType, false}}, longIntType, false, true);
+    proc = this->createProcedure(ProcKind::ABS, "ABS", {{numType, false}}, nullType, false, true);
+    proc->overload({{shortIntType, false}}, false, shortIntType);
+    proc->overload({{intType, false}}, false, intType);
+    proc->overload({{longIntType, false}}, false, longIntType);
+    proc->overload({{realType, false}}, false, realType);
+    proc->overload({{longRealType, false}}, false, longRealType);
 
     createNamespace("SYSTEM");
     this->createProcedure(ProcKind::SYSTEM_ADR, "ADR", {{anyType, true}}, longIntType, false, true);

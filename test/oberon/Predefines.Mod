@@ -127,6 +127,25 @@ BEGIN
     ASSERT(l = -5)
 END Entier;
 
+PROCEDURE Abs;
+VAR s: SHORTINT;
+    i: INTEGER;
+    l: LONGINT;
+    f: REAL;
+    d: LONGREAL;
+BEGIN
+    s := -42;
+    ASSERT(ABS(s) = -s);
+    i := -47;
+    ASSERT(ABS(i) = -i);
+    l := -1893;
+    ASSERT(ABS(l) = -l);
+    f := -3.1415926;
+    ASSERT(ABS(f) = -f);
+    d := -226.1976;
+    ASSERT(ABS(d) = -d)
+END Abs;
+
 BEGIN
     a := 1;
     b := 0;
@@ -144,6 +163,7 @@ BEGIN
     Short;
     Long;
     Entier;
+    Abs;
     Out.String("Passed all assertions."); Out.Ln;
     HALT(0);
     Out.String("Error: Unreachable!")

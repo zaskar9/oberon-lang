@@ -78,6 +78,7 @@ private:
     Value *createPredefinedCall(PredefinedProcedure *, QualIdent *,
                                 vector<unique_ptr<ExpressionNode>> &, vector<Value *> &);
     Value *createAbortCall();
+    Value *createAbsCall(TypeNode *, Value *);
     Value *createAsrCall(Value *, Value *);
     Value *createAssertCall(Value *);
     Value *createChrCall(Value *);

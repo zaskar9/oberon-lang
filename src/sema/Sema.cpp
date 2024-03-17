@@ -500,26 +500,21 @@ Sema::onForLoop(const FilePos &start, [[maybe_unused]] const FilePos &end,
     if (!low) {
         logger_.error(start, "undefined low value in for-loop.");
     }
-    auto type = low->getType();
-    if (type && type->kind() != TypeKind::INTEGER) {
-        logger_.error(low->pos(), "type mismatch: expected INTEGER, found " + format(type) + ".");
-    }
+    assertCompatible(low->pos(), integerTy_, low->getType());
     if (!high) {
         logger_.error(start, "undefined high value in for-loop.");
     }
-    type = high->getType();
-    if (type && type->kind() != TypeKind::INTEGER) {
-        logger_.error(high->pos(), "type mismatch: expected INTEGER, found " + format(type) + ".");
-    }
+    assertCompatible(high->pos(), integerTy_, high->getType());
     if (step && step->isLiteral()) {
-        type = step->getType();
-        if (type && type->kind() == TypeKind::INTEGER && step->isConstant()) {
-            auto val = dynamic_cast<IntegerLiteralNode *>(step.get())->value();
-            if (val == 0) {
-                logger_.error(step->pos(), "step value cannot be zero.");
+        if (assertCompatible(step->pos(), integerTy_, step->getType())) {
+            if (step->isConstant()) {
+                auto val = dynamic_cast<IntegerLiteralNode *>(step.get())->value();
+                if (val == 0) {
+                    logger_.error(step->pos(), "step value cannot be zero.");
+                }
+            } else {
+                logger_.error(step->pos(), "constant expression expected.");
             }
-        } else {
-            logger_.error(step->pos(), "constant integer expression expected.");
         }
     }
     return make_unique<ForLoopNode>(start, std::move(counter), std::move(low), std::move(high), std::move(step),
@@ -1294,9 +1289,12 @@ Sema::fold(const FilePos &start, const FilePos &end, ExpressionNode *expr) {
             auto cast = expr->getCast();
             if (type->kind() == TypeKind::CHAR) {
                 return make_unique<CharLiteralNode>(expr->pos(), foldChar(start, end, expr), type, cast);
-            } else if (type->kind() == TypeKind::INTEGER || type->kind() == TypeKind::LONGINT) {
+            } else if (type->kind() == TypeKind::SHORTINT ||
+                       type->kind() == TypeKind::INTEGER ||
+                       type->kind() == TypeKind::LONGINT) {
                 return make_unique<IntegerLiteralNode>(expr->pos(), foldInteger(start, end, expr), type, cast);
-            } else if (type->kind() == TypeKind::REAL || type->kind() == TypeKind::LONGREAL) {
+            } else if (type->kind() == TypeKind::REAL ||
+                       type->kind() == TypeKind::LONGREAL) {
                 return make_unique<RealLiteralNode>(expr->pos(), foldReal(start, end, expr), type, cast);
             } else if (type->kind() == TypeKind::BOOLEAN) {
                 return make_unique<BooleanLiteralNode>(expr->pos(), foldBoolean(start, end, expr), type, cast);
@@ -1331,9 +1329,9 @@ Sema::fold(const FilePos &start, [[maybe_unused]] const FilePos &end, OperatorTy
             case OperatorType::PLUS:
                 return make_unique<IntegerLiteralNode>(start, value, type, cast);
             case OperatorType::NEG: {
-                // negating an integer literal can change its type from LONGINT to INTEGER
+                // negating an integer literal can change its type from LONGINT to INTEGER or INTEGER to SHORTINT
                 auto literal = make_unique<IntegerLiteralNode>(start, -value, type, cast);
-                literal->setType(literal->isLong() ? longIntTy_ : integerTy_);
+                literal->setType(literal->isLong() ? longIntTy_ : (literal->isShort() ? shortIntTy_ : integerTy_));
                 return literal;
             }
             default:

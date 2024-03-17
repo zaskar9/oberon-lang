@@ -949,6 +949,8 @@ LLVMIRBuilder::createPredefinedCall(PredefinedProcedure *proc, QualIdent *ident,
             return createLongCall(actuals[0].get(), params[0]);
         case ProcKind::ENTIER:
             return createEntireCall(params[0]);
+        case ProcKind::ABS:
+            return createAbsCall(actuals[0]->getType(), params[0]);
         case ProcKind::SIZE:
         case ProcKind::SYSTEM_SIZE:
             return createSizeCall(actuals[0].get());
@@ -983,6 +985,16 @@ LLVMIRBuilder::createAbortCall() {
 }
 
 Value *
+LLVMIRBuilder::createAbsCall(TypeNode *type, llvm::Value *param) {
+    if (type->isInteger()) {
+        value_ = builder_.CreateIntrinsic(Intrinsic::abs, {param->getType()}, {param, builder_.getInt1(true)});
+    } else {
+        value_ = builder_.CreateIntrinsic(Intrinsic::fabs, {param->getType()}, {param});
+    }
+    return value_;
+}
+
+Value *
 LLVMIRBuilder::createAsrCall(Value *param, Value *shift) {
     return builder_.CreateAShr(param, shift);
 }
@@ -1006,7 +1018,7 @@ LLVMIRBuilder::createChrCall(llvm::Value *param) {
 
 Value *
 LLVMIRBuilder::createEntireCall(llvm::Value *param) {
-    Value *value = builder_.CreateIntrinsic(Intrinsic::floor, {param->getType()}, param);
+    Value *value = builder_.CreateIntrinsic(Intrinsic::floor, {param->getType()}, {param});
     value_ = builder_.CreateFPToSI(value, builder_.getInt64Ty());
     return value_;
 }
