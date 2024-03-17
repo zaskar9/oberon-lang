@@ -1,7 +1,7 @@
 (*
   RUN: %oberon -I "%S%{pathsep}%inc" -L "%S%{pathsep}%lib" -l oberon --run %s | filecheck %s
 *)
-MODULE System2;
+MODULE System3;
 
 IMPORT SYSTEM, Out;
 
@@ -13,15 +13,15 @@ VAR
 BEGIN
     FOR i := 0 TO 3 DO x[i] := (i + 1) END;
     FOR i := 0 TO 3 DO y[i] := -(i + 1) END;
-    xadr := SYSTEM.ADR(x[0]);
-    yadr := SYSTEM.ADR(y[0]);
+    xadr := SYSTEM.ADR(x);
+    yadr := SYSTEM.ADR(y);
     SYSTEM.COPY(xadr, yadr, LEN(x));
     FOR i := 0 TO 3 DO Out.Int(y[i], 0); Out.Ln END
 END Test;
 
 BEGIN
     Test
-END System2.
+END System3.
 (*
     CHECK: 1
     CHECK: 2
