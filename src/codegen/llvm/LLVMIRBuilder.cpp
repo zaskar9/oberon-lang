@@ -687,19 +687,43 @@ void LLVMIRBuilder::visit(StatementSequenceNode &node) {
 void LLVMIRBuilder::visit(AssignmentNode &node) {
     auto rType = node.getRvalue()->getType();
     auto lType = node.getLvalue()->getType();
-    setRefMode(!rType->isStructured());
+    setRefMode(!rType->isStructured() && !rType->isString());
     node.getRvalue()->accept(*this);
     cast(*node.getRvalue());
     Value* rValue = value_;
     restoreRefMode();
     node.getLvalue()->accept(*this);
     Value* lValue = value_;
-    // Use memcpy instead of store for structured values
-    if (rType->isStructured()) {
+    if (rType->isArray()) {
+        auto lArray = dynamic_cast<ArrayTypeNode *>(lType);
+        auto rArray = dynamic_cast<ArrayTypeNode *>(rType);
+        auto lSize = lArray->isOpen() ? 0 : lArray->lengths()[0];
+        auto rSize = rArray->isOpen() ? 0 : rArray->lengths()[0];
+        auto len = std::min(lSize, rSize);
         auto layout = module_->getDataLayout();
-        // TODO taking the size of the lvalye could backfire for shorter open arrays and string literals
+        auto elemSize = layout.getTypeAllocSize(getLLVMType(lArray->getMemberType()));
+        Value *size;
+        if (len == 0) {
+            Value *lhs = lArray->isOpen() ? (Value *) builder_.CreateLoad(builder_.getInt64Ty(), lValue) : builder_.getInt64(lSize);
+            Value *rhs = rArray->isOpen() ? (Value *) builder_.CreateLoad(builder_.getInt64Ty(), rValue) : builder_.getInt64(rSize);
+            size = builder_.CreateIntrinsic(Intrinsic::umin, {builder_.getInt64Ty()}, {lhs, rhs});
+            size = builder_.CreateMul(size, builder_.getInt64(elemSize));
+        } else {
+            size = builder_.getInt64(len * elemSize);
+        }
+        Value *src = builder_.CreateInBoundsGEP(getLLVMType(rType), rValue, {builder_.getInt32(0), builder_.getInt32(1)});
+        Value *dst = builder_.CreateInBoundsGEP(getLLVMType(lType), lValue, {builder_.getInt32(0), builder_.getInt32(1)});
+        value_ = builder_.CreateMemCpy(dst, {}, src, {}, size);
+    } else if (rType->isRecord()) {
+        auto layout = module_->getDataLayout();
         auto size = layout.getTypeAllocSize(getLLVMType(lType));
         value_ = builder_.CreateMemCpy(lValue, {}, rValue, {}, builder_.getInt64(size));
+    } else if (rType->isString()) {
+        auto str = dynamic_cast<StringLiteralNode *>(node.getRvalue());
+        Value *len = builder_.getInt64(str->value().size() + 1);
+        Value *src = builder_.CreateInBoundsGEP(getLLVMType(rType), rValue, {builder_.getInt32(1)});
+        Value *dst = builder_.CreateInBoundsGEP(getLLVMType(lType), lValue, {builder_.getInt32(0), builder_.getInt32(1)});
+        value_ = builder_.CreateMemCpy(dst, {}, src, {}, len);
     } else {
         value_ = builder_.CreateStore(rValue, lValue);
     }
@@ -1201,8 +1225,8 @@ LLVMIRBuilder::createRorCall(llvm::Value *param, llvm::Value *shift) {
 Value *LLVMIRBuilder::createSizeCall(ExpressionNode *expr) {
     auto decl = dynamic_cast<QualifiedExpression *>(expr)->dereference();
     auto type = dynamic_cast<TypeDeclarationNode *>(decl);
-    // TODO : This is the logical type and does not account for padding.
-    auto size = type->getType()->getSize();
+    auto layout = module_->getDataLayout();
+    auto size = layout.getTypeAllocSize(getLLVMType(type->getType()));
     value_ = builder_.getInt64(size);
     return value_;
 }

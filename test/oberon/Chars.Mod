@@ -58,6 +58,13 @@ BEGIN
     str := "Hello World!"
 END HelloWorld;
 
+PROCEDURE InitArray(VAR argv: ARRAY OF ARRAY OF CHAR);
+VAR str: ShortString;
+BEGIN
+    str := "Hello World!";
+    argv[0] := "Hello World!"
+END InitArray;
+
 BEGIN
     s1[0] := 4FX;
     s1[1] := 62X;
@@ -108,7 +115,7 @@ BEGIN
     PrintPerson0(pd); Out.Ln;
 
     HelloWorld(s1);
-    s1[0] := "M";
+    s1[0] := "J";
     (*s1 := s1[0];*)
     Out.String(s1); Out.Ln;
     (*Out.String(s1[0]);*)
@@ -116,7 +123,7 @@ BEGIN
 
     ASSERT(ORD("A") = 65);
     ASSERT(CHR(ORD("A")) = "A");
-    ASSERT(ORD(s1[0]) = ORD("M"));
+    ASSERT(ORD(s1[0]) = ORD("J"));
 
     Out.String("All assertions passed."); Out.Ln
 

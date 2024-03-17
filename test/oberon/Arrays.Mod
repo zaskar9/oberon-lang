@@ -12,6 +12,13 @@ TYPE
     Record = RECORD array: Array END;
     Nested = ARRAY Dim OF Record;
 
+    Uneven = RECORD
+        ch1, ch2: CHAR;
+        int: INTEGER;
+        ch3: CHAR
+    END;
+    List = ARRAY 100 OF Uneven;
+
 
 VAR l: Array;
     m: Matrix;
@@ -19,6 +26,7 @@ VAR l: Array;
     i: INTEGER;
     t: LenTest;
     n: Nested;
+    l1, l2: List;
 
 PROCEDURE Len(a: ARRAY OF INTEGER): LONGINT;
 BEGIN
@@ -93,5 +101,12 @@ BEGIN
     ASSERT(LEN(t, 2) = 7);
     ASSERT(LEN(n) = Dim);
     ASSERT(LEN(n[0].array) = 10);
+
+    l1[99].ch1 := "M";
+    l1[99].int := 128;
+    l2 := l1;
+    ASSERT(l2[99].ch1 = "M");
+    ASSERT(l2[99].int = 128);
+
     Out.String("All assertions passed."); Out.Ln
 END Arrays.
