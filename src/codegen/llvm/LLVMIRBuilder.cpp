@@ -950,6 +950,8 @@ LLVMIRBuilder::createPredefinedCall(PredefinedProcedure *proc, QualIdent *ident,
             return createSystemGetCall(actuals, params);
         case ProcKind::SYSTEM_PUT:
             return createSystemPutCall(actuals, params);
+        case ProcKind::SYSTEM_BIT:
+            return createSystemBitCall(actuals, params);
         case ProcKind::SYSTEM_COPY:
             return createSystemCopyCall(params[0], params[1], params[2]);
         case ProcKind::CHR:
@@ -1308,6 +1310,29 @@ LLVMIRBuilder::createSystemPutCall(vector<unique_ptr<ExpressionNode>> &actuals, 
         logger_.error(param->pos(), "expected basic or char type");
     }
     return value_;
+}
+
+Value *
+LLVMIRBuilder::createSystemBitCall(vector<unique_ptr<ExpressionNode>> &actuals, std::vector<Value *> &params) {
+    auto param1 = actuals[1].get();
+    if (param1->isLiteral()) {
+        auto val = dynamic_cast<IntegerLiteralNode *>(param1)->value();
+        if ((val < 0) || (val > 31)) {
+            logger_.error(param1->pos(), "bit position between 0 and 31.");
+            return value_;
+        }
+    } else {
+        logger_.error(param1->pos(), "constant expression expected.");
+        return value_;
+    }
+    auto base = builder_.getInt32Ty();
+    auto ptrtype = PointerType::get(base, 0);
+    auto ptr = builder_.CreateIntToPtr(params[0], ptrtype);
+    auto value = builder_.CreateLoad(base, ptr, true);
+    Value *lhs = builder_.CreateLShr(value, params[1]);
+    Value *rhs = ConstantInt::get(base, 0x00000001);
+    Value *res = builder_.CreateAnd(lhs, rhs);
+    return builder_.CreateICmpEQ(res, ConstantInt::get(base, 1));
 }
 
 Value *
