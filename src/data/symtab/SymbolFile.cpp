@@ -30,6 +30,22 @@ void SymbolFile::writeChar(signed char val) {
     file_.write(reinterpret_cast<const char *>(&val), sizeof(val));
 }
 
+short SymbolFile::readShort() {
+    short val;
+    file_.read(reinterpret_cast<char *>(&val), sizeof(val));
+#ifdef _DEBUG
+    std::cout << val << "|";
+#endif
+    return val;
+}
+
+void SymbolFile::writeShort(short val) {
+#ifdef _DEBUG
+    std::cout << val << "|";
+#endif
+    file_.write(reinterpret_cast<const char *>(&val), sizeof(val));
+}
+
 int SymbolFile::readInt() {
     int val;
     file_.read(reinterpret_cast<char *>(&val), sizeof(val));

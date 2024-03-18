@@ -500,22 +500,30 @@ Sema::onForLoop(const FilePos &start, [[maybe_unused]] const FilePos &end,
     if (!low) {
         logger_.error(start, "undefined low value in for-loop.");
     }
-    assertCompatible(low->pos(), integerTy_, low->getType());
+    if (assertCompatible(low->pos(), integerTy_, low->getType())) {
+        cast(low.get(), integerTy_);
+    }
     if (!high) {
         logger_.error(start, "undefined high value in for-loop.");
     }
-    assertCompatible(high->pos(), integerTy_, high->getType());
-    if (step && step->isLiteral()) {
-        if (assertCompatible(step->pos(), integerTy_, step->getType())) {
-            if (step->isConstant()) {
+    if (assertCompatible(high->pos(), integerTy_, high->getType())) {
+        cast(high.get(), integerTy_);
+    }
+    if (step) {
+        if (step->isLiteral()) {
+            if (assertCompatible(step->pos(), integerTy_, step->getType())) {
                 auto val = dynamic_cast<IntegerLiteralNode *>(step.get())->value();
                 if (val == 0) {
                     logger_.error(step->pos(), "step value cannot be zero.");
+                } else {
+                    cast(step.get(), integerTy_);
                 }
-            } else {
-                logger_.error(step->pos(), "constant expression expected.");
             }
+        } else  {
+            logger_.error(step->pos(), "constant expression expected.");
         }
+   } else {
+        step = onIntegerLiteral(EMPTY_POS, EMPTY_POS, 1, TypeKind::INTEGER);
     }
     return make_unique<ForLoopNode>(start, std::move(counter), std::move(low), std::move(high), std::move(step),
                                     std::move(stmts));
@@ -1300,7 +1308,8 @@ Sema::fold(const FilePos &start, const FilePos &end, ExpressionNode *expr) {
             } else if (type->kind() == TypeKind::SHORTINT ||
                        type->kind() == TypeKind::INTEGER ||
                        type->kind() == TypeKind::LONGINT) {
-                return make_unique<IntegerLiteralNode>(expr->pos(), foldInteger(start, end, expr), type, cast);
+                long value = foldInteger(start, end, expr);
+                return make_unique<IntegerLiteralNode>(expr->pos(), value, intType(value), cast);
             } else if (type->kind() == TypeKind::REAL ||
                        type->kind() == TypeKind::LONGREAL) {
                 return make_unique<RealLiteralNode>(expr->pos(), foldReal(start, end, expr), type, cast);
@@ -1338,9 +1347,8 @@ Sema::fold(const FilePos &start, [[maybe_unused]] const FilePos &end, OperatorTy
                 return make_unique<IntegerLiteralNode>(start, value, type, cast);
             case OperatorType::NEG: {
                 // negating an integer literal can change its type from LONGINT to INTEGER or INTEGER to SHORTINT
-                auto literal = make_unique<IntegerLiteralNode>(start, -value, type, cast);
-                literal->setType(literal->isLong() ? longIntTy_ : (literal->isShort() ? shortIntTy_ : integerTy_));
-                return literal;
+                value = -value;
+                return make_unique<IntegerLiteralNode>(start, value, intType(value), cast);
             }
             default:
                 logger_.error(start, "operator " + to_string(op) + " cannot be applied to integer values.");
@@ -1458,35 +1466,44 @@ Sema::fold(const FilePos &start, [[maybe_unused]] const FilePos &end,
     } else if (common->isInteger()) {
         long lvalue = foldInteger(start, end, lhs);
         long rvalue = foldInteger(start, end, rhs);
+        long value;
         switch (op) {
             case OperatorType::PLUS:
-                return make_unique<IntegerLiteralNode>(start, lvalue + rvalue, common);
+                value = lvalue + rvalue; break;
             case OperatorType::MINUS:
-                return make_unique<IntegerLiteralNode>(start, lvalue - rvalue, common);
+                value = lvalue - rvalue; break;
             case OperatorType::TIMES:
-                return make_unique<IntegerLiteralNode>(start, lvalue * rvalue, common);
+                value = lvalue * rvalue; break;
             case OperatorType::DIV:
-                return make_unique<IntegerLiteralNode>(start, lvalue / rvalue, common);
+                value = lvalue / rvalue; break;
             case OperatorType::MOD:
-                return make_unique<IntegerLiteralNode>(start, lvalue % rvalue, common);
+                value = lvalue % rvalue; break;
             default:
                 logger_.error(start, "operator " + to_string(op) + " cannot be applied to integer values.");
+                return nullptr;
         }
-    } else if (common->isReal()) {
+        return make_unique<IntegerLiteralNode>(start, value, intType(value));
+} else if (common->isReal()) {
         double lvalue = foldReal(start, end, lhs);
         double rvalue = foldReal(start, end, rhs);
+        double value;
         switch (op) {
             case OperatorType::PLUS:
-                return make_unique<RealLiteralNode>(start, lvalue + rvalue, common);
+                value = lvalue + rvalue; break;
             case OperatorType::MINUS:
-                return make_unique<RealLiteralNode>(start, lvalue - rvalue, common);
+                value = lvalue - rvalue; break;
             case OperatorType::TIMES:
-                return make_unique<RealLiteralNode>(start, lvalue * rvalue, common);
+                value = lvalue * rvalue; break;
             case OperatorType::DIVIDE:
-                return make_unique<RealLiteralNode>(start, lvalue / rvalue, common);
+                value = lvalue / rvalue; break;
             default:
                 logger_.error(start, "operator " + to_string(op) + " cannot be applied to real values.");
+                return nullptr;
         }
+        if (common->kind() == TypeKind::REAL) {
+            return make_unique<RealLiteralNode>(start, static_cast<float>(value), realTy_);
+        }
+        return make_unique<RealLiteralNode>(start, value, longRealTy_);
     } else if (common->isString()) {
         string lvalue = foldString(start, end, lhs);
         string rvalue = foldString(start, end, rhs);
@@ -1743,4 +1760,14 @@ void Sema::castLiteral(unique_ptr<ExpressionNode> &literal, TypeNode *expected) 
         literal->setCast(expected);
         logger_.warning(literal->pos(), "unable to cast " + to_string(actual) + " literal to type " + to_string(expected) + ".");
     }
+}
+
+TypeNode *
+Sema::intType(long value) {
+    if (value >= std::numeric_limits<short>::lowest() && value <= std::numeric_limits<short>::max()) {
+        return shortIntTy_;
+    } else if (value < std::numeric_limits<int>::lowest() || value > std::numeric_limits<int>::max()) {
+        return longIntTy_;
+    }
+    return integerTy_;
 }

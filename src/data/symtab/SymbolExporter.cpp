@@ -70,17 +70,23 @@ void SymbolExporter::writeDeclaration(SymbolFile *file, DeclarationNode *decl) {
                 case TypeKind::STRING:
                     file->writeString(dynamic_cast<StringLiteralNode*>(con->getValue())->value());
                     break;
+                case TypeKind::BOOLEAN:
+                    file->writeChar(dynamic_cast<BooleanLiteralNode*>(con->getValue())->value() ? 1 : 0);
+                    break;
                 case TypeKind::CHAR:
                     file->writeChar(static_cast<signed char>(dynamic_cast<CharLiteralNode *>(con->getValue())->value()));
                     break;
+                case TypeKind::SHORTINT:
+                    file->writeShort(static_cast<short>(dynamic_cast<IntegerLiteralNode*>(con->getValue())->value()));
+                    break;
                 case TypeKind::INTEGER:
-                    file->writeInt(dynamic_cast<IntegerLiteralNode*>(con->getValue())->value());
+                    file->writeInt(static_cast<int>(dynamic_cast<IntegerLiteralNode*>(con->getValue())->value()));
                     break;
                 case TypeKind::LONGINT:
                     file->writeLong(dynamic_cast<IntegerLiteralNode*>(con->getValue())->value());
                     break;
                 case TypeKind::REAL:
-                    file->writeFloat(dynamic_cast<RealLiteralNode*>(con->getValue())->value());
+                    file->writeFloat(static_cast<float>(dynamic_cast<RealLiteralNode*>(con->getValue())->value()));
                     break;
                 case TypeKind::LONGREAL:
                     file->writeDouble(dynamic_cast<RealLiteralNode*>(con->getValue())->value());

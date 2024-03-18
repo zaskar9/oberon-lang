@@ -93,7 +93,7 @@ public:
                 unique_ptr<ExpressionNode> low, unique_ptr<ExpressionNode> high, unique_ptr<ExpressionNode> step,
                 unique_ptr<StatementSequenceNode> stmts) :
             LoopNode(NodeType::for_loop, pos, std::move(stmts)), counter_(std::move(counter)), low_(std::move(low)),
-            high_(std::move(high)), step_(step != nullptr ? std::move(step) : make_unique<IntegerLiteralNode>(pos, 1)) { };
+            high_(std::move(high)), step_(std::move(step)) { };
     ~ForLoopNode() override = default;
 
     [[nodiscard]] QualifiedExpression *getCounter() const;
