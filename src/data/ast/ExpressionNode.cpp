@@ -237,17 +237,11 @@ void BooleanLiteralNode::print(std::ostream &stream) const {
 }
 
 bool IntegerLiteralNode::isShort() const {
-    if (getCast()) {
-        return getCast()->kind() == TypeKind::SHORTINT;
-    }
-    return value_ >= std::numeric_limits<short>::lowest() || value_ <= std::numeric_limits<short>::max();
+    return getType()->kind() == TypeKind::SHORTINT;
 }
 
 bool IntegerLiteralNode::isLong() const {
-    if (getCast()) {
-        return getCast()->kind() == TypeKind::LONGINT;
-    }
-    return value_ < std::numeric_limits<int>::lowest() || value_ > std::numeric_limits<int>::max();
+    return getType()->kind() == TypeKind::LONGINT;
 }
 
 long IntegerLiteralNode::value() const {
@@ -264,10 +258,7 @@ void IntegerLiteralNode::print(std::ostream &stream) const {
 
 
 bool RealLiteralNode::isLong() const {
-    if (getCast()) {
-        return getCast()->kind() == TypeKind::LONGREAL;
-    }
-    return value_ < std::numeric_limits<float>::lowest() || value_ > std::numeric_limits<float>::max();
+    return getType()->kind() == TypeKind::LONGREAL;
 }
 
 double RealLiteralNode::value() const {

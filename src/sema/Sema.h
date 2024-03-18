@@ -54,6 +54,7 @@ private:
 
     static void cast(ExpressionNode *, TypeNode *);
     void castLiteral(unique_ptr<ExpressionNode> &, TypeNode *);
+    TypeNode* intType(long);
 
     void checkExport(DeclarationNode *);
 

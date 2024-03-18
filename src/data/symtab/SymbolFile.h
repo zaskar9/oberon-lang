@@ -24,6 +24,7 @@ public:
     [[nodiscard]] std::string path() const;
 
     [[nodiscard]] signed char readChar();
+    [[nodiscard]] short readShort();
     [[nodiscard]] int readInt();
     [[nodiscard]] long readLong();
     [[nodiscard]] float readFloat();
@@ -31,6 +32,7 @@ public:
     [[nodiscard]] std::string readString();
 
     void writeChar(signed char val);
+    void writeShort(short val);
     void writeInt(int val);
     void writeLong(long val);
     void writeFloat(float val);

@@ -394,16 +394,18 @@ void LLVMIRBuilder::visit(BooleanLiteralNode &node) {
 }
 
 void LLVMIRBuilder::visit(IntegerLiteralNode &node) {
-    if (node.isLong() || node.getType()->kind() == TypeKind::LONGINT) {
+    if (node.getType()->kind() == TypeKind::LONGINT) {
         value_ = ConstantInt::getSigned(builder_.getInt64Ty(), node.value());
-    } else {
+    } else if (node.getType()->kind() == TypeKind::INTEGER) {
         value_ = ConstantInt::getSigned(builder_.getInt32Ty(), (int) node.value());
+    } else {
+        value_ = ConstantInt::getSigned(builder_.getInt16Ty(), (short) node.value());
     }
     cast(node);
 }
 
 void LLVMIRBuilder::visit(RealLiteralNode &node) {
-    if (node.isLong() || node.getType()->kind() == TypeKind::LONGREAL) {
+    if (node.getType()->kind() == TypeKind::LONGREAL) {
         value_ = ConstantFP::get(builder_.getDoubleTy(), node.value());
     } else {
         value_ = ConstantFP::get(builder_.getFloatTy(), (float) node.value());

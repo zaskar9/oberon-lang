@@ -90,11 +90,17 @@ void SymbolImporter::readDeclaration(SymbolFile *file, NodeType nodeType, Module
         } else {
             std::unique_ptr<ExpressionNode> expr;
             switch (kind) {
+                case TypeKind::STRING:
+                    expr = make_unique<StringLiteralNode>(EMPTY_POS, file->readString(), type);
+                    break;
+                case TypeKind::BOOLEAN:
+                    expr = make_unique<BooleanLiteralNode>(EMPTY_POS, file->readChar() != 0, type);
+                    break;
                 case TypeKind::CHAR:
                     expr = make_unique<CharLiteralNode>(EMPTY_POS, static_cast<unsigned char>(file->readChar()), type);
                     break;
-                case TypeKind::STRING:
-                    expr = make_unique<StringLiteralNode>(EMPTY_POS, file->readString(), type);
+                case TypeKind::SHORTINT:
+                    expr = make_unique<IntegerLiteralNode>(EMPTY_POS, file->readShort(), type);
                     break;
                 case TypeKind::INTEGER:
                     expr = make_unique<IntegerLiteralNode>(EMPTY_POS, file->readInt(), type);
