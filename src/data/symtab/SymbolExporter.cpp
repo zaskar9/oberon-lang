@@ -71,7 +71,7 @@ void SymbolExporter::writeDeclaration(SymbolFile *file, DeclarationNode *decl) {
                     file->writeString(dynamic_cast<StringLiteralNode*>(con->getValue())->value());
                     break;
                 case TypeKind::CHAR:
-                    file->writeChar(static_cast<char>(dynamic_cast<CharLiteralNode *>(con->getValue())->value()));
+                    file->writeChar(static_cast<signed char>(dynamic_cast<CharLiteralNode *>(con->getValue())->value()));
                     break;
                 case TypeKind::INTEGER:
                     file->writeInt(dynamic_cast<IntegerLiteralNode*>(con->getValue())->value());
