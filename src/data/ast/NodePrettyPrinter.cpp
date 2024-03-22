@@ -75,7 +75,15 @@ void NodePrettyPrinter::block(BlockNode& node, bool isGlobal) {
     indent_ -= TAB_WIDTH;
 }
 
+void NodePrettyPrinter::qualident(DeclarationNode *decl) {
+    if (decl->getModule() != module_) {
+        stream_ << *decl->getModule()->getIdentifier() << ".";
+    }
+    stream_ << *decl->getIdentifier();
+}
+
 void NodePrettyPrinter::visit(ModuleNode& node) {
+    module_ = &node;
     indent();
     stream_ << "MODULE " << *node.getIdentifier() << "(*Scope:" << node.getLevel() << "*);" << std::endl;
     if (node.getImportCount() > 0) {
@@ -332,7 +340,7 @@ void NodePrettyPrinter::visit(ArrayTypeNode &node) {
         }
         node.getMemberType()->accept(*this);
     } else {
-        stream_ << *node.getIdentifier();
+        qualident(node.getDeclaration());
     }
 }
 
@@ -341,7 +349,7 @@ void NodePrettyPrinter::visit(BasicTypeNode &node) {
 }
 
 void NodePrettyPrinter::visit([[maybe_unused]] ProcedureTypeNode &node) {
-    // handled by visit(ProcedureNode &).
+    // currently handled by visit(ProcedureNode &).
 }
 
 void NodePrettyPrinter::visit(RecordTypeNode &node) {
@@ -358,7 +366,7 @@ void NodePrettyPrinter::visit(RecordTypeNode &node) {
         }
         stream_ << "END";
     } else {
-        stream_ << *node.getIdentifier();
+        qualident(node.getDeclaration());
     }
 }
 
@@ -368,7 +376,7 @@ void NodePrettyPrinter::visit(PointerTypeNode &node) {
         stream_ << "POINTER TO ";
         node.getBase()->accept(*this);
     } else {
-        stream_ << *node.getIdentifier();
+        qualident(node.getDeclaration());
     }
 }
 

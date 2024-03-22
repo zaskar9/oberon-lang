@@ -74,16 +74,16 @@ private:
     unique_ptr<ExpressionNode> set();
     unique_ptr<ExpressionNode> element();
 
-    TypeNode* type(Ident * = nullptr);
+    TypeNode* type();
 
-    ArrayTypeNode* array_type(Ident * = nullptr);
+    ArrayTypeNode* array_type();
 
-    RecordTypeNode* record_type(Ident * = nullptr);
+    RecordTypeNode* record_type();
     void field_list(vector<unique_ptr<FieldNode>> &);
 
-    PointerTypeNode* pointer_type(Ident * = nullptr);
+    PointerTypeNode* pointer_type();
 
-    ProcedureTypeNode* procedure_signature(Ident * = nullptr);
+    ProcedureTypeNode* procedure_signature();
     void procedure_body(ProcedureNode *);
     void formal_parameters(vector<unique_ptr<ParameterNode>> &, bool &);
     void fp_section(vector<unique_ptr<ParameterNode>> &, bool &);

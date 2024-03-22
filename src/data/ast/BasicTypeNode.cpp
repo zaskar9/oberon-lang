@@ -7,6 +7,12 @@
 #include "BasicTypeNode.h"
 #include "NodeVisitor.h"
 
+
+Ident *BasicTypeNode::getIdentifier() const {
+    auto ident = TypeNode::getIdentifier();
+    return ident ? ident : ident_.get();
+}
+
 void BasicTypeNode::accept(NodeVisitor &visitor) {
     visitor.visit(*this);
 }

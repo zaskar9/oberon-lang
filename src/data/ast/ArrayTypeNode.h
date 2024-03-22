@@ -21,15 +21,11 @@ private:
     unsigned dimensions_;
     vector<unsigned> lengths_;
     vector<TypeNode *> types_;
-    // TypeNode *memberType_;
 
 public:
-    ArrayTypeNode(const FilePos &pos, Ident *ident, unsigned dimensions,
-                  vector<unsigned> lengths, vector<TypeNode *> types) :
-            TypeNode(NodeType::array_type, pos, ident, TypeKind::ARRAY, 0),
-            dimensions_(dimensions), lengths_(std::move(lengths)), types_(types) {};
-    ArrayTypeNode(const FilePos &pos, Ident *ident, unsigned length, TypeNode *memberType) :
-            ArrayTypeNode(pos, ident, 1, { length }, { memberType }) {};
+    ArrayTypeNode(const FilePos &pos, unsigned dimensions, vector<unsigned> lengths, vector<TypeNode *> types) :
+            TypeNode(NodeType::array_type, pos, TypeKind::ARRAY, 0),
+            dimensions_(dimensions), lengths_(std::move(lengths)), types_(std::move(types)) {};
     ~ArrayTypeNode() final = default;
 
     [[nodiscard]] unsigned dimensions() const;

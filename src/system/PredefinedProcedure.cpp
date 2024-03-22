@@ -30,7 +30,7 @@ PredefinedProcedure::overload(const vector<pair<TypeNode *, bool>> &pairs, bool 
     for (auto p : pairs) {
         params.push_back(std::make_unique<ParameterNode>(EMPTY_POS, make_unique<Ident>("_"), p.first, p.second));
     }
-    types_.push_back(make_unique<ProcedureTypeNode>(EMPTY_POS, this->getIdentifier(), std::move(params), varargs, ret));
+    types_.push_back(make_unique<ProcedureTypeNode>(EMPTY_POS, std::move(params), varargs, ret));
     return types_.back().get();
 }
 

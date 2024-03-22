@@ -1,4 +1,5 @@
 MODULE SymbolFile;
+IMPORT Oberon;
 
 CONST BOOLFALSE* = FALSE;
       BOOLTRUE* = TRUE;
@@ -51,6 +52,9 @@ VAR s: SHORTINT;
     l: LONGINT;
     f: REAL;
     d: LONGREAL;
+
+PROCEDURE SetTime*(time: Oberon.TimeSpec);
+END SetTime;
 
 BEGIN
     s := SHORTMAX;

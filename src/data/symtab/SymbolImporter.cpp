@@ -154,7 +154,7 @@ TypeNode *SymbolImporter::readType(SymbolFile *file) {
         if (ref == (char) TypeKind::NOTYPE) {
             return nullptr;
         }
-        return symbols_->getRef(static_cast<size_t>((unsigned) ref));
+        return symbols_->getRef(ref);
     }
     TypeNode *type = nullptr;
     auto kind = (TypeKind) file->readChar();
@@ -169,7 +169,7 @@ TypeNode *SymbolImporter::readType(SymbolFile *file) {
         type = readRecordType(file);
     }
     if (type) {
-        symbols_->setRef(static_cast<size_t>((unsigned) ref), type);
+        symbols_->setRef(ref, type);
     }
     return type;
 }
@@ -180,7 +180,7 @@ TypeNode *SymbolImporter::readArrayType(SymbolFile *file) {
     // read dimension
     // TODO support for multi-dimensional arrays
     auto length = (unsigned) file->readInt();
-    auto res = context_->getOrInsertArrayType(EMPTY_POS, EMPTY_POS, nullptr, 1, { length }, { member_t });
+    auto res = context_->getOrInsertArrayType(EMPTY_POS, EMPTY_POS, 1, { length }, { member_t });
     // read in size
     res->setSize((unsigned) file->readInt());
     return res;
@@ -201,7 +201,7 @@ TypeNode *SymbolImporter::readProcedureType(SymbolFile *file) {
         // check for terminator
         ch = file->readChar();
     }
-    return context_->getOrInsertProcedureType(EMPTY_POS, EMPTY_POS, nullptr, std::move(params), false, return_t);
+    return context_->getOrInsertProcedureType(EMPTY_POS, EMPTY_POS, std::move(params), false, return_t);
 }
 
 TypeNode *SymbolImporter::readRecordType(SymbolFile *file) {
@@ -230,7 +230,7 @@ TypeNode *SymbolImporter::readRecordType(SymbolFile *file) {
         // check for terminator
         ch = file->readChar();
     }
-    auto res = context_->getOrInsertRecordType(EMPTY_POS, EMPTY_POS, nullptr, std::move(fields));
+    auto res = context_->getOrInsertRecordType(EMPTY_POS, EMPTY_POS, std::move(fields));
     res->setBaseType(base_t);
     res->setSize(size);
     return res;
