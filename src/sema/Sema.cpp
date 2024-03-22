@@ -161,8 +161,7 @@ Sema::onType(const FilePos &start, [[maybe_unused]] const FilePos &end,
 }
 
 ArrayTypeNode *
-Sema::onArrayType(const FilePos &start, const FilePos &end,
-                  Ident *ident, vector<unique_ptr<ExpressionNode>> indices, TypeNode *type) {
+Sema::onArrayType(const FilePos &start, const FilePos &end, vector<unique_ptr<ExpressionNode>> indices, TypeNode *type) {
     vector<unsigned> values(indices.size(), 0);
     for (size_t i = 0; i < indices.size(); ++i) {
         auto expr = indices[i].get();
@@ -206,39 +205,38 @@ Sema::onArrayType(const FilePos &start, const FilePos &end,
     for (size_t i = values.size(); i > 0; --i) {
         lengths.insert(lengths.begin(), values[i - 1]);
         types.insert(types.begin(), type);
-        type = context_->getOrInsertArrayType(start, end, (i == 1 ? ident : nullptr), lengths.size(), lengths, types);
+        type = context_->getOrInsertArrayType(start, end, lengths.size(), lengths, types);
     }
     return dynamic_cast<ArrayTypeNode *>(type);
 }
 
 PointerTypeNode *
-Sema::onPointerType(const FilePos &start, const FilePos &end, Ident *ident, unique_ptr<QualIdent> reference) {
+Sema::onPointerType(const FilePos &start, const FilePos &end, unique_ptr<QualIdent> reference) {
     auto sym = symbols_->lookup(reference.get());
     if (!sym) {
-        auto node = context_->getOrInsertPointerType(start, end, ident, nullptr);
+        auto node = context_->getOrInsertPointerType(start, end, nullptr);
         forwards_[reference->name()] = node;
         logger_.debug("Found possible forward type reference: " + to_string(*reference));
         return node;
     } else {
         auto type = onTypeReference(start, end, std::move(reference));
-        return onPointerType(start, end, ident, type);
+        return onPointerType(start, end, type);
     }
 }
 
 PointerTypeNode *
-Sema::onPointerType([[maybe_unused]] const FilePos &start, const FilePos &end,
-                                     Ident *ident, TypeNode *base) {
+Sema::onPointerType([[maybe_unused]] const FilePos &start, const FilePos &end, TypeNode *base) {
     if (!base->isRecord()) {
         // O07.6.4: Pointer base type must be a record type.
         logger_.error(start, "pointer base type must be a record type.");
     }
-    return context_->getOrInsertPointerType(start, end, ident, base);
+    return context_->getOrInsertPointerType(start, end, base);
 }
 
 ProcedureTypeNode *
 Sema::onProcedureType([[maybe_unused]] const FilePos &start, const FilePos &end,
-                      Ident *ident, vector<unique_ptr<ParameterNode>> params, bool varargs, TypeNode *ret) {
-    return context_->getOrInsertProcedureType(start, end, ident, std::move(params), varargs, ret);
+                      vector<unique_ptr<ParameterNode>> params, bool varargs, TypeNode *ret) {
+    return context_->getOrInsertProcedureType(start, end, std::move(params), varargs, ret);
 }
 
 unique_ptr<ParameterNode>
@@ -255,22 +253,14 @@ Sema::onParameter(const FilePos &start, [[maybe_unused]] const FilePos &end,
 }
 
 RecordTypeNode *
-Sema::onRecordType(const FilePos &start, const FilePos &end,
-                  Ident *ident, vector<unique_ptr<FieldNode>> fields) {
-    if (fields.empty()) {
-        logger_.error(start, "records needs at least one field.");
-    }
-    auto node = context_->getOrInsertRecordType(start, end, ident, std::move(fields));
+Sema::onRecordType(const FilePos &start, const FilePos &end, vector<unique_ptr<FieldNode>> fields) {
+//    if (fields.empty()) {
+//        logger_.error(start, "records needs at least one field.");
+//    }
+    auto node = context_->getOrInsertRecordType(start, end, std::move(fields));
     set<string> names;
     for (size_t i = 0; i < node->getFieldCount(); i++) {
         auto field = node->getField(i);
-        if (field->getIdentifier()->isExported()) {
-            if (symbols_->getLevel() != SymbolTable::MODULE_LEVEL) {
-                logger_.error(field->pos(), "only top-level declarations can be exported.");
-            } else if (!node->getIdentifier()->isExported()) {
-                logger_.error(field->pos(), "cannot export fields of non-exported record type.");
-            }
-        }
         if (names.count(field->getIdentifier()->name())) {
             logger_.error(field->pos(), "duplicate record field: " + to_string(*field->getIdentifier()) + ".");
         } else {
@@ -314,7 +304,7 @@ Sema::onTypeReference(const FilePos &start, const FilePos &end,
         for (size_t i = dimensions; i > 0; --i) {
             lengths.insert(lengths.begin(), 0);
             types.insert(types.begin(), type);
-            type = context_->getOrInsertArrayType(start, end, nullptr, lengths.size(), lengths, types);
+            type = context_->getOrInsertArrayType(start, end, lengths.size(), lengths, types);
         }
         return type;
     } else {
@@ -1564,8 +1554,23 @@ Sema::assertUnique(IdentDef *ident, DeclarationNode *node) {
 
 void
 Sema::checkExport(DeclarationNode *node) {
-    if (node->getLevel() != SymbolTable::MODULE_LEVEL && node->getIdentifier()->isExported()) {
-        logger_.error(node->getIdentifier()->start(), "only top-level declarations can be exported.");
+    if (node->getIdentifier()->isExported()) {
+        if (node->getLevel() != SymbolTable::MODULE_LEVEL) {
+            logger_.error(node->getIdentifier()->start(), "only top-level declarations can be exported.");
+        }
+    } else {
+        if (node->getNodeType() == NodeType::type) {
+            auto decl = dynamic_cast<TypeDeclarationNode *>(node);
+            if (decl->getType()->kind() == TypeKind::RECORD) {
+                auto type = dynamic_cast<RecordTypeNode *>(decl->getType());
+                for (size_t i = 0; i < type->getFieldCount(); i++) {
+                    auto field = type->getField(i);
+                    if (field->getIdentifier()->isExported()) {
+                        logger_.error(field->pos(), "cannot export fields of non-exported record type.");
+                    }
+                }
+            }
+        }
     }
 }
 

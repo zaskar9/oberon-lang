@@ -109,16 +109,14 @@ public:
 
     unique_ptr<TypeDeclarationNode> onType(const FilePos &, const FilePos &,
                                            unique_ptr<IdentDef>, TypeNode *);
-    ArrayTypeNode *onArrayType(const FilePos &, const FilePos &,
-                               Ident *, vector<unique_ptr<ExpressionNode>>, TypeNode *);
-    PointerTypeNode *onPointerType(const FilePos &, const FilePos &, Ident *, unique_ptr<QualIdent>);
-    PointerTypeNode *onPointerType(const FilePos &, const FilePos &, Ident *, TypeNode *);
+    ArrayTypeNode *onArrayType(const FilePos &, const FilePos &, vector<unique_ptr<ExpressionNode>>, TypeNode *);
+    PointerTypeNode *onPointerType(const FilePos &, const FilePos &, unique_ptr<QualIdent>);
+    PointerTypeNode *onPointerType(const FilePos &, const FilePos &, TypeNode *);
     ProcedureTypeNode *onProcedureType(const FilePos &, const FilePos &,
-                                       Ident *, vector<unique_ptr<ParameterNode>>, bool varargs, TypeNode *);
-
-    unique_ptr<ParameterNode> onParameter(const FilePos &, const FilePos &, unique_ptr<Ident>, TypeNode *, bool, unsigned = 0);
-
-    RecordTypeNode *onRecordType(const FilePos &, const FilePos &, Ident *, vector<unique_ptr<FieldNode>>);
+                                       vector<unique_ptr<ParameterNode>>, bool varargs, TypeNode *);
+    unique_ptr<ParameterNode> onParameter(const FilePos &, const FilePos &,
+                                          unique_ptr<Ident>, TypeNode *, bool, unsigned = 0);
+    RecordTypeNode *onRecordType(const FilePos &, const FilePos &, vector<unique_ptr<FieldNode>>);
     unique_ptr<FieldNode> onField(const FilePos&, const FilePos&, unique_ptr<IdentDef>, TypeNode*, unsigned = 0);
 
     TypeNode *onTypeReference(const FilePos &, const FilePos &, unique_ptr<QualIdent>, unsigned = 0);

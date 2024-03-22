@@ -13,8 +13,10 @@
 #include "NodeVisitor.h"
 #include <iostream>
 #include <iomanip>
+#include <string>
 #include <vector>
 
+using std::string;
 using std::vector;
 
 class NodePrettyPrinter final : private NodeVisitor {
@@ -23,10 +25,12 @@ private:
     size_t indent_;
     std::ostream &stream_;
     bool isDecl_;
+    ModuleNode *module_;
 
     void indent();
     void block(BlockNode &, bool isGlobal);
     void selectors(vector<unique_ptr<Selector>> &);
+    void qualident(DeclarationNode *);
 
     void visit(ModuleNode &) override;
     void visit(ProcedureNode &) override;
@@ -73,8 +77,9 @@ private:
     void visit(ReturnNode &) override;
 
 public:
-    explicit NodePrettyPrinter(std::ostream &stream) : indent_(0), stream_(stream), isDecl_(false) { };
-    ~NodePrettyPrinter() = default;
+    explicit NodePrettyPrinter(std::ostream &stream) :
+            indent_(0), stream_(stream), isDecl_(false), module_() { };
+    ~NodePrettyPrinter() override = default;
 
     void print(Node *node);
 

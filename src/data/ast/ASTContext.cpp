@@ -25,13 +25,13 @@ ASTContext::setTranslationUnit(unique_ptr<ModuleNode> module) {
 
 ArrayTypeNode *
 ASTContext::getOrInsertArrayType(const FilePos &start, const FilePos &end,
-                                 Ident *ident, unsigned length, TypeNode *memberType) {
-    return getOrInsertArrayType(start, end, ident, 1, { length }, { memberType });
+                                 unsigned length, TypeNode *memberType) {
+    return getOrInsertArrayType(start, end, 1, { length }, { memberType });
 }
 
 ArrayTypeNode *
 ASTContext::getOrInsertArrayType(const FilePos &start, [[maybe_unused]] const FilePos &end,
-                                 Ident *ident, unsigned dimensions, vector<unsigned> lengths, vector<TypeNode *> types) {
+                                 unsigned dimensions, vector<unsigned> lengths, vector<TypeNode *> types) {
     for (auto &type : array_ts_) {
         if (type->dimensions() == dimensions) {
             bool found = true;
@@ -51,7 +51,7 @@ ASTContext::getOrInsertArrayType(const FilePos &start, [[maybe_unused]] const Fi
         size *= length;
     }
     size *= types[types.size() - 1]->getSize();
-    auto type = make_unique<ArrayTypeNode>(start, ident, dimensions, std::move(lengths), std::move(types));
+    auto type = make_unique<ArrayTypeNode>(start, dimensions, std::move(lengths), std::move(types));
     type->setSize(size);
     auto res = type.get();
     array_ts_.push_back(std::move(type));
@@ -60,17 +60,16 @@ ASTContext::getOrInsertArrayType(const FilePos &start, [[maybe_unused]] const Fi
 
 RecordTypeNode *
 ASTContext::getOrInsertRecordType(const FilePos &start, [[maybe_unused]] const FilePos &end,
-                                  Ident *ident, vector<unique_ptr<FieldNode>> fields) {
-    auto type = make_unique<RecordTypeNode>(start, ident, std::move(fields));
+                                  vector<unique_ptr<FieldNode>> fields) {
+    auto type = make_unique<RecordTypeNode>(start, std::move(fields));
     auto res = type.get();
     record_ts_.push_back(std::move(type));
     return res;
 }
 
 PointerTypeNode *
-ASTContext::getOrInsertPointerType(const FilePos &start, [[maybe_unused]] const FilePos &end,
-                                  Ident *ident, TypeNode *base) {
-    auto type = make_unique<PointerTypeNode>(start, ident, base);
+ASTContext::getOrInsertPointerType(const FilePos &start, [[maybe_unused]] const FilePos &end, TypeNode *base) {
+    auto type = make_unique<PointerTypeNode>(start, base);
     auto res = type.get();
     pointer_ts_.push_back(std::move(type));
     return res;
@@ -78,8 +77,8 @@ ASTContext::getOrInsertPointerType(const FilePos &start, [[maybe_unused]] const 
 
 ProcedureTypeNode *
 ASTContext::getOrInsertProcedureType(const FilePos &start, [[maybe_unused]] const FilePos &end,
-                                     Ident *ident, vector<unique_ptr<ParameterNode>> params, bool varargs, TypeNode *ret) {
-    auto type = make_unique<ProcedureTypeNode>(start, ident, std::move(params), varargs, ret);
+                                     vector<unique_ptr<ParameterNode>> params, bool varargs, TypeNode *ret) {
+    auto type = make_unique<ProcedureTypeNode>(start, std::move(params), varargs, ret);
     auto res = type.get();
     procedure_ts.push_back(std::move(type));
     return res;

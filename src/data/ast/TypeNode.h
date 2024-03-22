@@ -14,6 +14,9 @@
 
 enum class TypeKind : char {
     // WARNING: Changing these values invalidates existing symbol files!
+    // - setting `NOTYPE` to zero will break symbol export and import
+    // - adding more types requires adaptation of `SymbolExporter::write()`
+    // - renumbering the types requires increasing the symbol file version number
     ANYTYPE = 0, NOTYPE = 1, NILTYPE = 2, ENTIRE = 3, FLOATING = 4, NUMERIC = 5,
     ARRAY = 6, POINTER = 7, PROCEDURE = 8, RECORD = 9, SET = 10,
     BOOLEAN = 11,
@@ -24,21 +27,28 @@ enum class TypeKind : char {
 
 std::ostream &operator<<(std::ostream &stream, const TypeKind &kind);
 
+class ModuleNode;
+class TypeDeclarationNode;
+
 class TypeNode : public Node {
 
 private:
-    Ident *ident_;
+    TypeDeclarationNode *decl_;
     TypeKind kind_;
     unsigned int size_;
-    const bool anon_;
     int ref_; // used for import and export
 
+    void setDeclaration(TypeDeclarationNode *);
+
+    friend class TypeDeclarationNode;
+
 public:
-    explicit TypeNode(NodeType nodeType, const FilePos &pos, Ident *ident, TypeKind kind, unsigned int size, int ref = 0) :
-            Node(nodeType, pos), ident_(ident), kind_(kind), size_(size), anon_(ident == nullptr), ref_(ref) {};
+    explicit TypeNode(NodeType nodeType, const FilePos &pos, TypeKind kind, unsigned int size, int ref = 0) :
+            Node(nodeType, pos), decl_(), kind_(kind), size_(size), ref_(ref) {};
     ~TypeNode() override = default;
 
-    [[nodiscard]] Ident *getIdentifier() const;
+    [[nodiscard]] virtual Ident *getIdentifier() const;
+    [[nodiscard]] TypeDeclarationNode *getDeclaration() const;
 
     [[nodiscard]] virtual TypeKind kind() const;
 

@@ -240,7 +240,7 @@ void Parser::type_declarations(vector<unique_ptr<TypeDeclarationNode>> & types) 
         auto ident = identdef();
         auto token = scanner_.next();
         if (assertToken(token.get(), TokenType::op_eq)) {
-            auto node = type(ident.get());
+            auto node = type();
             auto decl = sema_.onType(pos, EMPTY_POS, std::move(ident), node);
             types.push_back(std::move(decl));
             token = scanner_.next();
@@ -255,7 +255,7 @@ void Parser::type_declarations(vector<unique_ptr<TypeDeclarationNode>> & types) 
 
 // TODO type = qualident | array_type | record_type | pointer_type | procedure_type.
 // type = qualident | array_type | record_type | pointer_type .
-TypeNode* Parser::type(Ident* identifier) {
+TypeNode* Parser::type() {
     logger_.debug("type");
     auto token = scanner_.peek();
     if (token->type() == TokenType::const_ident) {
@@ -263,11 +263,11 @@ TypeNode* Parser::type(Ident* identifier) {
         FilePos end = token->end();
         return sema_.onTypeReference(start, end, qualident());
     } else if (token->type() == TokenType::kw_array) {
-        return array_type(identifier);
+        return array_type();
     } else if (token->type() == TokenType::kw_record) {
-        return record_type(identifier);
+        return record_type();
     } else if (token->type() == TokenType::kw_pointer) {
-        return pointer_type(identifier);
+        return pointer_type();
     } else {
         logger_.error(token->start(), "unexpected token: " + to_string(token->type()) + ".");
     }
@@ -277,7 +277,7 @@ TypeNode* Parser::type(Ident* identifier) {
 }
 
 // array_type = "ARRAY" expression { "," expression } "OF" type .
-ArrayTypeNode* Parser::array_type(Ident* identifier) {
+ArrayTypeNode* Parser::array_type() {
     logger_.debug("array_type");
     FilePos pos = scanner_.next()->start(); // skip ARRAY keyword and get its position
     vector<unique_ptr<ExpressionNode>> indices;
@@ -288,7 +288,7 @@ ArrayTypeNode* Parser::array_type(Ident* identifier) {
     }
     if (assertToken(scanner_.peek(), TokenType::kw_of)) {
         scanner_.next(); // skip OF keyword
-        return sema_.onArrayType(pos, EMPTY_POS, identifier, std::move(indices), type());
+        return sema_.onArrayType(pos, EMPTY_POS, std::move(indices), type());
     }
     // [<)>, <;>, <END>]
     resync({ TokenType::semicolon, TokenType::rparen, TokenType::kw_end });
@@ -297,7 +297,7 @@ ArrayTypeNode* Parser::array_type(Ident* identifier) {
 
 // TODO record_type = "RECORD" [ "(" qualident ")" ] [ field_list { ";" field_list } ] END.
 // record_type = "RECORD" field_list { ";" field_list } "END" .
-RecordTypeNode* Parser::record_type(Ident* identifier) {
+RecordTypeNode* Parser::record_type() {
     logger_.debug("record_type");
     FilePos pos = scanner_.next()->start(); // skip RECORD keyword and get its position
     vector<unique_ptr<FieldNode>> fields;
@@ -311,7 +311,7 @@ RecordTypeNode* Parser::record_type(Ident* identifier) {
     }
     // [<)>, <;>, <END>]
     // resync({ TokenType::semicolon, TokenType::rparen, TokenType::kw_end });
-    return sema_.onRecordType(pos, EMPTY_POS, identifier, std::move(fields));
+    return sema_.onRecordType(pos, EMPTY_POS, std::move(fields));
 }
 
 // field_list = ident_list ":" type .
@@ -345,16 +345,16 @@ void Parser::field_list(vector<unique_ptr<FieldNode>> &fields) {
 }
 
 // pointer_type = "POINTER" "TO" type .
-PointerTypeNode* Parser::pointer_type(Ident *identifier) {
+PointerTypeNode* Parser::pointer_type() {
     logger_.debug("pointer_type");
     FilePos pos = scanner_.next()->start(); // skip POINTER keyword and get its position
     if (assertToken(scanner_.peek(), TokenType::kw_to)) {
         scanner_.next(); // skip TO keyword
         // handle possible forward if next token is a qualident
         if (scanner_.peek()->type() == TokenType::const_ident) {
-            return sema_.onPointerType(pos, EMPTY_POS, identifier, qualident());
+            return sema_.onPointerType(pos, EMPTY_POS, qualident());
         }
-        return sema_.onPointerType(pos, EMPTY_POS, identifier, type());
+        return sema_.onPointerType(pos, EMPTY_POS, type());
     }
     // [<)>, <;>, <END>]
     resync({ TokenType::semicolon, TokenType::rparen, TokenType::kw_end });
@@ -397,7 +397,7 @@ void Parser::procedure_declaration(vector<unique_ptr<ProcedureNode>> &procs) {
     auto proc = sema_.onProcedureStart(start, identdef(false));
     auto token = scanner_.peek();
     if (token->type() == TokenType::lparen) {
-        proc->setType(procedure_signature(proc->getIdentifier()));
+        proc->setType(procedure_signature());
     } else if (token->type() == TokenType::colon) {
         logger_.error(token->start(), "function procedures without parameters must have an empty parameter list.");
         scanner_.next(); // skip ":"
@@ -406,11 +406,11 @@ void Parser::procedure_declaration(vector<unique_ptr<ProcedureNode>> &procs) {
             vector<unique_ptr<ParameterNode>> params;
             auto ident = qualident();
             auto type = sema_.onTypeReference(ident->start(), ident->end(), std::move(ident));
-            proc->setType(sema_.onProcedureType(token->start(), token->end(), proc->getIdentifier(), std::move(params), false, type));
+            proc->setType(sema_.onProcedureType(token->start(), token->end(), std::move(params), false, type));
         }
     } else {
         vector<unique_ptr<ParameterNode>> params;
-        proc->setType(sema_.onProcedureType(token->start(), token->end(), proc->getIdentifier(), std::move(params), false, nullptr));
+        proc->setType(sema_.onProcedureType(token->start(), token->end(), std::move(params), false, nullptr));
     }
     token = scanner_.peek();
     if (assertToken(token, TokenType::semicolon)) {
@@ -441,7 +441,7 @@ void Parser::procedure_declaration(vector<unique_ptr<ProcedureNode>> &procs) {
 }
 
 // procedure_heading = formal_parameters [ ":" type ] .
-ProcedureTypeNode* Parser::procedure_signature(Ident* ident) {
+ProcedureTypeNode* Parser::procedure_signature() {
     logger_.debug("procedure_signature");
     // token_ = scanner_.next(); // skip "(" token
     FilePos start = token_->start();
@@ -459,7 +459,7 @@ ProcedureTypeNode* Parser::procedure_signature(Ident* ident) {
         // [<;>]
         resync({TokenType::semicolon});
     }
-    return sema_.onProcedureType(start, peek->end(), ident, std::move(params), varargs, ret);;
+    return sema_.onProcedureType(start, peek->end(), std::move(params), varargs, ret);;
 }
 
 // TODO procedure_body = declarations [ "BEGIN" statement_sequence ] [ "RETURN" expression] "END" .

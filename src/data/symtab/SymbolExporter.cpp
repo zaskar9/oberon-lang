@@ -7,10 +7,10 @@
 using std::filesystem::path;
 
 void SymbolExporter::write(const std::string &name, SymbolTable *symbols) {
-    ref_ = ((int) TypeKind::STRING) + 1;
+    ref_ = ((int) TypeKind::TYPE) + 1;
     path pth;
     auto symdir = config_.getSymDir();
-    if (symdir == "") {
+    if (symdir.empty()) {
         pth = context_->getSourceFileName().parent_path();
     } else {
         pth = symdir;
@@ -143,6 +143,7 @@ void SymbolExporter::writeType(SymbolFile *file, TypeNode *type) {
             break;
     }
     // TODO re-exports
+    // https://github.com/andreaspirklbauer/Oberon-module-imports/blob/master/Sources/FPGAOberon2013/ORB.Mod
 }
 
 void SymbolExporter::writeArrayType(SymbolFile *file, ArrayTypeNode *type) {

@@ -5,6 +5,7 @@
  */
 
 #include "TypeNode.h"
+#include "DeclarationNode.h"
 
 std::ostream &operator<<(std::ostream &stream, const TypeKind &kind) {
     std::string result;
@@ -35,9 +36,18 @@ std::ostream &operator<<(std::ostream &stream, const TypeKind &kind) {
     return stream;
 }
 
-Ident *TypeNode::getIdentifier() const {
-    return ident_;
+void TypeNode::setDeclaration(TypeDeclarationNode *decl) {
+    decl_ = decl;
 }
+
+TypeDeclarationNode *TypeNode::getDeclaration() const {
+    return decl_ ;
+}
+
+Ident *TypeNode::getIdentifier() const {
+    return decl_ ? decl_->getIdentifier() : nullptr;
+}
+
 
 TypeKind TypeNode::kind() const {
     return kind_;
@@ -52,7 +62,7 @@ unsigned int TypeNode::getSize() const {
 }
 
 bool TypeNode::isAnonymous() const {
-    return anon_;
+    return decl_ == nullptr && !isBasic();
 }
 
 bool TypeNode::isArray() const {
