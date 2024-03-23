@@ -1309,21 +1309,21 @@ LLVMIRBuilder::createSizeCall(ExpressionNode *expr) {
 Value *
 LLVMIRBuilder::createMaxMinCall(ExpressionNode *actual, bool isMax) {
     auto decl = dynamic_cast<QualifiedExpression *>(actual)->dereference();
-    auto type = dynamic_cast<TypeDeclarationNode *>(decl);
-    if (type->getType()->isReal()) {
-        if (actual->getType()->getSize() == 4) {
+    auto type = dynamic_cast<TypeDeclarationNode *>(decl)->getType();
+    if (type->isReal()) {
+        if (type->getSize() == 4) {
             value_ = ConstantFP::getInfinity(builder_.getFloatTy(), isMax);
         } else {
             value_ = ConstantFP::getInfinity(builder_.getDoubleTy(), isMax);
         }
-    } else if (type->getType()->isInteger()) {
-        if (actual->getType()->getSize() == 8) {
+    } else if (type->isInteger()) {
+        if (type->getSize() == 8) {
             if (isMax) {
                 value_ = builder_.getInt64((uint64_t)(LLONG_MAX));
             } else {
                 value_ = builder_.getInt64((uint64_t)(LLONG_MIN));
             }
-        } else if (actual->getType()->getSize() == 4) {
+        } else if (type->getSize() == 4) {
             if (isMax) {
                 value_ = builder_.getInt32((uint32_t)(INT_MAX));
             } else {

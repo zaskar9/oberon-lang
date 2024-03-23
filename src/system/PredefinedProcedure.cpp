@@ -58,7 +58,7 @@ ProcedureTypeNode *PredefinedProcedure::dispatch(vector<TypeNode *> actuals, Typ
         return nullptr;
     }
     if ((castIdx_ > 0) && typeType) {
-        auto signature = make_unique<ProcedureTypeNode>(EMPTY_POS, this->getIdentifier(), std::move(types_[0]->parameters()), types_[0]->hasVarArgs(), typeType);
+        auto signature = make_unique<ProcedureTypeNode>(EMPTY_POS, this->getIdentifier(), std::move(types_[0]->parameters()), types_[0]->hasVarArgs(), std::move(typeType));
         return std::move(signature.get());
     }
     for (const auto& type : types_) {
