@@ -748,6 +748,7 @@ Sema::onActualParameters(DeclarationNode *context, TypeNode *base, ActualParamet
         logger_.error(sel->pos(), "fewer actual than formal parameters.");
     }
     vector<TypeNode *> types;
+    TypeNode *typeType;
     for (size_t cnt = 0; cnt < sel->parameters().size(); cnt++) {
         auto expr = sel->parameters()[cnt].get();
         if (!expr) {
@@ -775,6 +776,12 @@ Sema::onActualParameters(DeclarationNode *context, TypeNode *base, ActualParamet
                     }
                 }
                 types.push_back(sel->parameters()[cnt]->getType());
+                if (param->getType()->kind() == TypeKind::TYPE)  {
+                    if (expr->getNodeType() == NodeType::qualified_expression) {
+                        auto decl = dynamic_cast<QualifiedExpression *>(expr)->dereference();
+                        typeType = decl->getType();
+                    }
+                }
             } else {
                 types.push_back(nullTy_);
             }
@@ -783,12 +790,13 @@ Sema::onActualParameters(DeclarationNode *context, TypeNode *base, ActualParamet
             break;
         }
     }
+    
     if (context->getNodeType() == NodeType::procedure) {
         auto decl = dynamic_cast<ProcedureNode *>(context);
         if (decl->isPredefined()) {
             auto predefined = dynamic_cast<PredefinedProcedure *>(decl);
             if (predefined->isOverloaded()) {
-                auto signature = predefined->dispatch(types);
+                auto signature = predefined->dispatch(types, typeType);
                 if (signature) {
                     return signature->getReturnType();
                 }

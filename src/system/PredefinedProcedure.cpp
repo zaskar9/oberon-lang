@@ -8,17 +8,36 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <iostream>
 
 using std::make_unique;
 using std::pair;
 using std::string;
 using std::vector;
+using std::cout;
 
 PredefinedProcedure::PredefinedProcedure(ProcKind kind, const string &name,
                                          const vector<pair<TypeNode *, bool>> &pairs, bool varargs, TypeNode *ret) :
-        ProcedureNode(make_unique<IdentDef>(name), nullptr), types_(), kind_(kind) {
+        ProcedureNode(make_unique<IdentDef>(name), nullptr), types_(), castIdx_(), kind_(kind) {
     auto type = overload(pairs, varargs, ret);
     this->setType(type);
+    castIdx_ = 0;
+    if (ret != nullptr) {
+        if (ret->kind() == TypeKind::TYPE) {
+            castIdx_ = -1;
+            int i = 1;
+            for (auto p : pairs) {
+                if (p.first->kind() == TypeKind::TYPE) {
+                    if (castIdx_ != -1) {
+                        castIdx_ = -1;
+                        break;
+                    }
+                    castIdx_ = i;
+                }
+                i++;
+            }
+        }
+    }
 }
 
 PredefinedProcedure::~PredefinedProcedure() = default;
@@ -34,7 +53,14 @@ PredefinedProcedure::overload(const vector<pair<TypeNode *, bool>> &pairs, bool 
     return types_.back().get();
 }
 
-ProcedureTypeNode *PredefinedProcedure::dispatch(vector<TypeNode *> actuals) const {
+ProcedureTypeNode *PredefinedProcedure::dispatch(vector<TypeNode *> actuals, TypeNode *typeType) const {
+    if (castIdx_ < 0) {
+        return nullptr;
+    }
+    if ((castIdx_ > 0) && typeType) {
+        auto signature = make_unique<ProcedureTypeNode>(EMPTY_POS, this->getIdentifier(), std::move(types_[0]->parameters()), types_[0]->hasVarArgs(), typeType);
+        return std::move(signature.get());
+    }
     for (const auto& type : types_) {
         auto signature = type.get();
         if (actuals.size() >= signature->parameters().size()) {
@@ -51,7 +77,7 @@ ProcedureTypeNode *PredefinedProcedure::dispatch(vector<TypeNode *> actuals) con
 }
 
 bool PredefinedProcedure::isOverloaded() const {
-    return types_.size() > 1;
+    return (types_.size() > 1) || (castIdx_ != 0);
 }
 
 ProcKind

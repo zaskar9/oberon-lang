@@ -6,6 +6,7 @@
 
 #include "LLVMIRBuilder.h"
 
+#include <limits>
 #include <csignal>
 #include <vector>
 #include <llvm/IR/Verifier.h>
@@ -951,6 +952,10 @@ LLVMIRBuilder::createPredefinedCall(PredefinedProcedure *proc, QualIdent *ident,
             return createEntireCall(params[0]);
         case ProcKind::ABS:
             return createAbsCall(actuals[0]->getType(), params[0]);
+        case ProcKind::MAX:
+            return createMaxMinCall(actuals[0].get(), true);
+        case ProcKind::MIN:
+            return createMaxMinCall(actuals[0].get(), false);
         case ProcKind::SIZE:
         case ProcKind::SYSTEM_SIZE:
             return createSizeCall(actuals[0].get());
@@ -1298,6 +1303,42 @@ LLVMIRBuilder::createSizeCall(ExpressionNode *expr) {
     auto layout = module_->getDataLayout();
     auto size = layout.getTypeAllocSize(getLLVMType(type->getType()));
     value_ = builder_.getInt64(size);
+    return value_;
+}
+
+Value *
+LLVMIRBuilder::createMaxMinCall(ExpressionNode *actual, bool isMax) {
+    auto decl = dynamic_cast<QualifiedExpression *>(actual)->dereference();
+    auto type = dynamic_cast<TypeDeclarationNode *>(decl);
+    if (type->getType()->isReal()) {
+        if (actual->getType()->getSize() == 4) {
+            value_ = ConstantFP::getInfinity(builder_.getFloatTy(), isMax);
+        } else {
+            value_ = ConstantFP::getInfinity(builder_.getDoubleTy(), isMax);
+        }
+    } else if (type->getType()->isInteger()) {
+        if (actual->getType()->getSize() == 8) {
+            if (isMax) {
+                value_ = builder_.getInt64((uint64_t)(LLONG_MAX));
+            } else {
+                value_ = builder_.getInt64((uint64_t)(LLONG_MIN));
+            }
+        } else if (actual->getType()->getSize() == 4) {
+            if (isMax) {
+                value_ = builder_.getInt32((uint32_t)(INT_MAX));
+            } else {
+                value_ = builder_.getInt32((uint32_t)(INT_MIN));
+            }
+        } else {
+            if (isMax) {
+                value_ = builder_.getInt64((uint16_t)(SHRT_MAX));
+            } else {
+                value_ = builder_.getInt64((uint16_t)(SHRT_MIN));
+            }
+        }
+    } else {
+        logger_.error(actual->pos(), "type mismatch: REAL or INTEGER expected.");
+    }
     return value_;
 }
 

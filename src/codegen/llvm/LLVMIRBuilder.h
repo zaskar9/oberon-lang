@@ -98,7 +98,8 @@ private:
     Value *createRorCall(Value *, Value *);
     Value *createShortCall(ExpressionNode *, Value *);
     Value *createSizeCall(ExpressionNode *);
-    
+    Value *createMaxMinCall(ExpressionNode *, bool);
+
     Value *createSystemAdrCall(vector<unique_ptr<ExpressionNode>> &, std::vector<Value *> &);
     Value *createSystemGetCall(vector<unique_ptr<ExpressionNode>> &, std::vector<Value *> &);
     Value *createSystemPutCall(vector<unique_ptr<ExpressionNode>> &, std::vector<Value *> &);
