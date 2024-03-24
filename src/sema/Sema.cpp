@@ -254,9 +254,6 @@ Sema::onParameter(const FilePos &start, [[maybe_unused]] const FilePos &end,
 
 RecordTypeNode *
 Sema::onRecordType(const FilePos &start, const FilePos &end, vector<unique_ptr<FieldNode>> fields) {
-//    if (fields.empty()) {
-//        logger_.error(start, "records needs at least one field.");
-//    }
     auto node = context_->getOrInsertRecordType(start, end, std::move(fields));
     set<string> names;
     for (size_t i = 0; i < node->getFieldCount(); i++) {

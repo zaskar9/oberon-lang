@@ -1,4 +1,4 @@
-MODULE SymbolFile;
+MODULE SymbolExport;
 IMPORT Oberon;
 
 CONST BOOLFALSE* = FALSE;
@@ -21,6 +21,7 @@ CONST BOOLFALSE* = FALSE;
 
 TYPE Vector* = ARRAY 10 OF INTEGER;
      Matrix* = ARRAY 10, 10 OF INTEGER;
+     (*Object* = RECORD END;*)
      Point2d* = RECORD
         x*, y*: INTEGER
      END;
@@ -41,11 +42,13 @@ TYPE Vector* = ARRAY 10 OF INTEGER;
         points*: ARRAY 256 OF Point2d
      END;
      Polygons* = ARRAY 1024 OF Polygon;
-     (*Node* = POINTER TO NodeDesc;
+     Node* = POINTER TO NodeDesc;
      NodeDesc* = RECORD
         val*: INTEGER;
-        next: Node
-     END;*)
+        next*: Node
+     END;
+     (*Elem* = POINTER TO RECORD val*: INTEGER; next*: Elem END;*)
+     BinTreeNode* = RECORD val*: INTEGER; left*, right*: POINTER TO BinTreeNode END;
 
 VAR s: SHORTINT;
     i: INTEGER;
@@ -56,10 +59,13 @@ VAR s: SHORTINT;
 PROCEDURE SetTime*(time: Oberon.TimeSpec);
 END SetTime;
 
+PROCEDURE Swap*(VAR left, right: BinTreeNode);
+END Swap;
+
 BEGIN
     s := SHORTMAX;
     i := SHORTMAX * SHORTMAX;
     l := INTMAX * INTMAX;
     f := FLOATMAX;
     d := FLOATMAX * FLOATMAX
-END SymbolFile.
+END SymbolExport.

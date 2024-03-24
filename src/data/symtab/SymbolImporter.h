@@ -5,6 +5,7 @@
 #ifndef OBERON_LANG_SYMBOLIMPORTER_H
 #define OBERON_LANG_SYMBOLIMPORTER_H
 
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -17,9 +18,10 @@
 #include "data/ast/TypeNode.h"
 #include "logging/Logger.h"
 
+using std::map;
 using std::string;
-using std::vector;
 using std::unique_ptr;
+using std::vector;
 
 class SymbolImporter {
 
@@ -27,18 +29,20 @@ private:
     CompilerConfig &config_;
     ASTContext *context_;
     Logger &logger_;
-    vector<TypeNode*> types_;
+    vector<TypeNode *> types_;
     SymbolTable *symbols_;
+    map<int, PointerTypeNode *> forwards_;
 
     void readDeclaration(SymbolFile *, NodeType, ModuleNode *);
-    TypeNode *readType(SymbolFile *);
+    TypeNode *readType(SymbolFile *, PointerTypeNode * = nullptr);
     TypeNode *readArrayType(SymbolFile *);
+    TypeNode *readPointerType(SymbolFile *);
     TypeNode *readProcedureType(SymbolFile *);
     TypeNode *readRecordType(SymbolFile *);
 
 public:
     explicit SymbolImporter(CompilerConfig &config, ASTContext *context) :
-            config_(config), context_(context), logger_(config.logger()), types_(), symbols_() {};
+            config_(config), context_(context), logger_(config.logger()), types_(), symbols_(), forwards_() {};
     ~SymbolImporter() = default;
 
     unique_ptr<ModuleNode> read(const string &module, SymbolTable *symbols);
