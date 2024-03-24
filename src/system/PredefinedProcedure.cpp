@@ -8,33 +8,26 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include <iostream>
 
 using std::make_unique;
 using std::pair;
 using std::string;
 using std::vector;
-using std::cout;
 
 PredefinedProcedure::PredefinedProcedure(ProcKind kind, const string &name,
                                          const vector<pair<TypeNode *, bool>> &pairs, bool varargs, TypeNode *ret) :
-        ProcedureNode(make_unique<IdentDef>(name), nullptr), types_(), castIdx_(), kind_(kind) {
+        ProcedureNode(make_unique<IdentDef>(name), nullptr), types_(), isCast_(), castSignature_(), kind_(kind) {
     auto type = overload(pairs, varargs, ret);
     this->setType(type);
-    castIdx_ = 0;
-    if (ret != nullptr) {
-        if (ret->kind() == TypeKind::TYPE) {
-            castIdx_ = -1;
-            int i = 1;
-            for (auto p : pairs) {
-                if (p.first->kind() == TypeKind::TYPE) {
-                    if (castIdx_ != -1) {
-                        castIdx_ = -1;
-                        break;
-                    }
-                    castIdx_ = i;
+    isCast_ = false;
+    if (ret && ret->kind() == TypeKind::TYPE) {
+        for (auto p : pairs) {
+            if (p.first->kind() == TypeKind::TYPE) {
+                if (isCast_) {
+                    isCast_ = false; // only one type parameter expected
+                    break;
                 }
-                i++;
+                isCast_ = true;
             }
         }
     }
@@ -47,19 +40,17 @@ PredefinedProcedure::overload(const vector<pair<TypeNode *, bool>> &pairs, bool 
     vector<unique_ptr<ParameterNode>> params;
     params.reserve(pairs.size());
     for (auto p : pairs) {
-        params.push_back(std::make_unique<ParameterNode>(EMPTY_POS, make_unique<Ident>("_"), p.first, p.second));
+        params.push_back(make_unique<ParameterNode>(EMPTY_POS, make_unique<Ident>("_"), p.first, p.second));
     }
     types_.push_back(make_unique<ProcedureTypeNode>(EMPTY_POS, this->getIdentifier(), std::move(params), varargs, ret));
     return types_.back().get();
 }
 
-ProcedureTypeNode *PredefinedProcedure::dispatch(vector<TypeNode *> actuals, TypeNode *typeType) const {
-    if (castIdx_ < 0) {
-        return nullptr;
-    }
-    if ((castIdx_ > 0) && typeType) {
-        auto signature = make_unique<ProcedureTypeNode>(EMPTY_POS, this->getIdentifier(), std::move(types_[0]->parameters()), types_[0]->hasVarArgs(), std::move(typeType));
-        return std::move(signature.get());
+ProcedureTypeNode *PredefinedProcedure::dispatch(vector<TypeNode *> actuals, TypeNode *typeType) {
+    if (isCast_ && typeType) {
+        if (castSignature_) delete castSignature_;
+        castSignature_ = new ProcedureTypeNode(EMPTY_POS, this->getIdentifier(), std::move(types_[0]->parameters()), types_[0]->hasVarArgs(), std::move(typeType));
+        return castSignature_;
     }
     for (const auto& type : types_) {
         auto signature = type.get();
@@ -77,7 +68,7 @@ ProcedureTypeNode *PredefinedProcedure::dispatch(vector<TypeNode *> actuals, Typ
 }
 
 bool PredefinedProcedure::isOverloaded() const {
-    return (types_.size() > 1) || (castIdx_ != 0);
+    return (types_.size() > 1) || isCast_;
 }
 
 ProcKind

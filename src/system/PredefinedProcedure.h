@@ -12,8 +12,6 @@
 #include <vector>
 
 #include "data/ast/ProcedureNode.h"
-#include "data/ast/ASTContext.h"
-#include "data/ast/NodeVisitor.h"
 
 using std::make_unique;
 using std::pair;
@@ -31,7 +29,8 @@ class PredefinedProcedure : public ProcedureNode {
 
 private:
     vector<unique_ptr<ProcedureTypeNode>> types_;
-    int castIdx_;
+    bool isCast_;
+    ProcedureTypeNode *castSignature_;
     ProcKind kind_;
 
 public:
@@ -39,7 +38,7 @@ public:
     ~PredefinedProcedure() override;
 
     ProcedureTypeNode* overload(const vector<pair<TypeNode*, bool>> &, bool, TypeNode *);
-    ProcedureTypeNode* dispatch(vector<TypeNode*>, TypeNode *) const;
+    ProcedureTypeNode* dispatch(vector<TypeNode*>, TypeNode *);
     [[nodiscard]] bool isOverloaded() const;
 
     [[nodiscard]] ProcKind getKind() const;

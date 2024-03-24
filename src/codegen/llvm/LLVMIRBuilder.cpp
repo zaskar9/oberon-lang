@@ -1319,21 +1319,21 @@ LLVMIRBuilder::createMaxMinCall(ExpressionNode *actual, bool isMax) {
     } else if (type->isInteger()) {
         if (type->getSize() == 8) {
             if (isMax) {
-                value_ = builder_.getInt64((uint64_t)(LLONG_MAX));
+                value_ = builder_.getInt64((uint64_t)std::numeric_limits<int64_t>::max());
             } else {
-                value_ = builder_.getInt64((uint64_t)(LLONG_MIN));
+                value_ = builder_.getInt64((uint64_t)std::numeric_limits<int64_t>::min());
             }
         } else if (type->getSize() == 4) {
             if (isMax) {
-                value_ = builder_.getInt32((uint32_t)(INT_MAX));
+                value_ = builder_.getInt32((uint32_t)std::numeric_limits<int32_t>::max());
             } else {
-                value_ = builder_.getInt32((uint32_t)(INT_MIN));
+                value_ = builder_.getInt32((uint32_t)std::numeric_limits<int32_t>::min());
             }
         } else {
             if (isMax) {
-                value_ = builder_.getInt64((uint16_t)(SHRT_MAX));
+                value_ = builder_.getInt64((uint16_t)std::numeric_limits<int16_t>::max());
             } else {
-                value_ = builder_.getInt64((uint16_t)(SHRT_MIN));
+                value_ = builder_.getInt64((uint16_t)std::numeric_limits<int16_t>::min());
             }
         }
     } else {
