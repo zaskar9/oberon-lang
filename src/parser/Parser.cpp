@@ -397,8 +397,10 @@ void Parser::procedure_declaration(vector<unique_ptr<ProcedureNode>> &procs) {
     auto proc = sema_.onProcedureStart(start, identdef(false));
     auto token = scanner_.peek();
     if (token->type() == TokenType::lparen) {
+        // parse formal parameters
         proc->setType(procedure_signature());
     } else if (token->type() == TokenType::colon) {
+        // parse return type
         logger_.error(token->start(), "function procedures without parameters must have an empty parameter list.");
         scanner_.next(); // skip ":"
         token = scanner_.peek();
@@ -409,6 +411,7 @@ void Parser::procedure_declaration(vector<unique_ptr<ProcedureNode>> &procs) {
             proc->setType(sema_.onProcedureType(token->start(), token->end(), std::move(params), false, type));
         }
     } else {
+        // handle missing formal parameters
         vector<unique_ptr<ParameterNode>> params;
         proc->setType(sema_.onProcedureType(token->start(), token->end(), std::move(params), false, nullptr));
     }
@@ -541,7 +544,7 @@ void Parser::fp_section(vector<unique_ptr<ParameterNode>> &params, bool &varargs
             } else if (token->type() == TokenType::colon) {
                 break;
             } else {
-                logger_.error(token->start(), to_string(token->type()) + "unexpected.");
+                logger_.error(token->start(), to_string(token->type()) + " unexpected.");
                 break;
             }
         }
@@ -573,13 +576,17 @@ TypeNode *Parser::formal_type() {
         }
         ++dims;
     }
-    if (assertToken(scanner_.peek(), TokenType::const_ident)) {
+    auto token = scanner_.peek();
+    if (token->type() == TokenType::kw_pointer || token->type() == TokenType::kw_record) {
+        logger_.error(token->start(), "formal type cannot be an anonymous record or pointer type.");
+    } else if (assertToken(scanner_.peek(), TokenType::const_ident)) {
         auto ident = qualident();
         if (dims == 0) {
             start = ident->start();
         }
         return sema_.onTypeReference(start, ident->end(), std::move(ident), dims);
     }
+    resync({ TokenType::semicolon, TokenType::rparen });
     return nullptr;
 }
 

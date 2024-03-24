@@ -147,22 +147,31 @@ void SymbolImporter::readDeclaration(SymbolFile *file, NodeType nodeType, Module
     }
 }
 
-TypeNode *SymbolImporter::readType(SymbolFile *file) {
+TypeNode *SymbolImporter::readType(SymbolFile *file, PointerTypeNode *ptr) {
+    TypeNode *type = nullptr;
     auto ref = file->readChar();
+    // handle type references
     if (ref < 0) {
         ref *= -1;
         if (ref == (char) TypeKind::NOTYPE) {
             return nullptr;
         }
-        return symbols_->getRef(ref);
+        // check whether the referenced type has already been imported
+        type = symbols_->getRef(ref);
+        if (type) {
+            return type;
+        }
+        // referenced type has not yet been imported, create a forward reference
+        if (ptr) {
+            forwards_[ref] = ptr;
+        }
+        return nullptr;
     }
-    TypeNode *type = nullptr;
     auto kind = (TypeKind) file->readChar();
     if (kind == TypeKind::ARRAY) {
         type = readArrayType(file);
     } else if (kind == TypeKind::POINTER) {
-        // TODO import pointer type
-        logger_.error(file->path(), "export of pointer type kind not yet supported.");
+        type = readPointerType(file);
     } else if (kind == TypeKind::PROCEDURE) {
         type = readProcedureType(file);
     } else if (kind == TypeKind::RECORD) {
@@ -170,38 +179,73 @@ TypeNode *SymbolImporter::readType(SymbolFile *file) {
     }
     if (type) {
         symbols_->setRef(ref, type);
+        // check if the imported type resolves a forward reference
+        if (forwards_.contains(ref)) {
+            forwards_[ref]->setBase(type);
+        }
     }
     return type;
 }
 
 TypeNode *SymbolImporter::readArrayType(SymbolFile *file) {
+    unsigned dim = 1;
     // read member type
-    TypeNode *member_t = readType(file);
+    vector<TypeNode *> types;
+    TypeNode *type = readType(file);
+    types.push_back(type);
     // read dimension
-    // TODO support for multi-dimensional arrays
+    vector<unsigned> lengths;
     auto length = (unsigned) file->readInt();
-    auto res = context_->getOrInsertArrayType(EMPTY_POS, EMPTY_POS, 1, { length }, { member_t });
+    lengths.push_back(length);
+    // check for multi-dimensional array
+    if (type->isArray()) {
+        auto array = dynamic_cast<ArrayTypeNode *>(type);
+        dim += array->dimensions();
+        lengths.insert(lengths.end(), array->lengths().begin(), array->lengths().end());
+        types.insert(types.end(), array->types().begin(), array->types().end());
+    }
+    auto res = context_->getOrInsertArrayType(EMPTY_POS, EMPTY_POS, dim, lengths, types);
     // read in size
     res->setSize((unsigned) file->readInt());
     return res;
 }
 
+TypeNode *SymbolImporter::readPointerType(SymbolFile *file) {
+    // create a pointer type with null base type
+    auto ptr = context_->getOrInsertPointerType(EMPTY_POS, EMPTY_POS, nullptr);
+    // try to read the base type
+    auto base = readType(file, ptr);
+    // base type successfully imported
+    if (base) {
+        ptr->setBase(base);
+    }
+    return ptr;
+}
+
 TypeNode *SymbolImporter::readProcedureType(SymbolFile *file) {
     // read return type
-    TypeNode *return_t = readType(file);
+    TypeNode *ret = readType(file);
     // read parameters
     std::vector<std::unique_ptr<ParameterNode>> params;
+    TypeNode *type = nullptr;
+    int index = 0;
     auto ch = file->readChar();
     while (ch != 0) {
         auto var = file->readChar();
-        auto ptype = readType(file);
-        auto param = make_unique<ParameterNode>(EMPTY_POS, make_unique<Ident>("_"), ptype, (var == 0));
+        auto cur = readType(file);
+        if (cur) {
+            index = 0;
+            type = cur;
+        } else {
+            index++;
+        }
+        auto param = make_unique<ParameterNode>(EMPTY_POS, make_unique<Ident>("_"), type, (var == 0), index);
         param->setLevel(SymbolTable::MODULE_LEVEL);
         params.push_back(std::move(param));
         // check for terminator
         ch = file->readChar();
     }
-    return context_->getOrInsertProcedureType(EMPTY_POS, EMPTY_POS, std::move(params), false, return_t);
+    return context_->getOrInsertProcedureType(EMPTY_POS, EMPTY_POS, std::move(params), false, ret);
 }
 
 TypeNode *SymbolImporter::readRecordType(SymbolFile *file) {
@@ -216,6 +260,8 @@ TypeNode *SymbolImporter::readRecordType(SymbolFile *file) {
     auto size = (unsigned) file->readInt();
     // read fields
     vector<unique_ptr<FieldNode>> fields;
+    TypeNode *type = nullptr;
+    int index = 0;
     auto ch = file->readChar();
     while (ch != 0) {
         // read field number
@@ -223,10 +269,16 @@ TypeNode *SymbolImporter::readRecordType(SymbolFile *file) {
         // read field name
         auto name = file->readString();
         // read field res
-        auto type = readType(file);
+        auto cur = readType(file);
+        if (cur) {
+            index = 0;
+            type = cur;
+        } else {
+            index++;
+        }
         // read field offset
         [[maybe_unused]] auto offset = file->readInt();
-        fields.push_back(make_unique<FieldNode>(EMPTY_POS, make_unique<IdentDef>(name), type));
+        fields.push_back(make_unique<FieldNode>(EMPTY_POS, make_unique<IdentDef>(name), type, index));
         // check for terminator
         ch = file->readChar();
     }
