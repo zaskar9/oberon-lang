@@ -192,5 +192,6 @@ void Oberon07::initSymbolTable(SymbolTable *symbols) {
     this->createProcedure(ProcKind::SYSTEM_BIT, "BIT", {{longIntType, false}, {intType, false}}, boolType, false, true);
     this->createProcedure(ProcKind::SYSTEM_COPY, "COPY", {{longIntType, false}, {longIntType, false}, {longIntType, false}}, nullptr, false, true);
     this->createProcedure(ProcKind::SYSTEM_SIZE, "SIZE", {{typeType, false}}, longIntType, false, true);
+    this->createProcedure(ProcKind::SYSTEM_VAL, "VAL", {{typeType, false},{anyType, false}}, typeType, false, true);
     leaveNamespace();
 }
