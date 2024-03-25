@@ -14,6 +14,10 @@ bool ProcedureTypeNode::hasVarArgs() const {
     return varargs_;
 }
 
+void ProcedureTypeNode::setReturnType(TypeNode *type) {
+    type_ = type;
+}
+
 TypeNode *ProcedureTypeNode::getReturnType() const {
     return type_;
 }

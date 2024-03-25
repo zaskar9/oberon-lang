@@ -34,6 +34,7 @@ public:
 
     [[nodiscard]] bool hasVarArgs() const;
 
+    void setReturnType(TypeNode *);
     [[nodiscard]] TypeNode *getReturnType() const;
 
     void accept(NodeVisitor &visitor) final;

@@ -30,7 +30,6 @@ class PredefinedProcedure : public ProcedureNode {
 private:
     vector<unique_ptr<ProcedureTypeNode>> types_;
     bool isCast_;
-    ProcedureTypeNode *castSignature_;
     ProcKind kind_;
 
 public:

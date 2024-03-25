@@ -16,7 +16,7 @@ using std::vector;
 
 PredefinedProcedure::PredefinedProcedure(ProcKind kind, const string &name,
                                          const vector<pair<TypeNode *, bool>> &pairs, bool varargs, TypeNode *ret) :
-        ProcedureNode(make_unique<IdentDef>(name), nullptr), types_(), isCast_(), castSignature_(), kind_(kind) {
+        ProcedureNode(make_unique<IdentDef>(name), nullptr), types_(), isCast_(), kind_(kind) {
     auto type = overload(pairs, varargs, ret);
     this->setType(type);
     isCast_ = false;
@@ -48,9 +48,9 @@ PredefinedProcedure::overload(const vector<pair<TypeNode *, bool>> &pairs, bool 
 
 ProcedureTypeNode *PredefinedProcedure::dispatch(vector<TypeNode *> actuals, TypeNode *typeType) {
     if (isCast_ && typeType) {
-        if (castSignature_) delete castSignature_;
-        castSignature_ = new ProcedureTypeNode(EMPTY_POS, this->getIdentifier(), std::move(types_[0]->parameters()), types_[0]->hasVarArgs(), std::move(typeType));
-        return castSignature_;
+        auto signature = types_[0].get();
+        signature->setReturnType(typeType); // TODO : mutate not ideal
+        return signature;
     }
     for (const auto& type : types_) {
         auto signature = type.get();
