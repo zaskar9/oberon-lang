@@ -77,6 +77,9 @@ void SymbolExporter::writeDeclaration(SymbolFile *file, DeclarationNode *decl) {
                 case TypeKind::SHORTINT:
                     file->writeShort(static_cast<short>(dynamic_cast<IntegerLiteralNode *>(con->getValue())->value()));
                     break;
+                case TypeKind::SHORTINT:
+                    file->writeShort(static_cast<short>(dynamic_cast<IntegerLiteralNode *>(con->getValue())->value()));
+                    break;
                 case TypeKind::INTEGER:
                     file->writeInt(static_cast<int>(dynamic_cast<IntegerLiteralNode *>(con->getValue())->value()));
                     break;
