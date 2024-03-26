@@ -25,10 +25,11 @@ enum class ProcKind {
     SYSTEM_ADR, SYSTEM_GET, SYSTEM_PUT, SYSTEM_SIZE, SYSTEM_BIT, SYSTEM_COPY, SYSTEM_VAL
 };
 
-class PredefinedProcedure final : public ProcedureNode {
+class PredefinedProcedure : public ProcedureNode {
 
 private:
     vector<unique_ptr<ProcedureTypeNode>> types_;
+    bool isCast_;
     ProcKind kind_;
 
 public:
@@ -36,7 +37,7 @@ public:
     ~PredefinedProcedure() override;
 
     ProcedureTypeNode* overload(const vector<pair<TypeNode*, bool>> &, bool, TypeNode *);
-    ProcedureTypeNode* dispatch(vector<TypeNode*>) const;
+    ProcedureTypeNode* dispatch(vector<TypeNode*>, TypeNode *);
     [[nodiscard]] bool isOverloaded() const;
 
     [[nodiscard]] ProcKind getKind() const;

@@ -182,6 +182,8 @@ void Oberon07::initSymbolTable(SymbolTable *symbols) {
     proc->overload({{longIntType, false}}, false, longIntType);
     proc->overload({{realType, false}}, false, realType);
     proc->overload({{longRealType, false}}, false, longRealType);
+    this->createProcedure(ProcKind::MAX, "MAX", {{typeType, false}}, typeType, false, true);
+    this->createProcedure(ProcKind::MIN, "MIN", {{typeType, false}}, typeType, false, true);
 
     createNamespace("SYSTEM");
     this->createProcedure(ProcKind::SYSTEM_ADR, "ADR", {{anyType, true}}, longIntType, false, true);
@@ -190,5 +192,6 @@ void Oberon07::initSymbolTable(SymbolTable *symbols) {
     this->createProcedure(ProcKind::SYSTEM_BIT, "BIT", {{longIntType, false}, {intType, false}}, boolType, false, true);
     this->createProcedure(ProcKind::SYSTEM_COPY, "COPY", {{longIntType, false}, {longIntType, false}, {longIntType, false}}, nullptr, false, true);
     this->createProcedure(ProcKind::SYSTEM_SIZE, "SIZE", {{typeType, false}}, longIntType, false, true);
+    this->createProcedure(ProcKind::SYSTEM_VAL, "VAL", {{typeType, false},{anyType, false}}, typeType, false, true);
     leaveNamespace();
 }

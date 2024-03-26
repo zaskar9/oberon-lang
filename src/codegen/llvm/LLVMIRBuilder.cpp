@@ -6,6 +6,7 @@
 
 #include "LLVMIRBuilder.h"
 
+#include <limits>
 #include <csignal>
 #include <vector>
 #include <llvm/IR/Verifier.h>
@@ -951,6 +952,10 @@ LLVMIRBuilder::createPredefinedCall(PredefinedProcedure *proc, QualIdent *ident,
             return createEntireCall(params[0]);
         case ProcKind::ABS:
             return createAbsCall(actuals[0]->getType(), params[0]);
+        case ProcKind::MAX:
+            return createMaxMinCall(actuals[0].get(), true);
+        case ProcKind::MIN:
+            return createMaxMinCall(actuals[0].get(), false);
         case ProcKind::SIZE:
         case ProcKind::SYSTEM_SIZE:
             return createSizeCall(actuals[0].get());
@@ -964,6 +969,8 @@ LLVMIRBuilder::createPredefinedCall(PredefinedProcedure *proc, QualIdent *ident,
             return createSystemBitCall(actuals, params);
         case ProcKind::SYSTEM_COPY:
             return createSystemCopyCall(params[0], params[1], params[2]);
+        case ProcKind::SYSTEM_VAL:
+            return createSystemValCall(actuals, params);
         default:
             logger_.error(ident->start(), "unsupported predefined procedure: " + to_string(*ident) + ".");
             // to generate correct LLVM IR, the current value is returned (no-op).
@@ -1302,6 +1309,42 @@ LLVMIRBuilder::createSizeCall(ExpressionNode *expr) {
 }
 
 Value *
+LLVMIRBuilder::createMaxMinCall(ExpressionNode *actual, bool isMax) {
+    auto decl = dynamic_cast<QualifiedExpression *>(actual)->dereference();
+    auto type = dynamic_cast<TypeDeclarationNode *>(decl)->getType();
+    if (type->isReal()) {
+        if (type->getSize() == 4) {
+            value_ = ConstantFP::getInfinity(builder_.getFloatTy(), isMax);
+        } else {
+            value_ = ConstantFP::getInfinity(builder_.getDoubleTy(), isMax);
+        }
+    } else if (type->isInteger()) {
+        if (type->getSize() == 8) {
+            if (isMax) {
+                value_ = builder_.getInt64((uint64_t)std::numeric_limits<int64_t>::max());
+            } else {
+                value_ = builder_.getInt64((uint64_t)std::numeric_limits<int64_t>::min());
+            }
+        } else if (type->getSize() == 4) {
+            if (isMax) {
+                value_ = builder_.getInt32((uint32_t)std::numeric_limits<int32_t>::max());
+            } else {
+                value_ = builder_.getInt32((uint32_t)std::numeric_limits<int32_t>::min());
+            }
+        } else {
+            if (isMax) {
+                value_ = builder_.getInt64((uint16_t)std::numeric_limits<int16_t>::max());
+            } else {
+                value_ = builder_.getInt64((uint16_t)std::numeric_limits<int16_t>::min());
+            }
+        }
+    } else {
+        logger_.error(actual->pos(), "type mismatch: REAL or INTEGER expected.");
+    }
+    return value_;
+}
+
+Value *
 LLVMIRBuilder::createSystemAdrCall(vector<unique_ptr<ExpressionNode>> &actuals, std::vector<Value *> &params) {
     // TODO : procedure reference.
     auto actual = actuals[0].get();
@@ -1409,6 +1452,43 @@ LLVMIRBuilder::createSystemCopyCall(llvm::Value *src, llvm::Value *dst, llvm::Va
     auto srcptr = builder_.CreateIntToPtr(src, ptrtype);
     auto dstptr = builder_.CreateIntToPtr(dst, ptrtype);
     return builder_.CreateMemCpy(dstptr, {}, srcptr, {}, builder_.CreateShl(n, 2), true);
+}
+
+Value *
+LLVMIRBuilder::createSystemValCall(vector<unique_ptr<ExpressionNode>> &actuals, std::vector<Value *> &params) {
+    // TODO : Support further types : RECORD etc
+    auto dst = actuals[0].get();
+    auto decl = dynamic_cast<QualifiedExpression *>(dst)->dereference();
+    auto dsttype = dynamic_cast<TypeDeclarationNode *>(decl)->getType();
+    auto src = actuals[1].get();
+    auto srctype = src->getType();
+    if (!srctype->isBasic() || !dsttype->isBasic()) {
+        logger_.error(dst->pos(), "expected basic type");
+        return value_;
+    }
+    Value *srcpar;
+    if (srctype->isReal()) {
+        if (srctype->getSize() == 4) {
+            srcpar = builder_.CreateBitCast(params[1], builder_.getInt32Ty());
+        } else {
+            srcpar = builder_.CreateBitCast(params[1], builder_.getInt64Ty());
+        }
+    } else {
+        srcpar = params[1];
+    }
+    if (srctype->getSize() <= dsttype->getSize()) {
+        srcpar = builder_.CreateZExt(srcpar, getLLVMType(dsttype));
+    } else {
+        srcpar = builder_.CreateTrunc(srcpar, getLLVMType(dsttype));
+    }
+    if (dsttype->isReal()) {
+        if (dsttype->getSize() == 4) {
+            return builder_.CreateBitCast(srcpar, builder_.getFloatTy());
+        } else {
+            return builder_.CreateBitCast(srcpar, builder_.getDoubleTy());
+        }
+    }
+    return srcpar;
 }
 
 Value *

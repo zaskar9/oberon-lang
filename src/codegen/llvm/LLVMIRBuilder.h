@@ -98,12 +98,14 @@ private:
     Value *createRorCall(Value *, Value *);
     Value *createShortCall(ExpressionNode *, Value *);
     Value *createSizeCall(ExpressionNode *);
+    Value *createMaxMinCall(ExpressionNode *, bool);
     
     Value *createSystemAdrCall(vector<unique_ptr<ExpressionNode>> &, std::vector<Value *> &);
     Value *createSystemGetCall(vector<unique_ptr<ExpressionNode>> &, std::vector<Value *> &);
     Value *createSystemPutCall(vector<unique_ptr<ExpressionNode>> &, std::vector<Value *> &);
     Value *createSystemBitCall(vector<unique_ptr<ExpressionNode>> &, std::vector<Value *> &);
     Value *createSystemCopyCall(Value *, Value *, Value *);
+    Value *createSystemValCall(vector<unique_ptr<ExpressionNode>> &, std::vector<Value *> &);
     
     Value *createTrapCall(unsigned);
     Value *createInBoundsCheck(Value *, Value *, Value *);
