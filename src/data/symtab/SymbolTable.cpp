@@ -34,16 +34,16 @@ void SymbolTable::import(const string &module, const string &name, DeclarationNo
     }
 }
 
-void SymbolTable::setRef(char ref, TypeNode *type) {
-    size_t idx = (size_t) ref;
+void SymbolTable::setRef(unsigned ref, TypeNode *type) {
+    auto idx = (size_t) ref;
     if (references_.size() <= idx) {
         references_.resize(idx + 1);
     }
     references_[idx] = type;
 }
 
-TypeNode *SymbolTable::getRef(char ref) const {
-    size_t idx = (size_t) ref;
+TypeNode *SymbolTable::getRef(unsigned ref) const {
+    auto idx = (size_t) ref;
     return references_[idx];
 }
 

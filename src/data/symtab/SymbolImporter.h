@@ -31,7 +31,7 @@ private:
     Logger &logger_;
     vector<TypeNode *> types_;
     SymbolTable *symbols_;
-    map<int, PointerTypeNode *> forwards_;
+    map<unsigned, PointerTypeNode *> forwards_;
 
     void readDeclaration(SymbolFile *, NodeType, ModuleNode *);
     TypeNode *readType(SymbolFile *, PointerTypeNode * = nullptr);

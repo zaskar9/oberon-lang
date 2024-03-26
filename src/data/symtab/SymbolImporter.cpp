@@ -142,11 +142,12 @@ void SymbolImporter::readDeclaration(SymbolFile *file, NodeType nodeType, Module
 
 TypeNode *SymbolImporter::readType(SymbolFile *file, PointerTypeNode *ptr) {
     TypeNode *type = nullptr;
-    auto ref = file->readChar();
+    auto ch = file->readChar();
     // handle type references
-    if (ref < 0) {
-        ref *= -1;
-        if (ref == (char) TypeKind::NOTYPE) {
+    unsigned ref = 0;
+    if (ch < 0) {
+        ref = static_cast<unsigned char>(-ch);
+        if (ref == static_cast<char>(TypeKind::NOTYPE)) {
             return nullptr;
         }
         // check whether the referenced type has already been imported
@@ -163,7 +164,8 @@ TypeNode *SymbolImporter::readType(SymbolFile *file, PointerTypeNode *ptr) {
     // handle re-exported types
     TypeDeclarationNode *decl = nullptr;
     string module, name;
-    if (ref > 0) {
+    if (ch > 0) {
+        ref = static_cast<unsigned char>(ch);
         module = file->readString();
         if (!module.empty()) {
             // check whether re-exported type has already been imported
@@ -247,7 +249,7 @@ TypeNode *SymbolImporter::readProcedureType(SymbolFile *file) {
     // read parameters
     std::vector<std::unique_ptr<ParameterNode>> params;
     TypeNode *type = nullptr;
-    int index = 0;
+    unsigned index = 0;
     auto ch = file->readChar();
     while (ch != 0) {
         auto var = file->readChar();

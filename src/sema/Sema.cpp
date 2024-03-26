@@ -743,7 +743,7 @@ Sema::onActualParameters(DeclarationNode *context, TypeNode *base, ActualParamet
         logger_.error(sel->pos(), "fewer actual than formal parameters.");
     }
     vector<TypeNode *> types;
-    TypeNode *typeType;
+    TypeNode *typeType = nullptr;
     for (size_t cnt = 0; cnt < sel->parameters().size(); cnt++) {
         auto expr = sel->parameters()[cnt].get();
         if (!expr) {

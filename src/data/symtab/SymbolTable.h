@@ -37,7 +37,7 @@ private:
     // references for import and export
     vector<TypeNode*> references_;
     unique_ptr<Scope> universe_;
-    TypeNode *nilType_;
+    TypeNode *nilType_{};
 
 public:
     explicit SymbolTable();
@@ -45,8 +45,8 @@ public:
 
     void import(const string &module, const string &name, DeclarationNode *node);
 
-    void setRef(char ref, TypeNode *type);
-    [[nodiscard]] TypeNode *getRef(char ref) const;
+    void setRef(unsigned ref, TypeNode *type);
+    [[nodiscard]] TypeNode *getRef(unsigned ref) const;
 
     void insert(const string &name, DeclarationNode *node);
     void insertGlobal(const string &name, DeclarationNode *node);
