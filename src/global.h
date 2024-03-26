@@ -28,7 +28,7 @@ struct SourceLoc {
 };
 
 static const FilePos EMPTY_POS = {"", 0, 0, 0 };
-static const SourceLoc EMPTY_LOC = {"", {0, 0, 0}, {0, 0,0}};
+static const SourceLoc EMPTY_LOC = {"", {0, 0, 0}, {0, 0, 0}};
 
 template <typename T>
 static std::string to_string(T obj) {

@@ -7,10 +7,10 @@
 using std::filesystem::path;
 
 void SymbolExporter::write(const std::string &name, SymbolTable *symbols) {
-    ref_ = ((int) TypeKind::STRING) + 1;
+    ref_ = ((int) TypeKind::TYPE) + 1;
     path pth;
     auto symdir = config_.getSymDir();
-    if (symdir == "") {
+    if (symdir.empty()) {
         pth = context_->getSourceFileName().parent_path();
     } else {
         pth = symdir;
@@ -26,7 +26,7 @@ void SymbolExporter::write(const std::string &name, SymbolTable *symbols) {
     std::cout << std::endl;
 #endif
     // open the modules global scope
-    auto scope = symbols->getNamespace(name);
+    auto scope = symbols->getModule(name);
     // navigate from global scope to module scope
     scope = scope->getChild();
     // get exported symbols from the module scope
@@ -57,9 +57,7 @@ void SymbolExporter::writeDeclaration(SymbolFile *file, DeclarationNode *decl) {
     file->writeString(decl->getIdentifier()->name());
     // write out type
     writeType(file, decl->getType());
-    if (nodeType == NodeType::type) {
-        // TODO check if this is the base type of a previously declared pointer type
-    } else if (nodeType == NodeType::constant) {
+    if (nodeType == NodeType::constant) {
         auto kind = decl->getType()->kind();
         if (kind == TypeKind::PROCEDURE) {
             // TODO write out export number ("exno" in Wirth's code)
@@ -68,22 +66,28 @@ void SymbolExporter::writeDeclaration(SymbolFile *file, DeclarationNode *decl) {
             auto con = dynamic_cast<ConstantDeclarationNode*>(decl);
             switch (kind) {
                 case TypeKind::STRING:
-                    file->writeString(dynamic_cast<StringLiteralNode*>(con->getValue())->value());
+                    file->writeString(dynamic_cast<StringLiteralNode *>(con->getValue())->value());
+                    break;
+                case TypeKind::BOOLEAN:
+                    file->writeChar(dynamic_cast<BooleanLiteralNode *>(con->getValue())->value() ? 1 : 0);
                     break;
                 case TypeKind::CHAR:
                     file->writeChar(static_cast<signed char>(dynamic_cast<CharLiteralNode *>(con->getValue())->value()));
                     break;
+                case TypeKind::SHORTINT:
+                    file->writeShort(static_cast<short>(dynamic_cast<IntegerLiteralNode *>(con->getValue())->value()));
+                    break;
                 case TypeKind::INTEGER:
-                    file->writeInt(dynamic_cast<IntegerLiteralNode*>(con->getValue())->value());
+                    file->writeInt(static_cast<int>(dynamic_cast<IntegerLiteralNode *>(con->getValue())->value()));
                     break;
                 case TypeKind::LONGINT:
-                    file->writeLong(dynamic_cast<IntegerLiteralNode*>(con->getValue())->value());
+                    file->writeLong(dynamic_cast<IntegerLiteralNode *>(con->getValue())->value());
                     break;
                 case TypeKind::REAL:
-                    file->writeFloat(dynamic_cast<RealLiteralNode*>(con->getValue())->value());
+                    file->writeFloat(static_cast<float>(dynamic_cast<RealLiteralNode *>(con->getValue())->value()));
                     break;
                 case TypeKind::LONGREAL:
-                    file->writeDouble(dynamic_cast<RealLiteralNode*>(con->getValue())->value());
+                    file->writeDouble(dynamic_cast<RealLiteralNode *>(con->getValue())->value());
                     break;
                 case TypeKind::SET:
                     file->writeInt(static_cast<int>(dynamic_cast<SetLiteralNode *>(con->getValue())->value().to_ulong()));
@@ -105,17 +109,31 @@ void SymbolExporter::writeType(SymbolFile *file, TypeNode *type) {
     }
     if (type->getRef() > 0) {
         // declaration already serialized to file
-        file->writeChar(-type->getRef());
+        file->writeChar(static_cast<signed char>(-type->getRef()));
         return;
     }
     if (type->isAnonymous()) {
         // anonymous type
         file->writeChar(0);
     } else {
-        // create new reference for the type to be used within this symbol file
-        file->writeChar(ref_);
-        type->setRef(ref_);
-        ref_++;
+        if (refs_.contains(type)) {
+            // resolve forward reference
+            auto ref = refs_[type];
+            file->writeChar(static_cast<signed char>(ref));
+            type->setRef(ref);
+        } else {
+            // create new reference for the type to be used within this symbol file
+            file->writeChar(static_cast<signed char>(ref_));
+            type->setRef(ref_);
+            ref_++;
+        }
+        if (type->getDeclaration()->getModule() != context_->getTranslationUnit()) {
+            auto decl = type->getDeclaration();
+            file->writeString(decl->getModule()->getIdentifier()->name());
+            file->writeString(decl->getIdentifier()->name());
+        } else {
+            file->writeString("");
+        }
     }
     file->writeChar(static_cast<signed char>(type->kind()));
     switch (type->kind()) {
@@ -123,8 +141,7 @@ void SymbolExporter::writeType(SymbolFile *file, TypeNode *type) {
             writeArrayType(file, dynamic_cast<ArrayTypeNode*>(type));
             break;
         case TypeKind::POINTER:
-            // TODO export pointer type
-            logger_.error(type->pos(), "export of pointer type kind not yet supported.");
+            writePointerType(file, dynamic_cast<PointerTypeNode *>(type));
             break;
         case TypeKind::PROCEDURE:
             writeProcedureType(file, dynamic_cast<ProcedureTypeNode*>(type));
@@ -137,16 +154,28 @@ void SymbolExporter::writeType(SymbolFile *file, TypeNode *type) {
             break;
     }
     // TODO re-exports
+    // https://github.com/andreaspirklbauer/Oberon-module-imports/blob/master/Sources/FPGAOberon2013/ORB.Mod
 }
 
 void SymbolExporter::writeArrayType(SymbolFile *file, ArrayTypeNode *type) {
     // write out member type
-    writeType(file, type->getMemberType());
+    writeType(file, type->types()[0]);
     // write out length
-    // TODO support for multi-dimensional arrays
     file->writeInt((int) type->lengths()[0]);
     // write out size
     file->writeInt((int) type->getSize());
+}
+
+void SymbolExporter::writePointerType(SymbolFile *file, PointerTypeNode *type) {
+    auto base = type->getBase();
+    if (!base->isAnonymous() && base->getRef() == 0) {
+        // create forward reference
+        file->writeChar(static_cast<signed char>(-ref_));
+        refs_[base] = ref_;
+        ref_++;
+    } else {
+        writeType(file, base);
+    }
 }
 
 void SymbolExporter::writeProcedureType(SymbolFile *file, ProcedureTypeNode *type) {
@@ -174,21 +203,24 @@ void SymbolExporter::writeRecordType(SymbolFile *file, RecordTypeNode *type) {
     auto offset = 0u;
     for (size_t i = 0; i < type->getFieldCount(); i++) {
         auto field = type->getField(i);
-        if (field->getIdentifier()->isExported()) {
-            // write out field node type
-            file->writeChar(static_cast<signed char>(field->getNodeType()));
-            // write out field number
-            file->writeInt(i + 1);
-            // write out field name
+        // write out field node type
+        file->writeChar(static_cast<signed char>(field->getNodeType()));
+        // write out field number
+        file->writeInt(static_cast<int>(i + 1));
+        // write out field name
+        if (field->getIdentifier()->isExported() ||
+            type->getDeclaration()->getModule() != context_->getTranslationUnit()) {
             file->writeString(field->getIdentifier()->name());
-            // write out field type
-            writeType(file, field->getType());
-            // write out field offset
-            file->writeInt((int) offset);
-            offset += field->getType()->getSize();
         } else {
-            // TODO find hidden pointers
+            // write a "hidden" field to preserve the correct record layout
+            file->writeString("_");
         }
+        // write out field type: if successive fields have the same type,
+        // write it out the first time and write `NOTYPE` for following fields
+        writeType(file, field->index() == 0 ? field->getType() : nullptr);
+        // write out field offset
+        file->writeInt(static_cast<int>(offset));
+        offset += field->getType()->getSize();
     }
     // write out terminator
     file->writeChar(0);
@@ -203,6 +235,7 @@ void SymbolExporter::writeParameter(SymbolFile *file, ParameterNode *param) {
     } else {
         file->writeChar(1);
     }
-    // write out parameter type
-    writeType(file, param->getType());
+    // write out parameter type: if successive parameters have the same type,
+    // only write it out the first time and write `NOTYPE` for following parameters
+    writeType(file, param->index() == 0 ? param->getType() : nullptr);
 }

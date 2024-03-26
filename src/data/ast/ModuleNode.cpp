@@ -8,24 +8,8 @@
 #include "NodeVisitor.h"
 #include <algorithm>
 
-void ModuleNode::setAlias(std::string alias) {
-    alias_ = alias;
-}
-
-std::string ModuleNode::getAlias() const {
-    return alias_;
-}
-
-void ModuleNode::addImport(std::unique_ptr<ImportNode> import) {
-    imports_.push_back(std::move(import));
-}
-
-ImportNode* ModuleNode::getImport(size_t num) const {
-    return imports_.at(num).get();
-}
-
-size_t ModuleNode::getImportCount() const {
-    return imports_.size();
+vector<unique_ptr<ImportNode>> &ModuleNode::imports() {
+    return imports_;
 }
 
 void ModuleNode::accept(NodeVisitor& visitor) {

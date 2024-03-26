@@ -6,6 +6,8 @@
 #include <stdio.h>
 #include <math.h>
 
+const float max = 3.40282347E+38;
+
 int main(int argc, const char* argv[]) {
     int i1 = 1;
     int i2 = 2;
@@ -19,6 +21,9 @@ int main(int argc, const char* argv[]) {
 
     float pi = 3.141592654;
     printf("%f\n", pi);
+
+    double ovrflw = max * max;
+    printf("%f\n", ovrflw);
 
     exit(0);
 }

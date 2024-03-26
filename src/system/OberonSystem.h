@@ -23,7 +23,7 @@ private:
 
 
 protected:
-    virtual void initSymbolTable(SymbolTable *symbols) = 0;
+    virtual void initSymbolTable(SymbolTable *) = 0;
 
 public:
     explicit OberonSystem() : symbols_(), decls_(), types_(), baseTypes_() {};
@@ -32,17 +32,17 @@ public:
     void createNamespace(const std::string &module);
     void leaveNamespace();
 
-    void createBasicTypes(const std::vector<std::pair<std::pair<TypeKind, unsigned int>, bool>>& types);
-    BasicTypeNode *createBasicType(TypeKind kind, unsigned int size);
-    BasicTypeNode *getBasicType(TypeKind kind);
+    void createBasicTypes(const std::vector<std::pair<std::pair<TypeKind, unsigned int>, bool>>&);
+    BasicTypeNode *createBasicType(TypeKind, unsigned);
+    BasicTypeNode *getBasicType(TypeKind);
 
-    PointerTypeNode *createPointerType(TypeNode *base);
+    PointerTypeNode *createPointerType(TypeNode *);
 
-    ArrayTypeNode *createArrayType(TypeNode *memberType, unsigned int dimension);
+    ArrayTypeNode *createArrayType(const vector<unsigned> &, const vector<TypeNode *> &);
 
-    PredefinedProcedure* createProcedure(ProcKind type, const std::string& name,
-                                         const std::vector<std::pair<TypeNode *, bool>>& params,
-                                         TypeNode *ret, bool varargs, bool toSymbols);
+    PredefinedProcedure* createProcedure(ProcKind, const std::string &,
+                                         const std::vector<std::pair<TypeNode *, bool>> &,
+                                         TypeNode *, bool, bool);
 
     SymbolTable *getSymbolTable();
 
@@ -52,7 +52,7 @@ public:
 class Oberon07 final : public OberonSystem {
 
 protected:
-    void initSymbolTable(SymbolTable *symbols) override;
+    void initSymbolTable(SymbolTable *) override;
 
 public:
     explicit Oberon07() : OberonSystem() {};

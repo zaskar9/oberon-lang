@@ -7,6 +7,7 @@
 
 
 #include <filesystem>
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -20,6 +21,7 @@
 #include "RecordTypeNode.h"
 
 using std::filesystem::path;
+using std::map;
 using std::string;
 using std::unique_ptr;
 using std::vector;
@@ -33,7 +35,7 @@ private:
     vector<unique_ptr<RecordTypeNode>> record_ts_;
     vector<unique_ptr<PointerTypeNode>> pointer_ts_;
     vector<unique_ptr<ProcedureTypeNode>> procedure_ts;
-    vector<unique_ptr<ModuleNode>> ext_modules_;
+    map<string, unique_ptr<ModuleNode>> ext_modules_;
     vector<ProcedureNode*> ext_procedures_;
 
 public:
@@ -48,15 +50,16 @@ public:
     void setTranslationUnit(unique_ptr<ModuleNode>);
 
     [[deprecated]]
-    ArrayTypeNode *getOrInsertArrayType(const FilePos &, const FilePos &, Ident *, unsigned, TypeNode *);
-    ArrayTypeNode *getOrInsertArrayType(const FilePos &, const FilePos &, Ident *, unsigned, vector<unsigned>, vector<TypeNode *>);
-    RecordTypeNode *getOrInsertRecordType(const FilePos &, const FilePos &, Ident *, vector<unique_ptr<FieldNode>>);
-    PointerTypeNode *getOrInsertPointerType(const FilePos &, const FilePos &, Ident *, TypeNode *);
+    ArrayTypeNode *getOrInsertArrayType(const FilePos &, const FilePos &, unsigned, TypeNode *);
+    ArrayTypeNode *getOrInsertArrayType(const FilePos &, const FilePos &, unsigned, vector<unsigned>, vector<TypeNode *>);
+    RecordTypeNode *getOrInsertRecordType(const FilePos &, const FilePos &, vector<unique_ptr<FieldNode>>);
+    PointerTypeNode *getOrInsertPointerType(const FilePos &, const FilePos &, TypeNode *);
     ProcedureTypeNode *getOrInsertProcedureType(const FilePos &, const FilePos &,
-                                                Ident *, vector<unique_ptr<ParameterNode>>, bool, TypeNode *);
+                                                vector<unique_ptr<ParameterNode>>, bool, TypeNode *);
 
     // mainly for memory management as an anchor for smart pointers
     void addExternalModule(unique_ptr<ModuleNode> module);
+    ModuleNode* getExternalModule(const string &name);
 
     void addExternalProcedure(ProcedureNode *proc);
     [[nodiscard]] ProcedureNode *getExternalProcedure(size_t num) const;

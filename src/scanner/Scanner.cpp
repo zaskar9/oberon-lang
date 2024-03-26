@@ -336,7 +336,7 @@ unique_ptr<const Token> Scanner::scanNumber() {
             }
             value = boost::convert<double>(num, ccnv(std::dec)(std::scientific)).value();
         } catch (boost::bad_optional_access const &) {
-            logger_.error(pos, "invalid real literal: " + num + ".");
+            logger_.error(pos, "invalid floating-point literal: " + num + ".");
             value = 0;
         }
         return make_unique<DoubleLiteralToken>(pos, current(), value);

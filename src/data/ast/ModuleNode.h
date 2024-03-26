@@ -23,27 +23,20 @@ using std::vector;
 class ModuleNode final : public BlockNode {
 
 private:
-    std::string alias_;
     vector<unique_ptr<ImportNode>> imports_;
 
 public:
     // ctor for use in sema / parser
-    ModuleNode(const FilePos &pos, unique_ptr<Ident> name, vector<unique_ptr<ImportNode>> imports) :
+    ModuleNode(const FilePos &pos, unique_ptr<Ident> name) :
             BlockNode(NodeType::module, pos, make_unique<IdentDef>(name->start(), name->end(), name->name()), nullptr),
-            alias_(), imports_(std::move(imports)) {};
+            imports_() {};
     // ctor for use in symbol importer
     explicit ModuleNode(unique_ptr<Ident> name) :
             BlockNode(NodeType::module, EMPTY_POS, make_unique<IdentDef>(name->start(), name->end(), name->name()), nullptr),
-            alias_(), imports_() {};
+            imports_() {};
     ~ModuleNode() override = default;
 
-    void setAlias(string alias);
-    [[nodiscard]] string getAlias() const;
-
-    void addImport(unique_ptr<ImportNode> import);
-    [[nodiscard]] ImportNode* getImport(size_t num) const;
-    [[nodiscard]] size_t getImportCount() const;
-
+    [[nodiscard]] vector<unique_ptr<ImportNode>> &imports();
 
     void accept(NodeVisitor& visitor) override;
     void print(std::ostream &stream) const override;

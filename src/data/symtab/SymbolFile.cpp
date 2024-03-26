@@ -30,6 +30,22 @@ void SymbolFile::writeChar(signed char val) {
     file_.write(reinterpret_cast<const char *>(&val), sizeof(val));
 }
 
+short SymbolFile::readShort() {
+    short val;
+    file_.read(reinterpret_cast<char *>(&val), sizeof(val));
+#ifdef _DEBUG
+    std::cout << val << "|";
+#endif
+    return val;
+}
+
+void SymbolFile::writeShort(short val) {
+#ifdef _DEBUG
+    std::cout << val << "|";
+#endif
+    file_.write(reinterpret_cast<const char *>(&val), sizeof(val));
+}
+
 int SymbolFile::readInt() {
     int val;
     file_.read(reinterpret_cast<char *>(&val), sizeof(val));
@@ -103,8 +119,9 @@ std::string SymbolFile::readString() {
     char *buffer = new char[len];
     file_.read(buffer, (long) len);
     auto val = std::string(buffer, len);
+    delete[] buffer;
 #ifdef _DEBUG
-    std::cout << val << "|";
+    std::cout << (val.empty() ? "0X" : val) << "|";
 #endif
     return val;
 }
@@ -116,7 +133,7 @@ void SymbolFile::writeString(const std::string &val) {
 #endif
     file_.write(reinterpret_cast<const char*>(&len), sizeof(len));
 #ifdef _DEBUG
-    std::cout << val << "|";
+    std::cout << (val.empty() ? "0X" : val) << "|";
 #endif
     file_.write(val.c_str(), (long) len);
 }

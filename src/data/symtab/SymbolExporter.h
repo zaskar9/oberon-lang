@@ -6,6 +6,8 @@
 #define OBERON_LANG_SYMBOLEXPORTER_H
 
 
+#include <map>
+
 #include <boost/filesystem.hpp>
 
 #include "SymbolTable.h"
@@ -17,6 +19,8 @@
 #include "data/ast/RecordTypeNode.h"
 #include "logging/Logger.h"
 
+using std::map;
+
 class SymbolExporter {
 
 private:
@@ -24,17 +28,19 @@ private:
     ASTContext *context_;
     Logger &logger_;
     int ref_;
+    map<TypeNode *, int> refs_;
 
-    void writeDeclaration(SymbolFile *file, DeclarationNode *decl);
-    void writeType(SymbolFile *file, TypeNode *type);
-    void writeArrayType(SymbolFile *file, ArrayTypeNode *type);
-    void writeProcedureType(SymbolFile *file, ProcedureTypeNode *type);
-    void writeRecordType(SymbolFile *file, RecordTypeNode *type);
-    void writeParameter(SymbolFile *file, ParameterNode *param);
+    void writeDeclaration(SymbolFile *, DeclarationNode *);
+    void writeType(SymbolFile *, TypeNode *);
+    void writeArrayType(SymbolFile *, ArrayTypeNode *);
+    void writePointerType(SymbolFile *, PointerTypeNode *);
+    void writeProcedureType(SymbolFile *, ProcedureTypeNode *);
+    void writeRecordType(SymbolFile *, RecordTypeNode *);
+    void writeParameter(SymbolFile *, ParameterNode *);
 
 public:
     explicit SymbolExporter(CompilerConfig &config, ASTContext *context) :
-            config_(config), context_(context), logger_(config_.logger()), ref_() {};
+            config_(config), context_(context), logger_(config_.logger()), ref_(), refs_() {};
     ~SymbolExporter() = default;
 
     void write(const std::string &module, SymbolTable *symbols);

@@ -16,8 +16,8 @@ using std::set;
 using std::string;
 
 Sema::Sema(CompilerConfig &config, ASTContext *context, OberonSystem *system) :
-        config_(config), context_(context), system_(system), logger_(config_.logger()), forwards_(), module_(), procs_(),
-        symbols_(system_->getSymbolTable()), importer_(config_, context), exporter_(config_, context) {
+        config_(config), context_(context), system_(system), logger_(config_.logger()), forwards_(), procs_(),
+        symbols_(system_->getSymbolTable()), importer_(config_, context, symbols_), exporter_(config_, context) {
     boolTy_ = system_->getBasicType(TypeKind::BOOLEAN);
     byteTy_ = system_->getBasicType(TypeKind::BYTE);
     charTy_ = system_->getBasicType(TypeKind::CHAR);
@@ -34,7 +34,7 @@ Sema::Sema(CompilerConfig &config, ASTContext *context, OberonSystem *system) :
 
 void
 Sema::onTranslationUnitStart(const string &name) {
-    symbols_->createNamespace(name, true);
+    symbols_->addModule(name, true);
 }
 
 void
@@ -67,48 +67,48 @@ Sema::onBlockEnd() {
     symbols_->closeScope();
 }
 
-ModuleNode *
-Sema::onModuleStart(const FilePos &start, unique_ptr<Ident> ident, vector<unique_ptr<ImportNode>> imports) {
-    module_ = make_unique<ModuleNode>(start, std::move(ident), std::move(imports));
-    assertUnique(module_->getIdentifier(), module_.get());
-    module_->setLevel(symbols_->getLevel());
+unique_ptr<ModuleNode>
+Sema::onModuleStart(const FilePos &start, unique_ptr<Ident> ident) {
+    auto module = make_unique<ModuleNode>(start, std::move(ident));
+    assertUnique(module->getIdentifier(), module.get());
+    module->setLevel(symbols_->getLevel());
     onBlockStart();
-    return module_.get();
+    return module;
 }
 
-unique_ptr<ModuleNode>
+void
 Sema::onModuleEnd([[maybe_unused]] const FilePos &end, unique_ptr<Ident> ident) {
     onBlockEnd();
-    if (*module_->getIdentifier() != *ident.get()) {
-        logger_.error(ident->start(), "module name mismatch: expected " + to_string(*module_->getIdentifier()) +
+    auto module = context_->getTranslationUnit();
+    if (*module->getIdentifier() != *ident.get()) {
+        logger_.error(ident->start(), "module name mismatch: expected " + to_string(*module->getIdentifier()) +
                                        ", found " + to_string(*ident) + ".");
     }
-    return std::move(module_);
 }
 
 unique_ptr<ImportNode>
 Sema::onImport(const FilePos &start, [[maybe_unused]] const FilePos &end,
                unique_ptr<Ident> alias, unique_ptr<Ident> ident) {
     auto node = make_unique<ImportNode>(start, std::move(alias), std::move(ident));
-    // TODO check duplicate imports
-    std::unique_ptr<ModuleNode> module;
     auto name = node->getModule()->name();
-    if (name == "SYSTEM") {
-        module = std::make_unique<ModuleNode>(std::make_unique<Ident>(name));
-        if (node->getAlias()) {
-            module->setAlias(node->getAlias()->name());
-        }
-    } else {
-        if (node->getAlias()) {
-            module = importer_.read(node->getAlias()->name(), name, symbols_);
-        } else {
-            module = importer_.read(name, symbols_);
+    // check for duplicate imports
+    for (auto &import : context_->getTranslationUnit()->imports()) {
+        if (import->getModule()->name() == name) {
+            logger_.error(node->pos(), "duplicate import of module " + name + ".");
+            break;
         }
     }
-    if (module) {
-        context_->addExternalModule(std::move(module));
+    // import the external module
+    if (name == "SYSTEM") {
+        context_->addExternalModule(std::make_unique<ModuleNode>(std::make_unique<Ident>(name)));
     } else {
-        logger_.error(node->pos(), "module " + node->getModule()->name() + " could not be imported.");
+        if (!importer_.read(name)) {
+            logger_.error(node->pos(), "module " + name + " could not be imported.");
+        }
+    }
+    // set the alias for the module in the symbol table
+    if (node->getAlias()) {
+        symbols_->addAlias(node->getAlias()->name(), name);
     }
     return node;
 }
@@ -129,7 +129,7 @@ Sema::onConstant(const FilePos &start, [[maybe_unused]] const FilePos &end,
     auto node = make_unique<ConstantDeclarationNode>(start, std::move(ident), std::move(expr), expr ? expr->getType() : nullTy_);
     assertUnique(node->getIdentifier(), node.get());
     node->setLevel(symbols_->getLevel());
-    node->setModule(module_.get());
+    node->setModule(context_->getTranslationUnit());
     checkExport(node.get());
     return node;
 }
@@ -140,7 +140,7 @@ Sema::onType(const FilePos &start, [[maybe_unused]] const FilePos &end,
     auto node = make_unique<TypeDeclarationNode>(start, std::move(ident), type);
     assertUnique(node->getIdentifier(), node.get());
     node->setLevel(symbols_->getLevel());
-    node->setModule(module_.get());
+    node->setModule(context_->getTranslationUnit());
     checkExport(node.get());
     if (type) {
         auto it = forwards_.find(node->getIdentifier()->name());
@@ -161,8 +161,7 @@ Sema::onType(const FilePos &start, [[maybe_unused]] const FilePos &end,
 }
 
 ArrayTypeNode *
-Sema::onArrayType(const FilePos &start, const FilePos &end,
-                  Ident *ident, vector<unique_ptr<ExpressionNode>> indices, TypeNode *type) {
+Sema::onArrayType(const FilePos &start, const FilePos &end, vector<unique_ptr<ExpressionNode>> indices, TypeNode *type) {
     vector<unsigned> values(indices.size(), 0);
     for (size_t i = 0; i < indices.size(); ++i) {
         auto expr = indices[i].get();
@@ -206,39 +205,38 @@ Sema::onArrayType(const FilePos &start, const FilePos &end,
     for (size_t i = values.size(); i > 0; --i) {
         lengths.insert(lengths.begin(), values[i - 1]);
         types.insert(types.begin(), type);
-        type = context_->getOrInsertArrayType(start, end, (i == 1 ? ident : nullptr), lengths.size(), lengths, types);
+        type = context_->getOrInsertArrayType(start, end, lengths.size(), lengths, types);
     }
     return dynamic_cast<ArrayTypeNode *>(type);
 }
 
 PointerTypeNode *
-Sema::onPointerType(const FilePos &start, const FilePos &end, Ident *ident, unique_ptr<QualIdent> reference) {
+Sema::onPointerType(const FilePos &start, const FilePos &end, unique_ptr<QualIdent> reference) {
     auto sym = symbols_->lookup(reference.get());
     if (!sym) {
-        auto node = context_->getOrInsertPointerType(start, end, ident, nullptr);
+        auto node = context_->getOrInsertPointerType(start, end, nullptr);
         forwards_[reference->name()] = node;
         logger_.debug("Found possible forward type reference: " + to_string(*reference));
         return node;
     } else {
         auto type = onTypeReference(start, end, std::move(reference));
-        return onPointerType(start, end, ident, type);
+        return onPointerType(start, end, type);
     }
 }
 
 PointerTypeNode *
-Sema::onPointerType([[maybe_unused]] const FilePos &start, const FilePos &end,
-                                     Ident *ident, TypeNode *base) {
+Sema::onPointerType([[maybe_unused]] const FilePos &start, const FilePos &end, TypeNode *base) {
     if (!base->isRecord()) {
         // O07.6.4: Pointer base type must be a record type.
         logger_.error(start, "pointer base type must be a record type.");
     }
-    return context_->getOrInsertPointerType(start, end, ident, base);
+    return context_->getOrInsertPointerType(start, end, base);
 }
 
 ProcedureTypeNode *
 Sema::onProcedureType([[maybe_unused]] const FilePos &start, const FilePos &end,
-                      Ident *ident, vector<unique_ptr<ParameterNode>> params, bool varargs, TypeNode *ret) {
-    return context_->getOrInsertProcedureType(start, end, ident, std::move(params), varargs, ret);
+                      vector<unique_ptr<ParameterNode>> params, bool varargs, TypeNode *ret) {
+    return context_->getOrInsertProcedureType(start, end, std::move(params), varargs, ret);
 }
 
 unique_ptr<ParameterNode>
@@ -255,22 +253,11 @@ Sema::onParameter(const FilePos &start, [[maybe_unused]] const FilePos &end,
 }
 
 RecordTypeNode *
-Sema::onRecordType(const FilePos &start, const FilePos &end,
-                  Ident *ident, vector<unique_ptr<FieldNode>> fields) {
-    if (fields.empty()) {
-        logger_.error(start, "records needs at least one field.");
-    }
-    auto node = context_->getOrInsertRecordType(start, end, ident, std::move(fields));
+Sema::onRecordType(const FilePos &start, const FilePos &end, vector<unique_ptr<FieldNode>> fields) {
+    auto node = context_->getOrInsertRecordType(start, end, std::move(fields));
     set<string> names;
     for (size_t i = 0; i < node->getFieldCount(); i++) {
         auto field = node->getField(i);
-        if (field->getIdentifier()->isExported()) {
-            if (symbols_->getLevel() != SymbolTable::MODULE_LEVEL) {
-                logger_.error(field->pos(), "only top-level declarations can be exported.");
-            } else if (!node->getIdentifier()->isExported()) {
-                logger_.error(field->pos(), "cannot export fields of non-exported record type.");
-            }
-        }
         if (names.count(field->getIdentifier()->name())) {
             logger_.error(field->pos(), "duplicate record field: " + to_string(*field->getIdentifier()) + ".");
         } else {
@@ -314,7 +301,7 @@ Sema::onTypeReference(const FilePos &start, const FilePos &end,
         for (size_t i = dimensions; i > 0; --i) {
             lengths.insert(lengths.begin(), 0);
             types.insert(types.begin(), type);
-            type = context_->getOrInsertArrayType(start, end, nullptr, lengths.size(), lengths, types);
+            type = context_->getOrInsertArrayType(start, end, lengths.size(), lengths, types);
         }
         return type;
     } else {
@@ -333,7 +320,7 @@ Sema::onVariable(const FilePos &start, [[maybe_unused]] const FilePos &end,
     auto node = make_unique<VariableDeclarationNode>(start, std::move(ident), type, index);
     assertUnique(node->getIdentifier(), node.get());
     node->setLevel(symbols_->getLevel());
-    node->setModule(module_.get());
+    node->setModule(context_->getTranslationUnit());
     checkExport(node.get());
     return node;
 }
@@ -344,7 +331,7 @@ Sema::onProcedureStart(const FilePos &start, unique_ptr<IdentDef> ident) {
     auto proc = procs_.top().get();
     assertUnique(proc->getIdentifier(), proc);
     proc->setLevel(symbols_->getLevel());
-    proc->setModule(module_.get());
+    proc->setModule(context_->getTranslationUnit());
     checkExport(proc);
     onBlockStart();
     return proc;
@@ -500,22 +487,30 @@ Sema::onForLoop(const FilePos &start, [[maybe_unused]] const FilePos &end,
     if (!low) {
         logger_.error(start, "undefined low value in for-loop.");
     }
-    assertCompatible(low->pos(), integerTy_, low->getType());
+    if (assertCompatible(low->pos(), integerTy_, low->getType())) {
+        cast(low.get(), integerTy_);
+    }
     if (!high) {
         logger_.error(start, "undefined high value in for-loop.");
     }
-    assertCompatible(high->pos(), integerTy_, high->getType());
-    if (step && step->isLiteral()) {
-        if (assertCompatible(step->pos(), integerTy_, step->getType())) {
-            if (step->isConstant()) {
+    if (assertCompatible(high->pos(), integerTy_, high->getType())) {
+        cast(high.get(), integerTy_);
+    }
+    if (step) {
+        if (step->isLiteral()) {
+            if (assertCompatible(step->pos(), integerTy_, step->getType())) {
                 auto val = dynamic_cast<IntegerLiteralNode *>(step.get())->value();
                 if (val == 0) {
                     logger_.error(step->pos(), "step value cannot be zero.");
+                } else {
+                    cast(step.get(), integerTy_);
                 }
-            } else {
-                logger_.error(step->pos(), "constant expression expected.");
             }
+        } else  {
+            logger_.error(step->pos(), "constant expression expected.");
         }
+   } else {
+        step = onIntegerLiteral(EMPTY_POS, EMPTY_POS, 1, TypeKind::INTEGER);
     }
     return make_unique<ForLoopNode>(start, std::move(counter), std::move(low), std::move(high), std::move(step),
                                     std::move(stmts));
@@ -676,7 +671,7 @@ Sema::onSelectors(const FilePos &start, const FilePos &end,
                 break;
             case NodeType::record_type:
                 context = onRecordField(base, dynamic_cast<RecordField *>(sel));
-                base = context->getType();
+                base = context ? context->getType() : nullTy_;
                 break;
             case NodeType::type:
                 base = onTypeguard(context, base, dynamic_cast<Typeguard *>(sel));
@@ -748,7 +743,7 @@ Sema::onActualParameters(DeclarationNode *context, TypeNode *base, ActualParamet
         logger_.error(sel->pos(), "fewer actual than formal parameters.");
     }
     vector<TypeNode *> types;
-    TypeNode *typeType;
+    TypeNode *typeType = nullptr;
     for (size_t cnt = 0; cnt < sel->parameters().size(); cnt++) {
         auto expr = sel->parameters()[cnt].get();
         if (!expr) {
@@ -1300,7 +1295,8 @@ Sema::fold(const FilePos &start, const FilePos &end, ExpressionNode *expr) {
             } else if (type->kind() == TypeKind::SHORTINT ||
                        type->kind() == TypeKind::INTEGER ||
                        type->kind() == TypeKind::LONGINT) {
-                return make_unique<IntegerLiteralNode>(expr->pos(), foldInteger(start, end, expr), type, cast);
+                long value = foldInteger(start, end, expr);
+                return make_unique<IntegerLiteralNode>(expr->pos(), value, intType(value), cast);
             } else if (type->kind() == TypeKind::REAL ||
                        type->kind() == TypeKind::LONGREAL) {
                 return make_unique<RealLiteralNode>(expr->pos(), foldReal(start, end, expr), type, cast);
@@ -1338,9 +1334,8 @@ Sema::fold(const FilePos &start, [[maybe_unused]] const FilePos &end, OperatorTy
                 return make_unique<IntegerLiteralNode>(start, value, type, cast);
             case OperatorType::NEG: {
                 // negating an integer literal can change its type from LONGINT to INTEGER or INTEGER to SHORTINT
-                auto literal = make_unique<IntegerLiteralNode>(start, -value, type, cast);
-                literal->setType(literal->isLong() ? longIntTy_ : (literal->isShort() ? shortIntTy_ : integerTy_));
-                return literal;
+                value = -value;
+                return make_unique<IntegerLiteralNode>(start, value, intType(value), cast);
             }
             default:
                 logger_.error(start, "operator " + to_string(op) + " cannot be applied to integer values.");
@@ -1458,35 +1453,44 @@ Sema::fold(const FilePos &start, [[maybe_unused]] const FilePos &end,
     } else if (common->isInteger()) {
         long lvalue = foldInteger(start, end, lhs);
         long rvalue = foldInteger(start, end, rhs);
+        long value;
         switch (op) {
             case OperatorType::PLUS:
-                return make_unique<IntegerLiteralNode>(start, lvalue + rvalue, common);
+                value = lvalue + rvalue; break;
             case OperatorType::MINUS:
-                return make_unique<IntegerLiteralNode>(start, lvalue - rvalue, common);
+                value = lvalue - rvalue; break;
             case OperatorType::TIMES:
-                return make_unique<IntegerLiteralNode>(start, lvalue * rvalue, common);
+                value = lvalue * rvalue; break;
             case OperatorType::DIV:
-                return make_unique<IntegerLiteralNode>(start, lvalue / rvalue, common);
+                value = lvalue / rvalue; break;
             case OperatorType::MOD:
-                return make_unique<IntegerLiteralNode>(start, lvalue % rvalue, common);
+                value = lvalue % rvalue; break;
             default:
                 logger_.error(start, "operator " + to_string(op) + " cannot be applied to integer values.");
+                return nullptr;
         }
-    } else if (common->isReal()) {
+        return make_unique<IntegerLiteralNode>(start, value, intType(value));
+} else if (common->isReal()) {
         double lvalue = foldReal(start, end, lhs);
         double rvalue = foldReal(start, end, rhs);
+        double value;
         switch (op) {
             case OperatorType::PLUS:
-                return make_unique<RealLiteralNode>(start, lvalue + rvalue, common);
+                value = lvalue + rvalue; break;
             case OperatorType::MINUS:
-                return make_unique<RealLiteralNode>(start, lvalue - rvalue, common);
+                value = lvalue - rvalue; break;
             case OperatorType::TIMES:
-                return make_unique<RealLiteralNode>(start, lvalue * rvalue, common);
+                value = lvalue * rvalue; break;
             case OperatorType::DIVIDE:
-                return make_unique<RealLiteralNode>(start, lvalue / rvalue, common);
+                value = lvalue / rvalue; break;
             default:
                 logger_.error(start, "operator " + to_string(op) + " cannot be applied to real values.");
+                return nullptr;
         }
+        if (common->kind() == TypeKind::REAL) {
+            return make_unique<RealLiteralNode>(start, static_cast<float>(value), realTy_);
+        }
+        return make_unique<RealLiteralNode>(start, value, longRealTy_);
     } else if (common->isString()) {
         string lvalue = foldString(start, end, lhs);
         string rvalue = foldString(start, end, rhs);
@@ -1547,8 +1551,23 @@ Sema::assertUnique(IdentDef *ident, DeclarationNode *node) {
 
 void
 Sema::checkExport(DeclarationNode *node) {
-    if (node->getLevel() != SymbolTable::MODULE_LEVEL && node->getIdentifier()->isExported()) {
-        logger_.error(node->getIdentifier()->start(), "only top-level declarations can be exported.");
+    if (node->getIdentifier()->isExported()) {
+        if (node->getLevel() != SymbolTable::MODULE_LEVEL) {
+            logger_.error(node->getIdentifier()->start(), "only top-level declarations can be exported.");
+        }
+    } else {
+        if (node->getNodeType() == NodeType::type) {
+            auto decl = dynamic_cast<TypeDeclarationNode *>(node);
+            if (decl->getType()->kind() == TypeKind::RECORD) {
+                auto type = dynamic_cast<RecordTypeNode *>(decl->getType());
+                for (size_t i = 0; i < type->getFieldCount(); i++) {
+                    auto field = type->getField(i);
+                    if (field->getIdentifier()->isExported()) {
+                        logger_.error(field->pos(), "cannot export fields of non-exported record type.");
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -1743,4 +1762,14 @@ void Sema::castLiteral(unique_ptr<ExpressionNode> &literal, TypeNode *expected) 
         literal->setCast(expected);
         logger_.warning(literal->pos(), "unable to cast " + to_string(actual) + " literal to type " + to_string(expected) + ".");
     }
+}
+
+TypeNode *
+Sema::intType(long value) {
+    if (value >= std::numeric_limits<short>::lowest() && value <= std::numeric_limits<short>::max()) {
+        return shortIntTy_;
+    } else if (value < std::numeric_limits<int>::lowest() || value > std::numeric_limits<int>::max()) {
+        return longIntTy_;
+    }
+    return integerTy_;
 }
