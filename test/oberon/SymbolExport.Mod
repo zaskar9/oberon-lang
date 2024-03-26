@@ -49,6 +49,7 @@ TYPE Vector* = ARRAY 10 OF INTEGER;
      END;
      (*Elem* = POINTER TO RECORD val*: INTEGER; next*: Elem END;*)
      BinTreeNode* = RECORD val*: INTEGER; left*, right*: POINTER TO BinTreeNode END;
+     TimeSpec* = POINTER TO Oberon.TimeSpec;
 
 VAR s: SHORTINT;
     i: INTEGER;

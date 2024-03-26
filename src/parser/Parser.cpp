@@ -21,7 +21,7 @@ using std::vector;
 static OperatorType token_to_operator(TokenType token);
 
 void Parser::parse(ASTContext *context) {
-    context->setTranslationUnit(module());
+    module(context);
 }
 
 // ident = letter { letter | digit } .
@@ -102,7 +102,7 @@ void Parser::ident_list(vector<unique_ptr<IdentDef>> &idents) {
 }
 
 // module = "MODULE" ident ";" [ import_list ] declarations [ "BEGIN" statement_sequence ] "END" ident "." .
-unique_ptr<ModuleNode> Parser::module() {
+void Parser::module(ASTContext *context) {
     logger_.debug("module");
     token_ = scanner_.next();
     if (!assertToken(token_.get(), TokenType::kw_module)) {
@@ -137,8 +137,9 @@ unique_ptr<ModuleNode> Parser::module() {
         resync({TokenType::eof});   // [<EOF>]
     }
     auto node = sema_.onModuleEnd(token_->end(), std::move(identifier));
-    sema_.onTranslationUnitEnd(to_string(*node->getIdentifier()));
-    return node;
+    auto modname = to_string(*node->getIdentifier());
+    context->setTranslationUnit(std::move(node));
+    sema_.onTranslationUnitEnd(modname);
 }
 
 // import_list = IMPORT import { "," import } ";" .

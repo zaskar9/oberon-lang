@@ -85,7 +85,12 @@ ASTContext::getOrInsertProcedureType(const FilePos &start, [[maybe_unused]] cons
 }
 
 void ASTContext::addExternalModule(std::unique_ptr<ModuleNode> module) {
-    ext_modules_.push_back(std::move(module));
+    string name = module->getIdentifier()->name();
+    ext_modules_[name] = std::move(module);
+}
+
+ModuleNode *ASTContext::getExternalModule(const std::string &name) {
+    return ext_modules_[name].get();
 }
 
 void ASTContext::addExternalProcedure(ProcedureNode *proc) {

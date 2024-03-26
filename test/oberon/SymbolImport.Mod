@@ -1,4 +1,8 @@
 MODULE SymbolImport;
-IMPORT SymbolExport;
+IMPORT SymbolExport, Oberon;
 
+VAR t: Oberon.TimeSpec;
+
+BEGIN
+    SymbolExport.SetTime(t)
 END SymbolImport.
