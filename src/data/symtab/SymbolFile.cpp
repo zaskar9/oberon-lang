@@ -119,8 +119,9 @@ std::string SymbolFile::readString() {
     char *buffer = new char[len];
     file_.read(buffer, (long) len);
     auto val = std::string(buffer, len);
+    delete[] buffer;
 #ifdef _DEBUG
-    std::cout << val << "|";
+    std::cout << (val.empty() ? "0X" : val) << "|";
 #endif
     return val;
 }
@@ -132,7 +133,7 @@ void SymbolFile::writeString(const std::string &val) {
 #endif
     file_.write(reinterpret_cast<const char*>(&len), sizeof(len));
 #ifdef _DEBUG
-    std::cout << val << "|";
+    std::cout << (val.empty() ? "0X" : val) << "|";
 #endif
     file_.write(val.c_str(), (long) len);
 }

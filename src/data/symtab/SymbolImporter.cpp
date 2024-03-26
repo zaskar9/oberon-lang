@@ -167,6 +167,19 @@ TypeNode *SymbolImporter::readType(SymbolFile *file, PointerTypeNode *ptr) {
         }
         return nullptr;
     }
+    TypeDeclarationNode *decl = nullptr;
+    bool insert = false;
+    string module, name;
+    if (ref > 0) {
+        module = file->readString();
+        if (!module.empty()) {
+            name = file->readString();
+            decl = dynamic_cast<TypeDeclarationNode *>(symbols_->lookup(module, name));
+            if (!decl) {
+                insert = true;
+            }
+        }
+    }
     auto kind = (TypeKind) file->readChar();
     if (kind == TypeKind::ARRAY) {
         type = readArrayType(file);
@@ -177,7 +190,21 @@ TypeNode *SymbolImporter::readType(SymbolFile *file, PointerTypeNode *ptr) {
     } else if (kind == TypeKind::RECORD) {
         type = readRecordType(file);
     }
+    if (decl) {
+        type = decl->getType();
+    }
     if (type) {
+        if (insert) {
+            if (!symbols_->getNamespace(module)) {
+                symbols_->createNamespace(module);
+                context_->addExternalModule(make_unique<ModuleNode>(make_unique<Ident>(module)));
+            }
+            auto external = context_->getExternalModule(module);
+            auto node = make_unique<TypeDeclarationNode>(EMPTY_POS, make_unique<IdentDef>(name), type);
+            symbols_->import(module, name, node.get());
+            node->setModule(external);
+            external->types().push_back(std::move(node));
+        }
         symbols_->setRef(ref, type);
         // check if the imported type resolves a forward reference
         if (forwards_.contains(ref)) {

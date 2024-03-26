@@ -127,6 +127,13 @@ void SymbolExporter::writeType(SymbolFile *file, TypeNode *type) {
             type->setRef(ref_);
             ref_++;
         }
+        if (type->getDeclaration()->getModule() != context_->getTranslationUnit()) {
+            auto decl = type->getDeclaration();
+            file->writeString(decl->getModule()->getIdentifier()->name());
+            file->writeString(decl->getIdentifier()->name());
+        } else {
+            file->writeString("");
+        }
     }
     file->writeChar(static_cast<signed char>(type->kind()));
     switch (type->kind()) {
@@ -196,22 +203,26 @@ void SymbolExporter::writeRecordType(SymbolFile *file, RecordTypeNode *type) {
     auto offset = 0u;
     for (size_t i = 0; i < type->getFieldCount(); i++) {
         auto field = type->getField(i);
-        if (field->getIdentifier()->isExported()) {
+        //if (field->getIdentifier()->isExported()) {
             // write out field node type
             file->writeChar(static_cast<signed char>(field->getNodeType()));
             // write out field number
             file->writeInt(static_cast<int>(i + 1));
             // write out field name
-            file->writeString(field->getIdentifier()->name());
+            if (field->getIdentifier()->isExported()) {
+                file->writeString(field->getIdentifier()->name());
+            } else {
+                file->writeString("_");
+            }
             // write out field type: if successive fields have the same type,
             // write it out the first time and write `NOTYPE` for following fields
             writeType(file, field->index() == 0 ? field->getType() : nullptr);
             // write out field offset
             file->writeInt(static_cast<int>(offset));
             offset += field->getType()->getSize();
-        } else {
-            // TODO find hidden pointers
-        }
+        //} else {
+        //    // TODO find hidden pointers
+        //}
     }
     // write out terminator
     file->writeChar(0);

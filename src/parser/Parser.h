@@ -49,7 +49,7 @@ private:
     unique_ptr<IdentDef> identdef(bool checkAlphaNum = true);
     void ident_list(vector<unique_ptr<IdentDef>> &idents);
 
-    unique_ptr<ModuleNode> module();
+    void module(ASTContext *context);
 
     void import_list(vector<unique_ptr<ImportNode>> &);
     void import(vector<unique_ptr<ImportNode>> &);
