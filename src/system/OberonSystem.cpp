@@ -56,7 +56,7 @@ BasicTypeNode *OberonSystem::createBasicType(TypeKind kind, unsigned int size) {
     auto type = make_unique<BasicTypeNode>(make_unique<Ident>(to_string(kind)), kind, size);
     auto ptr = type.get();
     types_.push_back(std::move(type));
-    symbols_->setRef((char) kind, ptr);
+    symbols_->setRef(static_cast<unsigned char>(kind), ptr);
     baseTypes_[ptr->getIdentifier()->name()] = ptr;
     return ptr;
 }
@@ -69,7 +69,7 @@ PointerTypeNode *OberonSystem::createPointerType(TypeNode *base) {
     auto type = make_unique<PointerTypeNode>(EMPTY_POS, base);
     auto ptr = type.get();
     types_.push_back(std::move(type));
-    symbols_->setRef((char) TypeKind::POINTER, ptr);
+    symbols_->setRef(static_cast<unsigned char>(TypeKind::POINTER), ptr);
     return ptr;
 }
 
@@ -77,7 +77,7 @@ ArrayTypeNode *OberonSystem::createArrayType(const vector<unsigned> &dimensions,
     auto type = make_unique<ArrayTypeNode>(EMPTY_POS, dimensions.size(), dimensions, types);
     auto ptr = type.get();
     types_.push_back(std::move(type));
-    symbols_->setRef((char) TypeKind::ARRAY, ptr);
+    symbols_->setRef(static_cast<unsigned char>(TypeKind::ARRAY), ptr);
     return ptr;
 }
 
