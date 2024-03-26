@@ -39,7 +39,6 @@ private:
 
     Logger &logger_;
     map<string, PointerTypeNode *> forwards_;
-    unique_ptr<ModuleNode> module_;
     stack<unique_ptr<ProcedureNode>> procs_;
     SymbolTable *symbols_;
     SymbolImporter importer_;
@@ -99,8 +98,8 @@ public:
     void onTranslationUnitStart(const string &);
     void onTranslationUnitEnd(const string &);
 
-    ModuleNode *onModuleStart(const FilePos &, unique_ptr<Ident>, vector<unique_ptr<ImportNode>>);
-    unique_ptr<ModuleNode> onModuleEnd(const FilePos&, unique_ptr<Ident>);
+    unique_ptr<ModuleNode> onModuleStart(const FilePos &, unique_ptr<Ident>);
+    void onModuleEnd(const FilePos&, unique_ptr<Ident>);
 
     unique_ptr<ImportNode> onImport(const FilePos &, const FilePos &, unique_ptr<Ident>, unique_ptr<Ident>);
 

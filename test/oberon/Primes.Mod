@@ -1,16 +1,16 @@
 MODULE Primes;
 IMPORT Out;
 
-CONST MAX = 1000;
+CONST Max = 1000;
 
 VAR n: INTEGER;
 
 (* Lists all prime numbers up to `max` using the Sieve of Eratosthenes algorithm. *)
 PROCEDURE sieve(max: INTEGER);
-VAR del: ARRAY MAX OF BOOLEAN;
+VAR del: ARRAY Max OF BOOLEAN;
     n, i, j: INTEGER;
 BEGIN
-    IF max > MAX - 1 THEN n := MAX - 1 ELSE n := max END;
+    IF max > Max - 1 THEN n := Max - 1 ELSE n := max END;
     FOR i := 0 TO n DO del[i] := FALSE END;
     i := 2;
     REPEAT

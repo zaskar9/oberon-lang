@@ -40,13 +40,14 @@ private:
     TypeNode *readProcedureType(SymbolFile *);
     TypeNode *readRecordType(SymbolFile *);
 
+    ModuleNode *getOrCreateModule(const string &module);
+
 public:
-    explicit SymbolImporter(CompilerConfig &config, ASTContext *context) :
-            config_(config), context_(context), logger_(config.logger()), types_(), symbols_(), forwards_() {};
+    explicit SymbolImporter(CompilerConfig &config, ASTContext *context, SymbolTable *symbols) :
+            config_(config), context_(context), logger_(config.logger()), types_(), symbols_(symbols), forwards_() {};
     ~SymbolImporter() = default;
 
-    unique_ptr<ModuleNode> read(const string &module, SymbolTable *symbols);
-    unique_ptr<ModuleNode> read(const string &alias, const string &name, SymbolTable *symbols);
+    ModuleNode *read(const string &module);
 
 };
 

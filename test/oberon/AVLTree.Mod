@@ -33,19 +33,19 @@ PROCEDURE Height(node: TreeNode): INTEGER;
     END
   END Height;
 
-PROCEDURE MAX(a, b: INTEGER): INTEGER;
+PROCEDURE Max(a, b: INTEGER): INTEGER;
   BEGIN
     IF a > b THEN
       RETURN a
     ELSE
       RETURN b
     END
-  END MAX;
+  END Max;
 
 PROCEDURE UpdateHeight(node: TreeNode);
   BEGIN
     IF node # NIL THEN
-      node.height := 1 + MAX(Height(node.left), Height(node.right))
+      node.height := 1 + Max(Height(node.left), Height(node.right))
     END
   END UpdateHeight;
 

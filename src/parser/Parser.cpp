@@ -109,19 +109,19 @@ void Parser::module(ASTContext *context) {
         resync({TokenType::eof});   // [<EOF>]
     }
     auto start = token_->start();
-    auto name = ident();
-    sema_.onTranslationUnitStart(to_string(*name));
+    auto identifier = ident();
+    sema_.onTranslationUnitStart(identifier->name());
+    context->setTranslationUnit(sema_.onModuleStart(start, std::move(identifier)));
+    auto module = context->getTranslationUnit();
     token_ = scanner_.next();
     if (!assertToken(token_.get(), TokenType::semicolon)) {
         // [<IMPORT>, <CONST>, <TYPE>, <VAR>, <PROCEDURE>, <BEGIN>, <END>]
         resync({TokenType::kw_import, TokenType::kw_const, TokenType::kw_type, TokenType::kw_var,
                 TokenType::kw_procedure, TokenType::kw_begin, TokenType::kw_end});
     }
-    vector<unique_ptr<ImportNode>> imports;
     if (scanner_.peek()->type() == TokenType::kw_import) {
-        import_list(imports);
+        import_list(module->imports());
     }
-    auto module = sema_.onModuleStart(start, std::move(name), std::move(imports));
     declarations(module->constants(), module->types(), module->variables(), module->procedures());
     token_ = scanner_.next();
     if (token_->type() == TokenType::kw_begin) {
@@ -131,15 +131,13 @@ void Parser::module(ASTContext *context) {
     if (!assertToken(token_.get(), TokenType::kw_end)) {
         resync({TokenType::eof});   // [<EOF>]
     }
-    auto identifier = ident();
+    identifier = ident();
     token_ = scanner_.next();
     if (!assertToken(token_.get(), TokenType::period)) {
         resync({TokenType::eof});   // [<EOF>]
     }
-    auto node = sema_.onModuleEnd(token_->end(), std::move(identifier));
-    auto modname = to_string(*node->getIdentifier());
-    context->setTranslationUnit(std::move(node));
-    sema_.onTranslationUnitEnd(modname);
+    sema_.onModuleEnd(token_->end(), std::move(identifier));
+    sema_.onTranslationUnitEnd(module->getIdentifier()->name());
 }
 
 // import_list = IMPORT import { "," import } ";" .

@@ -68,8 +68,8 @@ void LLVMIRBuilder::visit(ModuleNode &node) {
     builder_.SetInsertPoint(entry);
     level_ = node.getLevel() + 1;
     // generate code to initialize imports
-    for (size_t i = 0; i < node.getImportCount(); ++i) {
-        node.getImport(i)->accept(*this);
+    for (auto &import : node.imports()) {
+        import->accept(*this);
     }
     // initialize array sizes
     for (size_t i = 0; i < node.getVariableCount(); ++i) {

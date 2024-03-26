@@ -26,7 +26,7 @@ void SymbolExporter::write(const std::string &name, SymbolTable *symbols) {
     std::cout << std::endl;
 #endif
     // open the modules global scope
-    auto scope = symbols->getNamespace(name);
+    auto scope = symbols->getModule(name);
     // navigate from global scope to module scope
     scope = scope->getChild();
     // get exported symbols from the module scope
@@ -73,9 +73,6 @@ void SymbolExporter::writeDeclaration(SymbolFile *file, DeclarationNode *decl) {
                     break;
                 case TypeKind::CHAR:
                     file->writeChar(static_cast<signed char>(dynamic_cast<CharLiteralNode *>(con->getValue())->value()));
-                    break;
-                case TypeKind::SHORTINT:
-                    file->writeShort(static_cast<short>(dynamic_cast<IntegerLiteralNode *>(con->getValue())->value()));
                     break;
                 case TypeKind::SHORTINT:
                     file->writeShort(static_cast<short>(dynamic_cast<IntegerLiteralNode *>(con->getValue())->value()));
@@ -206,26 +203,24 @@ void SymbolExporter::writeRecordType(SymbolFile *file, RecordTypeNode *type) {
     auto offset = 0u;
     for (size_t i = 0; i < type->getFieldCount(); i++) {
         auto field = type->getField(i);
-        //if (field->getIdentifier()->isExported()) {
-            // write out field node type
-            file->writeChar(static_cast<signed char>(field->getNodeType()));
-            // write out field number
-            file->writeInt(static_cast<int>(i + 1));
-            // write out field name
-            if (field->getIdentifier()->isExported()) {
-                file->writeString(field->getIdentifier()->name());
-            } else {
-                file->writeString("_");
-            }
-            // write out field type: if successive fields have the same type,
-            // write it out the first time and write `NOTYPE` for following fields
-            writeType(file, field->index() == 0 ? field->getType() : nullptr);
-            // write out field offset
-            file->writeInt(static_cast<int>(offset));
-            offset += field->getType()->getSize();
-        //} else {
-        //    // TODO find hidden pointers
-        //}
+        // write out field node type
+        file->writeChar(static_cast<signed char>(field->getNodeType()));
+        // write out field number
+        file->writeInt(static_cast<int>(i + 1));
+        // write out field name
+        if (field->getIdentifier()->isExported() ||
+            type->getDeclaration()->getModule() != context_->getTranslationUnit()) {
+            file->writeString(field->getIdentifier()->name());
+        } else {
+            // write a "hidden" field to preserve the correct record layout
+            file->writeString("_");
+        }
+        // write out field type: if successive fields have the same type,
+        // write it out the first time and write `NOTYPE` for following fields
+        writeType(file, field->index() == 0 ? field->getType() : nullptr);
+        // write out field offset
+        file->writeInt(static_cast<int>(offset));
+        offset += field->getType()->getSize();
     }
     // write out terminator
     file->writeChar(0);

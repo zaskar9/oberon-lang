@@ -17,11 +17,7 @@ using std::make_unique;
 using std::string;
 using std::unique_ptr;
 
-std::unique_ptr<ModuleNode> SymbolImporter::read(const string &module, SymbolTable *symbols) {
-    return read(module, module, symbols);
-}
-
-unique_ptr<ModuleNode> SymbolImporter::read(const string &alias, const string &name, SymbolTable *symbols) {
+ModuleNode *SymbolImporter::read(const string &name) {
     auto path = context_->getSourceFileName().parent_path();
     auto fp = (path / name).replace_extension(".smb");
     auto include = fp.filename();
@@ -51,15 +47,12 @@ unique_ptr<ModuleNode> SymbolImporter::read(const string &alias, const string &n
 #ifdef _DEBUG
     std::cout << std::endl;
 #endif
-    // create namespace for name
-    symbols_ = symbols;
-    symbols_->createNamespace(alias);
-    auto module = make_unique<ModuleNode>(make_unique<Ident>(name));
-    module->setAlias(alias);
+    // get or create module
+    auto module = getOrCreateModule(name);
     auto ch = file->readChar();
     while (ch != 0 && !file->eof()) {
         auto nodeType = (NodeType) ch;
-        readDeclaration(file.get(), nodeType, module.get());
+        readDeclaration(file.get(), nodeType, module);
 #ifdef _DEBUG
         std::cout << std::endl;
 #endif
@@ -73,7 +66,7 @@ unique_ptr<ModuleNode> SymbolImporter::read(const string &alias, const string &n
     file->close();
 #ifdef _DEBUG
     auto printer = make_unique<NodePrettyPrinter>(std::cout);
-    printer->print(module.get());
+    printer->print(module);
 #endif
     return module;
 }
@@ -122,26 +115,26 @@ void SymbolImporter::readDeclaration(SymbolFile *file, NodeType nodeType, Module
             }
             if (expr) {
                 auto decl = make_unique<ConstantDeclarationNode>(std::move(ident), std::move(expr));
-                symbols_->import(module->getAlias(), name, decl.get());
+                symbols_->import(module->getIdentifier()->name(), name, decl.get());
                 decl->setModule(module);
                 module->constants().push_back(std::move(decl));
             }
         }
-    } else if (nodeType == NodeType::type) {
+    } else if (nodeType == NodeType::type && !symbols_->lookup(module->getIdentifier()->name(), name)) {
         auto decl = make_unique<TypeDeclarationNode>(EMPTY_POS, std::move(ident), type);
-        symbols_->import(module->getAlias(), name, decl.get());
+        symbols_->import(module->getIdentifier()->name(), name, decl.get());
         decl->setModule(module);
         module->types().push_back(std::move(decl));
     } else if (nodeType == NodeType::variable) {
         // read in export number
         [[maybe_unused]] auto exno = file->readInt();
         auto decl = make_unique<VariableDeclarationNode>(EMPTY_POS, std::move(ident), type);
-        symbols_->import(module->getAlias(), name, decl.get());
+        symbols_->import(module->getIdentifier()->name(), name, decl.get());
         decl->setModule(module);
         module->variables().push_back(std::move(decl));
     } else if (nodeType == NodeType::procedure) {
         auto decl = make_unique<ProcedureNode>(std::move(ident), dynamic_cast<ProcedureTypeNode *>(type));
-        symbols_->import(module->getAlias(), name, decl.get());
+        symbols_->import(module->getIdentifier()->name(), name, decl.get());
         decl->setModule(module);
         module->procedures().push_back(std::move(decl));
     }
@@ -167,19 +160,18 @@ TypeNode *SymbolImporter::readType(SymbolFile *file, PointerTypeNode *ptr) {
         }
         return nullptr;
     }
+    // handle re-exported types
     TypeDeclarationNode *decl = nullptr;
-    bool insert = false;
     string module, name;
     if (ref > 0) {
         module = file->readString();
         if (!module.empty()) {
+            // check whether re-exported type has already been imported
             name = file->readString();
             decl = dynamic_cast<TypeDeclarationNode *>(symbols_->lookup(module, name));
-            if (!decl) {
-                insert = true;
-            }
         }
     }
+    // read, possibly redundant, type description
     auto kind = (TypeKind) file->readChar();
     if (kind == TypeKind::ARRAY) {
         type = readArrayType(file);
@@ -191,25 +183,25 @@ TypeNode *SymbolImporter::readType(SymbolFile *file, PointerTypeNode *ptr) {
         type = readRecordType(file);
     }
     if (decl) {
+        // discard just imported type, if it has already been imported previously
         type = decl->getType();
-    }
-    if (type) {
-        if (insert) {
-            if (!symbols_->getNamespace(module)) {
-                symbols_->createNamespace(module);
-                context_->addExternalModule(make_unique<ModuleNode>(make_unique<Ident>(module)));
-            }
-            auto external = context_->getExternalModule(module);
+    } else if (type) {
+        // import a re-exported
+        if (!module.empty()) {
+            auto external = getOrCreateModule(module);
             auto node = make_unique<TypeDeclarationNode>(EMPTY_POS, make_unique<IdentDef>(name), type);
             symbols_->import(module, name, node.get());
             node->setModule(external);
             external->types().push_back(std::move(node));
         }
-        symbols_->setRef(ref, type);
-        // check if the imported type resolves a forward reference
-        if (forwards_.contains(ref)) {
-            forwards_[ref]->setBase(type);
-        }
+    } else {
+        // abort no declaration found and no type imported
+        return nullptr;
+    }
+    symbols_->setRef(ref, type);
+    // check if the imported type resolves a forward reference
+    if (forwards_.contains(ref)) {
+        forwards_[ref]->setBase(type);
     }
     return type;
 }
@@ -313,4 +305,12 @@ TypeNode *SymbolImporter::readRecordType(SymbolFile *file) {
     res->setBaseType(base_t);
     res->setSize(size);
     return res;
+}
+
+ModuleNode *SymbolImporter::getOrCreateModule(const std::string &module) {
+    if (!symbols_->getModule(module)) {
+        symbols_->addModule(module);
+        context_->addExternalModule(make_unique<ModuleNode>(make_unique<Ident>(module)));
+    }
+    return context_->getExternalModule(module);
 }

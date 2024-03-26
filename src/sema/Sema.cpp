@@ -16,8 +16,8 @@ using std::set;
 using std::string;
 
 Sema::Sema(CompilerConfig &config, ASTContext *context, OberonSystem *system) :
-        config_(config), context_(context), system_(system), logger_(config_.logger()), forwards_(), module_(), procs_(),
-        symbols_(system_->getSymbolTable()), importer_(config_, context), exporter_(config_, context) {
+        config_(config), context_(context), system_(system), logger_(config_.logger()), forwards_(), procs_(),
+        symbols_(system_->getSymbolTable()), importer_(config_, context, symbols_), exporter_(config_, context) {
     boolTy_ = system_->getBasicType(TypeKind::BOOLEAN);
     byteTy_ = system_->getBasicType(TypeKind::BYTE);
     charTy_ = system_->getBasicType(TypeKind::CHAR);
@@ -34,7 +34,7 @@ Sema::Sema(CompilerConfig &config, ASTContext *context, OberonSystem *system) :
 
 void
 Sema::onTranslationUnitStart(const string &name) {
-    symbols_->createNamespace(name, true);
+    symbols_->addModule(name, true);
 }
 
 void
@@ -67,48 +67,48 @@ Sema::onBlockEnd() {
     symbols_->closeScope();
 }
 
-ModuleNode *
-Sema::onModuleStart(const FilePos &start, unique_ptr<Ident> ident, vector<unique_ptr<ImportNode>> imports) {
-    module_ = make_unique<ModuleNode>(start, std::move(ident), std::move(imports));
-    assertUnique(module_->getIdentifier(), module_.get());
-    module_->setLevel(symbols_->getLevel());
+unique_ptr<ModuleNode>
+Sema::onModuleStart(const FilePos &start, unique_ptr<Ident> ident) {
+    auto module = make_unique<ModuleNode>(start, std::move(ident));
+    assertUnique(module->getIdentifier(), module.get());
+    module->setLevel(symbols_->getLevel());
     onBlockStart();
-    return module_.get();
+    return module;
 }
 
-unique_ptr<ModuleNode>
+void
 Sema::onModuleEnd([[maybe_unused]] const FilePos &end, unique_ptr<Ident> ident) {
     onBlockEnd();
-    if (*module_->getIdentifier() != *ident.get()) {
-        logger_.error(ident->start(), "module name mismatch: expected " + to_string(*module_->getIdentifier()) +
+    auto module = context_->getTranslationUnit();
+    if (*module->getIdentifier() != *ident.get()) {
+        logger_.error(ident->start(), "module name mismatch: expected " + to_string(*module->getIdentifier()) +
                                        ", found " + to_string(*ident) + ".");
     }
-    return std::move(module_);
 }
 
 unique_ptr<ImportNode>
 Sema::onImport(const FilePos &start, [[maybe_unused]] const FilePos &end,
                unique_ptr<Ident> alias, unique_ptr<Ident> ident) {
     auto node = make_unique<ImportNode>(start, std::move(alias), std::move(ident));
-    // TODO check duplicate imports
-    std::unique_ptr<ModuleNode> module;
     auto name = node->getModule()->name();
-    if (name == "SYSTEM") {
-        module = std::make_unique<ModuleNode>(std::make_unique<Ident>(name));
-        if (node->getAlias()) {
-            module->setAlias(node->getAlias()->name());
-        }
-    } else {
-        if (node->getAlias()) {
-            module = importer_.read(node->getAlias()->name(), name, symbols_);
-        } else {
-            module = importer_.read(name, symbols_);
+    // check for duplicate imports
+    for (auto &import : context_->getTranslationUnit()->imports()) {
+        if (import->getModule()->name() == name) {
+            logger_.error(node->pos(), "duplicate import of module " + name + ".");
+            break;
         }
     }
-    if (module) {
-        context_->addExternalModule(std::move(module));
+    // import the external module
+    if (name == "SYSTEM") {
+        context_->addExternalModule(std::make_unique<ModuleNode>(std::make_unique<Ident>(name)));
     } else {
-        logger_.error(node->pos(), "module " + node->getModule()->name() + " could not be imported.");
+        if (!importer_.read(name)) {
+            logger_.error(node->pos(), "module " + name + " could not be imported.");
+        }
+    }
+    // set the alias for the module in the symbol table
+    if (node->getAlias()) {
+        symbols_->addAlias(node->getAlias()->name(), name);
     }
     return node;
 }
@@ -129,7 +129,7 @@ Sema::onConstant(const FilePos &start, [[maybe_unused]] const FilePos &end,
     auto node = make_unique<ConstantDeclarationNode>(start, std::move(ident), std::move(expr), expr ? expr->getType() : nullTy_);
     assertUnique(node->getIdentifier(), node.get());
     node->setLevel(symbols_->getLevel());
-    node->setModule(module_.get());
+    node->setModule(context_->getTranslationUnit());
     checkExport(node.get());
     return node;
 }
@@ -140,7 +140,7 @@ Sema::onType(const FilePos &start, [[maybe_unused]] const FilePos &end,
     auto node = make_unique<TypeDeclarationNode>(start, std::move(ident), type);
     assertUnique(node->getIdentifier(), node.get());
     node->setLevel(symbols_->getLevel());
-    node->setModule(module_.get());
+    node->setModule(context_->getTranslationUnit());
     checkExport(node.get());
     if (type) {
         auto it = forwards_.find(node->getIdentifier()->name());
@@ -320,7 +320,7 @@ Sema::onVariable(const FilePos &start, [[maybe_unused]] const FilePos &end,
     auto node = make_unique<VariableDeclarationNode>(start, std::move(ident), type, index);
     assertUnique(node->getIdentifier(), node.get());
     node->setLevel(symbols_->getLevel());
-    node->setModule(module_.get());
+    node->setModule(context_->getTranslationUnit());
     checkExport(node.get());
     return node;
 }
@@ -331,7 +331,7 @@ Sema::onProcedureStart(const FilePos &start, unique_ptr<IdentDef> ident) {
     auto proc = procs_.top().get();
     assertUnique(proc->getIdentifier(), proc);
     proc->setLevel(symbols_->getLevel());
-    proc->setModule(module_.get());
+    proc->setModule(context_->getTranslationUnit());
     checkExport(proc);
     onBlockStart();
     return proc;
@@ -671,7 +671,7 @@ Sema::onSelectors(const FilePos &start, const FilePos &end,
                 break;
             case NodeType::record_type:
                 context = onRecordField(base, dynamic_cast<RecordField *>(sel));
-                base = context->getType();
+                base = context ? context->getType() : nullTy_;
                 break;
             case NodeType::type:
                 base = onTypeguard(context, base, dynamic_cast<Typeguard *>(sel));

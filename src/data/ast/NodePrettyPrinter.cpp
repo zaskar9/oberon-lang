@@ -86,10 +86,10 @@ void NodePrettyPrinter::visit(ModuleNode& node) {
     module_ = &node;
     indent();
     stream_ << "MODULE " << *node.getIdentifier() << "(*Scope:" << node.getLevel() << "*);" << std::endl;
-    if (node.getImportCount() > 0) {
+    if (!node.imports().empty()) {
         stream_ << "IMPORT ";
-        for (size_t i = 0; i < node.getImportCount(); i++) {
-            node.getImport(i)->accept(*this);
+        for (auto &import: node.imports()) {
+            import->accept(*this);
         }
         stream_ << std::endl;
     }

@@ -32,6 +32,7 @@ class SymbolTable {
 
 private:
     unordered_map<string, unique_ptr<Scope>> scopes_;
+    unordered_map<string, string> aliases_;
     Scope *scope_;
     // references for import and export
     vector<TypeNode*> references_;
@@ -50,21 +51,19 @@ public:
     void insert(const string &name, DeclarationNode *node);
     void insertGlobal(const string &name, DeclarationNode *node);
 
-    [[nodiscard]] DeclarationNode *lookup(const string &name) const;
     [[nodiscard]] DeclarationNode *lookup(const string &qualifier, const string &name) const;
     [[nodiscard]] DeclarationNode *lookup(Ident *ident) const;
 
+    void addAlias(const string &alias, const string &module);
 
     [[nodiscard]] bool isDuplicate(const string &name) const;
     [[nodiscard]] bool isGlobal(const string &name) const;
 
-    [[nodiscard]] BasicTypeNode *getBasicType(const string &name) const;
     [[nodiscard]] TypeNode *getNilType() const;
     void setNilType(TypeNode *nilType);
 
-    void createNamespace(const string &module, bool activate = false);
-    [[nodiscard]] Scope *getNamespace(const string &module);
-    void setNamespace(const string &module);
+    void addModule(const string &module, bool activate = false);
+    [[nodiscard]] Scope *getModule(const string &module);
 
     void openScope();
     void closeScope();
