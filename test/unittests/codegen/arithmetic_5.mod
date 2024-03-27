@@ -1,15 +1,15 @@
 (*
   RUN: %oberon --run %s
   XFAIL: *
-  From the language report 2016:
-  x = q*y + r  and 0 <= r < y
+  REQUURES revision
+  Divisor in MOD and DIV cannot be negative (cf. O07.8.2.2: x = q * y + r  and 0 <= r < y)
 *)
 MODULE Arithmetic5;
 
 PROCEDURE Test;
 VAR c : INTEGER;
 BEGIN
-  c := 10 DIV -3;
+  c := 10 MOD -3
 END Test;
 
 BEGIN

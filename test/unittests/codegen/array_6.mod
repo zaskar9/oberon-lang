@@ -1,7 +1,6 @@
 (*
   RUN: %oberon --run %s
   XFAIL: *
-  REQUIRES: revision
   Should trigger UBSan routine __ubsan_handle_out_of_bounds
 *)
 MODULE Array6;

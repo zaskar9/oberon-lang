@@ -1,9 +1,6 @@
 (*
   RUN: %oberon --run %s
   XFAIL: *
-  REQUIRES: revision
-  Segmentation fault
-  Does not complain about overflow with constant expression
 *)
 MODULE ArrayOverflowConstantExpr;
 

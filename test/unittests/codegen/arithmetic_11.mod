@@ -1,7 +1,6 @@
 (*
   RUN: %oberon --run %s
   XFAIL: *
-  REQUIRES: revision
   Should mixed arithmetics with integers be supported?
   Oberon-2 have the LONG and SHORT procedure to solve this explicit.
 *)
@@ -14,7 +13,7 @@ VAR
 BEGIN
   i := 7;
   l := 15;
-  r := l + i;
+  r := l + i
 END Test;
 
 BEGIN

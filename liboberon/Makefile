@@ -18,9 +18,9 @@ endif
 LIB = ../test/oberon/lib
 INC = ../test/oberon/include
 ifeq ($(OS), windows)
-	O7C = ../cmake-build-release/src/oberon-lang.exe
+	O7C = ../build/src/oberon-lang.exe
 else
-	O7C = ../cmake-build-release/src/oberon-lang
+	O7C = ../build/src/oberon-lang
 endif
 ifeq ($(OS), windows)
 	O7CFLAGS = -q -O3 -fenable-extern -fenable-varargs # --target $(TGT)

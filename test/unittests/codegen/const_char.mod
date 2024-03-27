@@ -1,7 +1,5 @@
 (*
   RUN: %oberon -I "%S%{pathsep}%inc" -L "%S%{pathsep}%lib" -l oberon --run %s | filecheck %s
-  REQUIRES: revision
-  char constants not supported
 *)
 MODULE ConstChar;
 
@@ -22,5 +20,5 @@ BEGIN
 END ConstChar.
 (*
     CHECK: 10
-    CHECK: 32
+    CHECK: 34
 *)

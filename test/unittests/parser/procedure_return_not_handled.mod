@@ -1,15 +1,16 @@
 (*
-  RUN: %oberon --run %s
-  XFAIL: *
-  Should give error or warning? that procedure return not handled
+  RUN: %oberon --run %s | filecheck %s
 *)
 MODULE ProcedureReturnNotHandled;
 
-PROCEDURE Test : INTEGER;
+PROCEDURE Test(): INTEGER;
 BEGIN
   RETURN 123
 END Test;
 
 BEGIN
-    Test
+    Test()
 END ProcedureReturnNotHandled.
+(*
+    CHECK: {{.*}}discarded expression value{{.*}}
+*)
