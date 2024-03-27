@@ -8,7 +8,9 @@
 #include "NodeVisitor.h"
 
 void StatementSequenceNode::addStatement(std::unique_ptr<StatementNode> statement) {
-    statements_.push_back(std::move(statement));
+    if (statement) {
+        statements_.push_back(std::move(statement));
+    }
 }
 
 void StatementSequenceNode::insertStatement(size_t pos, std::unique_ptr<StatementNode> statement) {

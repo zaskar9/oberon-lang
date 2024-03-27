@@ -5,6 +5,7 @@
  */
 
 
+#include <cctype>
 #include <memory>
 
 #include <boost/algorithm/string/replace.hpp>
@@ -99,9 +100,9 @@ unique_ptr<const Token> Scanner::scanToken() {
     }
     FilePos pos = current();
     if (!eof_) {
-        if ((ch_ >= 'A' && ch_ <= 'Z') || (ch_ >= 'a' && ch_ <= 'z') || ch_ == '_') {
+        if (std::isalpha(ch_) || ch_ == '_') {
             return scanIdent();
-        } else if ((ch_ >= '0') && (ch_ <= '9')) {
+        } else if (std::isdigit(ch_)) {
             return scanNumber();
         } else if (ch_ == '"') {
             return scanString();
@@ -272,9 +273,7 @@ unique_ptr<const Token> Scanner::scanIdent() {
     do {
         ss << ch_;
         read();
-    } while ((ch_ >= '0' && ch_ <= '9') ||
-             (ch_ >= 'a' && ch_ <= 'z') ||
-             (ch_ >= 'A' && ch_ <= 'Z') || ch_ == '_');
+    } while (!eof_ && (std::isalnum(ch_) || ch_ == '_'));
     std::string ident = ss.str();
     auto it = keywords_.find(ident);
     if (it != keywords_.end()) {

@@ -54,8 +54,9 @@ void LambdaLifter::visit(ProcedureNode &node) {
             }
             auto type = context_->getOrInsertRecordType(EMPTY_POS, EMPTY_POS, std::move(fields));
             auto decl = make_unique<TypeDeclarationNode>(EMPTY_POS, std::move(identifier), type);
+            decl->setModule(module_);
             decl->setLevel(module_->getLevel() + 1);
-            module_->addTypeDeclaration(std::move(decl));
+            module_->types().push_back(std::move(decl));
             // insert an additional formal parameter to the sub-procedures of the procedure to pass its environment
             for (auto &proc : node.procedures()) {
                 auto param = make_unique<ParameterNode>(EMPTY_POS, make_unique<Ident>(SUPER_), type, true);

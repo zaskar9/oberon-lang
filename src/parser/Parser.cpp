@@ -475,8 +475,11 @@ void Parser::procedure_body(ProcedureNode *proc) {
     } else if (assertToken(token, TokenType::kw_begin)) {
         scanner_.next(); // skip BEGIN keyword
         statement_sequence(proc->statements());
-    } else {
-        resync({TokenType::kw_end});
+        if (assertToken(scanner_.peek(), TokenType::kw_end)) {
+            token_ = scanner_.next(); // skip END keyword
+        } else {
+            resync({TokenType::kw_end});
+        }
     }
     // [<ident>]
     resync({ TokenType::const_ident });
@@ -659,6 +662,10 @@ unique_ptr<StatementNode> Parser::statement() {
         FilePos start = token_->start();
         FilePos end = token->end();
         return sema_.onReturn(start, end, expression());
+    } else if (token->type() == TokenType::semicolon) {
+        logger_.warning(token->start(), "extra semicolon.");
+    } else if (token->type() == TokenType::kw_end) {
+        logger_.warning(token->start(), "semicolon before END.");
     } else {
         logger_.error(token->start(), "unknown or empty statement.");
     }
