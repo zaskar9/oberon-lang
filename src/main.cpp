@@ -44,6 +44,7 @@ int main(const int argc, const char **argv) {
             (",f", po::value<vector<string>>()->value_name("<flag>"), "Compiler configuration flags.")
             (",O", po::value<int>()->value_name("<level>"), "Optimization level. [O0, O1, O2, O3]")
             (",o", po::value<string>()->value_name("<filename>"), "Name of the output file.")
+            (",W", po::value<vector<string>>()->value_name("<option>"), "Warning configuration.")
             ("sym-dir", po::value<string>()->value_name("<directory>"), "Set output path for generated .smb files.")
             ("filetype", po::value<string>()->value_name("<type>"), "Set type of output file. [asm, bc, obj, ll]")
             ("reloc", po::value<string>()->value_name("<model>"), "Set relocation model. [default, static, pic]")
@@ -162,6 +163,20 @@ int main(const int argc, const char **argv) {
                     return EXIT_FAILURE;
             }
         }
+        if (vm.count("-o")) {
+            config.setOutputFile(vm["-o"].as<string>());
+        }
+        if (vm.count("-W")) {
+            auto params = vm["-W"].as<vector<string>>();
+            for (const auto& warn : params) {
+                if (warn == "error") {
+                    config.setWarning(Warning::ERROR);
+                    logger.setWarnAsError(true);
+                } else {
+                    logger.warning(PROJECT_NAME, "ignoring unrecognized warning -W" + warn + ".");
+                }
+            }
+        }
         if (vm.count("run")) {
             config.setJit(true);
         }
@@ -197,9 +212,6 @@ int main(const int argc, const char **argv) {
             } else {
                 config.setRelocationModel(RelocationModel::DEFAULT);
             }
-        }
-        if (vm.count("-o")) {
-            config.setOutputFile(vm["-o"].as<string>());
         }
         if (vm.count("sym-dir")) {
             config.setSymDir(vm["sym-dir"].as<string>());

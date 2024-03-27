@@ -93,11 +93,19 @@ const vector<string> &CompilerConfig::getLibraries() const {
 }
 
 void CompilerConfig::setFlag(Flag flag) {
-    flags_ |= static_cast<int>(flag);
+    flags_ |= static_cast<unsigned>(flag);
 }
 
 bool CompilerConfig::hasFlag(Flag flag) const {
-    return flags_ & static_cast<int>(flag);
+    return flags_ & static_cast<unsigned>(flag);
+}
+
+void CompilerConfig::setWarning(Warning warn) {
+    warn_ |= static_cast<unsigned>(warn);
+}
+
+bool CompilerConfig::hasWarning(Warning warn) const {
+    return warn_ & static_cast<unsigned>(warn);
 }
 
 void CompilerConfig::setJit(bool jit) {

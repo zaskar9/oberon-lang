@@ -137,7 +137,7 @@ Sema::onConstant(const FilePos &start, [[maybe_unused]] const FilePos &end,
 unique_ptr<TypeDeclarationNode>
 Sema::onType(const FilePos &start, [[maybe_unused]] const FilePos &end,
              unique_ptr<IdentDef> ident, TypeNode *type) {
-    auto node = make_unique<TypeDeclarationNode>(start, std::move(ident), type);
+    auto node = make_unique<TypeDeclarationNode>(start, std::move(ident), type ? type : nullTy_);
     assertUnique(node->getIdentifier(), node.get());
     node->setLevel(symbols_->getLevel());
     node->setModule(context_->getTranslationUnit());
@@ -281,18 +281,17 @@ TypeNode *
 Sema::onTypeReference(const FilePos &start, const FilePos &end,
                       unique_ptr<QualIdent> ident, unsigned dimensions) {
     auto sym = symbols_->lookup(ident.get());
-    if (sym) {
-        TypeNode *type;
-        if (sym->getNodeType() == NodeType::array_type ||
-            sym->getNodeType() == NodeType::basic_type ||
-            sym->getNodeType() == NodeType::record_type ||
-            sym->getNodeType() == NodeType::pointer_type) {
-            type = dynamic_cast<TypeNode *>(sym);
-        } else if (sym->getNodeType() == NodeType::type) {
-            type = dynamic_cast<TypeDeclarationNode *>(sym)->getType();
-        } else {
-            logger_.error(start, to_string(*ident) + " is not a type.");
-        }
+    if (!sym) {
+        logger_.error(start, "undefined type: " + to_string(*ident) + ".");
+        return nullTy_;
+    }
+    auto decl = dynamic_cast<TypeDeclarationNode * >(sym);
+    if (!decl) {
+        logger_.error(start, to_string(*ident) + " is not a type.");
+        return nullTy_;
+    }
+    auto type = decl->getType();
+    if (type && type->kind() != TypeKind::NOTYPE) {
         if (dimensions == 0) {
             return type;
         }
@@ -303,11 +302,10 @@ Sema::onTypeReference(const FilePos &start, const FilePos &end,
             types.insert(types.begin(), type);
             type = context_->getOrInsertArrayType(start, end, lengths.size(), lengths, types);
         }
-        return type;
     } else {
         logger_.error(start, "undefined type: " + to_string(*ident) + ".");
     }
-    return nullptr;
+    return type;
 }
 
 unique_ptr<VariableDeclarationNode>
