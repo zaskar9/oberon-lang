@@ -201,16 +201,16 @@ public:
 class IntegerLiteralNode final : public LiteralNode {
 
 private:
-    long value_;
+    int64_t value_;
 
 public:
-    IntegerLiteralNode(const FilePos &pos, long value, TypeNode *type = nullptr, TypeNode *cast = nullptr) :
+    IntegerLiteralNode(const FilePos &pos, int64_t value, TypeNode *type = nullptr, TypeNode *cast = nullptr) :
             LiteralNode(NodeType::integer, pos, TypeKind::INTEGER, type, cast), value_(value) {};
     ~IntegerLiteralNode() final = default;
 
     [[nodiscard]] bool isShort() const;
     [[nodiscard]] bool isLong() const;
-    [[nodiscard]] long value() const;
+    [[nodiscard]] int64_t value() const;
 
     void accept(NodeVisitor &visitor) final;
     void print(std::ostream &stream) const final;
@@ -258,14 +258,14 @@ public:
 class CharLiteralNode final : public LiteralNode {
 
 private:
-    unsigned char value_;
+    uint8_t value_;
 
 public:
-    CharLiteralNode(const FilePos &pos, unsigned char value, TypeNode *type = nullptr, TypeNode *cast = nullptr) :
+    CharLiteralNode(const FilePos &pos, uint8_t value, TypeNode *type = nullptr, TypeNode *cast = nullptr) :
             LiteralNode(NodeType::character, pos, TypeKind::CHAR, type, cast), value_(value) {};
     ~CharLiteralNode() final = default;
 
-    [[nodiscard]] unsigned char value() const;
+    [[nodiscard]] uint8_t value() const;
 
     void accept(NodeVisitor &visitor) final;
     void print(std::ostream &stream) const final;
@@ -305,17 +305,17 @@ class RangeLiteralNode final : public LiteralNode {
 
 private:
     bitset<32> value_;
-    long lower_;
-    long upper_;
+    int64_t lower_;
+    int64_t upper_;
 
 public:
-    RangeLiteralNode(const FilePos &pos, bitset<32> value, long lower, long upper,
+    RangeLiteralNode(const FilePos &pos, bitset<32> value, int64_t lower, int64_t upper,
                      TypeNode *type = nullptr, TypeNode *cast = nullptr) :
             LiteralNode(NodeType::range, pos, TypeKind::SET, type, cast), value_(value), lower_(lower), upper_(upper) {};
 
     [[nodiscard]] bitset<32> value() const;
-    [[nodiscard]] long lower() const;
-    [[nodiscard]] long upper() const;
+    [[nodiscard]] int64_t lower() const;
+    [[nodiscard]] int64_t upper() const;
 
     void accept(NodeVisitor &visitor) final;
     void print(std::ostream &stream) const final;

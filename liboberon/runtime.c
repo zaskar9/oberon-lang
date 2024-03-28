@@ -4,7 +4,9 @@
 
 #include "runtime.h"
 
+#include <inttypes.h>
 #include <math.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12,24 +14,24 @@
 
 #include "ieee754.h"
 
-float rt_realf(int x) {
+float rt_realf(int32_t x) {
     return (float) x;
 }
 
-int rt_entierf(float x) {
-    return (int) floorf(x);
+int32_t rt_entierf(float x) {
+    return (int32_t) floorf(x);
 }
 
-int rt_timespec_get(struct timespec* const time_spec, int const base) {
-    return timespec_get(time_spec, base);
+int32_t rt_timespec_get(struct timespec* const time_spec, int32_t const base) {
+    return (int32_t) timespec_get(time_spec, base);
 }
 
-void rt_out_int(long i, int n) {
+void rt_out_int(int64_t i, int32_t n) {
     if (n < 0) {
         n = 0;
     }
     char buf[21]; // 64-bit is maximally 20 digits (with sign), long plus '\0'
-    sprintf(buf, "%ld", i);
+    sprintf(buf, "%" PRId64, i);
     int len = strlen(buf);
     if (len < n) {
         char *out = (char*) malloc((n + 1) * sizeof(char));
@@ -42,7 +44,7 @@ void rt_out_int(long i, int n) {
     }
 }
 
-void rt_out_real(float x, int n) {
+void rt_out_real(float x, int32_t n) {
     int e = rt_reals_expo(x);
     if (e == 0) {
         printf(" 0");
@@ -110,25 +112,25 @@ void rt_out_real(float x, int n) {
     }
 }
 
-int rt_reals_expo(float x) {
+int32_t rt_reals_expo(float x) {
     union ieee754_float f = { .f = x };
     return f.ieee.exponent;
 }
 
-int rt_reals_expoL(double x) {
+int32_t rt_reals_expoL(double x) {
     union ieee754_double d = { .d = x };
     return d.ieee.exponent;
 }
 
-float rt_reals_ten(int e) {
+float rt_reals_ten(int32_t e) {
     return powf(10.0, e);
 }
 
-double rt_reals_tenL(int e) {
+double rt_reals_tenL(int32_t e) {
     return pow(10.0, e);
 }
 
-void rt_reals_convert(float x, int n, char* d) {
+void rt_reals_convert(float x, int32_t n, char* d) {
     int i = (int) floorf(x);
     int k = 0;
     while (k < n) {

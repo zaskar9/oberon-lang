@@ -4,7 +4,6 @@
  * Created by Michael Grossniklaus on 3/7/18.
  */
 
-#include <limits>
 #include "ExpressionNode.h"
 #include "NodeVisitor.h"
 
@@ -244,7 +243,7 @@ bool IntegerLiteralNode::isLong() const {
     return getType()->kind() == TypeKind::LONGINT;
 }
 
-long IntegerLiteralNode::value() const {
+int64_t IntegerLiteralNode::value() const {
     return value_;
 }
 
@@ -287,7 +286,7 @@ void StringLiteralNode::print(std::ostream &stream) const {
 }
 
 
-unsigned char CharLiteralNode::value() const {
+uint8_t CharLiteralNode::value() const {
     return value_;
 }
 
@@ -326,11 +325,11 @@ bitset<32> RangeLiteralNode::value() const {
     return value_;
 }
 
-long RangeLiteralNode::lower() const {
+int64_t RangeLiteralNode::lower() const {
     return lower_;
 }
 
-long RangeLiteralNode::upper() const {
+int64_t RangeLiteralNode::upper() const {
     return upper_;
 }
 

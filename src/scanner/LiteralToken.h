@@ -43,29 +43,29 @@ public:
 
 };
 
-class ShortLiteralToken final : public LiteralToken<short> {
+class ShortLiteralToken final : public LiteralToken<int16_t> {
 
 public:
-    ShortLiteralToken(const FilePos &start, const FilePos &end, short value) :
-            LiteralToken<short>(TokenType::short_literal, start, end, value) {};
+    ShortLiteralToken(const FilePos &start, const FilePos &end, int16_t value) :
+            LiteralToken<int16_t>(TokenType::short_literal, start, end, value) {};
     ~ShortLiteralToken() noexcept override;
 };
 
-class IntLiteralToken final : public LiteralToken<int> {
+class IntLiteralToken final : public LiteralToken<int32_t> {
 
 public:
-    IntLiteralToken(const FilePos &start, const FilePos &end, int value) :
-            LiteralToken<int>(TokenType::int_literal, start, end, value) {};
+    IntLiteralToken(const FilePos &start, const FilePos &end, int32_t value) :
+            LiteralToken<int32_t>(TokenType::int_literal, start, end, value) {};
     ~IntLiteralToken() noexcept override;
 
 };
 
 
-class LongLiteralToken final : public LiteralToken<long> {
+class LongLiteralToken final : public LiteralToken<int64_t> {
 
 public:
-    LongLiteralToken(const FilePos &start, const FilePos &end, long value) :
-            LiteralToken<long>(TokenType::long_literal, start, end, value) {};
+    LongLiteralToken(const FilePos &start, const FilePos &end, int64_t value) :
+            LiteralToken<int64_t>(TokenType::long_literal, start, end, value) {};
     ~LongLiteralToken() noexcept override;
 
 };
@@ -100,11 +100,11 @@ public:
 
 };
 
-class CharLiteralToken final : public LiteralToken<unsigned char> {
+class CharLiteralToken final : public LiteralToken<uint8_t> {
 
 public:
-    CharLiteralToken(const FilePos &start, const FilePos &end, unsigned char value) :
-            LiteralToken<unsigned char>(TokenType::char_literal, start, end, value) {};
+    CharLiteralToken(const FilePos &start, const FilePos &end, uint8_t value) :
+            LiteralToken<uint8_t>(TokenType::char_literal, start, end, value) {};
     ~CharLiteralToken() noexcept override;
 
 };
