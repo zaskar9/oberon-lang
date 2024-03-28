@@ -340,10 +340,10 @@ unique_ptr<const Token> Scanner::scanNumber() {
         }
         return make_unique<DoubleLiteralToken>(pos, current(), value);
     } else if (isChar) {
-        unsigned char value;
-        auto result = boost::convert<unsigned>(num, ccnv(std::hex));
+        uint8_t value;
+        auto result = boost::convert<uint32_t>(num, ccnv(std::hex));
         if (result && result.value() < 256) {
-            value = static_cast<unsigned char>(result.value());
+            value = static_cast<uint8_t>(result.value());
         } else {
             logger_.error(pos, "invalid character literal: " + num + ".");
             value = 0;
@@ -352,20 +352,20 @@ unique_ptr<const Token> Scanner::scanNumber() {
     } else {
         bool isLong = true;
         bool isInt = true;
-        long value;
+        int64_t value;
         try {
             if (isHex) {
-                auto res = boost::convert<unsigned long>(num, ccnv(std::hex)).value();
+                auto res = boost::convert<uint64_t>(num, ccnv(std::hex)).value();
                 // Hexadecimal integers are unsigned
-                isLong = res > std::numeric_limits<unsigned int>::max();
-                isInt = res > std::numeric_limits<unsigned short>::max();
-                value = static_cast<long>(res);
+                isLong = res > std::numeric_limits<uint32_t>::max();
+                isInt = res > std::numeric_limits<uint16_t>::max();
+                value = static_cast<int64_t>(res);
             } else {
-                auto res = boost::convert<unsigned long>(num, ccnv(std::dec)).value();
+                auto res = boost::convert<uint64_t>(num, ccnv(std::dec)).value();
                 // Decimal integers are signed
-                isLong = res > std::numeric_limits<int>::max();
-                isInt = res > std::numeric_limits<short>::max();
-                value = static_cast<long>(res);
+                isLong = res > std::numeric_limits<int32_t>::max();
+                isInt = res > std::numeric_limits<int16_t>::max();
+                value = static_cast<int64_t>(res);
             }
         } catch (boost::bad_optional_access const &e) {
             logger_.error(pos, "invalid integer literal: " + num + ".");
@@ -374,9 +374,9 @@ unique_ptr<const Token> Scanner::scanNumber() {
         if (isLong) {
             return make_unique<LongLiteralToken>(pos, current(), value);
         } else if (isInt) {
-            return make_unique<IntLiteralToken>(pos, current(), static_cast<int>(value));
+            return make_unique<IntLiteralToken>(pos, current(), static_cast<int32_t>(value));
         } else {
-            return make_unique<ShortLiteralToken>(pos, current(), static_cast<short>(value));
+            return make_unique<ShortLiteralToken>(pos, current(), static_cast<int16_t>(value));
         }
     }
 }

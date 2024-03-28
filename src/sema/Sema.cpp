@@ -822,7 +822,7 @@ TypeNode *Sema::onArrayIndex(TypeNode *base, ArrayIndex *sel) {
                                                       + " is not a valid array index.");
                     }
                 } else {
-                    long length = static_cast<long>(array->lengths()[i]);
+                    int64_t length = static_cast<int64_t>(array->lengths()[i]);
                     assertInBounds(literal, 0, length - 1);
                 }
             }
@@ -1026,7 +1026,7 @@ Sema::onRangeExpression(const FilePos &start, [[maybe_unused]] const FilePos &en
     if (!loType->isInteger()) {
         logger_.error(lower->pos(), "integer expression expected.");
     }
-    long loValue = -1;
+    int64_t loValue = -1;
     if (lower->isLiteral()) {
         loValue = assertInBounds(dynamic_cast<const IntegerLiteralNode *>(lower.get()), 0, 31);
     }
@@ -1038,7 +1038,7 @@ Sema::onRangeExpression(const FilePos &start, [[maybe_unused]] const FilePos &en
     if (!upType->isInteger()) {
         logger_.error(upper->pos(), "integer expression expected.");
     }
-    long upValue = -1;
+    int64_t upValue = -1;
     if (upper->isLiteral()) {
         upValue = assertInBounds(dynamic_cast<const IntegerLiteralNode *>(upper.get()), 0, 31);
     }
@@ -1066,14 +1066,14 @@ Sema::onRangeExpression(const FilePos &start, [[maybe_unused]] const FilePos &en
 unique_ptr<ExpressionNode>
 Sema::onSetExpression(const FilePos &start, [[maybe_unused]] const FilePos &end,
                       vector<unique_ptr<ExpressionNode>> elements) {
-    long last = -1;
+    int64_t last = -1;
     for (auto &elem : elements) {
         if (!elem->getType()->isInteger()) {
             logger_.error(elem->pos(), "set expression expected.");
         } else if (elem->getNodeType() == NodeType::range_expression) {
             auto range = dynamic_cast<RangeExpressionNode *>(elem.get());
             if (range->getLower()->isLiteral()) {
-                long value = dynamic_cast<const IntegerLiteralNode *>(range->getLower())->value();
+                int64_t value = dynamic_cast<const IntegerLiteralNode *>(range->getLower())->value();
                 if (value <= last) {
                     logger_.error(range->getLower()->pos(), "element must be larger than previous element.");
                 }
@@ -1106,7 +1106,7 @@ Sema::onSetExpression(const FilePos &start, [[maybe_unused]] const FilePos &end,
                 auto range = dynamic_cast<const RangeLiteralNode *>(elem.get());
                 result |= range->value();
             } else {
-                long pos = foldInteger(start, end, elem.get());
+                int64_t pos = foldInteger(start, end, elem.get());
                 result.set(std::size_t(pos));
             }
         }
@@ -1115,9 +1115,9 @@ Sema::onSetExpression(const FilePos &start, [[maybe_unused]] const FilePos &end,
     return expr;
 }
 
-long
-Sema::assertInBounds(const IntegerLiteralNode *literal, long lower, long upper) {
-    long value = literal->value();
+int64_t
+Sema::assertInBounds(const IntegerLiteralNode *literal, int64_t lower, int64_t upper) {
+    int64_t value = literal->value();
     if (value < lower || value > upper) {
         logger_.error(literal->pos(), "value " + to_string(value) + " out of bounds [" +
                                       to_string(lower) + ".." + to_string(upper) + "].");
@@ -1132,7 +1132,7 @@ Sema::onBooleanLiteral(const FilePos &start, [[maybe_unused]] const FilePos &end
 }
 
 unique_ptr<IntegerLiteralNode>
-Sema::onIntegerLiteral(const FilePos &start, [[maybe_unused]] const FilePos &end, long value, TypeKind kind) {
+Sema::onIntegerLiteral(const FilePos &start, [[maybe_unused]] const FilePos &end, int64_t value, TypeKind kind) {
     TypeNode *type;
     switch (kind) {
         case TypeKind::SHORTINT: type = shortIntTy_; break;
@@ -1162,7 +1162,7 @@ Sema::onStringLiteral(const FilePos &start, [[maybe_unused]] const FilePos &end,
 }
 
 unique_ptr<CharLiteralNode>
-Sema::onCharLiteral(const FilePos &start, [[maybe_unused]] const FilePos &end, const unsigned char value) {
+Sema::onCharLiteral(const FilePos &start, [[maybe_unused]] const FilePos &end, uint8_t value) {
     return make_unique<CharLiteralNode>(start, value, charTy_);
 }
 
@@ -1209,7 +1209,7 @@ Sema::foldBoolean(const FilePos &start, [[maybe_unused]] const FilePos &end, Exp
     return {};
 }
 
-long
+int64_t
 Sema::foldInteger(const FilePos &start, [[maybe_unused]] const FilePos &end, ExpressionNode *expr) {
     if (expr->getNodeType() == NodeType::integer) {
         return dynamic_cast<const IntegerLiteralNode *>(expr)->value();
@@ -1218,7 +1218,7 @@ Sema::foldInteger(const FilePos &start, [[maybe_unused]] const FilePos &end, Exp
     return {};
 }
 
-unsigned char
+uint8_t
 Sema::foldChar(const FilePos &start, [[maybe_unused]] const FilePos &end, ExpressionNode *expr) {
     if (expr->getNodeType() == NodeType::character) {
         return dynamic_cast<const CharLiteralNode *>(expr)->value();
@@ -1293,7 +1293,7 @@ Sema::fold(const FilePos &start, const FilePos &end, ExpressionNode *expr) {
             } else if (type->kind() == TypeKind::SHORTINT ||
                        type->kind() == TypeKind::INTEGER ||
                        type->kind() == TypeKind::LONGINT) {
-                long value = foldInteger(start, end, expr);
+                int64_t value = foldInteger(start, end, expr);
                 return make_unique<IntegerLiteralNode>(expr->pos(), value, intType(value), cast);
             } else if (type->kind() == TypeKind::REAL ||
                        type->kind() == TypeKind::LONGREAL) {
@@ -1326,7 +1326,7 @@ Sema::fold(const FilePos &start, [[maybe_unused]] const FilePos &end, OperatorTy
                 logger_.error(start, "operator " + to_string(op) + " cannot be applied to boolean values.");
         }
     } else if (type->isInteger()) {
-        long value = foldInteger(start, end, expr);
+        int64_t value = foldInteger(start, end, expr);
         switch (op) {
             case OperatorType::PLUS:
                 return make_unique<IntegerLiteralNode>(start, value, type, cast);
@@ -1382,8 +1382,8 @@ Sema::fold(const FilePos &start, [[maybe_unused]] const FilePos &end,
             }
         } else if (lhs->getType()->isNumeric() && rhs->getType()->isNumeric()) {
             if (lhs->getType()->isInteger() && rhs->getType()->isInteger()) {
-                long lvalue = foldInteger(start, end, lhs);
-                long rvalue = foldInteger(start, end, rhs);
+                int64_t lvalue = foldInteger(start, end, lhs);
+                int64_t rvalue = foldInteger(start, end, rhs);
                 auto res = foldRelation(start, op, lvalue, rvalue, common);
                 if (res) {
                     return res;
@@ -1399,8 +1399,8 @@ Sema::fold(const FilePos &start, [[maybe_unused]] const FilePos &end,
                 logger_.error(start, "operator " + to_string(op) + " cannot be applied to real values.");
             }
         } else if (lhs->getType()->isChar() && rhs->getType()->isChar()) {
-            unsigned char lvalue = foldChar(start, end, lhs);
-            unsigned char rvalue = foldChar(start, end, rhs);
+            uint8_t lvalue = foldChar(start, end, lhs);
+            uint8_t rvalue = foldChar(start, end, rhs);
             auto res = foldRelation(start, op, lvalue, rvalue, common);
             if (res) {
                 return res;
@@ -1443,15 +1443,15 @@ Sema::fold(const FilePos &start, [[maybe_unused]] const FilePos &end,
                         logger_.error(start, "operator " + to_string(op) + " cannot be applied to set values.");
                 }
             } else if (op == OperatorType::IN && lhs->getType()->isInteger()) {
-                long lvalue = assertInBounds(dynamic_cast<IntegerLiteralNode *>(lhs), 0, 31);
+                auto lvalue = assertInBounds(dynamic_cast<IntegerLiteralNode *>(lhs), 0, 31);
                 return make_unique<BooleanLiteralNode>(start, rvalue.test(std::size_t(lvalue)), common);
             }
             logger_.error(start, "operator " + to_string(op) + " cannot be applied here.");
         }
     } else if (common->isInteger()) {
-        long lvalue = foldInteger(start, end, lhs);
-        long rvalue = foldInteger(start, end, rhs);
-        long value;
+        int64_t lvalue = foldInteger(start, end, lhs);
+        int64_t rvalue = foldInteger(start, end, rhs);
+        int64_t value;
         switch (op) {
             case OperatorType::PLUS:
                 value = lvalue + rvalue; break;
@@ -1763,10 +1763,10 @@ void Sema::castLiteral(unique_ptr<ExpressionNode> &literal, TypeNode *expected) 
 }
 
 TypeNode *
-Sema::intType(long value) {
-    if (value >= std::numeric_limits<short>::lowest() && value <= std::numeric_limits<short>::max()) {
+Sema::intType(int64_t value) {
+    if (value >= std::numeric_limits<int16_t>::lowest() && value <= std::numeric_limits<int16_t>::max()) {
         return shortIntTy_;
-    } else if (value < std::numeric_limits<int>::lowest() || value > std::numeric_limits<int>::max()) {
+    } else if (value < std::numeric_limits<int32_t>::lowest() || value > std::numeric_limits<int32_t>::max()) {
         return longIntTy_;
     }
     return integerTy_;

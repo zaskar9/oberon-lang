@@ -18,18 +18,18 @@ using std::vector;
 class ArrayTypeNode final : public TypeNode {
 
 private:
-    unsigned dimensions_;
-    vector<unsigned> lengths_;
+    uint32_t dimensions_;
+    vector<uint32_t> lengths_;
     vector<TypeNode *> types_;
 
 public:
-    ArrayTypeNode(const FilePos &pos, unsigned dimensions, vector<unsigned> lengths, vector<TypeNode *> types) :
+    ArrayTypeNode(const FilePos &pos, uint32_t dimensions, vector<uint32_t> lengths, vector<TypeNode *> types) :
             TypeNode(NodeType::array_type, pos, TypeKind::ARRAY, 0),
             dimensions_(dimensions), lengths_(std::move(lengths)), types_(std::move(types)) {};
     ~ArrayTypeNode() final = default;
 
-    [[nodiscard]] unsigned dimensions() const;
-    [[nodiscard]] const vector<unsigned> &lengths() const;
+    [[nodiscard]] uint32_t dimensions() const;
+    [[nodiscard]] const vector<uint32_t> &lengths() const;
     [[nodiscard]] const vector<TypeNode *> &types() const;
     [[nodiscard]] TypeNode *getMemberType() const;
 
