@@ -398,9 +398,9 @@ void LLVMIRBuilder::visit(IntegerLiteralNode &node) {
     if (node.getType()->kind() == TypeKind::LONGINT) {
         value_ = ConstantInt::getSigned(builder_.getInt64Ty(), node.value());
     } else if (node.getType()->kind() == TypeKind::INTEGER) {
-        value_ = ConstantInt::getSigned(builder_.getInt32Ty(), (int) node.value());
+        value_ = ConstantInt::getSigned(builder_.getInt32Ty(), static_cast<int32_t>(node.value()));
     } else {
-        value_ = ConstantInt::getSigned(builder_.getInt16Ty(), (short) node.value());
+        value_ = ConstantInt::getSigned(builder_.getInt16Ty(), static_cast<int16_t>(node.value()));
     }
     cast(node);
 }
@@ -409,7 +409,7 @@ void LLVMIRBuilder::visit(RealLiteralNode &node) {
     if (node.getType()->kind() == TypeKind::LONGREAL) {
         value_ = ConstantFP::get(builder_.getDoubleTy(), node.value());
     } else {
-        value_ = ConstantFP::get(builder_.getFloatTy(), (float) node.value());
+        value_ = ConstantFP::get(builder_.getFloatTy(), static_cast<float>(node.value()));
     }
     cast(node);
 }
@@ -441,11 +441,11 @@ void LLVMIRBuilder::visit(NilLiteralNode &node) {
 }
 
 void LLVMIRBuilder::visit(SetLiteralNode &node) {
-    value_ = ConstantInt::get(builder_.getInt32Ty(), (unsigned int) node.value().to_ulong());
+    value_ = ConstantInt::get(builder_.getInt32Ty(), static_cast<uint32_t>(node.value().to_ulong()));
 }
 
 void LLVMIRBuilder::visit(RangeLiteralNode &node) {
-    value_ = ConstantInt::get(builder_.getInt32Ty(), (unsigned int) node.value().to_ulong());
+    value_ = ConstantInt::get(builder_.getInt32Ty(), static_cast<uint32_t>(node.value().to_ulong()));
 }
 
 void LLVMIRBuilder::visit(UnaryExpressionNode &node) {
@@ -1133,7 +1133,7 @@ LLVMIRBuilder::createLenCall(vector<unique_ptr<ExpressionNode>> &actuals, std::v
         return value_;
     }
     auto arrayTy = dynamic_cast<ArrayTypeNode *>(param0->getType());
-    long value = 0;
+    int64_t value = 0;
     if (params.size() > 2) {
         auto param = actuals[2].get();
         logger_.error(param->pos(), "more actual than formal parameters.");
@@ -1151,7 +1151,7 @@ LLVMIRBuilder::createLenCall(vector<unique_ptr<ExpressionNode>> &actuals, std::v
                 logger_.error(param1->pos(), "array dimension cannot be a negative value.");
                 return value_;
             }
-            if (static_cast<unsigned long>(value) >= arrayTy->dimensions()) {
+            if (static_cast<uint64_t>(value) >= arrayTy->dimensions()) {
                 logger_.error(param1->pos(), "value exceeds number of array dimensions.");
                 return value_;
             }
