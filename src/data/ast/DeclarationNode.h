@@ -32,7 +32,7 @@ private:
 
 public:
     DeclarationNode(const NodeType nodeType, const FilePos &pos, unique_ptr<IdentDef> ident, TypeNode *type, unsigned int index = 0) :
-            Node(nodeType, pos), module_(), ident_(std::move(ident)), type_(type), index_(index), level_() { };
+            Node(nodeType, pos), module_(), ident_(std::move(ident)), type_(type), index_(index), level_() {};
     ~DeclarationNode() override = default;
 
     void setModule(ModuleNode *);
@@ -85,8 +85,7 @@ public:
 class TypeDeclarationNode final : public DeclarationNode {
 
 public:
-    TypeDeclarationNode(const FilePos &pos, unique_ptr<IdentDef> ident, TypeNode *type) :
-            DeclarationNode(NodeType::type, pos, std::move(ident), type, 0) { type->setDeclaration(this); };
+    TypeDeclarationNode(const FilePos &pos, unique_ptr<IdentDef> ident, TypeNode *type);
     ~TypeDeclarationNode() final = default;
 
     void accept(NodeVisitor& visitor) override;
@@ -100,7 +99,7 @@ class VariableDeclarationNode final : public DeclarationNode {
 
 public:
     VariableDeclarationNode(const FilePos &pos, unique_ptr<IdentDef> ident, TypeNode *type, unsigned int index = 0) :
-            DeclarationNode(NodeType::variable, pos, std::move(ident), type, index) { };
+            DeclarationNode(NodeType::variable, pos, std::move(ident), type, index) {};
     ~VariableDeclarationNode() final = default;
 
     void accept(NodeVisitor& visitor) override;
@@ -112,7 +111,7 @@ class FieldNode final : public DeclarationNode {
 
 public:
     FieldNode(const FilePos &pos, unique_ptr<IdentDef> ident, TypeNode *type, unsigned int index = 0) :
-            DeclarationNode(NodeType::field, pos, std::move(ident), type, index) { };
+            DeclarationNode(NodeType::field, pos, std::move(ident), type, index) {};
     ~FieldNode() final = default;
 
     void accept(NodeVisitor& visitor) override;
@@ -127,7 +126,7 @@ private:
 
 public:
     ParameterNode(const FilePos &pos, unique_ptr<Ident> ident, TypeNode *type, bool var, unsigned int index = 0) :
-            DeclarationNode(NodeType::parameter, pos, make_unique<IdentDef>(ident->start(), ident->end(), ident->name()), type, index), var_(var) { };
+            DeclarationNode(NodeType::parameter, pos, make_unique<IdentDef>(ident->start(), ident->end(), ident->name()), type, index), var_(var) {};
     ~ParameterNode() final = default;
 
     [[nodiscard]] bool isVar() const;

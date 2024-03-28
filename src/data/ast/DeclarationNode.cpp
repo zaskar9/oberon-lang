@@ -61,6 +61,13 @@ void ConstantDeclarationNode::print(std::ostream &stream) const {
 }
 
 
+TypeDeclarationNode::TypeDeclarationNode(const FilePos &pos, unique_ptr<IdentDef> ident, TypeNode *type) :
+        DeclarationNode(NodeType::type, pos, std::move(ident), type, 0) {
+   if (type->isAnonymous()) {
+       type->setDeclaration(this);
+   }
+}
+
 void TypeDeclarationNode::accept(NodeVisitor& visitor) {
     visitor.visit(*this);
 }
