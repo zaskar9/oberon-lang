@@ -13,7 +13,10 @@
 using std::ostream;
 using std::string;
 
-void Logger::log(const LogLevel level, const string &fileName, int lineNo, int charNo, const string &msg) {
+void Logger::log(LogLevel level, const string &fileName, int lineNo, int charNo, const string &msg) {
+    if (werror_ && level == LogLevel::WARNING) {
+        level = LogLevel::ERROR;
+    }
     counts_[(unsigned int) level]++;
     if (level >= level_) {
         ostream &out = (level == LogLevel::ERROR) ? err_ : out_;
@@ -95,4 +98,8 @@ int Logger::getErrorCount() const {
 
 void Logger::setLevel(LogLevel level) {
     level_ = level;
+}
+
+void Logger::setWarnAsError(bool werror) {
+    werror_ = werror;
 }

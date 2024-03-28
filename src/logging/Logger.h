@@ -25,6 +25,7 @@ private:
     LogLevel level_;
     ostream &out_, &err_;
     int counts_[(unsigned int) LogLevel::QUIET];
+    bool werror_;
 
     void log(LogLevel level, const string &fileName, int lineNo, int charNo, const string &msg);
     void log(LogLevel level, const string &fileName, const string &msg);
@@ -33,7 +34,7 @@ private:
 public:
     Logger() : Logger(LogLevel::ERROR, cout, cerr) {};
     Logger(LogLevel level, ostream &out) : Logger(level, out, out) {};
-    Logger(LogLevel level, ostream &out, ostream &err) : level_(level), out_(out), err_(err), counts_() {};
+    Logger(LogLevel level, ostream &out, ostream &err) : level_(level), out_(out), err_(err), counts_(), werror_(false) {};
     Logger(const Logger &) = delete;
     Logger& operator=(const LogLevel&) = delete;
     ~Logger() = default;
@@ -51,6 +52,8 @@ public:
     [[nodiscard]] int getErrorCount() const;
 
     void setLevel(LogLevel level);
+
+    void setWarnAsError(bool werror);
 
 };
 

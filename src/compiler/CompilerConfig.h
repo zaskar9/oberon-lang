@@ -32,8 +32,12 @@ enum class RelocationModel {
     DEFAULT, STATIC, PIC
 };
 
-enum class Flag : int {
+enum class Flag : unsigned {
     ENABLE_EXTERN = 1, ENABLE_VARARGS = 2, ENABLE_MAIN = 4, ENABLE_BOUND_CHECKS = 8
+};
+
+enum class Warning : unsigned {
+    ERROR = 1
 };
 
 class CompilerConfig {
@@ -50,7 +54,8 @@ private:
     vector<path> incpaths_;
     vector<path> libpaths_;
     vector<string> libs_;
-    int flags_;
+    unsigned flags_;
+    unsigned warn_;
     bool jit_;
 
     static std::optional<path> find(const path &name, const vector<path> &directories);
@@ -58,7 +63,7 @@ private:
 public:
     CompilerConfig() : logger_(LogLevel::INFO, cout),
             infiles_(), outfile_(), target_(), symdir_(), type_(OutputFileType::ObjectFile), level_(OptimizationLevel::O0),
-            model_(RelocationModel::DEFAULT), incpaths_(), libpaths_(), libs_(), flags_(0), jit_(false) {
+            model_(RelocationModel::DEFAULT), incpaths_(), libpaths_(), libs_(), flags_(0), warn_(0), jit_(false) {
 #ifdef _DEBUG
         logger_.setLevel(LogLevel::DEBUG);
 #endif
@@ -101,6 +106,9 @@ public:
 
     void setFlag(Flag flag);
     [[nodiscard]] bool hasFlag(Flag flag) const;
+
+    void setWarning(Warning warn);
+    [[nodiscard]] bool hasWarning(Warning warn) const;
 
     void setJit(bool jit);
     [[nodiscard]] bool isJit();
