@@ -1478,19 +1478,20 @@ LLVMIRBuilder::createSystemValCall(vector<unique_ptr<ExpressionNode>> &actuals, 
     } else {
         srcpar = params[1];
     }
-    if (srctype->getSize() <= dsttype->getSize()) {
-        srcpar = builder_.CreateZExt(srcpar, getLLVMType(dsttype));
-    } else {
-        srcpar = builder_.CreateTrunc(srcpar, getLLVMType(dsttype));
-    }
     if (dsttype->isReal()) {
-        if (dsttype->getSize() == 4) {
-            return builder_.CreateBitCast(srcpar, builder_.getFloatTy());
+        auto rcast = dsttype->getSize() == 4 ? builder_.getInt32Ty() : builder_.getInt64Ty();
+        if (srctype->getSize() <= dsttype->getSize()) {
+            srcpar = builder_.CreateZExt(srcpar, rcast);
         } else {
-            return builder_.CreateBitCast(srcpar, builder_.getDoubleTy());
+            srcpar = builder_.CreateTrunc(srcpar, rcast);
         }
+        return builder_.CreateBitCast(srcpar, getLLVMType(dsttype));
     }
-    return srcpar;
+    if (srctype->getSize() <= dsttype->getSize()) {
+        return builder_.CreateZExt(srcpar, getLLVMType(dsttype));
+    } else {
+        return builder_.CreateTrunc(srcpar, getLLVMType(dsttype));
+    }
 }
 
 Value *
