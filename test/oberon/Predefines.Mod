@@ -57,12 +57,16 @@ BEGIN
 END LslAsr;
 
 PROCEDURE RolRor;
-VAR x, n: LONGINT;
+VAR l, n: LONGINT;
+    i: INTEGER;
 BEGIN
-    x := -32;
-    n := 2;
-    Out.Long(ROL(x, n), 0); Out.String(",");
-    Out.Long(ROR(x, n), 0); Out.Ln
+    l := MIN(LONGINT);
+    n := 63;
+    Out.Long(ROL(l, n), 0); Out.String(",");
+    Out.Long(ROR(l, n), 0); Out.Ln;
+    i := MIN(INTEGER);
+    n := 31;
+    Out.Int(ROR(i, n), 0); Out.Ln
 END RolRor;
 
 PROCEDURE Odd(x: INTEGER);
@@ -146,10 +150,22 @@ BEGIN
     ASSERT(ABS(d) = -d)
 END Abs;
 
+PROCEDURE A(): INTEGER;
 BEGIN
-    a := 1;
-    b := 0;
+    RETURN 1
+END A;
+
+PROCEDURE B(): INTEGER;
+BEGIN
+    RETURN 0
+END B;
+
+BEGIN
+    a := A();
+    b := B();
     ASSERT(a > b);
+    ASSERT(A() > B());
+    ASSERT(A() + B() = 1);
     NewFree;
     IncDec;
     LslAsr;

@@ -691,16 +691,18 @@ Sema::assertAssignable(const ExpressionNode *expr, string &err) const {
         return false;
     } else if (expr->getNodeType() == NodeType::qualified_expression) {
         auto decl = dynamic_cast<const QualifiedExpression *>(expr)->dereference();
-        if (decl->getNodeType() == NodeType::parameter) {
-            auto type = decl->getType();
-            if (type->isStructured()) {
-                auto param = dynamic_cast<const ParameterNode *>(decl);
-                err = "a non-variable structured parameter";
-                return param->isVar();
+        if (decl) {
+            if (decl->getNodeType() == NodeType::parameter) {
+                auto type = decl->getType();
+                if (type->isStructured()) {
+                    auto param = dynamic_cast<const ParameterNode *>(decl);
+                    err = "a non-variable structured parameter";
+                    return param->isVar();
+                }
+            } else if (decl->getNodeType() == NodeType::constant) {
+                err = "a constant";
+                return false;
             }
-        } else if (decl->getNodeType() == NodeType::constant) {
-            err = "a constant";
-            return false;
         }
         err = "";
         return true;
@@ -783,7 +785,7 @@ Sema::onActualParameters(DeclarationNode *context, TypeNode *base, ActualParamet
             break;
         }
     }
-    
+    // pseudo-overloading for predefined procedures
     if (context->getNodeType() == NodeType::procedure) {
         auto decl = dynamic_cast<ProcedureNode *>(context);
         if (decl->isPredefined()) {
@@ -791,6 +793,13 @@ Sema::onActualParameters(DeclarationNode *context, TypeNode *base, ActualParamet
             if (predefined->isOverloaded()) {
                 auto signature = predefined->dispatch(types, typeType);
                 if (signature) {
+                    for (size_t cnt = 0; cnt < sel->parameters().size(); cnt++) {
+                        auto param = sel->parameters()[cnt].get();
+                        if (param) {
+                            param->setCast(nullptr);
+                            cast(param, signature->parameters()[cnt]->getType());
+                        }
+                    }
                     return signature->getReturnType();
                 }
             }
@@ -1044,9 +1053,9 @@ Sema::onRangeExpression(const FilePos &start, [[maybe_unused]] const FilePos &en
     }
     auto common = loType;
     if (loType->getSize() > upType->getSize()) {
-        upper->setCast(loType);
+        cast(upper.get(), loType);
     } else if (loType->getSize() < upType->getSize()) {
-        lower->setCast(upType);
+        cast(lower.get(), upType);
         common = upType;
     }
     if (loValue >= 0 && upValue >= 0) {
@@ -1750,14 +1759,14 @@ void Sema::castLiteral(unique_ptr<ExpressionNode> &literal, TypeNode *expected) 
     } else if (expected->isReal() && actual->isInteger()) {
         auto value = dynamic_cast<IntegerLiteralNode *>(literal.get());
         literal = onRealLiteral(literal->pos(), EMPTY_POS, foldReal(literal->pos(), EMPTY_POS, value));
-        literal->setCast(expected);
+        cast(literal.get(), expected);
     } else if ((expected->isInteger() && actual->isInteger())
             || (expected->isReal() && actual->isReal())
             || (expected->isPointer() && actual->kind() == TypeKind::NILTYPE)
             || (expected->kind() == TypeKind::ANYTYPE)) {
-        literal->setCast(expected);
+        cast(literal.get(), expected);
     } else {
-        literal->setCast(expected);
+        cast(literal.get(), expected);
         logger_.warning(literal->pos(), "unable to cast " + to_string(actual) + " literal to type " + to_string(expected) + ".");
     }
 }

@@ -150,39 +150,72 @@ void Oberon07::initSymbolTable(SymbolTable *symbols) {
     auto longRealType = this->getBasicType(TypeKind::LONGREAL);
     auto setType = this->getBasicType(TypeKind::SET);
 
+    // NEW
     this->createProcedure(ProcKind::NEW, "NEW", {{this->createPointerType(anyType), true}}, nullptr, false, true);
+    // FREE
     this->createProcedure(ProcKind::FREE, "FREE", {{this->createPointerType(anyType), true}}, nullptr, false, true);
+    // INC
     this->createProcedure(ProcKind::INC, "INC", {{entireType, true}}, nullptr, true, true);
+    // DEC
     this->createProcedure(ProcKind::DEC, "DEC", {{entireType, true}}, nullptr, true, true);
-    this->createProcedure(ProcKind::LSL, "LSL", {{longIntType, false}, {longIntType, false}}, longIntType, false, true);
-    this->createProcedure(ProcKind::ASR, "ASR", {{longIntType, false}, {longIntType, false}}, longIntType, false, true);
-    this->createProcedure(ProcKind::ROL, "ROL", {{longIntType, false}, {longIntType, false}}, longIntType, false, true);
-    this->createProcedure(ProcKind::ROR, "ROR", {{longIntType, false}, {longIntType, false}}, longIntType, false, true);
+    // LSL
+    auto proc = this->createProcedure(ProcKind::LSL, "LSL", {{longIntType, false}, {entireType, false}}, longIntType, false, true);
+    proc->overload({{intType, false}, {entireType, false}}, false, intType);
+    proc->overload({{shortIntType, false}, {entireType, false}}, false, shortIntType);
+    // ASR
+    proc = this->createProcedure(ProcKind::ASR, "ASR", {{longIntType, false}, {entireType, false}}, longIntType, false, true);
+    proc->overload({{intType, false}, {entireType, false}}, false, intType);
+    proc->overload({{shortIntType, false}, {entireType, false}}, false, shortIntType);
+    // ROL
+    proc = this->createProcedure(ProcKind::ROL, "ROL", {{longIntType, false}, {entireType, false}}, longIntType, false, true);
+    proc->overload({{intType, false}, {entireType, false}}, false, intType);
+    proc->overload({{shortIntType, false}, {entireType, false}}, false, shortIntType);
+    // ROR
+    proc = this->createProcedure(ProcKind::ROR, "ROR", {{longIntType, false}, {entireType, false}}, longIntType, false, true);
+    proc->overload({{intType, false}, {entireType, false}}, false, intType);
+    proc->overload({{shortIntType, false}, {entireType, false}}, false, shortIntType);
+    // ODD
     this->createProcedure(ProcKind::ODD, "ODD", {{longIntType, false}}, boolType, false, true);
+    // HALT
     this->createProcedure(ProcKind::HALT, "HALT", {{intType, false}}, nullptr, false, true);
+    // ASSERT
     this->createProcedure(ProcKind::ASSERT, "ASSERT", {{boolType, false}}, nullptr, false, true);
+    // LEN
     this->createProcedure(ProcKind::LEN, "LEN", {{this->createArrayType({0}, {anyType}), false}}, longIntType, true, true);
+    // INCL
     this->createProcedure(ProcKind::INCL, "INCL", {{setType, true}, {intType, false}}, nullptr, false, true);
+    // EXCL
     this->createProcedure(ProcKind::EXCL, "EXCL", {{setType, true}, {intType, false}}, nullptr, false, true);
+    // ORD
     this->createProcedure(ProcKind::ORD, "ORD", {{anyType, false}}, intType, false, true);
+    // CHR
     this->createProcedure(ProcKind::CHR, "CHR", {{intType, false}}, charType, false, true);
+    // SIZE
     this->createProcedure(ProcKind::SIZE, "SIZE", {{typeType, false}}, longIntType, false, true);
-    auto proc = this->createProcedure(ProcKind::SHORT, "SHORT", {{numType, false}}, nullType, false, true);
+    // SHORT
+    proc = this->createProcedure(ProcKind::SHORT, "SHORT", {{numType, false}}, nullType, false, true);
     proc->overload({{longIntType, false}}, false, intType);
     proc->overload({{intType, false}}, false, shortIntType);
     proc->overload({{longRealType, false}}, false, realType);
+    // LONG
     proc = this->createProcedure(ProcKind::LONG, "LONG", {{numType, false}}, nullType, false, true);
     proc->overload({{shortIntType, false}}, false, intType);
     proc->overload({{intType, false}}, false, longIntType);
     proc->overload({{realType, false}}, false, longRealType);
+    // ENTIER
     this->createProcedure(ProcKind::ENTIER, "ENTIER", {{floatType, false}}, longIntType, false, true);
+    // FLOOR
+    this->createProcedure(ProcKind::ENTIER, "FLOOR", {{floatType, false}}, longIntType, false, true);
+    // ABS
     proc = this->createProcedure(ProcKind::ABS, "ABS", {{numType, false}}, nullType, false, true);
     proc->overload({{shortIntType, false}}, false, shortIntType);
     proc->overload({{intType, false}}, false, intType);
     proc->overload({{longIntType, false}}, false, longIntType);
     proc->overload({{realType, false}}, false, realType);
     proc->overload({{longRealType, false}}, false, longRealType);
+    // MAX
     this->createProcedure(ProcKind::MAX, "MAX", {{typeType, false}}, typeType, false, true);
+    // MIN
     this->createProcedure(ProcKind::MIN, "MIN", {{typeType, false}}, typeType, false, true);
 
     createNamespace("SYSTEM");

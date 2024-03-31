@@ -32,6 +32,8 @@ private:
     bool isCast_;
     ProcKind kind_;
 
+    int matchType(TypeNode*, TypeNode*) const;
+
 public:
     explicit PredefinedProcedure(ProcKind, const string &, const vector<pair<TypeNode*, bool>> &, bool, TypeNode *);
     ~PredefinedProcedure() override;

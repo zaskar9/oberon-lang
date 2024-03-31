@@ -6,12 +6,14 @@
 
 #include <memory>
 #include <string>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
 using std::make_unique;
 using std::pair;
 using std::string;
+using std::unordered_set;
 using std::vector;
 
 PredefinedProcedure::PredefinedProcedure(ProcKind kind, const string &name,
@@ -52,19 +54,46 @@ ProcedureTypeNode *PredefinedProcedure::dispatch(vector<TypeNode *> actuals, Typ
         signature->setReturnType(typeType); // TODO : mutate not ideal
         return signature;
     }
+    int max_score = 0;
+    unordered_set<ProcedureTypeNode *> winners;
     for (const auto& type : types_) {
         auto signature = type.get();
         if (actuals.size() >= signature->parameters().size()) {
-            bool match = true;
+            int score = 0;
             for (size_t i = 0; i < signature->parameters().size(); i++) {
-                match = match && (actuals[i] == signature->parameters()[i]->getType());
+                int match = matchType(signature->parameters()[i]->getType(), actuals[i]);
+                if (match == 0) {
+                    score = -1;
+                    break;
+                }
+                score += match;
             }
-            if (match) {
-                return signature;
+            if (score > max_score) {
+                winners.clear();
+                winners.insert(signature);
+                max_score = score;
+            } else if (score == max_score) {
+                winners.insert(signature);
             }
         }
     }
+    if (winners.size() == 1) {
+        return *winners.begin();
+    }
     return nullptr;
+}
+
+int PredefinedProcedure::matchType(TypeNode *expected, TypeNode *actual) const {
+    if (expected == actual) {
+        return 2;
+    }
+    if ((expected->kind() == TypeKind::ENTIRE && actual->isInteger()) ||
+        (expected->kind() == TypeKind::FLOATING && actual->isReal()) ||
+        (expected->kind() == TypeKind::NUMERIC && actual->isNumeric()) ||
+        expected->kind() == TypeKind::ANYTYPE) {
+        return 1;
+    }
+    return 0;
 }
 
 bool PredefinedProcedure::isOverloaded() const {

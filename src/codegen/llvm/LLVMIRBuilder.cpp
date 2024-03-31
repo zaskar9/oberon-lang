@@ -1265,16 +1265,20 @@ LLVMIRBuilder::createOrdCall(ExpressionNode *actual, llvm::Value *param) {
 
 Value *
 LLVMIRBuilder::createRolCall(llvm::Value *param, llvm::Value *shift) {
+    shift = builder_.CreateTrunc(shift, param->getType());
     Value *lhs = builder_.CreateShl(param, shift);
-    Value *delta = builder_.CreateSub(builder_.getInt64(64), shift);
+    Value *value = ConstantInt::get(param->getType(), param->getType()->getIntegerBitWidth());
+    Value *delta = builder_.CreateSub(value, shift);
     Value *rhs = builder_.CreateLShr(param, delta);
     return builder_.CreateOr(lhs, rhs);
 }
 
 Value *
 LLVMIRBuilder::createRorCall(llvm::Value *param, llvm::Value *shift) {
+    shift = builder_.CreateTrunc(shift, param->getType());
     Value *lhs = builder_.CreateLShr(param, shift);
-    Value *delta = builder_.CreateSub(builder_.getInt64(64), shift);
+    Value *value = ConstantInt::get(param->getType(), param->getType()->getIntegerBitWidth());
+    Value *delta = builder_.CreateSub(value, shift);
     Value *rhs = builder_.CreateShl(param, delta);
     return builder_.CreateOr(lhs, rhs);
 }
