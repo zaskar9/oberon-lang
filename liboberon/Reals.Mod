@@ -119,10 +119,11 @@ BEGIN
 END NaNL;
 
 (* Return state of the floating-point control register. *)
-PROCEDURE FCR*(): SET;
+(*PROCEDURE FCR*(): SET;
 BEGIN
-    RETURN DEFAULT(SET) (* TODO *)
-END FCR;
+    (* TODO *)
+    RETURN DEFAULT(SET)
+END FCR;*)
 
 (* Set state of floating-point control register.  Traps reset this to the default & ENTIER resets the rounding mode. *)
 PROCEDURE SetFCR*(s: SET);

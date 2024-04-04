@@ -1,5 +1,6 @@
 MODULE Texts; (*JG 21.11.90 / NW 11.7.90 / 24.12.95 / 22.11.10 / 18.11.2014 / 10.1.2019 / AP 15.9.20 Extended Oberon / MG 28.3.2024 *)
   (*IMPORT Files, Fonts;*)
+  IMPORT Reals, Out;
 
   CONST (*scanner symbol classes*)
     Inval* = 0;         (*invalid symbol*)
@@ -8,6 +9,10 @@ MODULE Texts; (*JG 21.11.90 / NW 11.7.90 / 24.12.95 / 22.11.10 / 18.11.2014 / 10
     Int* = 3;           (*integer i (decimal or hexadecimal)*)
     Real* = 4;          (*real number x*)
     Char* = 6;          (*special character c*)
+
+    MINREAL = 1.175494351E-38;
+    MAXREAL = 3.402823466E+38;
+
 
     (* TextBlock = TextTag offset run {run} "0" len {AsciiCode}.
       run = fnt [name] col voff len. *)
@@ -493,7 +498,8 @@ MODULE Texts; (*JG 21.11.90 / NW 11.7.90 / 24.12.95 / 22.11.10 / 18.11.2014 / 10
  PROCEDURE WriteReal* (VAR W: Writer; x: REAL; n: INTEGER);
     VAR e, i, k, m: INTEGER;
       d: ARRAY 16 OF CHAR;
-  BEGIN e := SHORT(ASR(ENTIER(x), 23)) MOD 100H;  (*binary exponent*)
+  BEGIN (*e := SHORT(ASR(ENTIER(x), 23)) MOD 100H;*)  (*binary exponent*)
+    e := Reals.Expo(x);
     IF e = 0 THEN
       WriteString(W, "  0 ");
       WHILE n >= 3 DO Write(W, " "); DEC(n) END
@@ -558,7 +564,10 @@ MODULE Texts; (*JG 21.11.90 / NW 11.7.90 / 24.12.95 / 22.11.10 / 18.11.2014 / 10
 
 BEGIN (*TrailerFile := Files.New("")*)
     WriteString(W, "Hello World"); WriteLn(W);
-    WriteInt(W, MIN(INTEGER), 0); WriteLn(W);
-    WriteInt(W, MAX(INTEGER), 0); WriteLn(W);
-    WriteString(W, " -2147483648")
+    WriteInt(W, MIN(INTEGER), 12); WriteLn(W);
+    WriteInt(W, MAX(INTEGER), 12); WriteLn(W);
+    WriteReal(W, MINREAL, 20); WriteLn(W);
+    Out.Real(MINREAL, 20); Out.Ln;
+    WriteReal(W, MAXREAL, 20); WriteLn(W);
+    Out.Real(MAXREAL, 20); Out.Ln
 END Texts.

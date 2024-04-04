@@ -63,13 +63,13 @@ clean :
 %.smb : %.Mod
 	@$(O7C) $(O7CFLAGS) $<
 
-dist : runtime.o Oberon.o Out.o Random.o Math.o
+dist : runtime.o Oberon.o Out.o Random.o Math.o Reals.o
 	@echo -n Building library...
-	@$(CXX) $(LDFLAGS) -o $(LIBNAME).$(EXT) runtime.o Oberon.o Out.o Random.o Math.o
-	@ar rcs $(LIBNAME).a runtime.o Oberon.o Out.o Random.o Math.o
+	@$(CXX) $(LDFLAGS) -o $(LIBNAME).$(EXT) runtime.o Oberon.o Out.o Random.o Math.o Reals.o
+	@ar rcs $(LIBNAME).a runtime.o Oberon.o Out.o Random.o Math.o Reals.o
 	@echo ' done.'
 
-install : dist Oberon.smb Out.smb Random.smb Math.smb
+install : dist Oberon.smb Out.smb Random.smb Math.smb Reals.smb
 	@echo -n Installing library...
 	@mkdir -p $(LIB)
 	@mv $(LIBNAME).$(EXT) $(LIB)
@@ -81,4 +81,5 @@ install : dist Oberon.smb Out.smb Random.smb Math.smb
 	@mv Out.smb $(INC)
 	@mv Random.smb $(INC)
 	@mv Math.smb $(INC)
+	@mv Reals.smb $(INC)
 	@echo ' done.'
