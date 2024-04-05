@@ -421,7 +421,7 @@ void LLVMIRBuilder::visit(StringLiteralNode &node) {
     value_ = strings_[val];
     if (!value_) {
         auto initializer = ConstantStruct::get(type, {builder_.getInt64(len), ConstantDataArray::getRaw(val, len, builder_.getInt8Ty())});
-        auto str = new GlobalVariable(*module_, type, true, GlobalValue::ExternalLinkage, initializer, ".str");
+        auto str = new GlobalVariable(*module_, type, true, GlobalValue::InternalLinkage, initializer, ".str");
         str->setAlignment(module_->getDataLayout().getPrefTypeAlign(type));
         strings_[val] = str;
         value_ = strings_[val];

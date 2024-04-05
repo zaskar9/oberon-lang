@@ -29,11 +29,12 @@ clean:
 .smb.Mod:
 	@$(O7C) $(O7CFLAGS) $<
 
-lib: runtime.obj Oberon.obj Out.obj Random.obj Math.obj
-	@$(LIBX) /nologo /machine:$(CPU_ARCH) /out:$(LIB)\$(NAME).$(EXT) runtime.obj Oberon.obj Out.obj Random.obj Math.obj
+lib: runtime.obj Oberon.obj Out.obj Random.obj Math.obj Reals.obj
+	@$(LIBX) /nologo /machine:$(CPU_ARCH) /out:$(LIB)\$(NAME).$(EXT) runtime.obj Oberon.obj Out.obj Random.obj Math.obj Reals.obj
 
 inc:
 	@move Oberon.smb $(INC) >nul
 	@move Out.smb $(INC) >nul
 	@move Random.smb $(INC) >nul
 	@move Math.smb $(INC) >nul
+	@move Reals.smb $(INC) >nul

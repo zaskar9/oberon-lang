@@ -568,7 +568,7 @@ void Parser::fp_section(vector<unique_ptr<ParameterNode>> &params, bool &varargs
 
 // formal_type = { "ARRAY" "OF" } qualident.
 TypeNode *Parser::formal_type() {
-    FilePos start;
+    FilePos start, end;
     unsigned dims = 0;
     while (scanner_.peek()->type() == TokenType::kw_array) {
         token_ = scanner_.next(); // skip keyword "ARRAY"
@@ -586,7 +586,8 @@ TypeNode *Parser::formal_type() {
         if (dims == 0) {
             start = ident->start();
         }
-        return sema_.onTypeReference(start, ident->end(), std::move(ident), dims);
+        end = ident->end();
+        return sema_.onTypeReference(start, end, std::move(ident), dims);
     }
     resync({ TokenType::semicolon, TokenType::rparen });
     return nullptr;

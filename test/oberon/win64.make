@@ -16,7 +16,7 @@ clean:
 	@$(O7C) --filetype=ll $<
 
 .Mod.obj:
-	@$(O7C) -O3 -I$(INC) -fenable-main $<
+	$(O7C) -O3 -I$(INC) -fenable-main $<
 
 .Mod.exe:
 	@make.bat $*.obj

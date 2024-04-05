@@ -24,9 +24,8 @@
         "-I.;.\\include",
         "-L.;.\\lib",
         "-loberon",
-        "-v",
         "--run",
-        "Sets.Mod"
+        "Sort.Mod"
       ]
     }
   ]
