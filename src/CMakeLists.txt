@@ -97,6 +97,8 @@ if (Boost_FOUND)
     target_link_libraries(${OBERON_LANG} PRIVATE Boost::boost Boost::filesystem Boost::program_options)
 endif ()
 
+include(GNUInstallDirs)
+
 # disabled options below somehow interfere with other targets
 find_package(LLVM REQUIRED CONFIG)
 if (LLVM_FOUND)
