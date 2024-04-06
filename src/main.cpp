@@ -4,7 +4,6 @@
  * Created by Michael Grossniklaus on 12/14/17.
  */
 
-
 #include <filesystem>
 #include <iostream>
 
@@ -17,6 +16,22 @@
 #include "compiler/CompilerConfig.h"
 #include "codegen/llvm/LLVMCodeGen.h"
 #include "logging/Logger.h"
+
+// For certain modules, LLVM emmits stack protection functionality under Windows that 
+// involves calls to the standard runtime of the target platform. Since these libraries 
+// are not loaded into the JIT environment by default, running these modules in JIT 
+// mode will fail. As a work-around, the following pragma directives tell the linker to
+// re-export these symbols.
+#if (defined(_WIN32) || defined(_WIN64)) 
+    #if defined(__clang__)
+    #pragma comment(linker, "/export:___chkstk_ms")
+    #elif defined(__GNUC__) || defined(__GNUG__)
+    #pragma comment(linker, "/export:__chkstk_ms")
+    #elif defined(_MSC_VER)
+    #pragma comment(linker, "/export:__security_cookie")
+    #pragma comment(linker, "/export:__security_check_cookie")
+    #endif
+#endif
 
 namespace po = boost::program_options;
 
