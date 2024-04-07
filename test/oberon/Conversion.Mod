@@ -101,8 +101,8 @@ BEGIN
     f := i;
     AssertRealEqual(f, 0);
     AssertRealEqual(f, i);
-    Out.Real(i, 16); Out.Ln;
-    Out.Real(f, 16); Out.Ln;
+    Out.Real(i, 0); Out.Ln;
+    Out.Real(f, 0); Out.Ln;
     Out.String("REAL assertions passed."); Out.Ln;
     d := 0;
     d := i;

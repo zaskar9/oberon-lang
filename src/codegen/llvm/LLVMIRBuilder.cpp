@@ -1005,6 +1005,7 @@ LLVMIRBuilder::createAbsCall(TypeNode *type, llvm::Value *param) {
 
 Value *
 LLVMIRBuilder::createAsrCall(Value *param, Value *shift) {
+    shift = builder_.CreateTrunc(shift, param->getType());
     return builder_.CreateAShr(param, shift);
 }
 
@@ -1204,6 +1205,7 @@ LLVMIRBuilder::createLongCall(ExpressionNode *expr, llvm::Value *param) {
 
 Value *
 LLVMIRBuilder::createLslCall(llvm::Value *param, llvm::Value *shift) {
+    shift = builder_.CreateTrunc(shift, param->getType());
     return builder_.CreateShl(param, shift);
 }
 
@@ -1265,16 +1267,20 @@ LLVMIRBuilder::createOrdCall(ExpressionNode *actual, llvm::Value *param) {
 
 Value *
 LLVMIRBuilder::createRolCall(llvm::Value *param, llvm::Value *shift) {
+    shift = builder_.CreateTrunc(shift, param->getType());
     Value *lhs = builder_.CreateShl(param, shift);
-    Value *delta = builder_.CreateSub(builder_.getInt64(64), shift);
+    Value *value = ConstantInt::get(param->getType(), param->getType()->getIntegerBitWidth());
+    Value *delta = builder_.CreateSub(value, shift);
     Value *rhs = builder_.CreateLShr(param, delta);
     return builder_.CreateOr(lhs, rhs);
 }
 
 Value *
 LLVMIRBuilder::createRorCall(llvm::Value *param, llvm::Value *shift) {
+    shift = builder_.CreateTrunc(shift, param->getType());
     Value *lhs = builder_.CreateLShr(param, shift);
-    Value *delta = builder_.CreateSub(builder_.getInt64(64), shift);
+    Value *value = ConstantInt::get(param->getType(), param->getType()->getIntegerBitWidth());
+    Value *delta = builder_.CreateSub(value, shift);
     Value *rhs = builder_.CreateShl(param, delta);
     return builder_.CreateOr(lhs, rhs);
 }
@@ -1316,9 +1322,9 @@ LLVMIRBuilder::createMaxMinCall(ExpressionNode *actual, bool isMax) {
     auto type = dynamic_cast<TypeDeclarationNode *>(decl)->getType();
     if (type->isReal()) {
         if (type->getSize() == 4) {
-            value_ = ConstantFP::getInfinity(builder_.getFloatTy(), isMax);
+            value_ = ConstantFP::getInfinity(builder_.getFloatTy(), !isMax);
         } else {
-            value_ = ConstantFP::getInfinity(builder_.getDoubleTy(), isMax);
+            value_ = ConstantFP::getInfinity(builder_.getDoubleTy(), !isMax);
         }
     } else if (type->isInteger()) {
         if (type->getSize() == 8) {
@@ -1335,9 +1341,9 @@ LLVMIRBuilder::createMaxMinCall(ExpressionNode *actual, bool isMax) {
             }
         } else {
             if (isMax) {
-                value_ = builder_.getInt64((uint16_t)std::numeric_limits<int16_t>::max());
+                value_ = builder_.getInt16((uint16_t)std::numeric_limits<int16_t>::max());
             } else {
-                value_ = builder_.getInt64((uint16_t)std::numeric_limits<int16_t>::min());
+                value_ = builder_.getInt16((uint16_t)std::numeric_limits<int16_t>::min());
             }
         }
     } else {

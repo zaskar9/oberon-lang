@@ -26,92 +26,6 @@ int32_t rt_timespec_get(struct timespec* const time_spec, int32_t const base) {
     return (int32_t) timespec_get(time_spec, base);
 }
 
-void rt_out_int(int64_t i, int32_t n) {
-    if (n < 0) {
-        n = 0;
-    }
-    char buf[21]; // 64-bit is maximally 20 digits (with sign), long plus '\0'
-    sprintf(buf, "%" PRId64, i);
-    int len = strlen(buf);
-    if (len < n) {
-        char *out = (char*) malloc((n + 1) * sizeof(char));
-        int diff = n - len;
-        memmove(out + diff, buf, len + 1);
-        memset(out, ' ', diff);
-        printf("%s", out);
-    } else {
-        printf("%s", buf);
-    }
-}
-
-void rt_out_real(float x, int32_t n) {
-    int e = rt_reals_expo(x);
-    if (e == 0) {
-        printf(" 0");
-        do {
-            putchar(' ');
-            --n;
-        } while (n > 4);
-    } else if (e == 255) {
-        printf(" NaN");
-        while (n > 4) {
-            putchar(' ');
-            --n;
-        }
-    } else {
-        if (n <= 9) {
-            n = 3;
-        } else {
-            n -= 6;
-        }
-        do {
-            putchar(' ');
-            --n;
-        } while (n > 9);
-        // there are 2 < n <= 8 digits to be written
-        if (x < 0.0) {
-            putchar('-');
-            x = -x;
-        } else {
-            putchar(' ');
-        }
-        e = (e - 127) * 77 / 256;
-        if (e >= 0) {
-            x = x / rt_reals_ten(e);
-        } else {
-            x = rt_reals_ten(-e) * x;
-        }
-        if (x > 10.0) {
-            x = 0.1 * x;
-            ++e;
-        }
-        float x0 = rt_reals_ten(n - 1);
-        x = x0 * x + 0.5;
-        if (x >= 10.0 * x0) {
-            x = x * 0.1;
-            ++e;
-        }
-        char d[9];
-        rt_reals_convert(x, n, d);
-        --n;
-        putchar(d[n]);
-        putchar('.');
-        do {
-            --n;
-            putchar(d[n]);
-        } while (n > 0);
-        putchar('E');
-        if (e < 0) {
-            putchar('-');
-            e = -e;
-        } else {
-            putchar('+');
-        }
-        putchar(e / 10 + 0x30);
-        putchar(e % 10 + 0x30);
-    }
-}
-
 int32_t rt_reals_expo(float x) {
     union ieee754_float f = { .f = x };
     return f.ieee.exponent;
@@ -138,4 +52,33 @@ void rt_reals_convert(float x, int32_t n, char* d) {
         i = i / 10;
         ++k;
     }
+}
+
+int32_t rt_reals_nan_code(float x) {
+    union ieee754_float f = { .f = x };
+    if (f.ieee.exponent == 255) {
+        return f.ieee.mantissa;
+    }
+    return -1;
+}
+
+void rt_reals_nan_codeL(double x, int32_t *l, int32_t *h) {
+    union ieee754_double d = { .d = x };
+    if (d.ieee.exponent == 2047) {
+        *l = d.ieee.mantissa1;
+        *h = d.ieee.mantissa0;
+    } else {
+        *l = -1;
+        *h = -1;
+    }
+}
+
+float rt_reals_nan() {
+    union ieee754_float f = { .ieee.exponent = 255, .ieee.mantissa = -1 };
+    return f.f;
+}
+
+double rt_reals_nanL() {
+    union ieee754_double d = { .ieee.exponent = 2047, .ieee.mantissa0 = -1, .ieee.mantissa1 = -1 };
+    return d.d;
 }
