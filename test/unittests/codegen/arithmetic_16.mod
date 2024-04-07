@@ -27,7 +27,7 @@ BEGIN
     Test
 END Arithmetic16.
 (*
-    CHECK: -2.63E+01
-    CHECK: 0
-    CHECK: 2.63E+01
+    CHECK: -2.625E+01
+    CHECK:          0
+    CHECK:  2.625E+01
 *)
