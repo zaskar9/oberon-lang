@@ -173,10 +173,12 @@ MODULE Reals;
     RETURN DEFAULT(SET)
   END FCR;*)
 
+
   (* Set state of floating-point control register.  Traps reset this to the default & ENTIER resets the rounding mode. *)
   PROCEDURE SetFCR*(s: SET);
   BEGIN
     (* TODO *)
   END SetFCR;
+  
 
 END Reals.
