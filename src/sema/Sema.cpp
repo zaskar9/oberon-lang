@@ -1693,11 +1693,13 @@ Sema::commonType(const FilePos &pos, TypeNode *lhsType, TypeNode *rhsType) const
     } else if (assertEqual(lhsType->getIdentifier(), rhsType->getIdentifier())) {
         return lhsType;
     } else if (lhsType->isNumeric() && rhsType->isNumeric()) {
-        if (lhsType->getSize() == rhsType->getSize()) {
-            return lhsType->isReal() ? lhsType : rhsType;
-        } else {
-            return lhsType->getSize() > rhsType->getSize() ? lhsType : rhsType;
+        if (lhsType->isReal() && rhsType->isInteger()) {
+            return lhsType;
         }
+        if (lhsType->isInteger() && rhsType->isReal()) {
+            return rhsType;
+        }
+        return lhsType->getSize() > rhsType->getSize() ? lhsType : rhsType;
     } else if ((lhsType->isChar() && rhsType->isString())
             || (lhsType->isString() && rhsType->isChar())) {
         return stringTy_;

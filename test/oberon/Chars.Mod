@@ -86,7 +86,7 @@ BEGIN
 
     ASSERT(LEN("This is a test.") = 16);
 
-    s3 := Out.nl;
+    s3 := "\n";
     Out.String("["); Out.Char("]"); Out.String(s3);
 
     s4 := "supercalifragilisticexpialidocious";

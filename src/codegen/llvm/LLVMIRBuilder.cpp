@@ -1322,9 +1322,9 @@ LLVMIRBuilder::createMaxMinCall(ExpressionNode *actual, bool isMax) {
     auto type = dynamic_cast<TypeDeclarationNode *>(decl)->getType();
     if (type->isReal()) {
         if (type->getSize() == 4) {
-            value_ = ConstantFP::getInfinity(builder_.getFloatTy(), isMax);
+            value_ = ConstantFP::getInfinity(builder_.getFloatTy(), !isMax);
         } else {
-            value_ = ConstantFP::getInfinity(builder_.getDoubleTy(), isMax);
+            value_ = ConstantFP::getInfinity(builder_.getDoubleTy(), !isMax);
         }
     } else if (type->isInteger()) {
         if (type->getSize() == 8) {
@@ -1341,9 +1341,9 @@ LLVMIRBuilder::createMaxMinCall(ExpressionNode *actual, bool isMax) {
             }
         } else {
             if (isMax) {
-                value_ = builder_.getInt64((uint16_t)std::numeric_limits<int16_t>::max());
+                value_ = builder_.getInt16((uint16_t)std::numeric_limits<int16_t>::max());
             } else {
-                value_ = builder_.getInt64((uint16_t)std::numeric_limits<int16_t>::min());
+                value_ = builder_.getInt16((uint16_t)std::numeric_limits<int16_t>::min());
             }
         }
     } else {

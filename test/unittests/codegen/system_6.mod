@@ -14,13 +14,13 @@ VAR
     c : SHORTINT;
 BEGIN
     x := MAX(LONGREAL);
-    Out.LongReal(x); Out.Ln;
+    Out.LongReal(x, 0); Out.Ln;
     x := MIN(LONGREAL);
-    Out.LongReal(x); Out.Ln;
+    Out.LongReal(x, 0); Out.Ln;
     y := MAX(REAL);
-    Out.Real(y, 7); Out.Ln;
+    Out.Real(y, 0); Out.Ln;
     y := MIN(REAL);
-    Out.Real(y, 7); Out.Ln;
+    Out.Real(y, 0); Out.Ln;
     a := MAX(LONGINT);
     Out.Long(a, 0); Out.Ln;
     a := MIN(LONGINT);
