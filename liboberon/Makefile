@@ -7,6 +7,7 @@ else
 		OS = macos
 	else ifeq ($(UNAME), Linux)
 		OS = linux
+		PLATFORM := $(shell uname -p)
 	else
 		$(error OS not supported by this Makefile)
 	endif
@@ -26,8 +27,8 @@ ifeq ($(OS), windows)
 	O7CFLAGS = -q -O3 -fenable-extern -fenable-varargs # --target $(TGT)
 else
 	O7CFLAGS = -q -O3 --reloc=pic -fenable-extern -fenable-varargs # --target $(TGT)
-	ifeq ($(PLATFORM),aarch64)
-      O7CFLAGS = $(O7CFLAGS) -fno-stack-protector
+	ifeq ($(PLATFORM), aarch64)
+      O7CFLAGS += -fno-stack-protector
     endif
 endif
 LDFLAGS =
@@ -50,7 +51,7 @@ else ifeq ($(OS), linux)
 endif
 
 .PHONY: all clean dist install
-.DEFAULT_GOAL = dist
+.DEFAULT_GOAL = install
 
 all : dist install clean
 
@@ -61,7 +62,7 @@ clean :
 	@$(CXX) -c $<
 
 %.o : %.Mod
-	$(O7C) $(O7CFLAGS) $<
+	@$(O7C) $(O7CFLAGS) $<
 
 %.smb : %.Mod
 	@$(O7C) $(O7CFLAGS) $<
