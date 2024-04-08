@@ -26,6 +26,9 @@ ifeq ($(OS), windows)
 	O7CFLAGS = -q -O3 -fenable-extern -fenable-varargs # --target $(TGT)
 else
 	O7CFLAGS = -q -O3 --reloc=pic -fenable-extern -fenable-varargs # --target $(TGT)
+	ifeq ($(PLATFORM),aarch64)
+      O7CFLAGS = $(O7CFLAGS) -fno-stack-protector
+    endif
 endif
 LDFLAGS =
 
@@ -58,7 +61,7 @@ clean :
 	@$(CXX) -c $<
 
 %.o : %.Mod
-	@$(O7C) $(O7CFLAGS) $<
+	$(O7C) $(O7CFLAGS) $<
 
 %.smb : %.Mod
 	@$(O7C) $(O7CFLAGS) $<

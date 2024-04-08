@@ -153,6 +153,8 @@ int main(const int argc, const char **argv) {
                     config.setFlag(Flag::ENABLE_MAIN);
                 } else if (flag == "enable-bound-checks") {
                     config.setFlag(Flag::ENABLE_BOUND_CHECKS);
+                } else if (flag == "no-stack-protector") {
+                    config.setFlag(Flag::NO_STACK_PROTECT);
                 } else {
                     logger.warning(PROJECT_NAME, "ignoring unrecognized flag -f" + flag + ".");
                 }
