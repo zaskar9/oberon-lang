@@ -33,7 +33,11 @@ enum class RelocationModel {
 };
 
 enum class Flag : unsigned {
-    ENABLE_EXTERN = 1, ENABLE_VARARGS = 2, ENABLE_MAIN = 4, ENABLE_BOUND_CHECKS = 8
+    ENABLE_EXTERN = 1,
+    ENABLE_VARARGS = 2,
+    ENABLE_MAIN = 4,
+    ENABLE_BOUND_CHECKS = 8,
+    NO_STACK_PROTECT = 16
 };
 
 enum class Warning : unsigned {

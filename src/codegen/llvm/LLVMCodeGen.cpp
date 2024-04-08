@@ -8,6 +8,7 @@
 #include "LLVMIRBuilder.h"
 #include <sstream>
 #include <llvm/Bitcode/BitcodeWriter.h>
+#include <llvm/ExecutionEngine/Orc/ExecutionUtils.h>
 #include <llvm/ExecutionEngine/Orc/LLJIT.h>
 #include <llvm/IR/LegacyPassManager.h>
 #include <llvm/MC/TargetRegistry.h>
@@ -115,6 +116,10 @@ void LLVMCodeGen::configure() {
                                             JITSymbolFlags::Exported}}})
             );
         }
+        // Add symbols from current REPL (read-execute-print-loop) process
+        auto layout = jit_->getDataLayout();
+        jit_->getMainJITDylib().addGenerator(
+                cantFail(llvm::orc::DynamicLibrarySearchGenerator::GetForCurrentProcess(layout.getGlobalPrefix())));
         // Load libraries
         for (const auto& name : config_.getLibraries()) {
             logger_.debug("Searching for library: '" + name + "'.");
