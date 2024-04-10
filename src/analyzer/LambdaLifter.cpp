@@ -9,12 +9,14 @@
 
 #include <memory>
 #include <string>
+#include <sstream>
 #include <vector>
 
 #include "data/symtab/SymbolTable.h"
 
 using std::make_unique;
 using std::string;
+using std::stringstream;
 using std::unique_ptr;
 using std::vector;
 
@@ -37,6 +39,7 @@ void LambdaLifter::visit(ModuleNode &node) {
 void LambdaLifter::visit(ProcedureNode &node) {
     env_ = nullptr;
     level_ = node.getLevel();
+    path_.push_back(node.getIdentifier()->name());
     bool is_super = node.getProcedureCount();
     if (is_super) /* super procedure */ {
         if (!node.getType()->parameters().empty() || node.getVariableCount() > 0) {
@@ -108,8 +111,13 @@ void LambdaLifter::visit(ProcedureNode &node) {
         }
         // rename and move the procedure to the module scope
         for (size_t i = 0; i < node.getProcedureCount(); i++) {
+            stringstream ss;
+            for (const auto& str: path_) {
+                ss << str << "_";
+            }
             auto proc = node.getProcedure(i);
-            proc->setIdentifier(make_unique<IdentDef>("_" + proc->getIdentifier()->name()));
+            ss << proc->getIdentifier()->name();
+            proc->setIdentifier(make_unique<IdentDef>(ss.str()));
             module_->addProcedure(node.removeProcedure(i));
         }
         // TODO remove unnecessary local variables
@@ -138,6 +146,7 @@ void LambdaLifter::visit(ProcedureNode &node) {
             node.getVariable(i)->accept(*this);
         }
     }
+    path_.pop_back();
 }
 
 ParameterNode *LambdaLifter::findParameter(string name, vector<unique_ptr<ParameterNode>> &params) {

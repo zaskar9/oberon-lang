@@ -9,6 +9,7 @@
 
 
 #include <memory>
+#include <stack>
 #include <string>
 #include <vector>
 
@@ -27,6 +28,7 @@ private:
     ModuleNode *module_;
     DeclarationNode *env_;
     unsigned int level_;
+    vector<string> path_;
 
     static const string THIS_;
     static const string SUPER_;
@@ -84,7 +86,7 @@ private:
     static bool envFieldResolver(QualifiedExpression *, const string &, TypeNode *);
 
 public:
-    explicit LambdaLifter(ASTContext *context) : context_(context), module_(), env_(), level_() { };
+    explicit LambdaLifter(ASTContext *context) : context_(context), module_(), env_(), level_(), path_() { };
     ~LambdaLifter() override = default;
 
     void run(Logger &, Node *) override;
