@@ -76,7 +76,7 @@ void NodePrettyPrinter::block(BlockNode& node, bool isGlobal) {
 }
 
 void NodePrettyPrinter::qualident(DeclarationNode *decl) {
-    if (decl->getModule() != module_) {
+    if (decl->getModule() && decl->getModule() != module_) {
         stream_ << *decl->getModule()->getIdentifier() << ".";
     }
     stream_ << *decl->getIdentifier();
@@ -152,12 +152,14 @@ void NodePrettyPrinter::visit(ImportNode &node) {
 }
 
 void NodePrettyPrinter::visit(QualifiedStatement &node) {
-    stream_ << *node.ident();
+    qualident(node.dereference());
+    // stream_ << *node.ident();
     selectors(node.selectors());
 }
 
 void NodePrettyPrinter::visit(QualifiedExpression &node) {
-    stream_ << *node.ident();
+    qualident(node.dereference());
+    // stream_ << *node.ident();
     selectors(node.selectors());
 }
 
