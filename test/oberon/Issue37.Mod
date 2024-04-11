@@ -27,10 +27,10 @@ VAR
     str : ARRAY 257 OF CHAR;
 BEGIN
     str := "test";
-    Out.String(str); Out.Ln;
+    (* Out.String(str); Out.Ln; *)
     Out.String("1.1: Length(str) ="); Out.Int(Length(str), 5); Out.Long(LEN(str), 5); Out.Ln;
     FillString(str);
-    Out.String(str); Out.Ln;
+    (* Out.String(str); Out.Ln; *)
     Out.String("1.2: Length(str) ="); Out.Int(Length(str), 5); Out.Long(LEN(str), 5); Out.Ln;
 END Run1;
 
@@ -43,10 +43,10 @@ VAR
     END Assert;
 BEGIN
     str := "test";
-    Out.String(str); Out.Ln;
+    (* Out.String(str); Out.Ln; *)
     Out.String("2.1: Length(str) ="); Out.Int(Length(str), 5); Out.Long(LEN(str), 5); Out.Ln;
     FillString(str);
-    Out.String(str); Out.Ln;
+    (* Out.String(str); Out.Ln; *)
     Out.String("2.2: Length(str) ="); Out.Int(Length(str), 5); Out.Long(LEN(str), 5); Out.Ln;
 END Run2;
 
@@ -55,15 +55,15 @@ VAR
     str : ARRAY 257 OF CHAR;
 BEGIN
     str := "test";
-    Out.String(str); Out.Ln;
+    (* Out.String(str); Out.Ln; *)
     Out.String("3.1: Length(str) ="); Out.Int(Length(str), 5); Out.Long(LEN(str), 5); Out.Ln;
     FillString(str);
-    Out.String(str); Out.Ln;
+    (* Out.String(str); Out.Ln; *)
     Out.String("3.2: Length(str) ="); Out.Int(Length(str), 5); Out.Long(LEN(str), 5); Out.Ln;
 END Run3;
 
 BEGIN
     Run1();
     Run2();
-    Run2()
+    Run3()
 END Issue37.
