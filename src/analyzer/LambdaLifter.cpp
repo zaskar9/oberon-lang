@@ -182,12 +182,12 @@ void LambdaLifter::visit(QualifiedStatement &node) {
 
 void LambdaLifter::visit(QualifiedExpression &node) {
     auto decl = node.dereference();
+    selectors(decl->getType(), node.selectors());
     if (decl->getLevel() == SymbolTable::MODULE_LEVEL ||
         (env_->getIdentifier()->name() == SUPER_ && env_->getLevel() == decl->getLevel())) {
         // global variable or local variable in leaf procedure
         return;
     }
-    selectors(decl->getType(), node.selectors());
     if (decl->getNodeType() == NodeType::parameter || decl->getNodeType() == NodeType::variable) {
         node.resolve(env_);
         if (!envFieldResolver(&node, decl->getIdentifier()->name(), decl->getType())) {

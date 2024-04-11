@@ -1,8 +1,6 @@
 MODULE Issue37;
 IMPORT Out;
 
-VAR str: ARRAY 257 OF CHAR;
-
 PROCEDURE Length(str: ARRAY OF CHAR) : INTEGER;
 VAR i: INTEGER;
 BEGIN
@@ -26,12 +24,10 @@ PROCEDURE Run1();
 VAR
     str : ARRAY 257 OF CHAR;
 BEGIN
-    str := "test";
-    (* Out.String(str); Out.Ln; *)
+    str := "test1";
     Out.String("1.1: Length(str) ="); Out.Int(Length(str), 5); Out.Long(LEN(str), 5); Out.Ln;
     FillString(str);
-    (* Out.String(str); Out.Ln; *)
-    Out.String("1.2: Length(str) ="); Out.Int(Length(str), 5); Out.Long(LEN(str), 5); Out.Ln;
+    Out.String("1.2: Length(str) ="); Out.Int(Length(str), 5); Out.Long(LEN(str), 5); Out.Ln
 END Run1;
 
 PROCEDURE Run2();
@@ -42,24 +38,20 @@ VAR
         ASSERT(b)
     END Assert;
 BEGIN
-    str := "test";
-    (* Out.String(str); Out.Ln; *)
+    str := "test22";
     Out.String("2.1: Length(str) ="); Out.Int(Length(str), 5); Out.Long(LEN(str), 5); Out.Ln;
     FillString(str);
-    (* Out.String(str); Out.Ln; *)
-    Out.String("2.2: Length(str) ="); Out.Int(Length(str), 5); Out.Long(LEN(str), 5); Out.Ln;
+    Out.String("2.2: Length(str) ="); Out.Int(Length(str), 5); Out.Long(LEN(str), 5); Out.Ln
 END Run2;
 
 PROCEDURE Run3();
 VAR
     str : ARRAY 257 OF CHAR;
 BEGIN
-    str := "test";
-    (* Out.String(str); Out.Ln; *)
+    str := "test333";
     Out.String("3.1: Length(str) ="); Out.Int(Length(str), 5); Out.Long(LEN(str), 5); Out.Ln;
     FillString(str);
-    (* Out.String(str); Out.Ln; *)
-    Out.String("3.2: Length(str) ="); Out.Int(Length(str), 5); Out.Long(LEN(str), 5); Out.Ln;
+    Out.String("3.2: Length(str) ="); Out.Int(Length(str), 5); Out.Long(LEN(str), 5); Out.Ln
 END Run3;
 
 BEGIN
