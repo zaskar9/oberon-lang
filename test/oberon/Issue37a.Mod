@@ -1,4 +1,4 @@
-MODULE Issue37;
+MODULE Issue37a;
 IMPORT Out;
 
 PROCEDURE Length(str: ARRAY OF CHAR) : INTEGER;
@@ -58,4 +58,4 @@ BEGIN
     Run1();
     Run2();
     Run3()
-END Issue37.
+END Issue37a.
