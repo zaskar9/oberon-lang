@@ -1209,6 +1209,20 @@ bool Sema::isProcedure(QualIdent *ident) {
     return sym && sym->getNodeType() == NodeType::procedure;
 }
 
+int64_t
+Sema::euclidean_mod(int64_t x, int64_t y) {
+    int64_t r = x % y;
+    r += y & (-(r < 0));
+    return r;
+}
+
+int64_t
+Sema::floor_div(int64_t x, int64_t y) {
+    int64_t d = x / y;
+    int64_t r = x % y;
+    return r ? (d - ((x < 0) ^ (y < 0))) : d;
+}
+
 bool
 Sema::foldBoolean(const FilePos &start, [[maybe_unused]] const FilePos &end, ExpressionNode *expr) {
     if (expr->getNodeType() == NodeType::boolean) {
@@ -1469,9 +1483,9 @@ Sema::fold(const FilePos &start, [[maybe_unused]] const FilePos &end,
             case OperatorType::TIMES:
                 value = lvalue * rvalue; break;
             case OperatorType::DIV:
-                value = lvalue / rvalue; break;
+                value = floor_div(lvalue, rvalue); break;
             case OperatorType::MOD:
-                value = lvalue % rvalue; break;
+                value = euclidean_mod(lvalue, rvalue); break;
             default:
                 logger_.error(start, "operator " + to_string(op) + " cannot be applied to integer values.");
                 return nullptr;
