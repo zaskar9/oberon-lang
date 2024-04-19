@@ -593,12 +593,25 @@ void LLVMIRBuilder::visit(BinaryExpressionNode &node) {
             case OperatorType::DIVIDE:
                 value_ = builder_.CreateFDiv(lhs, rhs);
                 break;
-            case OperatorType::DIV:
-                value_ = builder_.CreateSDiv(lhs, rhs);
+            case OperatorType::DIV: {
+                Value *div = builder_.CreateSDiv(lhs, rhs);
+                value_ = builder_.CreateMul(div, rhs);
+                value_ = builder_.CreateSub(lhs, value_);
+                Value *cmp = builder_.CreateICmpEQ(value_, ConstantInt::get(lhs->getType(), 0));
+                value_ = builder_.CreateXor(lhs, rhs);
+                value_ = builder_.CreateAShr(value_, ConstantInt::get(lhs->getType(),
+                                                                      lhs->getType()->getIntegerBitWidth() - 1));
+                value_ = builder_.CreateSelect(cmp, ConstantInt::get(lhs->getType(), 0), value_);
+                value_ = builder_.CreateAdd(value_, div);
                 break;
-            case OperatorType::MOD:
-                value_ = builder_.CreateSRem(lhs, rhs);
+            }
+            case OperatorType::MOD: {
+                Value *rem = builder_.CreateSRem(lhs, rhs);
+                value_ = builder_.CreateICmpSLT(rem, ConstantInt::get(lhs->getType(), 0));
+                value_ = builder_.CreateSelect(value_, rhs, ConstantInt::get(lhs->getType(), 0));
+                value_ = builder_.CreateAdd(value_, rem, "", false, true);
                 break;
+            }
             case OperatorType::EQ:
                 value_ = floating ? builder_.CreateFCmpUEQ(lhs, rhs) : builder_.CreateICmpEQ(lhs, rhs);
                 break;

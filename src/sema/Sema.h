@@ -60,7 +60,10 @@ private:
     bool assertCompatible(const FilePos &, TypeNode *, TypeNode *, bool = false, bool = false);
     TypeNode *commonType(const FilePos &, TypeNode *, TypeNode *) const;
 
-    static string format(const TypeNode *, bool = false) ;
+    static string format(const TypeNode *, bool = false);
+
+    static int64_t euclidean_mod(int64_t, int64_t);
+    static int64_t floor_div(int64_t, int64_t);
 
     bool foldBoolean(const FilePos &, const FilePos &, ExpressionNode *);
     int64_t foldInteger(const FilePos &, const FilePos &, ExpressionNode *);
