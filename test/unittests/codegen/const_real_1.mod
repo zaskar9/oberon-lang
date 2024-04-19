@@ -24,6 +24,6 @@ BEGIN
     Test()
 END ConstReal1.
 (*
-    CHECK: 0.11754944E-37
+    CHECK: 1.17549432E-38
     CHECK: 3.40282368E+38
 *)

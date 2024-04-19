@@ -50,16 +50,13 @@ VAR
   END WriteInt;
 
   PROCEDURE WriteHexHelper(VAR W: Writer; x: LONGINT; n: INTEGER);
-    VAR i, d: INTEGER; x0: LONGINT;
+    VAR i, d: INTEGER;
         a: ARRAY 16 OF CHAR;
   BEGIN
-    x0 := x;
-    IF x < 0 THEN INC(x0); x0 := -x0 END;
     FOR i := 0 TO 15 DO
-      d := SHORT(x0 MOD 10H);
-      IF x < 0 THEN d := 15 - d END;
+      d := SHORT(x MOD 10H);
       IF d < 10 THEN a[i] := CHR(d + 30H) ELSE a[i] := CHR(d + 37H) END;
-      x0 := x0 DIV 10H
+      x := x DIV 10H
     END;
     i := n;
     REPEAT DEC(i); Write(W, a[i]) UNTIL i = 0
@@ -123,7 +120,7 @@ VAR
   END WriteReal;
 
   PROCEDURE WriteLongReal* (VAR W: Writer; x: LONGREAL; n: INTEGER);
- 		CONST maxD = 16;
+    CONST maxD = 16;
     VAR e, i: INTEGER;
         h, l: LONGINT;
         z: LONGREAL;
@@ -162,7 +159,7 @@ VAR
       WHILE i > 7 DO d[i]:= CHR(SHORT(l MOD 10) + 30H); l := l DIV 10; DEC(i) END;
       WHILE i >= 0 DO d[i]:= CHR(SHORT(h MOD 10) + 30H); h := h DIV 10; DEC(i) END;
       Write(W, d[0]); Write(W, "."); i := 1; WHILE i <= n DO Write(W, d[i]); INC(i) END;
- 			Write(W, "E");
+      Write(W, "E");
       IF e < 0 THEN Write(W, "-"); e := - e ELSE Write(W, "+") END;
       Write(W, CHR(e DIV 100 + 30H)); e := e MOD 100;
       Write(W, CHR(e DIV 10 + 30H));
