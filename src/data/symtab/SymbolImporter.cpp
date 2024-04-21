@@ -304,7 +304,6 @@ TypeNode *SymbolImporter::readRecordType(SymbolFile *file) {
         ch = file->readChar();
     }
     auto res = context_->getOrInsertRecordType(EMPTY_POS, EMPTY_POS, base_t, std::move(fields));
-    res->setBaseType(base_t);
     res->setSize(size);
     return res;
 }

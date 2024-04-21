@@ -60,8 +60,8 @@ ASTContext::getOrInsertArrayType(const FilePos &start, [[maybe_unused]] const Fi
 
 RecordTypeNode *
 ASTContext::getOrInsertRecordType(const FilePos &start, [[maybe_unused]] const FilePos &end,
-                                  vector<unique_ptr<FieldNode>> fields) {
-    auto type = make_unique<RecordTypeNode>(start, std::move(fields));
+                                  RecordTypeNode *base, vector<unique_ptr<FieldNode>> fields) {
+    auto type = make_unique<RecordTypeNode>(start, base, std::move(fields));
     auto res = type.get();
     record_ts_.push_back(std::move(type));
     return res;

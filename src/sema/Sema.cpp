@@ -234,7 +234,7 @@ Sema::onPointerType([[maybe_unused]] const FilePos &start, const FilePos &end, T
 }
 
 ProcedureTypeNode *
-Sema::onProcedureType([[maybe_unused]] const FilePos &start, const FilePos &end,
+Sema::onProcedureType(const FilePos &start, const FilePos &end,
                       vector<unique_ptr<ParameterNode>> params, bool varargs, TypeNode *ret) {
     return context_->getOrInsertProcedureType(start, end, std::move(params), varargs, ret);
 }
@@ -273,13 +273,6 @@ Sema::onRecordType(const FilePos &start, const FilePos &end,
     set<string> names;
     for (size_t i = 0; i < node->getFieldCount(); i++) {
         auto field = node->getField(i);
-        if (field->getIdentifier()->isExported()) {
-            if (symbols_->getLevel() != SymbolTable::MODULE_LEVEL) {
-                logger_.error(field->pos(), "only top-level declarations can be exported.");
-            } else if (!node->getIdentifier()->isExported()) {
-                logger_.error(field->pos(), "cannot export fields of non-exported record type.");
-            }
-        }
         if (names.count(field->getIdentifier()->name())) {
             logger_.error(field->pos(), "duplicate record field: " + to_string(*field->getIdentifier()) + ".");
         } else {
