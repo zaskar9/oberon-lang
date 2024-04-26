@@ -41,13 +41,15 @@ void LLVMIRBuilder::build(ASTContext *ast) {
 void LLVMIRBuilder::visit(ModuleNode &node) {
     module_->setModuleIdentifier(node.getIdentifier()->name());
     // allocate global variables
+    string prefix = node.getIdentifier()->name() + "_";
     for (size_t i = 0; i < node.getVariableCount(); i++) {
         auto variable = node.getVariable(i);
         auto type = getLLVMType(variable->getType());
+        bool expo = variable->getIdentifier()->isExported();
         auto value = new GlobalVariable(*module_, type, false,
-                                        (variable->getIdentifier()->isExported() ?
-                                            GlobalValue::ExternalLinkage : GlobalValue::PrivateLinkage),
-                                        Constant::getNullValue(type), variable->getIdentifier()->name());
+                                        expo ? GlobalValue::ExternalLinkage : GlobalValue::InternalLinkage,
+                                        Constant::getNullValue(type),
+                                        expo ? prefix + variable->getIdentifier()->name() : variable->getIdentifier()->name());
         value->setAlignment(getLLVMAlign(variable->getType()));
         values_[variable] = value;
     }
@@ -234,6 +236,15 @@ void LLVMIRBuilder::visit(QualifiedExpression &node) {
     if (type->isProcedure()) {
         createStaticCall(dynamic_cast<ProcedureNode *>(decl), node.ident(), node.selectors());
         return;
+    }
+    if (!value_ && decl->getNodeType() == NodeType::variable) {
+        // Looks like we came across a reference to an imported variable.
+        auto variable = dynamic_cast<VariableDeclarationNode *>(decl);
+        auto value = new GlobalVariable(*module_, getLLVMType(variable->getType()), false,
+                                        GlobalValue::ExternalLinkage, nullptr, qualifiedName(decl));
+        value->setAlignment(getLLVMAlign(variable->getType()));
+        values_[decl] = value;
+        value_ = value;
     }
     if (decl->getNodeType() == NodeType::parameter) {
         auto param = dynamic_cast<ParameterNode *>(decl);
@@ -423,7 +434,7 @@ void LLVMIRBuilder::visit(StringLiteralNode &node) {
     value_ = strings_[val];
     if (!value_) {
         auto initializer = ConstantStruct::get(type, {builder_.getInt64(len), ConstantDataArray::getRaw(val, len, builder_.getInt8Ty())});
-        auto str = new GlobalVariable(*module_, type, true, GlobalValue::InternalLinkage, initializer, ".str");
+        auto str = new GlobalVariable(*module_, type, true, GlobalValue::PrivateLinkage, initializer, ".str");
         str->setAlignment(module_->getDataLayout().getPrefTypeAlign(type));
         strings_[val] = str;
         value_ = strings_[val];
