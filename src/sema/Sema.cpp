@@ -702,6 +702,12 @@ Sema::assertAssignable(const ExpressionNode *expr, string &err) const {
             } else if (decl->getNodeType() == NodeType::constant) {
                 err = "a constant";
                 return false;
+            } else if (decl->getNodeType() == NodeType::variable) {
+                if (decl->getModule() != context_->getTranslationUnit()) {
+                    // O07.11: Variables are always exported in read-only mode.
+                    err = "an external variable";
+                    return false;
+                }
             }
         }
         err = "";
