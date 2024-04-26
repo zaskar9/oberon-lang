@@ -3,7 +3,7 @@ MODULE M;
 CONST
     CCHAR* = 041X;
     CINT* = 100;
-    (* CLINT* = 0FFFFFFFFFFFFFFFFH; *)
+    CLINT* = 0FFFFFFFFFFFFFFFFH;
     CREAL* = 1.1;
     CREALMAX* = 1.7976931348623157E+308;
     CBOOL* = TRUE;
@@ -14,9 +14,9 @@ VAR
     C* : CHAR;
     (* X* : BYTE; Not supported *)
     I* : INTEGER;
-    (* LI* : LONGINT; *)
+    LI* : LONGINT;
     R* : REAL;
-    (* LR* : LONGREAL; *)
+    LR* : LONGREAL;
     B* : BOOLEAN;
     S* : SET;
     STR* : ARRAY 25 OF CHAR;
@@ -24,9 +24,9 @@ VAR
 BEGIN
     C := CCHAR;
     I := CINT;
-    (* LI := CLINT; *)
+    LI := CLINT;
     R := CREAL;
-    (* LR := CREALMAX; *)
+    LR := CREALMAX;
     B := CBOOL;
     S := CSET;
     STR := CSTR
