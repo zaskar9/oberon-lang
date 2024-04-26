@@ -9,6 +9,7 @@
 
 
 #include "Token.h"
+#include <cstdint>
 
 template <class T>
 class LiteralToken : public Token {

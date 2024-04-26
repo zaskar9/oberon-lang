@@ -3,6 +3,7 @@
 //
 
 #include "ASTContext.h"
+#include <algorithm>
 #include <memory>
 
 using std::filesystem::path;
