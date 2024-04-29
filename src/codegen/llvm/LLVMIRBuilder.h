@@ -83,6 +83,7 @@ private:
     Value *createAssertCall(Value *);
     Value *createChrCall(Value *);
     Value *createEntireCall(Value *);
+    Value *createFltCall(Value *);
     Value *createExitCall(Value *);
     Value *createExclCall(Value *, Value *);
     Value *createFreeCall(TypeNode *, Value *);

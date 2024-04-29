@@ -978,6 +978,8 @@ LLVMIRBuilder::createPredefinedCall(PredefinedProcedure *proc, QualIdent *ident,
             return createLongCall(actuals[0].get(), params[0]);
         case ProcKind::ENTIER:
             return createEntireCall(params[0]);
+        case ProcKind::FLT:
+            return createFltCall(params[0]);
         case ProcKind::ABS:
             return createAbsCall(actuals[0]->getType(), params[0]);
         case ProcKind::MAX:
@@ -1056,6 +1058,12 @@ Value *
 LLVMIRBuilder::createEntireCall(llvm::Value *param) {
     Value *value = builder_.CreateIntrinsic(Intrinsic::floor, {param->getType()}, {param});
     value_ = builder_.CreateFPToSI(value, builder_.getInt64Ty());
+    return value_;
+}
+
+Value *
+LLVMIRBuilder::createFltCall(llvm::Value *param) {
+    value_ = builder_.CreateSIToFP(param, builder_.getDoubleTy());
     return value_;
 }
 

@@ -206,6 +206,8 @@ void Oberon07::initSymbolTable(SymbolTable *symbols) {
     this->createProcedure(ProcKind::ENTIER, "ENTIER", {{floatType, false}}, longIntType, false, true);
     // FLOOR
     this->createProcedure(ProcKind::ENTIER, "FLOOR", {{floatType, false}}, longIntType, false, true);
+    // FLT
+    this->createProcedure(ProcKind::FLT, "FLT", {{longIntType, false}}, longRealType, false, true);
     // ABS
     proc = this->createProcedure(ProcKind::ABS, "ABS", {{numType, false}}, nullType, false, true);
     proc->overload({{shortIntType, false}}, false, shortIntType);
