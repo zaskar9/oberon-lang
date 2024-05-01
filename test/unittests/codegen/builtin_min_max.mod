@@ -1,7 +1,7 @@
 (*
   RUN: %oberon -I "%S%{pathsep}%inc" -L "%S%{pathsep}%lib" -l oberon --run %s | filecheck %s
 *)
-MODULE System6;
+MODULE BuiltinMinMax;
 
 IMPORT SYSTEM, Out;
 
@@ -37,7 +37,7 @@ END Test;
 
 BEGIN
     Test
-END System6.
+END BuiltinMinMax.
 (*
     CHECK: INF
     CHECK: -INF
