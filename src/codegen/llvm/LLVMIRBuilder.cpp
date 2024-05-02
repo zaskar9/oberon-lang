@@ -980,6 +980,10 @@ LLVMIRBuilder::createPredefinedCall(PredefinedProcedure *proc, QualIdent *ident,
             return createEntireCall(params[0]);
         case ProcKind::FLT:
             return createFltCall(params[0]);
+        case ProcKind::PACK:
+            return createPackCall(params[0], params[1]);
+        case ProcKind::UNPK:
+            return createUnpkCall(actuals, params);
         case ProcKind::ABS:
             return createAbsCall(actuals[0]->getType(), params[0]);
         case ProcKind::MAX:
@@ -1064,6 +1068,47 @@ LLVMIRBuilder::createEntireCall(llvm::Value *param) {
 Value *
 LLVMIRBuilder::createFltCall(llvm::Value *param) {
     value_ = builder_.CreateSIToFP(param, builder_.getDoubleTy());
+    return value_;
+}
+
+Value *
+LLVMIRBuilder::createPackCall(Value *x, Value *n) {
+    auto y = ConstantFP::get(x->getType(), 2.0);
+    Value *nval;
+    if (n->getType()->getIntegerBitWidth() > 32) {
+        nval = builder_.CreateTrunc(n, builder_.getInt32Ty());
+    } else if (n->getType()->getIntegerBitWidth() < 32) {
+        nval = builder_.CreateSExt(n, builder_.getInt32Ty());
+    } else {
+        nval = n;
+    }
+    value_ = builder_.CreateIntrinsic(Intrinsic::powi, {y->getType(), builder_.getInt32Ty()}, {y, nval}); // Usually only Int32 supported by targets
+    return builder_.CreateFMul(x, value_);
+}
+
+Value *
+LLVMIRBuilder::createUnpkCall(vector<unique_ptr<ExpressionNode>> &actuals, std::vector<Value *> &params) {
+    auto xtype = getLLVMType(actuals[0]->getType());
+    Value *xval = builder_.CreateLoad(xtype, params[0]);
+    if (xtype->isFloatTy()) {
+        xval = builder_.CreateFPExt(xval, builder_.getDoubleTy());
+    }
+    auto ret = builder_.CreateIntrinsic(Intrinsic::frexp, {builder_.getDoubleTy(), builder_.getInt32Ty()}, xval); // Usually only Double supported by targets
+    auto y = ConstantFP::get(builder_.getDoubleTy(), 2.0);
+    xval = builder_.CreateFMul(y, builder_.CreateExtractValue(ret, {0}));
+    if (xtype->isFloatTy()) {
+        xval = builder_.CreateFPTrunc(xval, builder_.getFloatTy());  
+    }
+    builder_.CreateStore(xval, params[0]);
+    auto ntype = getLLVMType(actuals[1]->getType());
+    auto z = ConstantInt::get(ntype, 1);
+    auto nval = builder_.CreateExtractValue(ret, {1});
+    if (ntype->getIntegerBitWidth() > 32) {
+        nval = builder_.CreateTrunc(nval, builder_.getInt32Ty());
+    } else if (ntype->getIntegerBitWidth() < 32) {
+        nval = builder_.CreateSExt(nval, builder_.getInt32Ty());
+    }
+    builder_.CreateStore(builder_.CreateSub(nval, z), params[1]);
     return value_;
 }
 
