@@ -1,8 +1,7 @@
 (*
   RUN: %oberon -I "%S%{pathsep}%inc" -L "%S%{pathsep}%lib" -l oberon --run %s
   XFAIL: *
-  This should probably fail as it per definition is an overflow
-  Maybe also variables should be checked for overflow?
+  This should fail. Checked against NativeOberon.
 *)
 MODULE BuiltinShort2;
 

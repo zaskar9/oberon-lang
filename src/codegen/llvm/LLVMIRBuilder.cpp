@@ -1366,6 +1366,10 @@ LLVMIRBuilder::createRorCall(llvm::Value *param, llvm::Value *shift) {
 
 Value *
 LLVMIRBuilder::createShortCall(ExpressionNode *expr, llvm::Value *param) {
+    if (expr->isLiteral()) {
+        logger_.error(expr->pos(), "constant not valid parameter.");
+        return value_;
+    }
     auto type = expr->getType();
     if (type->isInteger()) {
         if (type->kind() == TypeKind::INTEGER) {
