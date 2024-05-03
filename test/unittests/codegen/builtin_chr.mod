@@ -1,7 +1,8 @@
 (*
   RUN: %oberon -I "%S%{pathsep}%inc" -L "%S%{pathsep}%lib" -l oberon --run %s | filecheck %s
+  Note : Overflow not checked. This is in line with ProjectOberon behaviour.
 *)
-MODULE BuiltinChr1;
+MODULE BuiltinChr;
 
 IMPORT Out;
 
@@ -15,7 +16,7 @@ END Test;
 
 BEGIN
     Test
-END BuiltinChr1.
+END BuiltinChr.
 (*
     CHECK: a
     CHECK: a
