@@ -1,7 +1,7 @@
 (*
   RUN: %oberon -I "%S%{pathsep}%inc" -L "%S%{pathsep}%lib" -l oberon --run %s | filecheck %s
 *)
-MODULE BuiltinLong1;
+MODULE BuiltinLong;
 
 IMPORT Out;
 
@@ -13,6 +13,8 @@ VAR
     lr : LONGREAL;
     r : REAL;
 BEGIN
+    i := LONG(123);
+    Out.Int(i, 0); Out.Ln;
     s := 123;
     Out.Int(s, 0); Out.Ln;
     i := LONG(s);
@@ -37,8 +39,9 @@ END Test;
 
 BEGIN
     Test
-END BuiltinLong1.
+END BuiltinLong.
 (*
+    CHECK: 123
     CHECK: 123
     CHECK: 123
     CHECK: -123
