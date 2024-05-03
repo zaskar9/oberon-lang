@@ -1314,7 +1314,7 @@ LLVMIRBuilder::createNewCall(TypeNode *type, llvm::Value *param) {
 Value *
 LLVMIRBuilder::createOddCall(llvm::Value *param) {
     auto paramTy = param->getType();
-    value_ = builder_.CreateSRem(param, ConstantInt::get(paramTy, 2));
+    value_ = builder_.CreateAnd(param, ConstantInt::get(paramTy, 1));
     return builder_.CreateICmpEQ(value_, ConstantInt::get(paramTy, 1));
 }
 
