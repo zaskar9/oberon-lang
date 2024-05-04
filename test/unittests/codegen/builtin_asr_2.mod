@@ -1,10 +1,9 @@
 (*
   RUN: %oberon -I "%S%{pathsep}%inc" -L "%S%{pathsep}%lib" -l oberon --run %s
   XFAIL: *
-  
-  This should probably fail as it is not arithmetic shift right and gives garbage result.
-  Atleast constant arguments could be checked for overflow and negative shift.
-  At runtime with variable argument it could be undefined.
+  This should fail or give a warning it is not left shift and gives garbage result and is undefined in C/C++.
+  OBNC gives a warning on negative value.
+  Here we currently gives an error for negative literal values.
 *)
 MODULE BuiltinAsr2;
 

@@ -949,13 +949,13 @@ LLVMIRBuilder::createPredefinedCall(PredefinedProcedure *proc, QualIdent *ident,
         case ProcKind::DEC:
             return createIncDecCall(kind, actuals, params);
         case ProcKind::LSL:
-            return createLslCall(params[0], params[1]);
+            return createLslCall(actuals, params);
         case ProcKind::ASR:
-            return createAsrCall(params[0], params[1]);
+            return createAsrCall(actuals, params);
         case ProcKind::ROL:
-            return createRolCall(params[0], params[1]);
+            return createRolCall(actuals, params);
         case ProcKind::ROR:
-            return createRorCall(params[0], params[1]);
+            return createRorCall(actuals, params);
         case ProcKind::ODD:
             return createOddCall(params[0]);
         case ProcKind::HALT:
@@ -1036,9 +1036,19 @@ LLVMIRBuilder::createAbsCall(TypeNode *type, llvm::Value *param) {
 }
 
 Value *
-LLVMIRBuilder::createAsrCall(Value *param, Value *shift) {
-    shift = builder_.CreateTrunc(shift, param->getType());
-    return builder_.CreateAShr(param, shift);
+LLVMIRBuilder::createAsrCall(vector<unique_ptr<ExpressionNode>> &actuals, std::vector<Value *> &params) {
+     // TODO : Check for negative shift value with variable argument.
+    auto param1 = actuals[1].get();
+    if (param1->isLiteral()) {
+        // range check if literal argument
+        auto val = dynamic_cast<IntegerLiteralNode *>(param1)->value();
+        if (val < 0) {
+            logger_.error(param1->pos(), "negative shift value undefined operaton.");
+            return value_;
+        }
+    }
+    auto shift = builder_.CreateTrunc(params[1], params[0]->getType());
+    return builder_.CreateAShr(params[0], shift);
 }
 
 Value *
@@ -1283,9 +1293,55 @@ LLVMIRBuilder::createLongCall(ExpressionNode *expr, llvm::Value *param) {
 }
 
 Value *
-LLVMIRBuilder::createLslCall(llvm::Value *param, llvm::Value *shift) {
-    shift = builder_.CreateTrunc(shift, param->getType());
-    return builder_.CreateShl(param, shift);
+LLVMIRBuilder::createLslCall(vector<unique_ptr<ExpressionNode>> &actuals, std::vector<Value *> &params) {
+    // TODO : Check for negative shift value with variable argument.
+    auto param1 = actuals[1].get();
+    if (param1->isLiteral()) {
+        // range check if literal argument
+        auto val = dynamic_cast<IntegerLiteralNode *>(param1)->value();
+        if (val < 0) {
+            logger_.error(param1->pos(), "negative shift value undefined.");
+            return value_;
+        }
+    }
+    auto shift = builder_.CreateTrunc(params[1], params[0]->getType());
+    return builder_.CreateShl(params[0], shift);
+}
+
+Value *
+LLVMIRBuilder::createMaxMinCall(ExpressionNode *actual, bool isMax) {
+    auto decl = dynamic_cast<QualifiedExpression *>(actual)->dereference();
+    auto type = dynamic_cast<TypeDeclarationNode *>(decl)->getType();
+    if (type->isReal()) {
+        if (type->getSize() == 4) {
+            value_ = ConstantFP::getInfinity(builder_.getFloatTy(), !isMax);
+        } else {
+            value_ = ConstantFP::getInfinity(builder_.getDoubleTy(), !isMax);
+        }
+    } else if (type->isInteger()) {
+        if (type->getSize() == 8) {
+            if (isMax) {
+                value_ = builder_.getInt64((uint64_t)std::numeric_limits<int64_t>::max());
+            } else {
+                value_ = builder_.getInt64((uint64_t)std::numeric_limits<int64_t>::min());
+            }
+        } else if (type->getSize() == 4) {
+            if (isMax) {
+                value_ = builder_.getInt32((uint32_t)std::numeric_limits<int32_t>::max());
+            } else {
+                value_ = builder_.getInt32((uint32_t)std::numeric_limits<int32_t>::min());
+            }
+        } else {
+            if (isMax) {
+                value_ = builder_.getInt16((uint16_t)std::numeric_limits<int16_t>::max());
+            } else {
+                value_ = builder_.getInt16((uint16_t)std::numeric_limits<int16_t>::min());
+            }
+        }
+    } else {
+        logger_.error(actual->pos(), "type mismatch: REAL or INTEGER expected.");
+    }
+    return value_;
 }
 
 Value *
@@ -1345,22 +1401,42 @@ LLVMIRBuilder::createOrdCall(ExpressionNode *actual, llvm::Value *param) {
 }
 
 Value *
-LLVMIRBuilder::createRolCall(llvm::Value *param, llvm::Value *shift) {
-    shift = builder_.CreateTrunc(shift, param->getType());
-    Value *lhs = builder_.CreateShl(param, shift);
-    Value *value = ConstantInt::get(param->getType(), param->getType()->getIntegerBitWidth());
+LLVMIRBuilder::createRolCall(vector<unique_ptr<ExpressionNode>> &actuals, std::vector<Value *> &params) {
+    // TODO : Check for negative shift value with variable argument.
+    auto param1 = actuals[1].get();
+    if (param1->isLiteral()) {
+        // range check if literal argument
+        auto val = dynamic_cast<IntegerLiteralNode *>(param1)->value();
+        if (val < 0) {
+            logger_.error(param1->pos(), "negative shift value undefined.");
+            return value_;
+        }
+    }
+    auto shift = builder_.CreateTrunc(params[1], params[0]->getType());
+    Value *lhs = builder_.CreateShl(params[0], shift);
+    Value *value = ConstantInt::get(params[0]->getType(), params[0]->getType()->getIntegerBitWidth());
     Value *delta = builder_.CreateSub(value, shift);
-    Value *rhs = builder_.CreateLShr(param, delta);
+    Value *rhs = builder_.CreateLShr(params[0], delta);
     return builder_.CreateOr(lhs, rhs);
 }
 
 Value *
-LLVMIRBuilder::createRorCall(llvm::Value *param, llvm::Value *shift) {
-    shift = builder_.CreateTrunc(shift, param->getType());
-    Value *lhs = builder_.CreateLShr(param, shift);
-    Value *value = ConstantInt::get(param->getType(), param->getType()->getIntegerBitWidth());
+LLVMIRBuilder::createRorCall(vector<unique_ptr<ExpressionNode>> &actuals, std::vector<Value *> &params) {
+    // TODO : Check for negative shift value with variable argument.
+    auto param1 = actuals[1].get();
+    if (param1->isLiteral()) {
+        // range check if literal argument
+        auto val = dynamic_cast<IntegerLiteralNode *>(param1)->value();
+        if (val < 0) {
+            logger_.error(param1->pos(), "negative shift value undefined.");
+            return value_;
+        }
+    }
+    auto shift = builder_.CreateTrunc(params[1], params[0]->getType());
+    Value *lhs = builder_.CreateLShr(params[0], shift);
+    Value *value = ConstantInt::get(params[0]->getType(), params[0]->getType()->getIntegerBitWidth());
     Value *delta = builder_.CreateSub(value, shift);
-    Value *rhs = builder_.CreateShl(param, delta);
+    Value *rhs = builder_.CreateShl(params[0], delta);
     return builder_.CreateOr(lhs, rhs);
 }
 
@@ -1396,42 +1472,6 @@ LLVMIRBuilder::createSizeCall(ExpressionNode *expr) {
     auto layout = module_->getDataLayout();
     auto size = layout.getTypeAllocSize(getLLVMType(type->getType()));
     value_ = builder_.getInt64(size);
-    return value_;
-}
-
-Value *
-LLVMIRBuilder::createMaxMinCall(ExpressionNode *actual, bool isMax) {
-    auto decl = dynamic_cast<QualifiedExpression *>(actual)->dereference();
-    auto type = dynamic_cast<TypeDeclarationNode *>(decl)->getType();
-    if (type->isReal()) {
-        if (type->getSize() == 4) {
-            value_ = ConstantFP::getInfinity(builder_.getFloatTy(), !isMax);
-        } else {
-            value_ = ConstantFP::getInfinity(builder_.getDoubleTy(), !isMax);
-        }
-    } else if (type->isInteger()) {
-        if (type->getSize() == 8) {
-            if (isMax) {
-                value_ = builder_.getInt64((uint64_t)std::numeric_limits<int64_t>::max());
-            } else {
-                value_ = builder_.getInt64((uint64_t)std::numeric_limits<int64_t>::min());
-            }
-        } else if (type->getSize() == 4) {
-            if (isMax) {
-                value_ = builder_.getInt32((uint32_t)std::numeric_limits<int32_t>::max());
-            } else {
-                value_ = builder_.getInt32((uint32_t)std::numeric_limits<int32_t>::min());
-            }
-        } else {
-            if (isMax) {
-                value_ = builder_.getInt16((uint16_t)std::numeric_limits<int16_t>::max());
-            } else {
-                value_ = builder_.getInt16((uint16_t)std::numeric_limits<int16_t>::min());
-            }
-        }
-    } else {
-        logger_.error(actual->pos(), "type mismatch: REAL or INTEGER expected.");
-    }
     return value_;
 }
 

@@ -1,10 +1,9 @@
 (*
   RUN: %oberon -I "%S%{pathsep}%inc" -L "%S%{pathsep}%lib" -l oberon --run %s
   XFAIL: *
-  
-  This should probably fail as it is not ROL, but ROR.
-  Atleast constant arguments could be checked for overflow and negative shift.
-  Note that this procedure is not found in Oberon-2 or Oberon-07 reports.
+  This should fail or give a warning as it is not ROL, but ROR.
+  OBNC gives a warning on negative value.
+  Here we currently gives an error for negative literal values.
 *)
 MODULE BuiltinRol2;
 
