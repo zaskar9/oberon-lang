@@ -16,21 +16,22 @@ using std::vector;
 
 LLVMIRBuilder::LLVMIRBuilder(CompilerConfig &config, LLVMContext &builder, Module *module) :
         NodeVisitor(), config_(config), logger_(config_.logger()), builder_(builder), module_(module),
-        value_(), values_(), types_(), hasArray_(), functions_(), strings_(), deref_ctx(), level_(0),
-        function_(), attrs_(AttrBuilder(builder)) {
+        value_(), values_(), types_(), leafTypes_(), hasArray_(), functions_(), strings_(), deref_ctx(),
+        level_(0), function_(), attrs_(AttrBuilder(builder)) {
     attrs_
-        .addAttribute(Attribute::NoInline)
-        .addAttribute(Attribute::NoUnwind)
-        .addAttribute(Attribute::OptimizeNone)
+            .addAttribute(Attribute::NoInline)
+            .addAttribute(Attribute::NoUnwind)
+            .addAttribute(Attribute::OptimizeNone)
 #ifndef _LLVM_LEGACY
-        .addAttribute(Attribute::getWithUWTableKind(builder, UWTableKind::Default))
+            .addAttribute(Attribute::getWithUWTableKind(builder, UWTableKind::Default))
 #endif
-        ;
+            ;
 #ifndef __MINGW32__
     if (!config_.hasFlag(Flag::NO_STACK_PROTECT)) {
         attrs_.addAttribute(Attribute::StackProtect);
     }
 #endif
+    recordTdTy_ = StructType::create(builder_.getContext(), {builder_.getPtrTy(), builder_.getInt32Ty()});
 }
 
 void LLVMIRBuilder::build(ASTContext *ast) {
@@ -1669,10 +1670,10 @@ Value *LLVMIRBuilder::processGEP(TypeNode *base, Value *value, vector<Value *> &
     return value;
 }
 
-Type* LLVMIRBuilder::getLLVMType(TypeNode *type) {
+Type* LLVMIRBuilder::getLLVMType(TypeNode *type, bool leaf) {
     Type* result = nullptr;
     if (type == nullptr) {
-        result = builder_.getVoidTy();
+        return builder_.getVoidTy();
     } else if (types_[type] != nullptr) {
         result = types_[type];
     } else if (type->getNodeType() == NodeType::array_type) {
@@ -1688,6 +1689,11 @@ Type* LLVMIRBuilder::getLLVMType(TypeNode *type) {
         types_[type] = structTy;
         vector<Type *> elemTys;
         auto recordTy = dynamic_cast<RecordTypeNode *>(type);
+        // add field for base record
+        if (recordTy->isExtened()) {
+            elemTys.push_back(getLLVMType(recordTy->getBaseType(), false));
+        }
+        // add regular record fields
         for (size_t i = 0; i < recordTy->getFieldCount(); i++) {
             auto fieldTy = recordTy->getField(i)->getType();
             elemTys.push_back(getLLVMType(fieldTy));
@@ -1731,6 +1737,15 @@ Type* LLVMIRBuilder::getLLVMType(TypeNode *type) {
     if (result == nullptr) {
         logger_.error(type->pos(), "cannot map " + to_string(type->kind()) + " to LLVM intermediate representation.");
         exit(1);
+    }
+    if (leaf && type->getNodeType() == NodeType::record_type) {
+        auto leafType = leafTypes_[type];
+        if (!leafType) {
+            leafType = StructType::create(builder_.getContext(), {builder_.getPtrTy(), result});
+            leafType->setName(to_string(result->getStructName().data()) + ".leaf");
+            leafTypes_[type] = leafType;
+        }
+        result = leafType;
     }
     return result;
 }
