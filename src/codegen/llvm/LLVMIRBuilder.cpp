@@ -949,13 +949,13 @@ LLVMIRBuilder::createPredefinedCall(PredefinedProcedure *proc, QualIdent *ident,
         case ProcKind::DEC:
             return createIncDecCall(kind, actuals, params);
         case ProcKind::LSL:
-            return createLslCall(params[0], params[1]);
+            return createLslCall(actuals, params);
         case ProcKind::ASR:
-            return createAsrCall(params[0], params[1]);
+            return createAsrCall(actuals, params);
         case ProcKind::ROL:
-            return createRolCall(params[0], params[1]);
+            return createRolCall(actuals, params);
         case ProcKind::ROR:
-            return createRorCall(params[0], params[1]);
+            return createRorCall(actuals, params);
         case ProcKind::ODD:
             return createOddCall(params[0]);
         case ProcKind::HALT:
@@ -978,6 +978,12 @@ LLVMIRBuilder::createPredefinedCall(PredefinedProcedure *proc, QualIdent *ident,
             return createLongCall(actuals[0].get(), params[0]);
         case ProcKind::ENTIER:
             return createEntireCall(params[0]);
+        case ProcKind::FLT:
+            return createFltCall(params[0]);
+        case ProcKind::PACK:
+            return createPackCall(params[0], params[1]);
+        case ProcKind::UNPK:
+            return createUnpkCall(actuals, params);
         case ProcKind::ABS:
             return createAbsCall(actuals[0]->getType(), params[0]);
         case ProcKind::MAX:
@@ -1030,9 +1036,19 @@ LLVMIRBuilder::createAbsCall(TypeNode *type, llvm::Value *param) {
 }
 
 Value *
-LLVMIRBuilder::createAsrCall(Value *param, Value *shift) {
-    shift = builder_.CreateTrunc(shift, param->getType());
-    return builder_.CreateAShr(param, shift);
+LLVMIRBuilder::createAsrCall(vector<unique_ptr<ExpressionNode>> &actuals, std::vector<Value *> &params) {
+     // TODO : Check for negative shift value with variable argument.
+    auto param1 = actuals[1].get();
+    if (param1->isLiteral()) {
+        // range check if literal argument
+        auto val = dynamic_cast<IntegerLiteralNode *>(param1)->value();
+        if (val < 0) {
+            logger_.error(param1->pos(), "negative shift value undefined operaton.");
+            return value_;
+        }
+    }
+    auto shift = builder_.CreateTrunc(params[1], params[0]->getType());
+    return builder_.CreateAShr(params[0], shift);
 }
 
 Value *
@@ -1056,6 +1072,53 @@ Value *
 LLVMIRBuilder::createEntireCall(llvm::Value *param) {
     Value *value = builder_.CreateIntrinsic(Intrinsic::floor, {param->getType()}, {param});
     value_ = builder_.CreateFPToSI(value, builder_.getInt64Ty());
+    return value_;
+}
+
+Value *
+LLVMIRBuilder::createFltCall(llvm::Value *param) {
+    value_ = builder_.CreateSIToFP(param, builder_.getDoubleTy());
+    return value_;
+}
+
+Value *
+LLVMIRBuilder::createPackCall(Value *x, Value *n) {
+    auto y = ConstantFP::get(x->getType(), 2.0);
+    Value *nval;
+    if (n->getType()->getIntegerBitWidth() > 32) {
+        nval = builder_.CreateTrunc(n, builder_.getInt32Ty());
+    } else if (n->getType()->getIntegerBitWidth() < 32) {
+        nval = builder_.CreateSExt(n, builder_.getInt32Ty());
+    } else {
+        nval = n;
+    }
+    value_ = builder_.CreateIntrinsic(Intrinsic::powi, {y->getType(), builder_.getInt32Ty()}, {y, nval}); // Usually only Int32 supported by targets
+    return builder_.CreateFMul(x, value_);
+}
+
+Value *
+LLVMIRBuilder::createUnpkCall(vector<unique_ptr<ExpressionNode>> &actuals, std::vector<Value *> &params) {
+    auto xtype = getLLVMType(actuals[0]->getType());
+    Value *xval = builder_.CreateLoad(xtype, params[0]);
+    if (xtype->isFloatTy()) {
+        xval = builder_.CreateFPExt(xval, builder_.getDoubleTy());
+    }
+    auto ret = builder_.CreateIntrinsic(Intrinsic::frexp, {builder_.getDoubleTy(), builder_.getInt32Ty()}, xval); // Usually only Double supported by targets
+    auto y = ConstantFP::get(builder_.getDoubleTy(), 2.0);
+    xval = builder_.CreateFMul(y, builder_.CreateExtractValue(ret, {0}));
+    if (xtype->isFloatTy()) {
+        xval = builder_.CreateFPTrunc(xval, builder_.getFloatTy());  
+    }
+    builder_.CreateStore(xval, params[0]);
+    auto ntype = getLLVMType(actuals[1]->getType());
+    auto z = ConstantInt::get(ntype, 1);
+    auto nval = builder_.CreateExtractValue(ret, {1});
+    if (ntype->getIntegerBitWidth() > 32) {
+        nval = builder_.CreateTrunc(nval, builder_.getInt32Ty());
+    } else if (ntype->getIntegerBitWidth() < 32) {
+        nval = builder_.CreateSExt(nval, builder_.getInt32Ty());
+    }
+    builder_.CreateStore(builder_.CreateSub(nval, z), params[1]);
     return value_;
 }
 
@@ -1230,116 +1293,19 @@ LLVMIRBuilder::createLongCall(ExpressionNode *expr, llvm::Value *param) {
 }
 
 Value *
-LLVMIRBuilder::createLslCall(llvm::Value *param, llvm::Value *shift) {
-    shift = builder_.CreateTrunc(shift, param->getType());
-    return builder_.CreateShl(param, shift);
-}
-
-Value *
-LLVMIRBuilder::createNewCall(TypeNode *type, llvm::Value *param) {
-    auto fun = module_->getFunction("malloc");
-    if (!fun) {
-        auto funTy = FunctionType::get(builder_.getPtrTy(), { builder_.getInt64Ty() }, false);
-        fun = Function::Create(funTy, GlobalValue::ExternalLinkage, "malloc", module_);
-        fun->addFnAttr(Attribute::getWithAllocSizeArgs(builder_.getContext(), 0, {}));
-        fun->addParamAttr(0, Attribute::NoUndef);
-    }
-    std::vector<Value *> values;
-    auto ptr = dynamic_cast<PointerTypeNode *>(type);
-    auto layout = module_->getDataLayout();
-    auto base = ptr->getBase();
-    values.push_back(ConstantInt::get(builder_.getInt64Ty(), layout.getTypeAllocSize(getLLVMType(base))));
-    value_ = builder_.CreateCall(FunctionCallee(fun), values);
-    // TODO remove next line (bit-cast) once non-opaque pointers are no longer supported
-    value_ = builder_.CreateBitCast(value_, getLLVMType(ptr));
-    Value *value = builder_.CreateStore(value_, param);
-    value_ = builder_.CreateLoad(builder_.getPtrTy(), param);
-    arrayInitializers(base);
-    return value;
-}
-
-Value *
-LLVMIRBuilder::createOddCall(llvm::Value *param) {
-    auto paramTy = param->getType();
-    value_ = builder_.CreateSRem(param, ConstantInt::get(paramTy, 2));
-    return builder_.CreateICmpEQ(value_, ConstantInt::get(paramTy, 1));
-}
-
-Value *
-LLVMIRBuilder::createOrdCall(ExpressionNode *actual, llvm::Value *param) {
-    if (actual->getType()->isBoolean()) {
-        Value *value = builder_.CreateAlloca(builder_.getInt32Ty());
-        auto tail = BasicBlock::Create(builder_.getContext(), "tail", function_);
-        auto return1 = BasicBlock::Create(builder_.getContext(), "true", function_);
-        auto return0 = BasicBlock::Create(builder_.getContext(), "false", function_);
-        builder_.CreateCondBr(param, return1, return0);
-        builder_.SetInsertPoint(return1);
-        builder_.CreateStore(ConstantInt::get(builder_.getInt32Ty(), 0x1), value);
-        builder_.CreateBr(tail);
-        builder_.SetInsertPoint(return0);
-        builder_.CreateStore(ConstantInt::get(builder_.getInt32Ty(), 0x0), value);
-        builder_.CreateBr(tail);
-        builder_.SetInsertPoint(tail);
-        value_ = builder_.CreateLoad(builder_.getInt32Ty(), value);
-    } else if (actual->getType()->isChar()) {
-        value_ = builder_.CreateZExt(param, builder_.getInt32Ty());
-    } else if (actual->getType()->isSet()) {
-        value_ = param;
-    } else {
-        logger_.error(actual->pos(), "type mismatch: BOOLEAN, CHAR, or SET expected.");
-    }
-    return value_;
-}
-
-Value *
-LLVMIRBuilder::createRolCall(llvm::Value *param, llvm::Value *shift) {
-    shift = builder_.CreateTrunc(shift, param->getType());
-    Value *lhs = builder_.CreateShl(param, shift);
-    Value *value = ConstantInt::get(param->getType(), param->getType()->getIntegerBitWidth());
-    Value *delta = builder_.CreateSub(value, shift);
-    Value *rhs = builder_.CreateLShr(param, delta);
-    return builder_.CreateOr(lhs, rhs);
-}
-
-Value *
-LLVMIRBuilder::createRorCall(llvm::Value *param, llvm::Value *shift) {
-    shift = builder_.CreateTrunc(shift, param->getType());
-    Value *lhs = builder_.CreateLShr(param, shift);
-    Value *value = ConstantInt::get(param->getType(), param->getType()->getIntegerBitWidth());
-    Value *delta = builder_.CreateSub(value, shift);
-    Value *rhs = builder_.CreateShl(param, delta);
-    return builder_.CreateOr(lhs, rhs);
-}
-
-Value *
-LLVMIRBuilder::createShortCall(ExpressionNode *expr, llvm::Value *param) {
-    auto type = expr->getType();
-    if (type->isInteger()) {
-        if (type->kind() == TypeKind::INTEGER) {
-            value_ = builder_.CreateTrunc(param, builder_.getInt16Ty());
-        } else if (type->kind() == TypeKind::LONGINT) {
-            value_ = builder_.CreateTrunc(param, builder_.getInt32Ty());
-        } else {
-            logger_.error(expr->pos(), "illegal integer expression.");
-        }
-    } else {
-        if (type->kind() == TypeKind::LONGREAL) {
-            value_ = builder_.CreateFPTrunc(param, builder_.getFloatTy());
-        } else {
-            logger_.error(expr->pos(), "illegal floating-point expression.");
+LLVMIRBuilder::createLslCall(vector<unique_ptr<ExpressionNode>> &actuals, std::vector<Value *> &params) {
+    // TODO : Check for negative shift value with variable argument.
+    auto param1 = actuals[1].get();
+    if (param1->isLiteral()) {
+        // range check if literal argument
+        auto val = dynamic_cast<IntegerLiteralNode *>(param1)->value();
+        if (val < 0) {
+            logger_.error(param1->pos(), "negative shift value undefined.");
+            return value_;
         }
     }
-    return value_;
-}
-
-Value *
-LLVMIRBuilder::createSizeCall(ExpressionNode *expr) {
-    auto decl = dynamic_cast<QualifiedExpression *>(expr)->dereference();
-    auto type = dynamic_cast<TypeDeclarationNode *>(decl);
-    auto layout = module_->getDataLayout();
-    auto size = layout.getTypeAllocSize(getLLVMType(type->getType()));
-    value_ = builder_.getInt64(size);
-    return value_;
+    auto shift = builder_.CreateTrunc(params[1], params[0]->getType());
+    return builder_.CreateShl(params[0], shift);
 }
 
 Value *
@@ -1375,6 +1341,137 @@ LLVMIRBuilder::createMaxMinCall(ExpressionNode *actual, bool isMax) {
     } else {
         logger_.error(actual->pos(), "type mismatch: REAL or INTEGER expected.");
     }
+    return value_;
+}
+
+Value *
+LLVMIRBuilder::createNewCall(TypeNode *type, llvm::Value *param) {
+    auto fun = module_->getFunction("malloc");
+    if (!fun) {
+        auto funTy = FunctionType::get(builder_.getPtrTy(), { builder_.getInt64Ty() }, false);
+        fun = Function::Create(funTy, GlobalValue::ExternalLinkage, "malloc", module_);
+        fun->addFnAttr(Attribute::getWithAllocSizeArgs(builder_.getContext(), 0, {}));
+        fun->addParamAttr(0, Attribute::NoUndef);
+    }
+    std::vector<Value *> values;
+    auto ptr = dynamic_cast<PointerTypeNode *>(type);
+    auto layout = module_->getDataLayout();
+    auto base = ptr->getBase();
+    values.push_back(ConstantInt::get(builder_.getInt64Ty(), layout.getTypeAllocSize(getLLVMType(base))));
+    value_ = builder_.CreateCall(FunctionCallee(fun), values);
+    // TODO remove next line (bit-cast) once non-opaque pointers are no longer supported
+    value_ = builder_.CreateBitCast(value_, getLLVMType(ptr));
+    Value *value = builder_.CreateStore(value_, param);
+    value_ = builder_.CreateLoad(builder_.getPtrTy(), param);
+    arrayInitializers(base);
+    return value;
+}
+
+Value *
+LLVMIRBuilder::createOddCall(llvm::Value *param) {
+    auto paramTy = param->getType();
+    value_ = builder_.CreateAnd(param, ConstantInt::get(paramTy, 1));
+    return builder_.CreateICmpEQ(value_, ConstantInt::get(paramTy, 1));
+}
+
+Value *
+LLVMIRBuilder::createOrdCall(ExpressionNode *actual, llvm::Value *param) {
+    if (actual->getType()->isBoolean()) {
+        Value *value = builder_.CreateAlloca(builder_.getInt32Ty());
+        auto tail = BasicBlock::Create(builder_.getContext(), "tail", function_);
+        auto return1 = BasicBlock::Create(builder_.getContext(), "true", function_);
+        auto return0 = BasicBlock::Create(builder_.getContext(), "false", function_);
+        builder_.CreateCondBr(param, return1, return0);
+        builder_.SetInsertPoint(return1);
+        builder_.CreateStore(ConstantInt::get(builder_.getInt32Ty(), 0x1), value);
+        builder_.CreateBr(tail);
+        builder_.SetInsertPoint(return0);
+        builder_.CreateStore(ConstantInt::get(builder_.getInt32Ty(), 0x0), value);
+        builder_.CreateBr(tail);
+        builder_.SetInsertPoint(tail);
+        value_ = builder_.CreateLoad(builder_.getInt32Ty(), value);
+    } else if (actual->getType()->isChar()) {
+        value_ = builder_.CreateZExt(param, builder_.getInt32Ty());
+    } else if (actual->getType()->isSet()) {
+        value_ = param;
+    } else {
+        logger_.error(actual->pos(), "type mismatch: BOOLEAN, CHAR, or SET expected.");
+    }
+    return value_;
+}
+
+Value *
+LLVMIRBuilder::createRolCall(vector<unique_ptr<ExpressionNode>> &actuals, std::vector<Value *> &params) {
+    // TODO : Check for negative shift value with variable argument.
+    auto param1 = actuals[1].get();
+    if (param1->isLiteral()) {
+        // range check if literal argument
+        auto val = dynamic_cast<IntegerLiteralNode *>(param1)->value();
+        if (val < 0) {
+            logger_.error(param1->pos(), "negative shift value undefined.");
+            return value_;
+        }
+    }
+    auto shift = builder_.CreateTrunc(params[1], params[0]->getType());
+    Value *lhs = builder_.CreateShl(params[0], shift);
+    Value *value = ConstantInt::get(params[0]->getType(), params[0]->getType()->getIntegerBitWidth());
+    Value *delta = builder_.CreateSub(value, shift);
+    Value *rhs = builder_.CreateLShr(params[0], delta);
+    return builder_.CreateOr(lhs, rhs);
+}
+
+Value *
+LLVMIRBuilder::createRorCall(vector<unique_ptr<ExpressionNode>> &actuals, std::vector<Value *> &params) {
+    // TODO : Check for negative shift value with variable argument.
+    auto param1 = actuals[1].get();
+    if (param1->isLiteral()) {
+        // range check if literal argument
+        auto val = dynamic_cast<IntegerLiteralNode *>(param1)->value();
+        if (val < 0) {
+            logger_.error(param1->pos(), "negative shift value undefined.");
+            return value_;
+        }
+    }
+    auto shift = builder_.CreateTrunc(params[1], params[0]->getType());
+    Value *lhs = builder_.CreateLShr(params[0], shift);
+    Value *value = ConstantInt::get(params[0]->getType(), params[0]->getType()->getIntegerBitWidth());
+    Value *delta = builder_.CreateSub(value, shift);
+    Value *rhs = builder_.CreateShl(params[0], delta);
+    return builder_.CreateOr(lhs, rhs);
+}
+
+Value *
+LLVMIRBuilder::createShortCall(ExpressionNode *expr, llvm::Value *param) {
+    if (expr->isLiteral()) {
+        logger_.error(expr->pos(), "constant not valid parameter.");
+        return value_;
+    }
+    auto type = expr->getType();
+    if (type->isInteger()) {
+        if (type->kind() == TypeKind::INTEGER) {
+            value_ = builder_.CreateTrunc(param, builder_.getInt16Ty());
+        } else if (type->kind() == TypeKind::LONGINT) {
+            value_ = builder_.CreateTrunc(param, builder_.getInt32Ty());
+        } else {
+            logger_.error(expr->pos(), "illegal integer expression.");
+        }
+    } else {
+        if (type->kind() == TypeKind::LONGREAL) {
+            value_ = builder_.CreateFPTrunc(param, builder_.getFloatTy());
+        } else {
+            logger_.error(expr->pos(), "illegal floating-point expression.");
+        }
+    }
+    return value_;
+}
+
+Value *
+LLVMIRBuilder::createSizeCall(ExpressionNode *expr) {
+    auto decl = dynamic_cast<QualifiedExpression *>(expr)->dereference();
+    auto type = dynamic_cast<TypeDeclarationNode *>(decl);
+    auto layout = module_->getDataLayout();
+    auto size = layout.getTypeAllocSize(getLLVMType(type->getType()));
+    value_ = builder_.getInt64(size);
     return value_;
 }
 
