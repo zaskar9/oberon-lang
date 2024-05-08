@@ -273,10 +273,15 @@ Sema::onRecordType(const FilePos &start, const FilePos &end,
     set<string> names;
     for (size_t i = 0; i < node->getFieldCount(); i++) {
         auto field = node->getField(i);
-        if (names.count(field->getIdentifier()->name())) {
+        auto name = field->getIdentifier()->name();
+        if (base && resolveRecordField(base, name)) {
+            logger_.error(field->pos(), "redefinition of record field: " + to_string(*field->getIdentifier()) + ".");
+            continue;
+        }
+        if (names.count(name)) {
             logger_.error(field->pos(), "duplicate record field: " + to_string(*field->getIdentifier()) + ".");
         } else {
-            names.insert(field->getIdentifier()->name());
+            names.insert(name);
         }
     }
     return node;
@@ -873,7 +878,7 @@ FieldNode *Sema::onRecordField(TypeNode *base, RecordField *sel) {
     }
     auto record = dynamic_cast<RecordTypeNode *>(base);
     auto ref = dynamic_cast<RecordField *>(sel);
-    auto field = record->getField(ref->ident()->name());
+    auto field = resolveRecordField(record, ref->ident()->name());
     if (!field) {
         logger_.error(ref->pos(), "undefined record field: " + to_string(*ref->ident()) + ".");
         return nullptr;
@@ -1830,4 +1835,13 @@ Sema::intType(int64_t value) {
         return longIntTy_;
     }
     return integerTy_;
+}
+
+FieldNode *
+Sema::resolveRecordField(RecordTypeNode *type, const std::string &name) {
+    auto field = type->getField(name);
+    if (!field && type->isExtened()) {
+        return resolveRecordField(type->getBaseType(), name);
+    }
+    return field;
 }
