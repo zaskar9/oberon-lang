@@ -42,6 +42,7 @@ private:
     Value *value_;
     map<DeclarationNode*, Value*> values_;
     map<TypeNode*, Type*> types_;
+    map<TypeNode*, StructType*> leafTypes_;
     unordered_set<TypeNode *> hasArray_;
     map<ProcedureNode*, Function*> functions_;
     map<string, Constant*> strings_;
@@ -50,8 +51,9 @@ private:
     Function *function_;
     AttrBuilder attrs_;
     ASTContext *ast_;
+    Type *recordTdTy_;
 
-    Type *getLLVMType(TypeNode *type);
+    Type *getLLVMType(TypeNode *type, bool = true);
     MaybeAlign getLLVMAlign(TypeNode *type);
 
     Value *processGEP(TypeNode *, Value *, vector<Value *> &);
