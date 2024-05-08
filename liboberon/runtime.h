@@ -19,5 +19,5 @@ double rt_reals_tenL(int32_t e);
 int32_t rt_reals_nan_code(float x);
 void rt_reals_nan_codeL(double x, int32_t *l, int32_t *h);
 
-float rt_reals_nan();
-double rt_reals_nanL();
+float rt_reals_nan(void);
+double rt_reals_nanL(void);
