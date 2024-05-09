@@ -16,6 +16,8 @@ int32_t rt_reals_expoL(double x);
 float rt_reals_ten(int32_t e);
 double rt_reals_tenL(int32_t e);
 
+void rt_reals_convert(float x, int32_t n, char* d);
+
 int32_t rt_reals_nan_code(float x);
 void rt_reals_nan_codeL(double x, int32_t *l, int32_t *h);
 
