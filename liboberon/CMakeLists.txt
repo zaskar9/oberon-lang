@@ -1,5 +1,5 @@
-set(LIBOBERON_SHARED "oberon_shared")
-set(LIBOBERON_STATIC "oberon_static")
+set(LIBOBERON_SHARED "liboberon-shared")
+set(LIBOBERON_STATIC "liboberon-static")
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
   set(OBFLAGS -q -O3 --reloc=pic -fenable-extern -fenable-varargs)
