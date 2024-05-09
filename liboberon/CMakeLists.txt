@@ -1,4 +1,5 @@
-set(LIBOBERON "oberon")
+set(LIBOBERON_SHARED "oberon_shared")
+set(LIBOBERON_STATIC "oberon_static")
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
   set(OBFLAGS -q -O3 --reloc=pic -fenable-extern -fenable-varargs)
@@ -34,7 +35,7 @@ add_oberon_module(Out "")
 add_oberon_module(Random "")
 add_oberon_module(Math "")
 
-add_library(${LIBOBERON}dyn SHARED
+add_library(${LIBOBERON_SHARED} SHARED
     runtime.c
     ${CMAKE_CURRENT_BINARY_DIR}/Oberon.o
     ${CMAKE_CURRENT_BINARY_DIR}/Reals.o
@@ -44,7 +45,12 @@ add_library(${LIBOBERON}dyn SHARED
     ${CMAKE_CURRENT_BINARY_DIR}/Math.o
 )
 
-add_library(${LIBOBERON} STATIC
+set_target_properties(
+  ${LIBOBERON_SHARED} PROPERTIES
+  OUTPUT_NAME oberon
+)
+
+add_library(${LIBOBERON_STATIC} STATIC
     runtime.c
     ${CMAKE_CURRENT_BINARY_DIR}/Oberon.o
     ${CMAKE_CURRENT_BINARY_DIR}/Reals.o
@@ -54,7 +60,13 @@ add_library(${LIBOBERON} STATIC
     ${CMAKE_CURRENT_BINARY_DIR}/Math.o
 )
 
-install(TARGETS ${LIBOBERON} ${LIBOBERON}dyn
+set_target_properties(
+  ${LIBOBERON_STATIC} PROPERTIES
+  OUTPUT_NAME oberon
+  ARCHIVE_OUTPUT_DIRECTORY static
+)
+
+install(TARGETS ${LIBOBERON_STATIC} ${LIBOBERON_SHARED}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
