@@ -34,7 +34,7 @@ jobs:
 
     - name: Install lit & filecheck
       run: |
-        pip install lit
+        pip install lit &&
         pip install filecheck
 
     - name: Configure CMake

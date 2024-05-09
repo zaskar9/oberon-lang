@@ -12,12 +12,15 @@ env:
 jobs:
   build:
     runs-on: windows-latest
-
+    defaults:
+      run:
+        shell: msys2 {0}
     steps:
     - uses: actions/checkout@v4
     - uses: msys2/setup-msys2@v2
       with:
         msystem: CLANG64
+        update: true
 
     - name:
       id: strings
@@ -27,16 +30,16 @@ jobs:
 
     - name: Install packages
       run: |
-        pacman --noconfirm -S git &&
-        pacman --noconfirm -S make &&
-        pacman --noconfirm -S mingw-w64-clang-x86_64-python-pip &&
-        pacman --noconfirm -S mingw-w64-clang-x86_64-toolchain &&
-        pacman --noconfirm -S mingw-w64-clang-x86_64-boost &&
-        pacman --noconfirm -S mingw-w64-clang-x86_64-cmake
+        pacman --noconfirm -S --needed --overwrite git &&
+        pacman --noconfirm -S --needed --overwrite make &&
+        pacman --noconfirm -S --needed --overwrite mingw-w64-clang-x86_64-python-pip &&
+        pacman --noconfirm -S --needed --overwrite mingw-w64-clang-x86_64-toolchain &&
+        pacman --noconfirm -S --needed --overwrite mingw-w64-clang-x86_64-boost &&
+        pacman --noconfirm -S --needed --overwrite mingw-w64-clang-x86_64-cmake
 
     - name: Install lit & filecheck
       run: |
-        pip3 install lit
+        pip3 install lit &&
         pip3 install filecheck
 
     - name: Configure CMake
@@ -58,4 +61,3 @@ jobs:
       with:
         name: binary-msys2-release
         path: ${{ steps.strings.outputs.build-output-dir }}/install/**
-
