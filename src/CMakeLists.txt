@@ -88,6 +88,8 @@ set(ALL_SOURCES
         ${COMPILER_SOURCES})
 
 add_executable(${OBERON_LANG} main.cpp ${ALL_SOURCES})
+install (TARGETS ${OBERON_LANG} RUNTIME DESTINATION bin)
+
 target_include_directories(${OBERON_LANG} PUBLIC .)
 # main executable needs to export symbols (of statically linked LLVM) for JIT mode
 set_target_properties(${OBERON_LANG} PROPERTIES ENABLE_EXPORTS ON)

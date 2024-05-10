@@ -65,20 +65,20 @@ int32_t rt_reals_nan_code(float x) {
 void rt_reals_nan_codeL(double x, int32_t *l, int32_t *h) {
     union ieee754_double d = { .d = x };
     if (d.ieee.exponent == 2047) {
-        *l = d.ieee.mantissa1;
-        *h = d.ieee.mantissa0;
+        *l = (int32_t)d.ieee.mantissa1;
+        *h = (int32_t)d.ieee.mantissa0;
     } else {
         *l = -1;
         *h = -1;
     }
 }
 
-float rt_reals_nan() {
-    union ieee754_float f = { .ieee.exponent = 255, .ieee.mantissa = -1 };
+float rt_reals_nan(void) {
+    union ieee754_float f = { .ieee.exponent = 255, .ieee.mantissa = 0x3fffff };
     return f.f;
 }
 
-double rt_reals_nanL() {
-    union ieee754_double d = { .ieee.exponent = 2047, .ieee.mantissa0 = -1, .ieee.mantissa1 = -1 };
+double rt_reals_nanL(void) {
+    union ieee754_double d = { .ieee.exponent = 2047, .ieee.mantissa0 = 0xfffff, .ieee.mantissa1 = 0xffffffff };
     return d.d;
 }
