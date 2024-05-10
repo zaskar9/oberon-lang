@@ -5,6 +5,7 @@ on:
     branches: [ $default-branch ]
   pull_request:
     branches: [ $default-branch ]
+  workflow_dispatch:
 
 env:
     build_type: Release
@@ -15,13 +16,6 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - uses: Homebrew/actions/setup-homebrew@v2
-
-    - name:
-      id: strings
-      shell: bash
-      run: |
-        echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
 
     - name: Install packages
       run: |
@@ -39,21 +33,28 @@ jobs:
 
     - name: Configure CMake
       run: >
-        cmake -B ${{ steps.strings.outputs.build-output-dir }}
-        -S ${{ github.workspace }} -G "Unix Makefiles"
+        cmake -B ${{ github.workspace }}/build -S ${{ github.workspace }} -G "Unix Makefiles"  
+        -DLLVM_DIR=/opt/homebrew/opt/llvm@17/lib/cmake/llvm/
+        -DCMAKE_CXX_COMPILER=/opt/homebrew/opt/llvm@17/bin/clang++
+        -DCMAKE_C_COMPILER=/opt/homebrew/opt/llvm@17/bin/clang
 
     - name: Build
-      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ env.build_type }}
+      run: cmake --build ${{ github.workspace }}/build --config ${{ env.build_type }}
 
     - name: Install
-      run: cmake --install ${{ steps.strings.outputs.build-output-dir }} --prefix install  || true
+      run: cmake --install ${{ github.workspace }}/build --prefix install
 
     - name: Test
-      run: cd ${{ steps.strings.outputs.build-output-dir }} && make test || true
+      run: cd ${{ github.workspace }}/build && make test >test_report_macos.txt
 
-    - name: Upload
+    - name: Upload build
       uses: actions/upload-artifact@v4
       with:
         name: binary-macos-release
-        path: ${{ steps.strings.outputs.build-output-dir }}/install/**
+        path: ${{ github.workspace }}/install/**/*
 
+    - name: Upload report
+      uses: actions/upload-artifact@v4
+      with:
+        name: test_report_macos.txt
+        path: ${{ github.workspace }}/build/test_report_macos.txt

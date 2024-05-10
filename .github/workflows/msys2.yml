@@ -5,6 +5,7 @@ on:
     branches: [ $default-branch ]
   pull_request:
     branches: [ $default-branch ]
+  workflow_dispatch:
 
 env:
     build_type: Release
@@ -22,20 +23,14 @@ jobs:
         msystem: CLANG64
         update: true
 
-    - name:
-      id: strings
-      shell: bash
-      run: |
-        echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
-
     - name: Install packages
       run: |
-        pacman --noconfirm -S --needed --overwrite git &&
-        pacman --noconfirm -S --needed --overwrite make &&
-        pacman --noconfirm -S --needed --overwrite mingw-w64-clang-x86_64-python-pip &&
-        pacman --noconfirm -S --needed --overwrite mingw-w64-clang-x86_64-toolchain &&
-        pacman --noconfirm -S --needed --overwrite mingw-w64-clang-x86_64-boost &&
-        pacman --noconfirm -S --needed --overwrite mingw-w64-clang-x86_64-cmake
+        pacman --noconfirm -S git &&
+        pacman --noconfirm -S make &&
+        pacman --noconfirm -S mingw-w64-clang-x86_64-python-pip &&
+        pacman --noconfirm -S mingw-w64-clang-x86_64-toolchain &&
+        pacman --noconfirm -S mingw-w64-clang-x86_64-boost &&
+        pacman --noconfirm -S mingw-w64-clang-x86_64-cmake
 
     - name: Install lit & filecheck
       run: |
@@ -44,20 +39,26 @@ jobs:
 
     - name: Configure CMake
       run: >
-        cmake -B ${{ steps.strings.outputs.build-output-dir }}
-        -S ${{ github.workspace }} -G "MSYS Makefiles"
+        cmake -B "$GITHUB_WORKSPACE"/build
+        -S "$GITHUB_WORKSPACE" -G "MSYS Makefiles"
 
     - name: Build
-      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ env.build_type }}
+      run: cmake --build "$GITHUB_WORKSPACE"/build --config ${{ env.build_type }}
 
     - name: Install
-      run: cmake --install ${{ steps.strings.outputs.build-output-dir }} --prefix install  || true
+      run: cmake --install "$GITHUB_WORKSPACE"/build --prefix install
 
     - name: Test
-      run: cd ${{ steps.strings.outputs.build-output-dir }} && make test || true
+      run: cd "$GITHUB_WORKSPACE"/build && make test >test_report_msys2.txt
 
-    - name: Upload
+    - name: Upload build
       uses: actions/upload-artifact@v4
       with:
         name: binary-msys2-release
-        path: ${{ steps.strings.outputs.build-output-dir }}/install/**
+        path: ${{ github.workspace }}/install/**/*
+
+    - name: Upload report
+      uses: actions/upload-artifact@v4
+      with:
+        name: test_report_msys2.txt
+        path: ${{ github.workspace }}/build/test_report_msys2.txt

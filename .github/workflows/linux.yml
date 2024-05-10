@@ -5,6 +5,7 @@ on:
     branches: [ $default-branch ]
   pull_request:
     branches: [ $default-branch ]
+  workflow_dispatch :
 
 env:
     build_type: Release
@@ -16,22 +17,16 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name:
-      id: strings
-      shell: bash
-      run: |
-        echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
-
     - name: Install packages
       run: |
         sudo apt-get update &&
-        sudo apt-get install libboost-program-options-dev libboost-filesystem-dev python3-pip
+        sudo apt-get install libboost-all-dev libboost-filesystem-dev python3-pip
 
     - name: Install Clang 17
       run: |
         wget https://apt.llvm.org/llvm.sh
         chmod +x ./llvm.sh
-        sudo ./llvm.sh 17
+        sudo ./llvm.sh 17 all
 
     - name: Install lit & filecheck
       run: |
@@ -40,21 +35,30 @@ jobs:
 
     - name: Configure CMake
       run: >
-        cmake -B ${{ steps.strings.outputs.build-output-dir }}
-        -S ${{ github.workspace }}
+        cmake -B ${{ github.workspace }}/build -S ${{ github.workspace }}
+        -DLLVM_ROOT=/usr/lib/llvm-17
+        -DBoost_NO_BOOST_CMAKE=ON
+        -DCMAKE_CXX_COMPILER=clang++-17
+        -DCMAKE_C_COMPILER=clang-17
 
     - name: Build
-      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ env.build_type }}
+      run: cmake --build ${{ github.workspace }}/build --config ${{ env.build_type }}
 
     - name: Install
-      run: cmake --install ${{ steps.strings.outputs.build-output-dir }} --prefix install  || true
+      run: cmake --install ${{ github.workspace }}/build --prefix install
 
     - name: Test
-      run: cd ${{ steps.strings.outputs.build-output-dir }} && make test || true
+      run: cd ${{ github.workspace }}/build && make test >test_report_linux.txt || true
 
-    - name: Upload
+    - name: Upload build
       uses: actions/upload-artifact@v4
       with:
-        name: binary-ubuntu-latest-release
-        path: ${{ steps.strings.outputs.build-output-dir }}/install/**
+        name: binary-linux-release
+        path: ${{ github.workspace }}/install/**/*
+
+    - name: Upload report
+      uses: actions/upload-artifact@v4
+      with:
+        name: test_report_msys2.txt
+        path: ${{ github.workspace }}/build/test_report_linux.txt
 
