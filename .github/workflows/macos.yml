@@ -1,0 +1,60 @@
+name: MacOS CI Build
+
+on:
+  push:
+    branches: [ $default-branch ]
+  pull_request:
+    branches: [ $default-branch ]
+  workflow_dispatch:
+
+env:
+    build_type: Release
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install packages
+      run: |
+        brew install git &&
+        brew install make &&
+        brew install cmake &&
+        brew install llvm@17 &&
+        brew install boost &&
+        brew install python
+
+    - name: Install lit & filecheck
+      run: |
+        pip install lit &&
+        pip install filecheck
+
+    - name: Configure CMake
+      run: >
+        cmake -B ${{ github.workspace }}/build -S ${{ github.workspace }} -G "Unix Makefiles"  
+        -DLLVM_DIR=/opt/homebrew/opt/llvm@17/lib/cmake/llvm/
+        -DCMAKE_CXX_COMPILER=/opt/homebrew/opt/llvm@17/bin/clang++
+        -DCMAKE_C_COMPILER=/opt/homebrew/opt/llvm@17/bin/clang
+
+    - name: Build
+      run: cmake --build ${{ github.workspace }}/build --config ${{ env.build_type }}
+
+    - name: Install
+      run: cmake --install ${{ github.workspace }}/build --prefix install
+
+    - name: Test
+      run: cd ${{ github.workspace }}/build && make test >test_report_macos.txt
+
+    - name: Upload build
+      uses: actions/upload-artifact@v4
+      with:
+        name: binary-macos-release
+        path: ${{ github.workspace }}/install/**/*
+
+    - name: Upload report
+      uses: actions/upload-artifact@v4
+      with:
+        name: test_report_macos.txt
+        path: ${{ github.workspace }}/build/test_report_macos.txt
