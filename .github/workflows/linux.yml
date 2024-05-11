@@ -14,6 +14,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    strategy:    
+      matrix:
+        cc: [gcc, clang]
+    
     steps:
     - uses: actions/checkout@v4
 
@@ -34,13 +38,13 @@ jobs:
         sudo pip3 install filecheck
 
     - name: Configure CMake
-      run: >
-        cmake -B ${{ github.workspace }}/build -S ${{ github.workspace }}
-        -DLLVM_ROOT=/usr/lib/llvm-17
-        -DBoost_NO_BOOST_CMAKE=ON
-        -DCMAKE_CXX_COMPILER=clang++-17
-        -DCMAKE_C_COMPILER=clang-17
-
+      run: |
+        if ["$MATRIX_CC" == "gcc"]
+        then
+        cmake -B ${{ github.workspace }}/build -S ${{ github.workspace }} -DLLVM_ROOT=/usr/lib/llvm-17 -DBoost_NO_BOOST_CMAKE=ON
+        else
+        cmake -B ${{ github.workspace }}/build -S ${{ github.workspace }} -DLLVM_ROOT=/usr/lib/llvm-17 -DBoost_NO_BOOST_CMAKE=ON -DCMAKE_CXX_COMPILER=clang++-17 -DCMAKE_C_COMPILER=clang-17
+        fi
     - name: Build
       run: cmake --build ${{ github.workspace }}/build --config ${{ env.build_type }}
 
@@ -48,17 +52,17 @@ jobs:
       run: cmake --install ${{ github.workspace }}/build --prefix install
 
     - name: Test
-      run: cd ${{ github.workspace }}/build && make test >test_report_linux.txt || true
+      run: cd ${{ github.workspace }}/build && make test >test_report_linux_${{ matrix.cc }}.txt || true
 
     - name: Upload build
       uses: actions/upload-artifact@v4
       with:
-        name: binary-linux-release
+        name: binary-linux-${{ matrix.cc }}-release
         path: ${{ github.workspace }}/install/**/*
 
     - name: Upload report
       uses: actions/upload-artifact@v4
       with:
-        name: test_report_msys2.txt
-        path: ${{ github.workspace }}/build/test_report_linux.txt
+        name: test_report_linux_${{ matrix.cc }}.txt
+        path: ${{ github.workspace }}/build/test_report_linux_${{ matrix.cc }}.txt
 
