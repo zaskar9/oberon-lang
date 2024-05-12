@@ -9,7 +9,8 @@
 
 
 #include <string>
-#include <boost/filesystem.hpp>
+#include <filesystem>
+
 #include <llvm/ExecutionEngine/Orc/LLJIT.h>
 #include <llvm/Passes/PassBuilder.h>
 #include <llvm/Target/TargetMachine.h>
@@ -19,6 +20,9 @@
 #include "logging/Logger.h"
 
 int mingw_noop_main(void);
+
+using std::filesystem::path;
+using std::string;
 
 class LLVMCodeGen final : public CodeGen {
 
@@ -33,20 +37,20 @@ private:
     std::unique_ptr<llvm::orc::LLJIT> jit_;
     llvm::ExitOnError exitOnErr_;
 
-    void emit(llvm::Module *module, boost::filesystem::path path, OutputFileType type);
-    static std::string getLibName(const std::string &name, bool dylib, const llvm::Triple &triple);
+    void emit(llvm::Module *, path, OutputFileType);
+    static std::string getLibName(const string &, bool, const llvm::Triple &);
 
 public:
-    LLVMCodeGen(CompilerConfig &config);
+    LLVMCodeGen(CompilerConfig &);
     ~LLVMCodeGen() override = default;
 
     std::string getDescription() final;
 
     void configure() final;
 
-    void generate(ASTContext *ast, boost::filesystem::path path) final;
+    void generate(ASTContext *, path) final;
 #ifndef _LLVM_LEGACY
-    int jit(ASTContext *ast, boost::filesystem::path path) final;
+    int jit(ASTContext *, path) final;
 #endif
 
 };

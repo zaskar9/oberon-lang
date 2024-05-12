@@ -162,7 +162,7 @@ std::string LLVMCodeGen::getLibName(const std::string &name, bool dylib, const l
     return ss.str();
 }
 
-void LLVMCodeGen::generate(ASTContext *ast, boost::filesystem::path path) {
+void LLVMCodeGen::generate(ASTContext *ast, std::filesystem::path path) {
     // Set up the LLVM module
     logger_.debug("Generating LLVM code...");
     auto name = path.filename().string();
@@ -198,7 +198,7 @@ void LLVMCodeGen::generate(ASTContext *ast, boost::filesystem::path path) {
 }
 
 #ifndef _LLVM_LEGACY
-int LLVMCodeGen::jit(ASTContext *ast, boost::filesystem::path path) {
+int LLVMCodeGen::jit(ASTContext *ast, std::filesystem::path path) {
     // Set up the LLVM module
     logger_.debug("Generating LLVM code...");
     // TODO second context created as LLVMIRBuilder needs std::make_unique
@@ -231,7 +231,7 @@ int LLVMCodeGen::jit(ASTContext *ast, boost::filesystem::path path) {
 }
 #endif
 
-void LLVMCodeGen::emit(Module *module, boost::filesystem::path path, OutputFileType type) {
+void LLVMCodeGen::emit(Module *module, std::filesystem::path path, OutputFileType type) {
     std::string ext;
     switch (type) {
         case OutputFileType::AssemblyFile:
