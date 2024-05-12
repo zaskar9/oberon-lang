@@ -32,7 +32,6 @@ for basic usage specific features.
    src/Installation
    src/GettingStarted
    src/CommandLineInterface
-   src/Oberon07LanguageReport
    src/FAQ
 
 ##################

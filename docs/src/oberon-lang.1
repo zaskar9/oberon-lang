@@ -1,10 +1,12 @@
 .\" Manpage for oberon-lang.
+.\" test-cmd : groff -man -T utf8 oberon-lang.1 | less
 .\" File a issue or create a pull request on the Github project page to correct errors or typos.
 .TH OBERON-LANG "1" "2024-05-12" "User Commands"
 .SH NAME
 oberon-lang \- a LLVM Oberon compiler 
 
 .SH SYNOPSIS
+.BR
 oberon-lang -h|--help
 .BR
 oberon-lang --version
@@ -50,10 +52,18 @@ Static or dynamic library
 .TP
 .BR \-f flag,...
 Compiler configuration flags
-.BR sym-dir : Set output path for generated .smb files
-.BR filetype : Set type of output file. [asm, bc, obj, ll]
-.BR reloc : Set relocation model. [default, static, pic]
-.BR target : Target triple for cross compilation
+.IP
+.BR sym-dir
+Set output path for generated .smb files
+.IP
+.BR filetype
+Set type of output file. [asm, bc, obj, ll]
+.IP
+.BR reloc
+Set relocation model. [default, static, pic]
+.IP
+.BR target
+Target triple for cross compilation
 .TP
 .BR \-O level
 Optimization level. [O0, O1, O2, O3]

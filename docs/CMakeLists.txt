@@ -16,7 +16,6 @@ else()
                         ${SPHINX_SOURCE}/src/FAQ.rst
                         ${SPHINX_SOURCE}/src/GettingStarted.rst
                         ${SPHINX_SOURCE}/src/Installation.rst
-                        ${SPHINX_SOURCE}/src/Oberon07LanguageReport.rst
                 WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
                 COMMENT "Generating documentation with Sphinx")
         
