@@ -8,8 +8,6 @@
 
 #include <map>
 
-#include <boost/filesystem.hpp>
-
 #include "SymbolTable.h"
 #include "SymbolFile.h"
 #include "compiler/CompilerConfig.h"
