@@ -1,38 +1,30 @@
-find_package(Doxygen REQUIRED)
+find_package(Sphinx)
 
-# find all the public headers
-get_target_property(OBERON_LANG_PUBLIC_HEADER_DIR oberon-lang INTERFACE_INCLUDE_DIRECTORIES)
-file(GLOB_RECURSE OBERON_LANG_PUBLIC_HEADERS ${OBERON_LANG_PUBLIC_HEADER_DIR}/*.h)
+if(Sphinx-NOTFOUND)
+        message(WARNING "Skipping docs: Sphinx not found.")
+else()
+        set(SPHINX_SOURCE ${CMAKE_CURRENT_SOURCE_DIR})
+        set(SPHINX_BUILD ${CMAKE_CURRENT_BINARY_DIR}/sphinx/)
 
-set(DOXYGEN_INPUT_DIR ${PROJECT_SOURCE_DIR}/src)
-set(DOXYGEN_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/doxygen)
-set(DOXYGEN_INDEX_FILE ${DOXYGEN_OUTPUT_DIR}/xml/index.xml)
-set(DOXYFILE_IN ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in)
-set(DOXYFILE_OUT ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
+        add_custom_target(docs
+                COMMAND ${SPHINX_EXECUTABLE} -b html
+                ${SPHINX_SOURCE} ${SPHINX_BUILD}
+                DEPENDS
+                        ${SPHINX_SOURCE}/conf.py
+                        ${SPHINX_SOURCE}/index.rst
+                        ${SPHINX_SOURCE}/src/CommandLineInterface.rst
+                        ${SPHINX_SOURCE}/src/FAQ.rst
+                        ${SPHINX_SOURCE}/src/GettingStarted.rst
+                        ${SPHINX_SOURCE}/src/Installation.rst
+                        ${SPHINX_SOURCE}/src/Oberon07LanguageReport.rst
+                WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+                COMMENT "Generating documentation with Sphinx")
+        
+        include(GNUInstallDirs)
+        install(
+                DIRECTORY ${SPHINX_BUILD}/
+	        DESTINATION ${CMAKE_INSTALL_DOCDIR}
+        )
+endif()
 
-# replace variables inside @@ with the current values
-configure_file(${DOXYFILE_IN} ${DOXYFILE_OUT} @ONLY)
-
-# create output directory as Doxygen will not do that
-file(MAKE_DIRECTORY ${DOXYGEN_OUTPUT_DIR})
-
-add_custom_command(OUTPUT ${DOXYGEN_INDEX_FILE}
-        DEPENDS ${OBERON_LANG_PUBLIC_HEADERS}
-        COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYFILE_OUT}
-        MAIN_DEPENDENCY ${DOXYFILE_OUT} ${DOXYFILE_IN}
-        COMMENT "Generating documentation")
-
-add_custom_target(Doxygen ALL DEPENDS ${DOXYGEN_INDEX_FILE})
-
-find_package(Sphinx REQUIRED)
-
-set(SPHINX_SOURCE ${CMAKE_CURRENT_SOURCE_DIR})
-set(SPHINX_BUILD ${CMAKE_CURRENT_BINARY_DIR}/sphinx)
-
-add_custom_target(Sphinx ALL
-        COMMAND ${SPHINX_EXECUTABLE} -b html
-        # tell Breathe where to find the Doxygen output
-        -Dbreathe_projects.oberon-lang=${DOXYGEN_OUTPUT_DIR}/xml
-        ${SPHINX_SOURCE} ${SPHINX_BUILD}
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        COMMENT "Generating documentation with Sphinx")
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/oberon-lang.1 DESTINATION "${CMAKE_INSTALL_MANDIR}")
