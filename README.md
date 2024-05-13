@@ -1,7 +1,8 @@
 <p align="center">
-  <a href="https://github.com/zaskar9/oberon-lang/actions"><img src="https://github.com/zaskar9/oberon-lang/workflows/linux.yml/badge.svg?branch=master" alt="Github Actions Badge"></a>
-  <a href="https://github.com/zaskar9/oberon-lang/actions"><img src="https://github.com/zaskar9/oberon-lang/workflows/macos.yml/badge.svg?branch=master" alt="Github Actions Badge"></a>
-  <a href="https://github.com/zaskar9/oberon-lang/actions"><img src="https://github.com/zaskar9/oberon-lang/workflows/msys2.yml/badge.svg?branch=master" alt="Github Actions Badge"></a>
+  <a href="https://github.com/zaskar9/oberon-lang/actions"><img src="https://github.com/zaskar9/oberon-lang/actions/workflows/linux.yml/badge.svg?branch=master" alt="Github Actions Badge"></a>
+  <a href="https://github.com/zaskar9/oberon-lang/actions"><img src="https://github.com/zaskar9/oberon-lang/actions/workflows/macos.yml/badge.svg?branch=master" alt="Github Actions Badge"></a>
+  <a href="https://github.com/zaskar9/oberon-lang/actions"><img src="https://github.com/zaskar9/oberon-lang/actions/workflows/msys2.yml/badge.svg?branch=master" alt="Github Actions Badge"></a>
+  <a href="https://github.com/zaskar9/oberon-lang/actions"><img src="https://github.com/zaskar9/oberon-lang/actions/workflows/docs.yml/badge.svg?branch=master" alt="Github Actions Badge"></a>
 </p>
 
 # A Compiler for the Oberon Programming Language
