@@ -60,8 +60,6 @@ private:
     bool assertCompatible(const FilePos &, TypeNode *, TypeNode *, bool = false, bool = false);
     TypeNode *commonType(const FilePos &, TypeNode *, TypeNode *) const;
 
-    static FieldNode *resolveRecordField(RecordTypeNode *, const string&);
-
     static string format(const TypeNode *, bool = false);
 
     static int64_t euclidean_mod(int64_t, int64_t);

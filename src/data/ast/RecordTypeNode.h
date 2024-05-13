@@ -29,9 +29,7 @@ private:
     unsigned short level_;
 
 public:
-    RecordTypeNode(const FilePos &pos, RecordTypeNode *base, vector<unique_ptr<FieldNode>> fields) :
-            TypeNode(NodeType::record_type, pos, TypeKind::RECORD, 0),
-            fields_(std::move(fields)), base_(base), level_(base ? base->level() + 1 : 0) {};
+    RecordTypeNode(const FilePos &pos, RecordTypeNode *base, vector<unique_ptr<FieldNode>> fields);
     ~RecordTypeNode() final = default;
 
     [[nodiscard]] unsigned int getSize() const final;
@@ -41,10 +39,10 @@ public:
     [[nodiscard]] size_t getFieldCount();
 
     [[nodiscard]] RecordTypeNode *getBaseType() const;
-    [[nodiscard]] bool isExtened() const;
+    [[nodiscard]] bool isExtended() const;
     [[nodiscard]] bool extends(TypeNode *) const override;
 
-    [[nodiscard]] unsigned short level() const;
+    [[nodiscard]] unsigned short getLevel() const;
 
     void accept(NodeVisitor &visitor) final;
     void print(ostream &out) const final;

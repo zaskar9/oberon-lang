@@ -13,11 +13,11 @@
 using std::make_unique;
 using std::string;
 
-const unsigned int SymbolTable::GLOBAL_LEVEL = 0;
-const unsigned int SymbolTable::MODULE_LEVEL = 1;
+const unsigned int SymbolTable::GLOBAL_SCOPE = 0;
+const unsigned int SymbolTable::MODULE_SCOPE = 1;
 
 SymbolTable::SymbolTable() : scopes_(), aliases_(), scope_(), references_() {
-    universe_ = make_unique<Scope>(GLOBAL_LEVEL, nullptr);
+    universe_ = make_unique<Scope>(GLOBAL_SCOPE, nullptr);
 }
 
 SymbolTable::~SymbolTable() = default;
@@ -25,7 +25,7 @@ SymbolTable::~SymbolTable() = default;
 void SymbolTable::import(const string &module, const string &name, DeclarationNode *node) {
     auto scope = getModule(module);
     if (scope) {
-        node->setLevel(MODULE_LEVEL);
+        node->setScope(MODULE_SCOPE);
         scope->insert(name, node);
     } else {
         // TODO throw exception
@@ -122,7 +122,7 @@ void SymbolTable::addModule(const string &module, bool activate) {
         std::cerr << "Illegal symbol table state: namespace " + module + " already exists." << std::endl;
         exit(1);
     }
-    auto scope = make_unique<Scope>(GLOBAL_LEVEL, nullptr);
+    auto scope = make_unique<Scope>(GLOBAL_SCOPE, nullptr);
     if (activate) {
         scope_ = scope.get();
     }
@@ -145,7 +145,7 @@ void SymbolTable::openScope() {
 }
 
 void SymbolTable::closeScope() {
-    if (scope_->getLevel() > GLOBAL_LEVEL) {
+    if (scope_->getLevel() > GLOBAL_SCOPE) {
         scope_ = scope_->getParent();
     } else {
         // TODO throw exception
@@ -156,7 +156,7 @@ void SymbolTable::closeScope() {
 
 unsigned int SymbolTable::getLevel() const {
     if (scope_ == nullptr) {
-        return GLOBAL_LEVEL;
+        return GLOBAL_SCOPE;
     } else {
         return scope_->getLevel();
     }
