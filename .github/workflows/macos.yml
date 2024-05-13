@@ -19,17 +19,19 @@ jobs:
 
     - name: Install packages
       run: |
-        brew install git &&
-        brew install make &&
-        brew install cmake &&
-        brew install llvm@17 &&
-        brew install boost &&
+        brew install git
+        brew install make
+        brew install cmake
+        brew install llvm@17
+        brew install boost
         brew install python
 
     - name: Install lit & filecheck
       run: |
-        pip install lit &&
+        pip install lit
         pip install filecheck
+        pip install sphinx
+        pip install sphinx_rtd_theme
 
     - name: Configure CMake
       run: >
@@ -41,11 +43,14 @@ jobs:
     - name: Build
       run: cmake --build ${{ github.workspace }}/build --config ${{ env.build_type }}
 
+    - name: Build docs
+      run: cmake --build ${{ github.workspace }}/build --target docs
+
     - name: Install
       run: cmake --install ${{ github.workspace }}/build --prefix install
 
     - name: Test
-      run: cd ${{ github.workspace }}/build && make test >test_report_macos.txt
+      run: cmake --build ${{ github.workspace }}/build --target test | tee ${{ github.workspace }}/build/test_report_macos.txt
 
     - name: Upload build
       uses: actions/upload-artifact@v4

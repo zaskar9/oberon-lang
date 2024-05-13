@@ -25,17 +25,19 @@ jobs:
 
     - name: Install packages
       run: |
-        pacman --noconfirm -S git &&
-        pacman --noconfirm -S make &&
-        pacman --noconfirm -S mingw-w64-clang-x86_64-python-pip &&
-        pacman --noconfirm -S mingw-w64-clang-x86_64-toolchain &&
-        pacman --noconfirm -S mingw-w64-clang-x86_64-boost &&
+        pacman --noconfirm -S git
+        pacman --noconfirm -S make
+        pacman --noconfirm -S mingw-w64-clang-x86_64-python-pip
+        pacman --noconfirm -S mingw-w64-clang-x86_64-toolchain
+        pacman --noconfirm -S mingw-w64-clang-x86_64-boost
         pacman --noconfirm -S mingw-w64-clang-x86_64-cmake
 
-    - name: Install lit & filecheck
+    - name: Install python dependency
       run: |
-        pip3 install lit &&
+        pip3 install lit
         pip3 install filecheck
+        pip3 install sphinx
+        pip3 install sphinx_rtd_theme
 
     - name: Configure CMake
       run: >
@@ -45,11 +47,14 @@ jobs:
     - name: Build
       run: cmake --build "$GITHUB_WORKSPACE"/build --config ${{ env.build_type }}
 
+    - name: Build docs
+      run: cmake --build "$GITHUB_WORKSPACE"/build --target docs
+
     - name: Install
       run: cmake --install "$GITHUB_WORKSPACE"/build --prefix install
 
     - name: Test
-      run: cd "$GITHUB_WORKSPACE"/build && make test >test_report_msys2.txt
+      run: cmake --build "$GITHUB_WORKSPACE"/build --target test  | tee "$GITHUB_WORKSPACE"/build/test_report_msys2.txt
 
     - name: Upload build
       uses: actions/upload-artifact@v4
