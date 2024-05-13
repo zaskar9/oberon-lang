@@ -22,7 +22,7 @@ else()
         include(GNUInstallDirs)
         install(
                 DIRECTORY ${SPHINX_BUILD}/
-	        DESTINATION ${CMAKE_INSTALL_DOCDIR}
+                DESTINATION ${CMAKE_INSTALL_DOCDIR}
         )
 endif()
 

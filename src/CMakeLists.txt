@@ -94,9 +94,9 @@ target_include_directories(${OBERON_LANG} PUBLIC .)
 # main executable needs to export symbols (of statically linked LLVM) for JIT mode
 set_target_properties(${OBERON_LANG} PROPERTIES ENABLE_EXPORTS ON)
 
-find_package(Boost REQUIRED COMPONENTS filesystem program_options)
+find_package(Boost REQUIRED COMPONENTS program_options)
 if (Boost_FOUND)
-    target_link_libraries(${OBERON_LANG} PRIVATE Boost::boost Boost::program_options)
+    target_link_libraries(${OBERON_LANG} PRIVATE Boost::headers Boost::program_options)
 endif ()
 
 include(GNUInstallDirs)
@@ -134,6 +134,11 @@ set(GRAMMAR_SOURCES
         grammar/Loader.cpp grammar/Loader.h)
 
 add_executable(${GRAMMAR_TOOL} grammar/main.cpp ${GRAMMAR_SOURCES} ${SCANNER_SOURCES} ${LOGGING_SOURCES})
+
+find_package(Boost REQUIRED)
+if (Boost_FOUND)
+    target_link_libraries(${GRAMMAR_TOOL} PRIVATE Boost::headers)
+endif ()
 
 
 configure_file(config.h.in config.h @ONLY)
