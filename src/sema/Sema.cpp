@@ -1006,7 +1006,7 @@ FieldNode *Sema::onRecordField(TypeNode *base, RecordField *sel) {
     }
     auto record = dynamic_cast<RecordTypeNode *>(base);
     auto ref = dynamic_cast<RecordField *>(sel);
-    auto field = resolveRecordField(record, ref->ident()->name());
+    auto field = record->getField(ref->ident()->name());
     if (!field) {
         logger_.error(ref->pos(), "undefined record field: " + to_string(*ref->ident()) + ".");
         return nullptr;
@@ -2065,13 +2065,4 @@ Sema::intType(int64_t value) {
         return longIntTy_;
     }
     return integerTy_;
-}
-
-FieldNode *
-Sema::resolveRecordField(RecordTypeNode *type, const std::string &name) {
-    auto field = type->getField(name);
-    if (!field && type->isExtened()) {
-        return resolveRecordField(type->getBaseType(), name);
-    }
-    return field;
 }
