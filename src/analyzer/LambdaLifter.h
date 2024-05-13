@@ -27,7 +27,7 @@ private:
     ASTContext *context_;
     ModuleNode *module_;
     DeclarationNode *env_;
-    unsigned int level_;
+    unsigned int scope_;
     vector<string> path_;
 
     static const string THIS_;
@@ -88,7 +88,7 @@ private:
     static bool envFieldResolver(QualifiedExpression *, const string &, TypeNode *);
 
 public:
-    explicit LambdaLifter(ASTContext *context) : context_(context), module_(), env_(), level_(), path_() { };
+    explicit LambdaLifter(ASTContext *context) : context_(context), module_(), env_(), scope_(), path_() { };
     ~LambdaLifter() override = default;
 
     void run(Logger &, Node *) override;

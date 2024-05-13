@@ -73,7 +73,7 @@ unique_ptr<ModuleNode>
 Sema::onModuleStart(const FilePos &start, unique_ptr<Ident> ident) {
     auto module = make_unique<ModuleNode>(start, std::move(ident));
     assertUnique(module->getIdentifier(), module.get());
-    module->setLevel(symbols_->getLevel());
+    module->setScope(symbols_->getLevel());
     onBlockStart();
     return module;
 }
@@ -130,7 +130,7 @@ Sema::onConstant(const FilePos &start, [[maybe_unused]] const FilePos &end,
     }
     auto node = make_unique<ConstantDeclarationNode>(start, std::move(ident), std::move(expr), expr ? expr->getType() : nullTy_);
     assertUnique(node->getIdentifier(), node.get());
-    node->setLevel(symbols_->getLevel());
+    node->setScope(symbols_->getLevel());
     node->setModule(context_->getTranslationUnit());
     checkExport(node.get());
     return node;
@@ -141,7 +141,7 @@ Sema::onType(const FilePos &start, [[maybe_unused]] const FilePos &end,
              unique_ptr<IdentDef> ident, TypeNode *type) {
     auto node = make_unique<TypeDeclarationNode>(start, std::move(ident), type ? type : nullTy_);
     assertUnique(node->getIdentifier(), node.get());
-    node->setLevel(symbols_->getLevel());
+    node->setScope(symbols_->getLevel());
     node->setModule(context_->getTranslationUnit());
     checkExport(node.get());
     if (type) {
@@ -250,7 +250,7 @@ Sema::onParameter(const FilePos &start, [[maybe_unused]] const FilePos &end,
     }
     auto node = make_unique<ParameterNode>(start, std::move(ident), type, is_var, index);
     assertUnique(node->getIdentifier(), node.get());
-    node->setLevel(symbols_->getLevel());
+    node->setScope(symbols_->getLevel());
     return node;
 }
 
@@ -285,7 +285,7 @@ Sema::onRecordType(const FilePos &start, const FilePos &end,
             }
         }
         auto name = field->getIdentifier()->name();
-        if (base && resolveRecordField(base, name)) {
+        if (base && base->getField(name)) {
             logger_.error(field->pos(), "redefinition of record field: " + to_string(*field->getIdentifier()) + ".");
             continue;
         }
@@ -349,7 +349,7 @@ Sema::onVariable(const FilePos &start, [[maybe_unused]] const FilePos &end,
     }
     auto node = make_unique<VariableDeclarationNode>(start, std::move(ident), type, index);
     assertUnique(node->getIdentifier(), node.get());
-    node->setLevel(symbols_->getLevel());
+    node->setScope(symbols_->getLevel());
     node->setModule(context_->getTranslationUnit());
     checkExport(node.get());
     return node;
@@ -360,7 +360,7 @@ Sema::onProcedureStart(const FilePos &start, unique_ptr<IdentDef> ident) {
     procs_.push(make_unique<ProcedureNode>(start, std::move(ident)));
     auto proc = procs_.top().get();
     assertUnique(proc->getIdentifier(), proc);
-    proc->setLevel(symbols_->getLevel());
+    proc->setScope(symbols_->getLevel());
     proc->setModule(context_->getTranslationUnit());
     checkExport(proc);
     onBlockStart();
@@ -378,7 +378,7 @@ Sema::onProcedureEnd([[maybe_unused]] const FilePos &end, unique_ptr<Ident> iden
         logger_.error(proc->pos(), "result type of a procedure can neither be a record nor an array.");
     }
     if (proc->isExtern()) {
-        if (proc->getLevel() != SymbolTable::MODULE_LEVEL) {
+        if (proc->getScope() != SymbolTable::MODULE_SCOPE) {
             logger_.error(proc->pos(), "only top-level procedures can be external.");
         }
     } else {
@@ -1012,7 +1012,7 @@ FieldNode *Sema::onRecordField(TypeNode *base, RecordField *sel) {
     }
     auto record = dynamic_cast<RecordTypeNode *>(base);
     auto ref = dynamic_cast<RecordField *>(sel);
-    auto field = resolveRecordField(record, ref->ident()->name());
+    auto field = record->getField(ref->ident()->name());
     if (!field) {
         logger_.error(ref->pos(), "undefined record field: " + to_string(*ref->ident()) + ".");
         return nullptr;
@@ -1849,7 +1849,7 @@ Sema::assertUnique(IdentDef *ident, DeclarationNode *node) {
 void
 Sema::checkExport(DeclarationNode *node) {
     if (node->getIdentifier()->isExported()) {
-        if (node->getLevel() != SymbolTable::MODULE_LEVEL) {
+        if (node->getScope() != SymbolTable::MODULE_SCOPE) {
             logger_.error(node->getIdentifier()->start(), "only top-level declarations can be exported.");
         }
     } else {
@@ -2071,13 +2071,4 @@ Sema::intType(int64_t value) {
         return longIntTy_;
     }
     return integerTy_;
-}
-
-FieldNode *
-Sema::resolveRecordField(RecordTypeNode *type, const std::string &name) {
-    auto field = type->getField(name);
-    if (!field && type->isExtened()) {
-        return resolveRecordField(type->getBaseType(), name);
-    }
-    return field;
 }

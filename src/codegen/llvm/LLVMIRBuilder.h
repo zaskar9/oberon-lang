@@ -47,7 +47,7 @@ private:
     map<ProcedureNode*, Function*> functions_;
     map<string, Constant*> strings_;
     stack<bool> deref_ctx;
-    unsigned int level_;
+    unsigned int scope_;
     Function *function_;
     AttrBuilder attrs_;
     ASTContext *ast_;
