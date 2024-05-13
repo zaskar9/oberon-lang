@@ -32,10 +32,12 @@ jobs:
         chmod +x ./llvm.sh
         sudo ./llvm.sh 17 all
 
-    - name: Install lit & filecheck
+    - name: Install python dependency
       run: |
         sudo pip3 install lit
         sudo pip3 install filecheck
+        sudo pip3 install sphinx
+        sudo pip3 install sphinx_rtd_theme
 
     - name: Configure CMake
       run: |
@@ -45,14 +47,18 @@ jobs:
         else
         cmake -B ${{ github.workspace }}/build -S ${{ github.workspace }} -DLLVM_ROOT=/usr/lib/llvm-17 -DBoost_NO_BOOST_CMAKE=ON -DCMAKE_CXX_COMPILER=clang++-17 -DCMAKE_C_COMPILER=clang-17
         fi
+
     - name: Build
       run: cmake --build ${{ github.workspace }}/build --config ${{ env.build_type }}
+
+    - name: Build docs
+      run: cmake --build ${{ github.workspace }}/build --target docs
 
     - name: Install
       run: cmake --install ${{ github.workspace }}/build --prefix install
 
     - name: Test
-      run: cd ${{ github.workspace }}/build && make test >test_report_linux_${{ matrix.cc }}.txt || true
+      run: cmake --build ${{ github.workspace }}/build --target test | tee ${{ github.workspace }}/build/test_report_linux_${{ matrix.cc }}.txt
 
     - name: Upload build
       uses: actions/upload-artifact@v4
