@@ -12,7 +12,7 @@ RUN apt-get update && \
                 python3-pip && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
-RUN pip3 install lit filecheck --break-system-packages
+RUN pip3 install lit filecheck sphinx --break-system-packages
 
 ENV CC=clang
 ENV CXX=clang++
