@@ -55,3 +55,6 @@
 # Doxygen output directories
 /docs/html/
 /docs/latex/
+
+# Sphinx output directories
+/docs/_build/

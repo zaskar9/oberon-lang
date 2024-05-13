@@ -1,0 +1,86 @@
+.\" Manpage for oberon-lang.
+.\" test-cmd : groff -man -T utf8 oberon-lang.1 | less
+.\" File a issue or create a pull request on the Github project page to correct errors or typos.
+.TH OBERON-LANG "1" "2024-05-12" "User Commands"
+.SH NAME
+oberon-lang \- a LLVM Oberon compiler 
+
+.SH SYNOPSIS
+.BR
+oberon-lang -h|--help
+.BR
+oberon-lang --version
+.BR
+oberon-lang [-v|--verbose] [-q|--quiet] [-I path] [-L path] [-l library,...] [-f flag,...] [-O level] [-o name] [-r|--run] module ...
+
+.SH DESCRIPTION
+oberon-lang is a compiler for the Oberon language family utilizing the LLVM compiler
+infrastructure to target at wide variety of platforms. By default it built one or several
+supplied modules to object files. With the "[-r|--run]" flag set it executes directly a
+single module. In order to create and executable a single module must be marked as the
+main module with the "[-f enable-main]" flag.
+
+.SH OPTIONS
+.TP
+.BR \-h ", " \-\-help
+Show help message and exit
+
+.TP
+.BR \-\-version
+Show version information and exit.
+
+.TP
+.BR \-v ", " \-\-verbose
+Turn on debugging outputs
+
+.TP
+.BR \-q ", " \-\-quiet
+Suppress all compiler outputs
+
+.TP
+.BR \-I path,...
+Search paths for symbol files
+
+.TP
+.BR \-L path,...
+Search paths for libraries
+
+.TP
+.BR \-l library,...
+Static or dynamic library
+
+.TP
+.BR \-f flag,...
+Compiler configuration flags
+.IP
+.BR sym-dir
+Set output path for generated .smb files
+.IP
+.BR filetype
+Set type of output file. [asm, bc, obj, ll]
+.IP
+.BR reloc
+Set relocation model. [default, static, pic]
+.IP
+.BR target
+Target triple for cross compilation
+.TP
+.BR \-O level
+Optimization level. [O0, O1, O2, O3]
+
+.TP
+.BR \-o name
+Name of the output file
+
+.TP
+.BR \-r ", " \-\-run
+Run with LLVM JIT
+
+.SH BUGS
+Please report any bugs using the GitHub issue tracker:
+https://github.com/zaskar9/oberon-lang/issues?state=open
+.SH AUTHOR
+Michael Grossniklaus
+.SH LICENSING
+MIT License
+Copyright (c) 2017 Michael Grossniklaus
