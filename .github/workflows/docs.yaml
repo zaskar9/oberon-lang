@@ -3,8 +3,9 @@ name: Documentation CI Build
 on:
   push:
     branches: [ $default-branch ]
-  pull_request:
-    branches: [ $default-branch ]
+    paths:
+      - 'docs/**'
+  
   workflow_dispatch :
 
 concurrency:
