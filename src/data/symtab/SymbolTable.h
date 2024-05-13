@@ -70,8 +70,8 @@ public:
 
     [[nodiscard]] unsigned int getLevel() const;
 
-    static const unsigned int GLOBAL_LEVEL;
-    static const unsigned int MODULE_LEVEL;
+    static const unsigned int GLOBAL_SCOPE;
+    static const unsigned int MODULE_SCOPE;
 
 };
 

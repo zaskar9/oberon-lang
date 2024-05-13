@@ -35,16 +35,16 @@ void DeclarationNode::print(std::ostream &stream) const {
     stream << *getIdentifier() << ": " << *getType();
 }
 
-unsigned int DeclarationNode::index() const {
-    return index_;
+unsigned int DeclarationNode::seqId() const {
+    return seqId_;
 }
 
-void DeclarationNode::setLevel(unsigned int level) {
-    level_ = level;
+void DeclarationNode::setScope(unsigned int scope) {
+    scope_ = scope;
 }
 
-unsigned int DeclarationNode::getLevel() const {
-    return level_;
+unsigned int DeclarationNode::getScope() const {
+    return scope_;
 }
 
 
@@ -81,6 +81,21 @@ void VariableDeclarationNode::accept(NodeVisitor& visitor) {
     visitor.visit(*this);
 }
 
+void FieldNode::setRecordType(RecordTypeNode *parent) {
+    parent_ = parent;
+}
+
+void FieldNode::setIndex(unsigned index) {
+    index_ = index;
+}
+
+RecordTypeNode *FieldNode::getRecordType() const {
+    return parent_;
+}
+
+unsigned int FieldNode::getIndex() const {
+    return index_;
+}
 
 void FieldNode::accept(NodeVisitor& visitor) {
     visitor.visit(*this);

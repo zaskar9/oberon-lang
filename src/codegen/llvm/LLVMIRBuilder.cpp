@@ -17,7 +17,7 @@ using std::vector;
 LLVMIRBuilder::LLVMIRBuilder(CompilerConfig &config, LLVMContext &builder, Module *module) :
         NodeVisitor(), config_(config), logger_(config_.logger()), builder_(builder), module_(module),
         value_(), values_(), types_(), leafTypes_(), hasArray_(), functions_(), strings_(), deref_ctx(),
-        level_(0), function_(), attrs_(AttrBuilder(builder)) {
+        scope_(0), function_(), attrs_(AttrBuilder(builder)) {
     attrs_
             .addAttribute(Attribute::NoInline)
             .addAttribute(Attribute::NoUnwind)
@@ -69,7 +69,7 @@ void LLVMIRBuilder::visit(ModuleNode &node) {
     function_ = ::cast<Function>(body.getCallee());
     auto entry = BasicBlock::Create(builder_.getContext(), "entry", function_);
     builder_.SetInsertPoint(entry);
-    level_ = node.getLevel() + 1;
+    scope_ = node.getScope() + 1;
     // generate code to initialize imports
     for (auto &import : node.imports()) {
         import->accept(*this);
@@ -128,7 +128,7 @@ void LLVMIRBuilder::visit(ProcedureNode &node) {
         arrayInitializers(var->getType());
         values_[var] = value_;
     }
-    level_ = node.getLevel() + 1;
+    scope_ = node.getScope() + 1;
     node.statements()->accept(*this);
     if (node.getType()->getReturnType() == nullptr) {
         builder_.CreateRetVoid();
@@ -187,19 +187,25 @@ void LLVMIRBuilder::arrayInitializers(TypeNode *base, TypeNode *type, vector<Val
             builder_.SetInsertPoint(tail);
         }
     } else if (type->isRecord()) {
+        // TODO initialize base types
         auto record_t = dynamic_cast<RecordTypeNode *>(type);
+        // skip the first field (type descriptor tag) of a leaf record type
+        indices.push_back(builder_.getInt32(1));
+        // check all record fields for initialization
         for (size_t i = 0; i < record_t->getFieldCount(); ++i) {
             indices.push_back(builder_.getInt32(i));
             arrayInitializers(base, record_t->getField(i)->getType(), indices);
             indices.pop_back();
         }
+        indices.pop_back();
     }
 }
 
 void LLVMIRBuilder::visit(ImportNode &node) {
     std::string name = node.getModule()->name();
     if (name == "SYSTEM") {
-        return; /* no initialization for pseudo modules */
+        // no initialization for pseudo modules
+        return;
     }
     auto type = FunctionType::get(builder_.getInt32Ty(), {});
     auto fun = module_->getOrInsertFunction(name, type);
@@ -221,12 +227,12 @@ void LLVMIRBuilder::visit(QualifiedExpression &node) {
         // If the qualified expression refers to a type, no code has to be generated.
         return;
     }
-    auto level = decl->getLevel();
-    if (level == 0 || level == 1) /* universe or global level */ {
+    auto scope = decl->getScope();
+    if (scope == 0 || scope == 1) /* universe or global scope */ {
         value_ = values_[decl];
-    } else if (level == level_) /* same procedure level */ {
+    } else if (scope == scope_) /* same procedure scope */ {
         value_ = values_[decl];
-    } else if (level > level_) /* parent procedure level */ {
+    } else if (scope > scope_) /* parent procedure scope */ {
         logger_.error(node.pos(), "referencing variables of parent procedures is not yet supported.");
     } else /* error */ {
         logger_.error(node.pos(), "cannot reference variable of child procedure.");
@@ -307,18 +313,17 @@ TypeNode *LLVMIRBuilder::selectors(TypeNode *base, SelectorIterator start, Selec
             // handle record field access
             auto field = dynamic_cast<RecordField *>(sel)->getField();
             auto record_t = dynamic_cast<RecordTypeNode *>(selector_t);
-            auto recordTy = getLLVMType(record_t);
-            value = processGEP(base, value, indices);
-            // get address of first field
-            auto layout = module_->getDataLayout().getStructLayout((StructType *)recordTy);
-            auto offset = layout->getElementOffset(0);
-            for (size_t pos = 0; pos < record_t->getFieldCount(); pos++) {
-                if (field == record_t->getField(pos)) {
-                    offset = layout->getElementOffset(pos) - offset;
-                    value = builder_.CreateInBoundsGEP(builder_.getInt8Ty(), value, {builder_.getInt64(offset)});
-                    break;
-                }
+            // skip the first field (type descriptor tag) of a leaf record type
+            indices.push_back(builder_.getInt32(1));
+            // navigate through the base records
+            unsigned current = field->getRecordType()->getLevel();
+            for (unsigned level = current; level < record_t->getLevel(); level++) {
+                indices.push_back(builder_.getInt32(0));
             }
+            // access the field by its index (increase index at levels > 0)
+            indices.push_back(builder_.getInt32(current == 0 ? field->getIndex() : field->getIndex() + 1));
+            // output GEP up to the record field
+            value = processGEP(base, value, indices);
             selector_t = field->getType();
             base = selector_t;
         } else if (sel->getNodeType() == NodeType::type) {
@@ -1248,7 +1253,8 @@ LLVMIRBuilder::createNewCall(TypeNode *type, llvm::Value *param) {
     // TODO remove next line (bit-cast) once non-opaque pointers are no longer supported
     value_ = builder_.CreateBitCast(value_, getLLVMType(ptr));
     Value *value = builder_.CreateStore(value_, param);
-    value_ = builder_.CreateLoad(builder_.getPtrTy(), param);
+    // TODO the following load is probably redundant as the address is already in `value_`
+    // value_ = builder_.CreateLoad(builder_.getPtrTy(), param);
     arrayInitializers(base);
     return value;
 }
@@ -1604,7 +1610,7 @@ Type* LLVMIRBuilder::getLLVMType(TypeNode *type, bool leaf) {
         vector<Type *> elemTys;
         auto recordTy = dynamic_cast<RecordTypeNode *>(type);
         // add field for base record
-        if (recordTy->isExtened()) {
+        if (recordTy->isExtended()) {
             elemTys.push_back(getLLVMType(recordTy->getBaseType(), false));
         }
         // add regular record fields
@@ -1656,7 +1662,7 @@ Type* LLVMIRBuilder::getLLVMType(TypeNode *type, bool leaf) {
         auto leafType = leafTypes_[type];
         if (!leafType) {
             leafType = StructType::create(builder_.getContext(), {builder_.getPtrTy(), result});
-            leafType->setName(to_string(result->getStructName().data()) + ".leaf");
+            leafType->setName("record." + to_string(*type->getIdentifier()) + ".leaf");
             leafTypes_[type] = leafType;
         }
         result = leafType;

@@ -7,6 +7,16 @@
 #include "RecordTypeNode.h"
 #include "NodeVisitor.h"
 
+RecordTypeNode::RecordTypeNode(const FilePos &pos, RecordTypeNode *base, vector<unique_ptr<FieldNode>> fields) :
+        TypeNode(NodeType::record_type, pos, TypeKind::RECORD, 0),
+        fields_(std::move(fields)), base_(base), level_(base ? base->getLevel() + 1 : 0) {
+    unsigned index = 0;
+    for (auto& field : fields_) {
+        field->setRecordType(this);
+        field->setIndex(index++);
+    }
+}
+
 unsigned int RecordTypeNode::getSize() const {
     unsigned int size = 0;
     for (auto &&itr : fields_) {
@@ -20,6 +30,9 @@ FieldNode *RecordTypeNode::getField(const std::string &name) const {
         if (itr->getIdentifier()->name() == name) {
             return itr.get();
         }
+    }
+    if (base_) {
+        return base_->getField(name);
     }
     return nullptr;
 }
@@ -36,7 +49,7 @@ RecordTypeNode *RecordTypeNode::getBaseType() const {
     return base_;
 }
 
-bool RecordTypeNode::isExtened() const {
+bool RecordTypeNode::isExtended() const {
     return base_ != nullptr;
 }
 
@@ -47,7 +60,7 @@ bool RecordTypeNode::extends(TypeNode *base) const {
     return this == base;
 }
 
-unsigned short RecordTypeNode::level() const {
+unsigned short RecordTypeNode::getLevel() const {
     return level_;
 }
 

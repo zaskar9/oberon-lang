@@ -261,7 +261,7 @@ TypeNode *SymbolImporter::readProcedureType(SymbolFile *file) {
             index++;
         }
         auto param = make_unique<ParameterNode>(EMPTY_POS, make_unique<Ident>("_"), type, (var == 0), index);
-        param->setLevel(SymbolTable::MODULE_LEVEL);
+        param->setScope(SymbolTable::MODULE_SCOPE);
         params.push_back(std::move(param));
         // check for terminator
         ch = file->readChar();
