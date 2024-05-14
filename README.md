@@ -1,3 +1,10 @@
+<p align="center">
+  <a href="https://github.com/zaskar9/oberon-lang/actions"><img src="https://github.com/zaskar9/oberon-lang/actions/workflows/linux.yml/badge.svg?branch=master" alt="Github Actions Badge"></a>
+  <a href="https://github.com/zaskar9/oberon-lang/actions"><img src="https://github.com/zaskar9/oberon-lang/actions/workflows/macos.yml/badge.svg?branch=master" alt="Github Actions Badge"></a>
+  <a href="https://github.com/zaskar9/oberon-lang/actions"><img src="https://github.com/zaskar9/oberon-lang/actions/workflows/msys2.yml/badge.svg?branch=master" alt="Github Actions Badge"></a>
+  <a href="https://github.com/zaskar9/oberon-lang/actions"><img src="https://github.com/zaskar9/oberon-lang/actions/workflows/docs.yaml/badge.svg?branch=master" alt="Github Actions Badge"></a>
+</p>
+
 # A Compiler for the Oberon Programming Language
 
 The [Oberon](https://www.ethoberon.ethz.ch) programming language was proposed in 1987 by 
@@ -27,17 +34,17 @@ different operating systems and with different toolchains. Currently the sourcec
 [Boost](https://www.boost.org) and [LLVM](https://llvm.org).
 As of August 2023, the following configurations are tested and known to work.
 
-|       | macOS             | Windows        | Linux (Ubuntu) |
-|-------|-------------------|----------------|----------------|
-| Boost | 1.83.0            | 1.83.0         | 1.74.0         |
-| LLVM  | 17.0.6            | 17.0.2         | 17.0.0         |
-| CMake | 3.28.0            | 3.27.0         | 3.26.0         |
-| CXX   | LLVM Clang 17.0.6 | CL 19.38.33133 | GCC 11.4.0     |
+|       | macOS             | Windows        | MSYS2 (CLANG64)   | Linux (Ubuntu) |
+|-------|-------------------|----------------|-------------------|----------------|
+| Boost | 1.83.0            | 1.83.0         | 1.85.0            | 1.74.0         |
+| LLVM  | 17.0.6            | 17.0.2         | 18.1.4            | 17.0.0         |
+| CMake | 3.28.0            | 3.27.0         | 3.29.3            | 3.26.0         |
+| CXX   | LLVM Clang 17.0.6 | CL 19.38.33133 | LLVM Clang 18.1.4 | GCC 11.4.0     |
 
 For macOS and Linux, both the x64 and the arm64 version have been tested. Full support for Windows (arm64) is currently
 under development.
 Detailed instruction on how to build the Oberon compiler and its dependencies can be found in the Wiki section of this
 project repository.
- 
 
-
+## Getting started
+See the [Documentation](https://zaskar9.github.io/oberon-lang/) pages.
