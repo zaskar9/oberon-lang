@@ -32,6 +32,10 @@ for basic usage specific features.
    src/Installation
    src/GettingStarted
    src/CommandLineInterface
+   src/API_Math.rst
+   src/API_Oberon.rst
+   src/API_Out.rst
+   src/API_Random.rst
    src/FAQ
 
 ##################

@@ -7,8 +7,7 @@
 Command Line Interface
 **********************
 
-SYNOPSIS
-========
+.. rubric:: SYNOPSIS
 
 .. code-block:: shell
 
@@ -16,8 +15,7 @@ SYNOPSIS
     oberon-lang --version
     oberon-lang [-v|--verbose] [-q|--quiet] [-I path] [-L path] [-l library,...] [-f flag,...] [-O level] [-o name] [-r|--run] module ...
 
-DESCRIPTION
-===========
+.. rubric:: DESCRIPTION
 
 *oberon-lang* is a compiler for the *Oberon* language family utilizing the *LLVM* compiler
 infrastructure to target at wide variety of platforms. By default it built one or several
@@ -25,8 +23,7 @@ supplied modules to object files. With the "[-r|--run]" flag set it executes dir
 single module. In order to create and executable a single module must be marked as the
 main module with the "[-f enable-main]" flag.
 
-OPTIONS
-=======
+.. rubric:: OPTIONS
 
 -h, --help          Show help message and exit.
 --version           Show version information and exit.
@@ -46,13 +43,11 @@ OPTIONS
 -o name             Name of the output file.
 -r, --run           Run with LLVM JIT.
 
-AUTHOR
-======
+.. rubric:: AUTHOR
 
 Michael Grossniklaus
 
-COPYRIGHT
-=========
+.. rubric:: COPYRIGHT
 
 MIT License
 

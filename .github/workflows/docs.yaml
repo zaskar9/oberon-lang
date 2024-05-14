@@ -34,6 +34,13 @@ jobs:
         sudo pip3 install sphinx
         sudo pip3 install sphinx_rtd_theme
 
+    - name: API build
+      run: |
+        python ${{ github.workspace }}/tools/docgen.py ${{ github.workspace }}/liboberon/Math.Mod >${{ github.workspace }}/docs/src/API_Math.rst
+        python ${{ github.workspace }}/tools/docgen.py ${{ github.workspace }}/liboberon/Oberon.Mod >${{ github.workspace }}/docs/src/API_Oberon.rst
+        python ${{ github.workspace }}/tools/docgen.py ${{ github.workspace }}/liboberon/Out.Mod >${{ github.workspace }}/docs/src/API_Out.rst
+        python ${{ github.workspace }}/tools/docgen.py ${{ github.workspace }}/liboberon/Random.Mod >${{ github.workspace }}/docs/src/API_Random.rst
+
     - name: Sphinx build
       run: sphinx-build ${{ github.workspace }}/docs ${{ github.workspace }}/build/
 
