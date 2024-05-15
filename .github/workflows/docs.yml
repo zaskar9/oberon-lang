@@ -1,0 +1,59 @@
+name: Docs CI Build
+
+on:
+  push:
+    branches: [ $default-branch ]
+    paths:
+      - 'docs/**'
+
+  workflow_dispatch :
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install packages
+      run: |
+        sudo apt-get update &&
+        sudo apt-get install python3-pip
+
+    - name: Install sphinx
+      run: |
+        sudo pip3 install sphinx
+        sudo pip3 install sphinx_rtd_theme
+
+    - name: Sphinx build
+      run: sphinx-build ${{ github.workspace }}/docs ${{ github.workspace }}/build/
+
+    - name: Configure GitHub Pages
+      uses: actions/configure-pages@v5
+
+    - name: Upload GitHub Pages artifact
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: ${{ github.workspace }}/build/
+
+  deploy:
+    needs: build
+    
+    environment:
+      name: github-pages
+      url: ${{steps.deployment.outputs.page_url}}
+
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
