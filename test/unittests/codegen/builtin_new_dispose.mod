@@ -1,6 +1,5 @@
 (*
   RUN: %oberon -I "%S%{pathsep}%inc" -L "%S%{pathsep}%lib" -l oberon --run %s | filecheck %s
-  LEN("") = 2 Should be documented. Maybe unexpected result for some users
 *)
 MODULE BuiltinNewDispose;
 
