@@ -943,8 +943,8 @@ LLVMIRBuilder::createPredefinedCall(PredefinedProcedure *proc, QualIdent *ident,
     switch (kind) {
         case ProcKind::NEW:
             return createNewCall(actuals[0]->getType(), params[0]);
-        case ProcKind::FREE:
-            return createFreeCall(actuals[0]->getType(), params[0]);
+        case ProcKind::DISPOSE:
+            return createDisposeCall(actuals[0]->getType(), params[0]);
         case ProcKind::INC:
         case ProcKind::DEC:
             return createIncDecCall(kind, actuals, params);
@@ -952,8 +952,6 @@ LLVMIRBuilder::createPredefinedCall(PredefinedProcedure *proc, QualIdent *ident,
             return createLslCall(actuals, params);
         case ProcKind::ASR:
             return createAsrCall(actuals, params);
-        case ProcKind::ROL:
-            return createRolCall(actuals, params);
         case ProcKind::ROR:
             return createRorCall(actuals, params);
         case ProcKind::ODD:
@@ -1146,7 +1144,7 @@ LLVMIRBuilder::createExclCall(Value *set, Value *element) {
 }
 
 Value *
-LLVMIRBuilder::createFreeCall([[maybe_unused]] TypeNode *type, Value *param) {
+LLVMIRBuilder::createDisposeCall([[maybe_unused]] TypeNode *type, Value *param) {
     auto fun = module_->getFunction("free");
 #ifdef _LLVM_LEGACY
     auto voidTy = PointerType::get(builder_.getVoidTy(), 0);
@@ -1398,26 +1396,6 @@ LLVMIRBuilder::createOrdCall(ExpressionNode *actual, llvm::Value *param) {
         logger_.error(actual->pos(), "type mismatch: BOOLEAN, CHAR, or SET expected.");
     }
     return value_;
-}
-
-Value *
-LLVMIRBuilder::createRolCall(vector<unique_ptr<ExpressionNode>> &actuals, std::vector<Value *> &params) {
-    // TODO : Check for negative shift value with variable argument.
-    auto param1 = actuals[1].get();
-    if (param1->isLiteral()) {
-        // range check if literal argument
-        auto val = dynamic_cast<IntegerLiteralNode *>(param1)->value();
-        if (val < 0) {
-            logger_.error(param1->pos(), "negative shift value undefined.");
-            return value_;
-        }
-    }
-    auto shift = builder_.CreateTrunc(params[1], params[0]->getType());
-    Value *lhs = builder_.CreateShl(params[0], shift);
-    Value *value = ConstantInt::get(params[0]->getType(), params[0]->getType()->getIntegerBitWidth());
-    Value *delta = builder_.CreateSub(value, shift);
-    Value *rhs = builder_.CreateLShr(params[0], delta);
-    return builder_.CreateOr(lhs, rhs);
 }
 
 Value *

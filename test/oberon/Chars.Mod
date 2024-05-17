@@ -101,8 +101,8 @@ BEGIN
     PrintPeople(people); Out.Ln;
     PrintPerson(people[0]); Out.Ln;
     PrintPerson(people[1]); Out.Ln;
-    FREE(p2);
-    FREE(p1);
+    DISPOSE(p2);
+    DISPOSE(p1);
 
     CreatePerson0("Hermione", "Granger", pd);
     PrintPerson0(pd); Out.Ln;

@@ -52,8 +52,8 @@ END createPerson;
 
 PROCEDURE deletePerson(person: Person);
 BEGIN
-    FREE(person.address);
-    FREE(person)
+    DISPOSE(person.address);
+    DISPOSE(person)
 END deletePerson;
 
 PROCEDURE printPerson(person: Person);
@@ -101,7 +101,7 @@ BEGIN
     ASSERT(NIL = NIL);
     NEW(p1);
     ASSERT(p1 # NIL);
-    FREE(p1);
+    DISPOSE(p1);
     ASSERT(p1 = NIL);
     p1 := createPerson("Prof. Dr.", "Michael Grossniklaus", "Universitätsstraße", 10, "Konstanz", KNZip, "Germany");
     ASSERT(p2 = NIL);
@@ -119,6 +119,6 @@ BEGIN
     array[0] := ten;
     array[1] := ten;
     ASSERT(array[0] * array[1] = ten * ten);
-    FREE(array) *)
+    DISPOSE(array) *)
 
 END Pointers.

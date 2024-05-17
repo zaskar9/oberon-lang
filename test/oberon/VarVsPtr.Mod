@@ -47,8 +47,8 @@ BEGIN
   ASSERT((aptr.val = 24) & (bptr.val = 42));
   Swap2(aptr, bptr);
   ASSERT((aptr.val = 24) & (bptr.val = 42));
-  FREE(aptr);
-  FREE(bptr);
+  DISPOSE(aptr);
+  DISPOSE(bptr);
   a := 42;
   b := 24;
   Swap3(a, b);
