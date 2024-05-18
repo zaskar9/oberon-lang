@@ -26,7 +26,7 @@ BEGIN
     INC(l, l);
     INC(a[0]);
     INC(r.x);
-    NEW(p); p.x := 0; INC(p.x); FREE(p)
+    NEW(p); p.x := 0; INC(p.x); DISPOSE(p)
 END IncDec;
 
 PROCEDURE NewFree;
@@ -43,7 +43,7 @@ BEGIN
     p.name := "Julien Zweifel";
     p.title[0] := "Mr.";
     p.zipcode := 8036;
-    FREE(p);
+    DISPOSE(p);
     ASSERT(p = NIL)
 END NewFree;
 

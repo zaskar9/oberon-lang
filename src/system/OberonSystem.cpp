@@ -152,8 +152,8 @@ void Oberon07::initSymbolTable(SymbolTable *symbols) {
 
     // NEW
     this->createProcedure(ProcKind::NEW, "NEW", {{this->createPointerType(anyType), true}}, nullptr, false, true);
-    // FREE
-    this->createProcedure(ProcKind::FREE, "FREE", {{this->createPointerType(anyType), true}}, nullptr, false, true);
+    // DISPOSE
+    this->createProcedure(ProcKind::DISPOSE, "DISPOSE", {{this->createPointerType(anyType), true}}, nullptr, false, true);
     // INC
     this->createProcedure(ProcKind::INC, "INC", {{entireType, true}}, nullptr, true, true);
     // DEC
@@ -164,10 +164,6 @@ void Oberon07::initSymbolTable(SymbolTable *symbols) {
     proc->overload({{shortIntType, false}, {entireType, false}}, false, shortIntType);
     // ASR
     proc = this->createProcedure(ProcKind::ASR, "ASR", {{longIntType, false}, {entireType, false}}, longIntType, false, true);
-    proc->overload({{intType, false}, {entireType, false}}, false, intType);
-    proc->overload({{shortIntType, false}, {entireType, false}}, false, shortIntType);
-    // ROL
-    proc = this->createProcedure(ProcKind::ROL, "ROL", {{longIntType, false}, {entireType, false}}, longIntType, false, true);
     proc->overload({{intType, false}, {entireType, false}}, false, intType);
     proc->overload({{shortIntType, false}, {entireType, false}}, false, shortIntType);
     // ROR
