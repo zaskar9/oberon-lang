@@ -108,7 +108,7 @@ void SymbolImporter::readDeclaration(SymbolFile *file, NodeType nodeType, Module
                     expr = make_unique<RealLiteralNode>(EMPTY_POS, file->readDouble(), type);
                     break;
                 case TypeKind::SET:
-                    expr = make_unique<SetLiteralNode>(EMPTY_POS, bitset<32>(static_cast<unsigned>(file->readInt())), type);
+                    expr = make_unique<SetLiteralNode>(EMPTY_POS, bitset<64>(static_cast<unsigned>(file->readInt())), type);
                     break;
                 default:
                     logger_.error(file->path(), "Cannot import constant " + name + ".");

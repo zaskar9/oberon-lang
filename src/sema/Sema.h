@@ -70,7 +70,7 @@ private:
     uint8_t foldChar(const FilePos &, const FilePos &, ExpressionNode *);
     double foldReal(const FilePos &, const FilePos &, ExpressionNode *);
     string foldString(const FilePos &, const FilePos &, ExpressionNode *);
-    bitset<32> foldSet(const FilePos &, const FilePos &, ExpressionNode *);
+    bitset<64> foldSet(const FilePos &, const FilePos &, ExpressionNode *);
     unique_ptr<LiteralNode> fold(const FilePos &, const FilePos &, ExpressionNode *);
     unique_ptr<LiteralNode> fold(const FilePos &, const FilePos &,
                                  OperatorType, ExpressionNode *);
@@ -181,7 +181,7 @@ public:
     unique_ptr<StringLiteralNode> onStringLiteral(const FilePos &, const FilePos &, const string &);
     unique_ptr<CharLiteralNode> onCharLiteral(const FilePos &, const FilePos &, uint8_t);
     unique_ptr<NilLiteralNode> onNilLiteral(const FilePos &, const FilePos &);
-    unique_ptr<SetLiteralNode> onSetLiteral(const FilePos &, const FilePos &, bitset<32>);
+    unique_ptr<SetLiteralNode> onSetLiteral(const FilePos &, const FilePos &, bitset<64>);
 
     bool isDefined(Ident *);
     bool isConstant(QualIdent *);
