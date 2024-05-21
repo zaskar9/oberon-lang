@@ -183,10 +183,10 @@ void Parser::import(vector<unique_ptr<ImportNode>> &imports) {
     }
 }
 
-// TODO declaration_sequence = [ CONST { const_declaration ";" } ]
-// TODO                        [ TYPE { type_declaration ";" } ]
-// TODO                        [ VAR { variable_declaration ";" } ]
-// TODO                        { procedure_declaration ";" } .
+// declaration_sequence = [ CONST { const_declaration ";" } ]
+//                        [ TYPE { type_declaration ";" } ]
+//                        [ VAR { variable_declaration ";" } ]
+//                        { procedure_declaration ";" } .
 // declarations = [ const_declarations ] [ type_declarations ] [ var_declarations ] { procedure_declaration } .
 void Parser::declarations(vector<unique_ptr<ConstantDeclarationNode>> & consts,
                           vector<unique_ptr<TypeDeclarationNode>> & types,
@@ -219,7 +219,7 @@ void Parser::declarations(vector<unique_ptr<ConstantDeclarationNode>> & consts,
 // const_declarations = "CONST" { identdef "=" expression ";" } .
 void Parser::const_declarations(vector<unique_ptr<ConstantDeclarationNode>> & consts) {
     logger_.debug("const_declarations");
-    auto section = scanner_.peek();
+    auto token = scanner_.peek();
     scanner_.next(); // skip CONST keyword
     while (scanner_.peek()->type() == TokenType::const_ident) {
         auto pos = scanner_.peek()->start();
@@ -235,16 +235,14 @@ void Parser::const_declarations(vector<unique_ptr<ConstantDeclarationNode>> & co
         }
     }
     if (consts.size() == 0) {
-        logger_.error(section->start(), "empty CONST section");
+        logger_.error(token->start(), "empty CONST section");
     }
-    // [<VAR>, <TYPE>, <PROCEDURE>, <END>, <BEGIN>]
-    //resync({ TokenType::kw_type, TokenType::kw_var, TokenType::kw_procedure, TokenType::kw_begin, TokenType::kw_end });
 }
 
 // type_declarations =  "TYPE" { identdef "=" type ";" } .
 void Parser::type_declarations(vector<unique_ptr<TypeDeclarationNode>> & types) {
     logger_.debug("type_declarations");
-    auto section = scanner_.peek();
+    auto token = scanner_.peek();
     scanner_.next(); // skip TYPE keyword
     while (scanner_.peek()->type() == TokenType::const_ident) {
         auto pos = scanner_.peek()->start();
@@ -261,10 +259,8 @@ void Parser::type_declarations(vector<unique_ptr<TypeDeclarationNode>> & types) 
         }
     }
     if (types.size() == 0) {
-        logger_.error(section->start(), "empty TYPE section");
+        logger_.error(token->start(), "empty TYPE section");
     }
-    // [<PROCEDURE>, <VAR>, <END>, <BEGIN>]
-    //resync({ TokenType::kw_var, TokenType::kw_procedure, TokenType::kw_begin, TokenType::kw_end });
 }
 
 // TODO type = qualident | array_type | record_type | pointer_type | procedure_type.
@@ -378,7 +374,7 @@ PointerTypeNode* Parser::pointer_type() {
 // var_declarations = "VAR" { ident_list ":" type ";" } .
 void Parser::var_declarations(vector<unique_ptr<VariableDeclarationNode>> &vars) {
     logger_.debug("var_declarations");
-    auto section = scanner_.peek();
+    auto token = scanner_.peek();
     scanner_.next(); // skip VAR keyword
     while (scanner_.peek()->type() == TokenType::const_ident) {
         vector<unique_ptr<IdentDef>> idents;
@@ -401,10 +397,8 @@ void Parser::var_declarations(vector<unique_ptr<VariableDeclarationNode>> &vars)
         }
     }
     if (vars.size() == 0) {
-        logger_.error(section->start(), "empty VAR section");
+        logger_.error(token->start(), "empty VAR section");
     }
-    // [<END>, <PROCEDURE>, <BEGIN>]
-    //resync({ TokenType::kw_procedure, TokenType::kw_begin, TokenType::kw_end });
 }
 
 // procedure_declaration = "PROCEDURE" identdef [ procedure_signature ] ";" ( procedure_body ident | "EXTERN" ) ";" .
@@ -1108,7 +1102,7 @@ void Parser::expect(std::set<TokenType> exp) {
     auto type = scanner_.peek()->type();
     if (exp.find(type) == exp.end()) {
         auto token = scanner_.peek();
-        logger_.error(token->start(), "unexpected section "+ to_string(token->type()) + ".");
+        logger_.error(token->start(), "unexpected token "+ to_string(token->type()) + ".");
     }
 }
 
