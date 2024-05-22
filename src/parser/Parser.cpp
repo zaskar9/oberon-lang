@@ -183,11 +183,12 @@ void Parser::import(vector<unique_ptr<ImportNode>> &imports) {
     }
 }
 
-// declaration_sequence = [ CONST { const_declaration ";" } ]
-//                        [ TYPE { type_declaration ";" } ]
-//                        [ VAR { variable_declaration ";" } ]
-//                        { procedure_declaration ";" } .
+// TODO declaration_sequence = [ CONST { const_declaration ";" } ]
+// TODO                        [ TYPE { type_declaration ";" } ]
+// TODO                        [ VAR { variable_declaration ";" } ]
+// TODO                        { procedure_declaration ";" } .
 // declarations = [ const_declarations ] [ type_declarations ] [ var_declarations ] { procedure_declaration } .
+
 void Parser::declarations(vector<unique_ptr<ConstantDeclarationNode>> & consts,
                           vector<unique_ptr<TypeDeclarationNode>> & types,
                           vector<unique_ptr<VariableDeclarationNode>> & vars,
@@ -235,7 +236,7 @@ void Parser::const_declarations(vector<unique_ptr<ConstantDeclarationNode>> & co
         }
     }
     if (consts.size() == 0) {
-        logger_.error(token->start(), "empty CONST section");
+        logger_.error(token->start(), "empty CONST declaration");
     }
 }
 
@@ -259,7 +260,7 @@ void Parser::type_declarations(vector<unique_ptr<TypeDeclarationNode>> & types) 
         }
     }
     if (types.size() == 0) {
-        logger_.error(token->start(), "empty TYPE section");
+        logger_.error(token->start(), "empty TYPE declaration");
     }
 }
 
@@ -397,7 +398,7 @@ void Parser::var_declarations(vector<unique_ptr<VariableDeclarationNode>> &vars)
         }
     }
     if (vars.size() == 0) {
-        logger_.error(token->start(), "empty VAR section");
+        logger_.error(token->start(), "empty VAR declaration");
     }
 }
 
