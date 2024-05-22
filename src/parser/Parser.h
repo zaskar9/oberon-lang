@@ -102,6 +102,7 @@ private:
     bool assertOberonIdent(const Ident *ident);
 
     void resync(std::set<TokenType> types);
+    void expect(std::set<TokenType> exp);
 
 public:
     explicit Parser(CompilerConfig &config, Scanner &scanner, Sema &sema) :
