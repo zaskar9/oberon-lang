@@ -188,6 +188,7 @@ void Parser::import(vector<unique_ptr<ImportNode>> &imports) {
 // TODO                        [ VAR { variable_declaration ";" } ]
 // TODO                        { procedure_declaration ";" } .
 // declarations = [ const_declarations ] [ type_declarations ] [ var_declarations ] { procedure_declaration } .
+
 void Parser::declarations(vector<unique_ptr<ConstantDeclarationNode>> & consts,
                           vector<unique_ptr<TypeDeclarationNode>> & types,
                           vector<unique_ptr<VariableDeclarationNode>> & vars,
@@ -196,15 +197,22 @@ void Parser::declarations(vector<unique_ptr<ConstantDeclarationNode>> & consts,
     if (scanner_.peek()->type() == TokenType::kw_const) {
         const_declarations(consts);
     }
+    expect({ TokenType::kw_type, TokenType::kw_var, TokenType::kw_procedure, TokenType::kw_begin, TokenType::kw_end });
+
     if (scanner_.peek()->type() == TokenType::kw_type) {
         type_declarations(types);
     }
+    expect({ TokenType::kw_var, TokenType::kw_procedure, TokenType::kw_begin, TokenType::kw_end });
+
     if (scanner_.peek()->type() == TokenType::kw_var) {
         var_declarations(vars);
     }
+    expect({ TokenType::kw_procedure, TokenType::kw_begin, TokenType::kw_end });
+
     while (scanner_.peek()->type() == TokenType::kw_procedure) {
         procedure_declaration(procs);
     }
+    expect({ TokenType::kw_begin, TokenType::kw_end });
 }
 
 // TODO const_declaration = identdef "=" const_expression .
@@ -212,6 +220,7 @@ void Parser::declarations(vector<unique_ptr<ConstantDeclarationNode>> & consts,
 // const_declarations = "CONST" { identdef "=" expression ";" } .
 void Parser::const_declarations(vector<unique_ptr<ConstantDeclarationNode>> & consts) {
     logger_.debug("const_declarations");
+    auto token = scanner_.peek();
     scanner_.next(); // skip CONST keyword
     while (scanner_.peek()->type() == TokenType::const_ident) {
         auto pos = scanner_.peek()->start();
@@ -226,13 +235,15 @@ void Parser::const_declarations(vector<unique_ptr<ConstantDeclarationNode>> & co
             }
         }
     }
-    // [<VAR>, <TYPE>, <PROCEDURE>, <END>, <BEGIN>]
-    resync({ TokenType::kw_type, TokenType::kw_var, TokenType::kw_procedure, TokenType::kw_begin, TokenType::kw_end });
+    if (consts.size() == 0) {
+        logger_.error(token->start(), "empty CONST declaration");
+    }
 }
 
 // type_declarations =  "TYPE" { identdef "=" type ";" } .
 void Parser::type_declarations(vector<unique_ptr<TypeDeclarationNode>> & types) {
     logger_.debug("type_declarations");
+    auto token = scanner_.peek();
     scanner_.next(); // skip TYPE keyword
     while (scanner_.peek()->type() == TokenType::const_ident) {
         auto pos = scanner_.peek()->start();
@@ -248,8 +259,9 @@ void Parser::type_declarations(vector<unique_ptr<TypeDeclarationNode>> & types) 
             }
         }
     }
-    // [<PROCEDURE>, <VAR>, <END>, <BEGIN>]
-    resync({ TokenType::kw_var, TokenType::kw_procedure, TokenType::kw_begin, TokenType::kw_end });
+    if (types.size() == 0) {
+        logger_.error(token->start(), "empty TYPE declaration");
+    }
 }
 
 // TODO type = qualident | array_type | record_type | pointer_type | procedure_type.
@@ -363,6 +375,7 @@ PointerTypeNode* Parser::pointer_type() {
 // var_declarations = "VAR" { ident_list ":" type ";" } .
 void Parser::var_declarations(vector<unique_ptr<VariableDeclarationNode>> &vars) {
     logger_.debug("var_declarations");
+    auto token = scanner_.peek();
     scanner_.next(); // skip VAR keyword
     while (scanner_.peek()->type() == TokenType::const_ident) {
         vector<unique_ptr<IdentDef>> idents;
@@ -384,8 +397,9 @@ void Parser::var_declarations(vector<unique_ptr<VariableDeclarationNode>> &vars)
             }
         }
     }
-    // [<END>, <PROCEDURE>, <BEGIN>]
-    resync({ TokenType::kw_procedure, TokenType::kw_begin, TokenType::kw_end });
+    if (vars.size() == 0) {
+        logger_.error(token->start(), "empty VAR declaration");
+    }
 }
 
 // procedure_declaration = "PROCEDURE" identdef [ procedure_signature ] ";" ( procedure_body ident | "EXTERN" ) ";" .
@@ -439,7 +453,7 @@ void Parser::procedure_declaration(vector<unique_ptr<ProcedureNode>> &procs) {
     auto node = sema_.onProcedureEnd(token->end(), std::move(name));
     procs.push_back(std::move(node));
     // [<PROCEDURE>, <END>, <BEGIN>]
-    resync({ TokenType::kw_procedure, TokenType::kw_begin, TokenType::kw_end });
+    //resync({ TokenType::kw_procedure, TokenType::kw_begin, TokenType::kw_end });
 }
 
 // procedure_heading = formal_parameters [ ":" type ] .
@@ -1081,6 +1095,15 @@ void Parser::resync(std::set<TokenType> types) {
     while (type != TokenType::eof && types.find(type) == types.end()) {
         scanner_.next();
         type = scanner_.peek()->type();
+    }
+}
+
+// Check expected next token
+void Parser::expect(std::set<TokenType> exp) {
+    auto type = scanner_.peek()->type();
+    if (exp.find(type) == exp.end()) {
+        auto token = scanner_.peek();
+        logger_.error(token->start(), "unexpected token "+ to_string(token->type()) + ".");
     }
 }
 
