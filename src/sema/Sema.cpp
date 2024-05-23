@@ -1033,6 +1033,7 @@ Sema::onBinaryExpression(const FilePos &start, [[maybe_unused]] const FilePos &e
 unique_ptr<ExpressionNode>
 Sema::onRangeExpression(const FilePos &start, [[maybe_unused]] const FilePos &end,
                         unique_ptr<ExpressionNode> lower, unique_ptr<ExpressionNode> upper) {
+    int64_t maxIdx = setTy_->getSize()*8 - 1;
     if (!lower) {
         logger_.error(start, "undefined lower bound in range expression.");
         return nullptr;
@@ -1043,7 +1044,7 @@ Sema::onRangeExpression(const FilePos &start, [[maybe_unused]] const FilePos &en
     }
     int64_t loValue = -1;
     if (lower->isLiteral()) {
-        loValue = assertInBounds(dynamic_cast<const IntegerLiteralNode *>(lower.get()), 0, 31);
+        loValue = assertInBounds(dynamic_cast<const IntegerLiteralNode *>(lower.get()), 0, maxIdx);
     }
     if (!upper) {
         logger_.error(start, "undefined upper bound in range expression.");
@@ -1055,7 +1056,7 @@ Sema::onRangeExpression(const FilePos &start, [[maybe_unused]] const FilePos &en
     }
     int64_t upValue = -1;
     if (upper->isLiteral()) {
-        upValue = assertInBounds(dynamic_cast<const IntegerLiteralNode *>(upper.get()), 0, 31);
+        upValue = assertInBounds(dynamic_cast<const IntegerLiteralNode *>(upper.get()), 0, maxIdx);
     }
     auto common = loType;
     if (loType->getSize() > upType->getSize()) {
@@ -1068,11 +1069,24 @@ Sema::onRangeExpression(const FilePos &start, [[maybe_unused]] const FilePos &en
         if (loValue >= upValue) {
             logger_.error(start, "lower bound must be smaller than upper bound.");
         }
-        bitset<32> result;
-        result.flip();
+        bitset<64> result;
+        switch (setTy_->getSize()) {
+            case 8 :
+                result |= bitset<64>(0xffffffffffffffff);
+                break;
+            case 4 :
+                result |= bitset<64>(0xffffffff);
+                break;
+            case 2 :
+                result |= bitset<64>(0xffff);
+                break;
+            default :
+                result |= bitset<64>(0xff);
+                break;
+        }
         result >>= std::size_t(loValue);
-        result <<= std::size_t(31 - upValue + loValue);
-        result >>= std::size_t(31 - upValue);
+        result <<= std::size_t(maxIdx - upValue + loValue);
+        result >>= std::size_t(maxIdx - upValue);
         return make_unique<RangeLiteralNode>(start, result, loValue, upValue, common);
     }
     return make_unique<RangeExpressionNode>(start, std::move(lower), std::move(upper), common);
@@ -1082,6 +1096,7 @@ unique_ptr<ExpressionNode>
 Sema::onSetExpression(const FilePos &start, [[maybe_unused]] const FilePos &end,
                       vector<unique_ptr<ExpressionNode>> elements) {
     int64_t last = -1;
+    int64_t maxIdx = setTy_->getSize() * 8 - 1;
     for (auto &elem : elements) {
         if (!elem->getType()->isInteger()) {
             logger_.error(elem->pos(), "set expression expected.");
@@ -1105,7 +1120,7 @@ Sema::onSetExpression(const FilePos &start, [[maybe_unused]] const FilePos &end,
             last = range->upper();
         } else {
             if (elem->isLiteral()) {
-                auto value = assertInBounds(dynamic_cast<const IntegerLiteralNode *>(elem.get()), 0, 31);
+                auto value = assertInBounds(dynamic_cast<const IntegerLiteralNode *>(elem.get()), 0, maxIdx);
                 if (value <= last) {
                     logger_.error(elem->pos(), "element must be larger than previous element.");
                 }
@@ -1115,7 +1130,7 @@ Sema::onSetExpression(const FilePos &start, [[maybe_unused]] const FilePos &end,
     }
     auto expr = make_unique<SetExpressionNode>(start, std::move(elements), setTy_);
     if (expr->isConstant()) {
-        bitset<32> result;
+        bitset<64> result;
         for (auto &elem : expr->elements()) {
             if (elem->getNodeType() == NodeType::range) {
                 auto range = dynamic_cast<const RangeLiteralNode *>(elem.get());
@@ -1187,7 +1202,7 @@ Sema::onNilLiteral(const FilePos &start, [[maybe_unused]] const FilePos &end) {
 }
 
 unique_ptr<SetLiteralNode>
-Sema::onSetLiteral(const FilePos &start, [[maybe_unused]] const FilePos &end, bitset<32> value) {
+Sema::onSetLiteral(const FilePos &start, [[maybe_unused]] const FilePos &end, bitset<64> value) {
     return make_unique<SetLiteralNode>(start, value, setTy_);
 }
 
@@ -1281,7 +1296,7 @@ Sema::foldString(const FilePos &start, [[maybe_unused]] const FilePos &end, Expr
     return {};
 }
 
-bitset<32>
+bitset<64>
 Sema::foldSet(const FilePos &start, [[maybe_unused]] const FilePos &end, ExpressionNode *expr) {
     if (expr->getNodeType() == NodeType::set) {
         return dynamic_cast<const SetLiteralNode *>(expr)->value();

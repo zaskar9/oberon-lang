@@ -308,7 +308,7 @@ void NilLiteralNode::print(std::ostream &stream) const {
 }
 
 
-bitset<32> SetLiteralNode::value() const {
+bitset<64> SetLiteralNode::value() const {
     return value_;
 }
 
@@ -321,7 +321,7 @@ void SetLiteralNode::accept(NodeVisitor &visitor) {
 }
 
 
-bitset<32> RangeLiteralNode::value() const {
+bitset<64> RangeLiteralNode::value() const {
     return value_;
 }
 
