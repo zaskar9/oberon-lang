@@ -96,6 +96,7 @@ set_target_properties(${OBERON_LANG} PROPERTIES ENABLE_EXPORTS ON)
 
 find_package(Boost REQUIRED COMPONENTS program_options)
 if (Boost_FOUND)
+    message(STATUS "Found Boost: ${Boost_VERSION}")
     target_link_libraries(${OBERON_LANG} PRIVATE Boost::headers Boost::program_options)
 endif ()
 
