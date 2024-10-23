@@ -87,10 +87,10 @@ private:
     Value *createPackCall(Value *, Value *);
     Value *createUnpkCall(vector<unique_ptr<ExpressionNode>> &, std::vector<Value *> &);
     Value *createExitCall(Value *);
-    Value *createExclCall(Value *, Value *);
+    Value *createExclCall(TypeNode *, Value *, Value *);
     Value *createDisposeCall(TypeNode *, Value *);
     Value *createIncDecCall(ProcKind, vector<unique_ptr<ExpressionNode>> &, std::vector<Value *> &);
-    Value *createInclCall(Value *, Value *);
+    Value *createInclCall(TypeNode *, Value *, Value *);
     Value *createLenCall(vector<unique_ptr<ExpressionNode>> &, std::vector<Value *> &);
     Value *createLongCall(ExpressionNode *, Value *);
     Value *createLslCall(vector<unique_ptr<ExpressionNode>> &, std::vector<Value *> &);
