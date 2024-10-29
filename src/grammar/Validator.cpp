@@ -72,8 +72,8 @@ follow_sets Validator::computeFollowSets(first_sets firstSets) const {
             auto followSet = followSets[production->getHead()];
             lhs.insert(followSet.begin(), followSet.end());
             auto k = production->getSymbolCount();
-            for (int i = k - 1; i >= 0; i--) {
-                auto symbol = production->getSymbol((size_t) i);
+            for (size_t i = k - 1; i >= 0; i--) {
+                auto symbol = production->getSymbol(i);
                 if (auto nonterminal = dynamic_cast<NonTerminal *>(symbol)) {
                     followSet = followSets[nonterminal];
                     lhs.insert(followSet.begin(), followSet.end());
