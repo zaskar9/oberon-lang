@@ -291,7 +291,7 @@ unique_ptr<const Token> Scanner::scanNumber() {
     bool isChar = false;
     FilePos pos = current();
     std::stringstream ss;
-    while ((ch_ >= '0' && ch_ <= '9') || (toupper(ch_) >= 'A' && toupper(ch_) <= 'F')) {
+    while (!eof_ && ((ch_ >= '0' && ch_ <= '9') || (toupper(ch_) >= 'A' && toupper(ch_) <= 'F'))) {
         ss << ch_;
         read();
         if (ch_ == '.') {

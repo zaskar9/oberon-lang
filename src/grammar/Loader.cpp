@@ -44,7 +44,7 @@ Symbol * Loader::symbol(Grammar *grammar) {
     auto token = scanner_.peek();
     if (token->type() == TokenType::const_ident) {
         return non_terminal(grammar);
-    } else if (token->type() == TokenType::string_literal) {
+    } else if (token->type() == TokenType::string_literal || token->type() == TokenType::char_literal) {
         return terminal(grammar);
     } else if (token->type() == TokenType::lparen) {
         scanner_.next();
@@ -100,13 +100,20 @@ NonTerminal * Loader::non_terminal(Grammar *grammar) {
 Terminal * Loader::terminal(Grammar *grammar) {
     logger_.debug("terminal");
     auto token = scanner_.next();
+    if (token->type() != TokenType::string_literal && token->type() != TokenType::char_literal) {
+        logger_.error(token->start(), "unexpected token (terminal): " + to_string(token->type()) + ".");
+        return nullptr;
+    }
+    std::string val;
     if (token->type() == TokenType::string_literal) {
         auto literal = dynamic_cast<const StringLiteralToken*>(token.get());
-        auto terminal = grammar->lookupTerminal(literal->value());
-        return (terminal ? terminal : grammar->createTerminal(literal->value()));
+        val = literal->value();
+    } else if (token->type() == TokenType::char_literal) {
+        auto literal = dynamic_cast<const CharLiteralToken*>(token.get());
+        val.push_back((char) literal->value());
     }
-    logger_.error(token->start(), "unexpected token (terminal): " + to_string(token->type()) + ".");
-    return nullptr;
+    auto terminal = grammar->lookupTerminal(val);
+    return (terminal ? terminal : grammar->createTerminal(val));
 }
 
 // alternation = symbol_list { "|" symbol_list } .

@@ -24,6 +24,8 @@ int main(const int argc, const char *argv[]) {
     }
     Loader loader(config, fs::path(argv[1]));
     auto grammar = loader.load();
+    std::cout << *grammar << std::endl;
+
     Validator util(grammar.get());
     auto firsts = util.computeFirstSets();
     for (auto &entry: firsts) {
