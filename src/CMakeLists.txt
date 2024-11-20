@@ -138,6 +138,7 @@ add_executable(${GRAMMAR_TOOL} grammar/main.cpp ${GRAMMAR_SOURCES} ${SCANNER_SOU
 
 find_package(Boost REQUIRED)
 if (Boost_FOUND)
+    message(STATUS "Found Boost: ${Boost_VERSION}")
     target_link_libraries(${GRAMMAR_TOOL} PRIVATE Boost::headers)
 endif ()
 

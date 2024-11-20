@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.29)
+cmake_minimum_required(VERSION 3.30)
 
 project(oberon-lang VERSION 0.1.0)
 set(SMB_FILE_VERSION 4)
@@ -24,10 +24,6 @@ endif ()
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-
-if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.30.0")
-    cmake_policy(SET CMP0167 NEW)
-endif ()
 
 # define DEBUG
 if (CMAKE_BUILD_TYPE MATCHES Debug)
