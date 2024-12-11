@@ -220,14 +220,13 @@ void Parser::declarations(vector<unique_ptr<ConstantDeclarationNode>> & consts,
 // const_declarations = "CONST" { identdef "=" expression ";" } .
 void Parser::const_declarations(vector<unique_ptr<ConstantDeclarationNode>> & consts) {
     logger_.debug("const_declarations");
-    auto token = scanner_.peek();
-    scanner_.next(); // skip CONST keyword
+    FilePos pos = scanner_.next()->start();  // skip CONST keyword and get its position
     while (scanner_.peek()->type() == TokenType::const_ident) {
-        auto pos = scanner_.peek()->start();
+        FilePos start = scanner_.peek()->start();
         auto ident = identdef();
         auto token = scanner_.next();
         if (assertToken(token.get(), TokenType::op_eq)) {
-            auto decl = sema_.onConstant(pos, EMPTY_POS, std::move(ident), expression());
+            auto decl = sema_.onConstant(start, EMPTY_POS, std::move(ident), expression());
             consts.push_back(std::move(decl));
             token = scanner_.next();
             if (token->type() != TokenType::semicolon) {
@@ -236,15 +235,14 @@ void Parser::const_declarations(vector<unique_ptr<ConstantDeclarationNode>> & co
         }
     }
     if (consts.size() == 0) {
-        logger_.error(token->start(), "empty CONST declaration");
+        logger_.error(pos, "empty CONST declaration");
     }
 }
 
 // type_declarations =  "TYPE" { identdef "=" type ";" } .
 void Parser::type_declarations(vector<unique_ptr<TypeDeclarationNode>> & types) {
     logger_.debug("type_declarations");
-    auto token = scanner_.peek();
-    scanner_.next(); // skip TYPE keyword
+    FilePos pos = scanner_.next()->start();  // skip TYPE keyword and get its position
     while (scanner_.peek()->type() == TokenType::const_ident) {
         auto pos = scanner_.peek()->start();
         auto ident = identdef();
@@ -253,14 +251,13 @@ void Parser::type_declarations(vector<unique_ptr<TypeDeclarationNode>> & types) 
             auto node = type();
             auto decl = sema_.onType(pos, EMPTY_POS, std::move(ident), node);
             types.push_back(std::move(decl));
-            token = scanner_.next();
-            if (token->type() != TokenType::semicolon) {
-                logger_.error(token->start(), "; expected, found " + to_string(token->type()) + ".");
+            if (assertToken(scanner_.peek(), TokenType::semicolon)) {
+                token = scanner_.next();
             }
         }
     }
     if (types.size() == 0) {
-        logger_.error(token->start(), "empty TYPE declaration");
+        logger_.error(pos, "empty TYPE declaration");
     }
 }
 
@@ -375,14 +372,12 @@ PointerTypeNode* Parser::pointer_type() {
 // var_declarations = "VAR" { ident_list ":" type ";" } .
 void Parser::var_declarations(vector<unique_ptr<VariableDeclarationNode>> &vars) {
     logger_.debug("var_declarations");
-    auto token = scanner_.peek();
-    scanner_.next(); // skip VAR keyword
+    FilePos pos = scanner_.next()->start();  // skip VAR keyword and get its position
     while (scanner_.peek()->type() == TokenType::const_ident) {
         vector<unique_ptr<IdentDef>> idents;
         ident_list(idents);
-        auto token = scanner_.next();
-        // auto start = token->start();
-        if (assertToken(token.get(), TokenType::colon)) {
+        if (assertToken(scanner_.peek(), TokenType::colon)) {
+            scanner_.next();  // skip colon
             auto node = type();
             int index = 0;
             for (auto &&ident : idents) {
@@ -391,14 +386,13 @@ void Parser::var_declarations(vector<unique_ptr<VariableDeclarationNode>> &vars)
                 auto decl = sema_.onVariable(start, end, std::move(ident), node, index++);
                 vars.push_back(std::move(decl));
             }
-            token = scanner_.next();
-            if (token->type() != TokenType::semicolon) {
-                logger_.error(token->start(), "; expected, found " + to_string(token->type()) + ".");
+            if (assertToken(scanner_.peek(), TokenType::semicolon)) {
+                scanner_.next();  // skip semicolon
             }
         }
     }
     if (vars.size() == 0) {
-        logger_.error(token->start(), "empty VAR declaration");
+        logger_.error(pos, "empty VAR declaration");
     }
 }
 
@@ -445,9 +439,7 @@ void Parser::procedure_declaration(vector<unique_ptr<ProcedureNode>> &procs) {
         name = ident();
     }
     token = scanner_.peek();
-    if (token->type() != TokenType::semicolon) {
-        logger_.error(token->start(), "; expected, found " + to_string(token->type()) + ".");
-    } else {
+    if (assertToken(token, TokenType::semicolon)) {
         token_ = scanner_.next();
     }
     auto node = sema_.onProcedureEnd(token->end(), std::move(name));
