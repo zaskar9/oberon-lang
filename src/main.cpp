@@ -52,6 +52,8 @@ int main(const int argc, const char **argv) {
     visible.add_options()
             ("help,h", "Displays this help information.")
             ("version", "Print version information.")
+            (",c", "Only run compile and assemble steps.")
+            ("emit-llvm", "Use the LLVM representation for assembler and object files.")
             (",I", po::value<vector<string>>()->value_name("<directories>"), "Search paths for symbol files.")
             (",L", po::value<vector<string>>()->value_name("<directories>"), "Search paths for libraries.")
             (",l", po::value<vector<string>>()->value_name("<library>"), "Static or dynamic library.")
@@ -60,10 +62,11 @@ int main(const int argc, const char **argv) {
             (",o", po::value<string>()->value_name("<filename>"), "Name of the output file.")
             (",W", po::value<vector<string>>()->value_name("<option>"), "Warning configuration.")
             ("sym-dir", po::value<string>()->value_name("<directory>"), "Set output path for generated .smb files.")
-            ("filetype", po::value<string>()->value_name("<type>"), "Set type of output file. [asm, bc, obj, ll]")
+            // ("filetype", po::value<string>()->value_name("<type>"), "Set type of output file. [asm, bc, obj, ll]")
             ("reloc", po::value<string>()->value_name("<model>"), "Set relocation model. [default, static, pic]")
             ("target", po::value<string>()->value_name("<triple>"), "Target triple for cross compilation.")
             ("run,r", "Run with LLVM JIT.")
+            (",S", "Only run compilation steps.")
             ("verbose,v", "Enable debugging outputs.")
             ("quiet,q", "Suppress all compiler outputs.");
     auto hidden = po::options_description("HIDDEN");
@@ -155,7 +158,7 @@ int main(const int argc, const char **argv) {
                 } else if (flag == "no-stack-protector") {
                     config.setFlag(Flag::NO_STACK_PROTECT);
                 } else {
-                    logger.warning(PROJECT_NAME, "ignoring unrecognized flag -f" + flag + ".");
+                    logger.warning(PROJECT_NAME, "ignoring unrecognized option -f" + flag + ".");
                 }
             }
         }
@@ -193,31 +196,30 @@ int main(const int argc, const char **argv) {
                 }
             }
         }
-        if (vm.count("run")) {
+        if (vm.count("run")) {  // run
             config.setJit(true);
-        }
-        if (vm.count("filetype")) {
-            if (config.isJit()) {
-                logger.error(PROJECT_NAME, "flag not supported in JIT mode: filetype");
-                return EXIT_FAILURE;
-            }
-            auto type = vm["filetype"].as<string>();
-            if (type == "asm") {
-                config.setFileType(OutputFileType::AssemblyFile);
-            } else if (type == "bc") {
+        } else if (vm.count("-c")) {  // compile and assemble
+            if (vm.count("emit-llvm")) {
                 config.setFileType(OutputFileType::BitCodeFile);
-            } else if (type == "ll") {
-                config.setFileType(OutputFileType::LLVMIRFile);
-            } else if (type == "obj") {
-                config.setFileType(OutputFileType::ObjectFile);
             } else {
-                logger.error(PROJECT_NAME, "unsupported output file type: " + type + ".");
-                return EXIT_FAILURE;
+                config.setFileType(OutputFileType::ObjectFile);
             }
+        } else if (vm.count("-S")) { // assemble
+            if (vm.count("emit-llvm")) {
+                config.setFileType(OutputFileType::LLVMIRFile);
+            } else {
+                config.setFileType(OutputFileType::AssemblyFile);
+            }
+        } else {
+            if (vm.count("emit-llvm")) {
+                logger.error(PROJECT_NAME, "--emit-llvm cannot be used when linking.");
+            }
+            logger.error(PROJECT_NAME, "linking not yet supported.");
+            return EXIT_FAILURE;
         }
         if (vm.count("reloc")) {
             if (config.isJit()) {
-                logger.error(PROJECT_NAME, "flag not supported int JIT mode: reloc");
+                logger.error(PROJECT_NAME, "--reloc not compatible with --run.");
                 return EXIT_FAILURE;
             }
             auto model = vm["reloc"].as<string>();
@@ -233,12 +235,12 @@ int main(const int argc, const char **argv) {
             config.setSymDir(vm["sym-dir"].as<string>());
             auto path = std::filesystem::path(config.getSymDir());
             if (!std::filesystem::is_directory(path)) {
-                logger.error(PROJECT_NAME, "sym-dir path not valid");
+                logger.error(PROJECT_NAME, "--sym-dir path not valid.");
             }
         }
         if (vm.count("target")) {
             if (config.isJit()) {
-                logger.error(PROJECT_NAME, "flag not supported in JIT mode: target");
+                logger.error(PROJECT_NAME, "--target not supported in JIT mode.");
                 return EXIT_FAILURE;
             }
             config.setTargetTriple(vm["target"].as<string>());
@@ -251,7 +253,7 @@ int main(const int argc, const char **argv) {
         if (config.isJit()) {
 #ifndef _LLVM_LEGACY
             if (inputs.size() != 1) {
-                logger.error(PROJECT_NAME, "only one input module supported in JIT mode.");
+                logger.error(PROJECT_NAME, "--run requires exactly one input module.");
                 return EXIT_FAILURE;
             }
             auto path = std::filesystem::path(inputs[0]);
