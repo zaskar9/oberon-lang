@@ -715,6 +715,8 @@ Sema::assertAssignable(const ExpressionNode *expr, string &err) const {
             if (decl->getNodeType() == NodeType::parameter) {
                 auto type = decl->getType();
                 if (type->isStructured()) {
+                    // O07.9.1: If a value parameter is structured (of array or record type),
+                    // no assignment to it or to its elements are permitted.
                     auto param = dynamic_cast<const ParameterNode *>(decl);
                     err = "a non-variable structured parameter";
                     return param->isVar();

@@ -48,14 +48,14 @@ END Init;
 
 PROCEDURE PrintPoint2D(p: Point2D);
 BEGIN
-    Out.String("[x: "); Out.Int(p.x, 0); Out.String(", y: "); Out.Int(p.y, 0); Out.Char("]")
+    Out.String("{ x: "); Out.Int(p.x, 0); Out.String(", y: "); Out.Int(p.y, 0); Out.String(" }")
 END PrintPoint2D;
 
 PROCEDURE PrintCircle(c: CircleDesc);
 BEGIN
-    Out.String("[centre: "); PrintPoint2D(c.centre);
+    Out.String("{ centre: "); PrintPoint2D(c.centre);
     Out.String(", radius: "); Out.Real(c.radius, 0);
-    Out.String(", area: "); Out.Real(c.area, 0); Out.Char("]")
+    Out.String(", area: "); Out.Real(c.area, 0); Out.String(" }")
 END PrintCircle;
 
 BEGIN
@@ -73,7 +73,7 @@ BEGIN
     c.radius := 1.0;
     c.area := 3.14159265359 * c.radius * c.radius;
     PrintCircle(c^); Out.Ln;
-    FREE(c);
+    DISPOSE(c);
     (*NEW(inode);
     node := inode;*)
     (*inode := node;*)
