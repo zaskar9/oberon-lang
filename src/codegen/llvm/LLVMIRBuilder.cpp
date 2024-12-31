@@ -1857,7 +1857,9 @@ Type* LLVMIRBuilder::getLLVMType(TypeNode *type, bool leaf) {
         auto leafType = leafTypes_[type];
         if (!leafType) {
             leafType = StructType::create(builder_.getContext(), {builder_.getPtrTy(), result});
-            leafType->setName("record." + to_string(*type->getIdentifier()) + ".leaf");
+            if (!type->isAnonymous()) {
+                leafType->setName("record." + to_string(*type->getIdentifier()) + ".leaf");
+            }
             leafTypes_[type] = leafType;
         }
         result = leafType;
