@@ -287,13 +287,13 @@ public:
 class SetLiteralNode final : public LiteralNode {
 
 private:
-    bitset<32> value_;
+    bitset<64> value_;
 
 public:
-    SetLiteralNode(const FilePos &pos, bitset<32> value, TypeNode *type = nullptr, TypeNode *cast = nullptr) :
+    SetLiteralNode(const FilePos &pos, bitset<64> value, TypeNode *type = nullptr, TypeNode *cast = nullptr) :
             LiteralNode(NodeType::set, pos, TypeKind::SET, type, cast), value_(value) {};
 
-    [[nodiscard]] bitset<32> value() const;
+    [[nodiscard]] bitset<64> value() const;
 
     void accept(NodeVisitor &visitor) final;
     void print(std::ostream &stream) const final;
@@ -304,16 +304,16 @@ public:
 class RangeLiteralNode final : public LiteralNode {
 
 private:
-    bitset<32> value_;
+    bitset<64> value_;
     int64_t lower_;
     int64_t upper_;
 
 public:
-    RangeLiteralNode(const FilePos &pos, bitset<32> value, int64_t lower, int64_t upper,
+    RangeLiteralNode(const FilePos &pos, bitset<64> value, int64_t lower, int64_t upper,
                      TypeNode *type = nullptr, TypeNode *cast = nullptr) :
             LiteralNode(NodeType::range, pos, TypeKind::SET, type, cast), value_(value), lower_(lower), upper_(upper) {};
 
-    [[nodiscard]] bitset<32> value() const;
+    [[nodiscard]] bitset<64> value() const;
     [[nodiscard]] int64_t lower() const;
     [[nodiscard]] int64_t upper() const;
 

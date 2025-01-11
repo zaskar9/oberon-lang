@@ -408,21 +408,37 @@ void LLVMIRBuilder::visit(BooleanLiteralNode &node) {
 }
 
 void LLVMIRBuilder::visit(IntegerLiteralNode &node) {
-    if (node.getType()->kind() == TypeKind::LONGINT) {
-        value_ = ConstantInt::getSigned(builder_.getInt64Ty(), node.value());
-    } else if (node.getType()->kind() == TypeKind::INTEGER) {
-        value_ = ConstantInt::getSigned(builder_.getInt32Ty(), static_cast<int32_t>(node.value()));
-    } else {
-        value_ = ConstantInt::getSigned(builder_.getInt16Ty(), static_cast<int16_t>(node.value()));
+    switch (node.getType()->getSize()) {
+        case 8 : 
+            value_ = ConstantInt::getSigned(builder_.getInt64Ty(), node.value());
+            break;
+        case 4 : 
+            value_ = ConstantInt::getSigned(builder_.getInt32Ty(), static_cast<int32_t>(node.value()));
+            break;
+        case 2 : 
+            value_ = ConstantInt::getSigned(builder_.getInt16Ty(), static_cast<int16_t>(node.value()));
+            break;
+        case 1 : 
+            value_ = ConstantInt::getSigned(builder_.getInt8Ty(), static_cast<int8_t>(node.value()));
+            break;
+        default :
+            logger_.error(node.pos(), "unsupported integer size: " + to_string(node.getType()->getSize()) + ".");
+            break;
     }
     cast(node);
 }
 
 void LLVMIRBuilder::visit(RealLiteralNode &node) {
-    if (node.getType()->kind() == TypeKind::LONGREAL) {
-        value_ = ConstantFP::get(builder_.getDoubleTy(), node.value());
-    } else {
-        value_ = ConstantFP::get(builder_.getFloatTy(), static_cast<float>(node.value()));
+    switch (node.getType()->getSize()) {
+        case 8 : 
+            value_ = ConstantFP::get(builder_.getDoubleTy(), node.value());
+            break;
+        case 4 : 
+            value_ = ConstantFP::get(builder_.getFloatTy(), static_cast<float>(node.value()));
+            break;
+        default :
+            logger_.error(node.pos(), "unsupported real size: " + to_string(node.getType()->getSize()) + ".");
+            break;
     }
     cast(node);
 }
@@ -454,7 +470,23 @@ void LLVMIRBuilder::visit(NilLiteralNode &node) {
 }
 
 void LLVMIRBuilder::visit(SetLiteralNode &node) {
-    value_ = ConstantInt::get(builder_.getInt32Ty(), static_cast<uint32_t>(node.value().to_ulong()));
+    switch (node.getType()->getSize()) {
+        case 8 : 
+            value_ = ConstantInt::get(builder_.getInt64Ty(), static_cast<uint64_t>(node.value().to_ullong()));
+            break;
+        case 4 : 
+            value_ = ConstantInt::get(builder_.getInt32Ty(), static_cast<uint32_t>(node.value().to_ulong()));
+            break;
+        case 2 : 
+            value_ = ConstantInt::get(builder_.getInt16Ty(), static_cast<uint16_t>(node.value().to_ulong()));
+            break;
+        case 1 : 
+            value_ = ConstantInt::get(builder_.getInt8Ty(), static_cast<uint8_t>(node.value().to_ulong()));
+            break;
+        default :
+            logger_.error(node.pos(), "unsupported set size: " + to_string(node.getType()->getSize()) + ".");
+            break;
+    }
 }
 
 void LLVMIRBuilder::visit(RangeLiteralNode &node) {
@@ -471,7 +503,23 @@ void LLVMIRBuilder::visit(UnaryExpressionNode &node) {
             break;
         case OperatorType::NEG:
             if (type->isSet()) {
-                value_ = builder_.CreateXor(ConstantInt::get(builder_.getInt32Ty(), 0xffffffff), value_);
+                switch (node.getType()->getSize()) {
+                    case 8 : 
+                        value_ = builder_.CreateXor(ConstantInt::get(builder_.getInt64Ty(), 0xffffffffffffffff), value_);
+                        break;
+                    case 4 : 
+                        value_ = builder_.CreateXor(ConstantInt::get(builder_.getInt32Ty(), 0xffffffff), value_);
+                        break;
+                    case 2 : 
+                        value_ = builder_.CreateXor(ConstantInt::get(builder_.getInt16Ty(), 0xffff), value_);
+                        break;
+                    case 1 : 
+                        value_ = builder_.CreateXor(ConstantInt::get(builder_.getInt8Ty(), 0xff), value_);
+                        break;
+                    default :
+                        logger_.error(node.pos(), "unsupported set size: " + to_string(node.getType()->getSize()) + ".");
+                        break;
+                }
             } else {
                 value_ = type->isReal() ? builder_.CreateFNeg(value_) : builder_.CreateNeg(value_);
             }
@@ -537,13 +585,30 @@ void LLVMIRBuilder::visit(BinaryExpressionNode &node) {
     } else if (node.getLeftExpression()->getType()->isSet() || node.getRightExpression()->getType()->isSet()) {
         node.getRightExpression()->accept(*this);
         cast(*node.getRightExpression());
+        auto type = node.getRightExpression()->getType();
         auto rhs = value_;
         switch (node.getOperator()) {
             case OperatorType::PLUS:
                 value_ = builder_.CreateOr(lhs, rhs);
                 break;
             case OperatorType::MINUS:
-                value_ = builder_.CreateXor(ConstantInt::get(builder_.getInt32Ty(), 0xffffffff), rhs);
+                switch (type->getSize()) {
+                    case 8 : 
+                        value_ = builder_.CreateXor(ConstantInt::get(builder_.getInt64Ty(), 0xffffffffffffffff), rhs);
+                        break;
+                    case 4 : 
+                        value_ = builder_.CreateXor(ConstantInt::get(builder_.getInt32Ty(), 0xffffffff), rhs);
+                        break;
+                    case 2 : 
+                        value_ = builder_.CreateXor(ConstantInt::get(builder_.getInt16Ty(), 0xffff), rhs);
+                        break;
+                    case 1 : 
+                        value_ = builder_.CreateXor(ConstantInt::get(builder_.getInt8Ty(), 0xff), rhs);
+                        break;
+                    default :
+                        logger_.error(node.pos(), "unsupported set size: " + to_string(node.getType()->getSize()) + ".");
+                        break;
+                }
                 value_ = builder_.CreateAnd(lhs, value_);
                 break;
             case OperatorType::TIMES:
@@ -553,12 +618,44 @@ void LLVMIRBuilder::visit(BinaryExpressionNode &node) {
                 value_ = builder_.CreateXor(lhs, rhs);
                 break;
             case OperatorType::LEQ:
-                value_ = builder_.CreateXor(ConstantInt::get(builder_.getInt32Ty(), 0xffffffff), rhs);
+                switch (type->getSize()) {
+                    case 8 : 
+                        value_ = builder_.CreateXor(ConstantInt::get(builder_.getInt64Ty(), 0xffffffffffffffff), rhs);
+                        break;
+                    case 4 : 
+                        value_ = builder_.CreateXor(ConstantInt::get(builder_.getInt32Ty(), 0xffffffff), rhs);
+                        break;
+                    case 2 : 
+                        value_ = builder_.CreateXor(ConstantInt::get(builder_.getInt16Ty(), 0xffff), rhs);
+                        break;
+                    case 1 : 
+                        value_ = builder_.CreateXor(ConstantInt::get(builder_.getInt8Ty(), 0xff), rhs);
+                        break;
+                    default :
+                        logger_.error(node.pos(), "unsupported set size: " + to_string(node.getType()->getSize()) + ".");
+                        break;
+                }
                 value_ = builder_.CreateAnd(lhs, value_);
                 value_ = builder_.CreateIsNull(value_);
                 break;
             case OperatorType::GEQ:
-                value_ = builder_.CreateXor(ConstantInt::get(builder_.getInt32Ty(), 0xffffffff), lhs);
+                switch (type->getSize()) {
+                    case 8 : 
+                        value_ = builder_.CreateXor(ConstantInt::get(builder_.getInt64Ty(), 0xffffffffffffffff), lhs);
+                        break;
+                    case 4 : 
+                        value_ = builder_.CreateXor(ConstantInt::get(builder_.getInt32Ty(), 0xffffffff), lhs);
+                        break;
+                    case 2 : 
+                        value_ = builder_.CreateXor(ConstantInt::get(builder_.getInt16Ty(), 0xffff), lhs);
+                        break;
+                    case 1 : 
+                        value_ = builder_.CreateXor(ConstantInt::get(builder_.getInt8Ty(), 0xff), lhs);
+                        break;
+                    default :
+                        logger_.error(node.pos(), "unsupported set size: " + to_string(node.getType()->getSize()) + ".");
+                        break;
+                }
                 value_ = builder_.CreateAnd(rhs, value_);
                 value_ = builder_.CreateIsNull(value_);
                 break;
@@ -566,7 +663,23 @@ void LLVMIRBuilder::visit(BinaryExpressionNode &node) {
                 if (!node.getLeftExpression()->getType()->isInteger()) {
                     logger_.error(node.getLeftExpression()->pos(), "integer expression expected.");
                 }
-                value_ = ConstantInt::get(builder_.getInt32Ty(), 0x1);
+                switch (type->getSize()) {
+                    case 8 : 
+                        value_ = ConstantInt::get(builder_.getInt64Ty(), 0x1);
+                        break;
+                    case 4 : 
+                        value_ = ConstantInt::get(builder_.getInt32Ty(), 0x1);
+                        break;
+                    case 2 : 
+                        value_ = ConstantInt::get(builder_.getInt16Ty(), 0x1);
+                        break;
+                    case 1 : 
+                        value_ = ConstantInt::get(builder_.getInt8Ty(), 0x1);
+                        break;
+                    default :
+                        logger_.error(node.pos(), "unsupported set size: " + to_string(node.getType()->getSize()) + ".");
+                        break;
+                }
                 value_ = builder_.CreateAnd(value_, value_);
                 value_ = builder_.CreateShl(value_, lhs);
                 value_ = builder_.CreateAnd(value_, rhs);
@@ -582,15 +695,7 @@ void LLVMIRBuilder::visit(BinaryExpressionNode &node) {
         cast(*node.getRightExpression());
         bool floating = node.getLeftExpression()->getType()->isReal() || node.getRightExpression()->getType()->isReal();
         auto rhs = value_;
-        // TODO This code assumes that the smallest legal integer is 32 bit.
-        if (node.getLeftExpression()->getType()->isInteger() &&
-            lhs->getType()->isIntegerTy() && lhs->getType()->getIntegerBitWidth() < 32) {
-            lhs = builder_.CreateSExt(lhs, builder_.getInt32Ty());
-        }
-        if (node.getRightExpression()->getType()->isInteger() &&
-            rhs->getType()->isIntegerTy() && rhs->getType()->getIntegerBitWidth() < 32) {
-            rhs = builder_.CreateSExt(rhs, builder_.getInt32Ty());
-        }
+        
         switch (node.getOperator()) {
             case OperatorType::PLUS:
                 value_ = floating ? builder_.CreateFAdd(lhs, rhs) : builder_.CreateAdd(lhs, rhs);
@@ -659,7 +764,22 @@ void LLVMIRBuilder::visit(BinaryExpressionNode &node) {
 }
 
 void LLVMIRBuilder::visit(RangeExpressionNode &node) {
-    Value *ones = ConstantInt::get(builder_.getInt32Ty(), 0xffffffff);
+    auto type = node.getType();
+    Value *ones;
+    switch (type->getSize()) {
+        case 8 : 
+            ones = ConstantInt::get(builder_.getInt64Ty(), 0xffffffffffffffff);
+            break;
+        case 4 : 
+            ones = ConstantInt::get(builder_.getInt32Ty(), 0xffffffff);
+            break;
+        case 2 : 
+            ones = ConstantInt::get(builder_.getInt16Ty(), 0xffff);
+            break;
+        default : 
+            ones = ConstantInt::get(builder_.getInt8Ty(), 0xff);
+            break;
+    }
     Value *result = builder_.CreateAnd(ones, ones);
     setRefMode(true);
     node.getLower()->accept(*this);
@@ -670,20 +790,36 @@ void LLVMIRBuilder::visit(RangeExpressionNode &node) {
     node.getUpper()->accept(*this);
     Value *upper = value_;
     restoreRefMode();
-    Value *diff = builder_.CreateSub(ConstantInt::get(builder_.getInt32Ty(), 31), upper);
+    Value *diff;
+    switch (type->getSize()) {
+        case 8 : 
+            diff = builder_.CreateSub(ConstantInt::get(builder_.getInt64Ty(), 63), upper);
+            break;
+        case 4 : 
+            diff = builder_.CreateSub(ConstantInt::get(builder_.getInt32Ty(), 31), upper);
+            break;
+        case 2 : 
+            diff = builder_.CreateSub(ConstantInt::get(builder_.getInt16Ty(), 15), upper);
+            break;
+        default : 
+            diff = builder_.CreateSub(ConstantInt::get(builder_.getInt8Ty(), 7), upper);
+            break;
+    }
     Value *sum = builder_.CreateAdd(diff, lower);
     result = builder_.CreateLShr(result, sum);
     value_ = builder_.CreateShl(result, lower);
 }
 
 void LLVMIRBuilder::visit(SetExpressionNode &node) {
-    Value *zero = ConstantInt::get(builder_.getInt32Ty(), 0x0);
+    auto type = node.getType();
+    auto setType = getLLVMType(type);
+    Value *zero = ConstantInt::get(setType, 0x0);
     Value *result = builder_.CreateXor(zero, zero);
     for (auto &elem : node.elements()) {
         setRefMode(true);
         elem->accept(*this);
         if (elem->getNodeType() != NodeType::range && elem->getNodeType() != NodeType::range_expression) {
-            value_ = builder_.CreateShl(ConstantInt::get(builder_.getInt32Ty(), 0x1), value_);
+            value_ = builder_.CreateShl(ConstantInt::get(setType, 0x1), value_);
         }
         result = builder_.CreateOr(result, value_);
         restoreRefMode();
@@ -963,9 +1099,9 @@ LLVMIRBuilder::createPredefinedCall(PredefinedProcedure *proc, QualIdent *ident,
         case ProcKind::LEN:
             return createLenCall(actuals, params);
         case ProcKind::INCL:
-            return createInclCall(params[0], params[1]);
+            return createInclCall(actuals[0]->getType(), params[0], params[1]);
         case ProcKind::EXCL:
-            return createExclCall(params[0], params[1]);
+            return createExclCall(actuals[0]->getType(), params[0], params[1]);
         case ProcKind::ORD:
             return createOrdCall(actuals[0].get(), params[0]);
         case ProcKind::CHR:
@@ -1041,7 +1177,7 @@ LLVMIRBuilder::createAsrCall(vector<unique_ptr<ExpressionNode>> &actuals, std::v
         // range check if literal argument
         auto val = dynamic_cast<IntegerLiteralNode *>(param1)->value();
         if (val < 0) {
-            logger_.error(param1->pos(), "negative shift value undefined operaton.");
+            logger_.error(param1->pos(), "negative shift value undefined operation.");
             return value_;
         }
     }
@@ -1135,10 +1271,20 @@ LLVMIRBuilder::createExitCall(Value *param) {
 }
 
 Value *
-LLVMIRBuilder::createExclCall(Value *set, Value *element) {
-    Value *value = builder_.CreateShl(ConstantInt::get(builder_.getInt32Ty(), 0x1), element);
-    value = builder_.CreateXor(ConstantInt::get(builder_.getInt32Ty(), 0xffffffff), value);
-    value_ = builder_.CreateLoad(builder_.getInt32Ty(), set);
+LLVMIRBuilder::createExclCall(TypeNode *type, Value *set, Value *element) {
+    Value *value;
+    auto setType = getLLVMType(type);
+    value = builder_.CreateShl(ConstantInt::get(setType, 0x1), element);
+    if (type->getSize() == 8) {
+        value = builder_.CreateXor(ConstantInt::get(builder_.getInt64Ty(), 0xffffffffffffffff), value);
+    } else if (type->getSize() == 4) {
+        value = builder_.CreateXor(ConstantInt::get(builder_.getInt32Ty(), 0xffffffff), value);
+    } else if (type->getSize() == 2) {
+        value = builder_.CreateXor(ConstantInt::get(builder_.getInt16Ty(), 0xffff), value);
+    } else {
+        value = builder_.CreateXor(ConstantInt::get(builder_.getInt8Ty(), 0xff), value);
+    }
+    value_ = builder_.CreateLoad(setType, set);
     value_ = builder_.CreateAnd(value_, value);
     return builder_.CreateStore(value_, set);
 }
@@ -1205,9 +1351,11 @@ LLVMIRBuilder::createIncDecCall(ProcKind kind,
 }
 
 Value *
-LLVMIRBuilder::createInclCall(llvm::Value *set, llvm::Value *element) {
-    Value *value = builder_.CreateShl(ConstantInt::get(builder_.getInt32Ty(), 0x1), element);
-    value_ = builder_.CreateLoad(builder_.getInt32Ty(), set);
+LLVMIRBuilder::createInclCall(TypeNode *type, llvm::Value *set, llvm::Value *element) {
+    Value *value;
+    auto setType = getLLVMType(type);
+    value = builder_.CreateShl(ConstantInt::get(setType, 0x1), element);
+    value_ = builder_.CreateLoad(setType, set);
     value_ = builder_.CreateOr(value_, value);
     return builder_.CreateStore(value_, set);
 }
@@ -1273,10 +1421,14 @@ Value *
 LLVMIRBuilder::createLongCall(ExpressionNode *expr, llvm::Value *param) {
     auto type = expr->getType();
     if (type->isInteger()) {
-        if (type->kind() == TypeKind::SHORTINT) {
-            value_ = builder_.CreateSExt(param, builder_.getInt32Ty());
-        } else if (type->kind() == TypeKind::INTEGER) {
-            value_ = builder_.CreateSExt(param, builder_.getInt64Ty());
+        if ((type->kind() == TypeKind::SHORTINT) || (type->kind() == TypeKind::INTEGER)) {
+            if (type->getSize() == 4) {
+                value_ = builder_.CreateSExt(param, builder_.getInt64Ty());
+            } else if (type->getSize() == 2) {
+                value_ = builder_.CreateSExt(param, builder_.getInt32Ty());
+            } else if (type->getSize() == 1) {
+                value_ = builder_.CreateSExt(param, builder_.getInt16Ty());
+            }
         } else {
             logger_.error(expr->pos(), "illegal integer expression.");
         }
@@ -1329,11 +1481,17 @@ LLVMIRBuilder::createMaxMinCall(ExpressionNode *actual, bool isMax) {
             } else {
                 value_ = builder_.getInt32((uint32_t)std::numeric_limits<int32_t>::min());
             }
-        } else {
+        } else if (type->getSize() == 2) {
             if (isMax) {
                 value_ = builder_.getInt16((uint16_t)std::numeric_limits<int16_t>::max());
             } else {
                 value_ = builder_.getInt16((uint16_t)std::numeric_limits<int16_t>::min());
+            }
+        } else {
+            if (isMax) {
+                value_ = builder_.getInt8((uint8_t)std::numeric_limits<int8_t>::max());
+            } else {
+                value_ = builder_.getInt8((uint8_t)std::numeric_limits<int8_t>::min());
             }
         }
     } else {
@@ -1426,10 +1584,14 @@ LLVMIRBuilder::createShortCall(ExpressionNode *expr, llvm::Value *param) {
     }
     auto type = expr->getType();
     if (type->isInteger()) {
-        if (type->kind() == TypeKind::INTEGER) {
-            value_ = builder_.CreateTrunc(param, builder_.getInt16Ty());
-        } else if (type->kind() == TypeKind::LONGINT) {
-            value_ = builder_.CreateTrunc(param, builder_.getInt32Ty());
+        if ((type->kind() == TypeKind::INTEGER) || (type->kind() == TypeKind::LONGINT)) {
+            if (type->getSize() == 8) {
+                value_ = builder_.CreateTrunc(param, builder_.getInt32Ty());
+            } else if (type->getSize() == 4) {
+                value_ = builder_.CreateTrunc(param, builder_.getInt16Ty());
+            } else if (type->getSize() == 2) {
+                value_ = builder_.CreateTrunc(param, builder_.getInt8Ty());
+            }
         } else {
             logger_.error(expr->pos(), "illegal integer expression.");
         }
@@ -1706,20 +1868,32 @@ Type* LLVMIRBuilder::getLLVMType(TypeNode *type) {
             result = builder_.getInt1Ty();
         } else if (type->kind() == TypeKind::BYTE || type->kind() == TypeKind::CHAR) {
             result = builder_.getInt8Ty();
-        } else if (type->kind() == TypeKind::SHORTINT) {
-            result = builder_.getInt16Ty();
-        } else if (type->kind() == TypeKind::INTEGER) {
-            result = builder_.getInt32Ty();
-        } else if (type->kind() == TypeKind::LONGINT) {
-            result = builder_.getInt64Ty();
-        } else if (type->kind() == TypeKind::REAL) {
-            result = builder_.getFloatTy();
-        } else if (type->kind() == TypeKind::LONGREAL) {
-            result = builder_.getDoubleTy();
+        } else if ((type->kind() == TypeKind::REAL) || (type->kind() == TypeKind::LONGREAL)) {
+            if (type->getSize() == 4) {
+                result = builder_.getFloatTy();
+            } else {
+                result = builder_.getDoubleTy();
+            }
         } else if (type->kind() == TypeKind::STRING) {
             result = builder_.getPtrTy();
-        } else if (type->kind() == TypeKind::SET) {
-            result = builder_.getInt32Ty();
+        } else { // SHORTINT, INTEGER, LONGINT, SET
+            switch (type->getSize()) {
+                case 8 : 
+                    result = builder_.getInt64Ty();
+                    break;
+                case 4 : 
+                    result = builder_.getInt32Ty();
+                    break;
+                case 2 : 
+                    result = builder_.getInt16Ty();
+                    break;
+                case 1 : 
+                    result = builder_.getInt8Ty();
+                    break;
+                default :
+                    result = nullptr;
+                    break;
+            }
         }
         types_[type] = result;
     }
