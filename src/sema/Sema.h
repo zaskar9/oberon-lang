@@ -15,12 +15,13 @@
 
 #include "data/ast/ASTContext.h"
 #include "data/ast/ModuleNode.h"
+#include "data/ast/CaseOfNode.h"
+#include "data/ast/IfThenElseNode.h"
+#include "data/ast/LoopNode.h"
 #include "data/symtab/SymbolTable.h"
 #include "data/symtab/SymbolExporter.h"
 #include "data/symtab/SymbolImporter.h"
 #include "logging/Logger.h"
-#include "data/ast/IfThenElseNode.h"
-#include "data/ast/LoopNode.h"
 #include "system/OberonSystem.h"
 
 using std::bitset;
@@ -131,11 +132,11 @@ public:
 
     unique_ptr<AssignmentNode> onAssignment(const FilePos &, const FilePos &,
                                             unique_ptr<QualifiedExpression>, unique_ptr<ExpressionNode>);
-    unique_ptr<IfThenElseNode> onIfStatement(const FilePos &, const FilePos &,
-                                             unique_ptr<ExpressionNode>,
-                                             unique_ptr<StatementSequenceNode>,
-                                             vector<unique_ptr<ElseIfNode>>,
-                                             unique_ptr<StatementSequenceNode>);
+    unique_ptr<IfThenElseNode> onIf(const FilePos &, const FilePos &,
+                                    unique_ptr<ExpressionNode>,
+                                    unique_ptr<StatementSequenceNode>,
+                                    vector<unique_ptr<ElseIfNode>>,
+                                    unique_ptr<StatementSequenceNode>);
     unique_ptr<ElseIfNode> onElseIf(const FilePos &, const FilePos &,
                                     unique_ptr<ExpressionNode>,
                                     unique_ptr<StatementSequenceNode>);
@@ -153,6 +154,13 @@ public:
                                       unique_ptr<ExpressionNode>,
                                       unique_ptr<ExpressionNode>,
                                       unique_ptr<StatementSequenceNode>);
+    unique_ptr<CaseOfNode> onCaseOf(const FilePos &, const FilePos &,
+                                    unique_ptr<ExpressionNode>,
+                                    vector<unique_ptr<CaseNode>>,
+                                    unique_ptr<StatementSequenceNode>);
+    unique_ptr<CaseNode> onCase(const FilePos &, const FilePos &,
+                                vector<unique_ptr<ExpressionNode>>,
+                                unique_ptr<StatementSequenceNode>);
     unique_ptr<ReturnNode> onReturn(const FilePos &, const FilePos &, unique_ptr<ExpressionNode>);
 
     unique_ptr<StatementNode> onQualifiedStatement(const FilePos &, const FilePos &,

@@ -391,7 +391,7 @@ Sema::onAssignment(const FilePos &start, [[maybe_unused]] const FilePos &end,
 }
 
 unique_ptr<IfThenElseNode>
-Sema::onIfStatement(const FilePos &start, [[maybe_unused]] const FilePos &end,
+Sema::onIf(const FilePos &start, [[maybe_unused]] const FilePos &end,
                     unique_ptr<ExpressionNode> condition,
                     unique_ptr<StatementSequenceNode> thenStmts,
                     vector<unique_ptr<ElseIfNode>> elseIfs,
@@ -453,6 +453,54 @@ Sema::onWhileLoop(const FilePos &start, [[maybe_unused]] const FilePos &end,
     }
     return make_unique<WhileLoopNode>(start, std::move(condition), std::move(stmts));
 }
+
+
+unique_ptr<CaseOfNode>
+Sema::onCaseOf(const FilePos &start, [[maybe_unused]] const FilePos &end,
+               unique_ptr<ExpressionNode> expr,
+               vector<unique_ptr<CaseNode>> cases,
+               unique_ptr<StatementSequenceNode> elseStmts) {
+    if (!expr) {
+        logger_.error(start, "undefined expression in case statement.");
+    }
+    if (!expr->getType()->isInteger() && !expr->getType()->isChar()) {
+        logger_.error(expr->pos(), "integer or character expression expected.");
+    }
+    return make_unique<CaseOfNode>(start, std::move(expr), std::move(cases), std::move(elseStmts));
+}
+
+unique_ptr<CaseNode>
+Sema::onCase(const FilePos &start, [[maybe_unused]] const FilePos &end,
+             vector<unique_ptr<ExpressionNode>> labels, unique_ptr<StatementSequenceNode> stmts) {
+    for (const auto &label : labels) {
+        if (label->getNodeType() == NodeType::range_expression) {
+            const auto expr = dynamic_cast<RangeExpressionNode *>(label.get());
+            if (!expr->getLower()->isConstant()) {
+                logger_.error(expr->getLower()->pos(), "constant expression expected.");
+            }
+            if (!expr->getUpper()->isConstant()) {
+                logger_.error(expr->getUpper()->pos(), "constant expression expected.");
+            }
+        } else if (!label->isConstant()) {
+            if (label->getNodeType() == NodeType::qualified_expression &&
+                label->getType()->kind() == TypeKind::TYPE) {
+                const auto expr = dynamic_cast<QualifiedExpression*>(label.get());
+                const auto type = dynamic_cast<TypeDeclarationNode*>(expr->dereference())->getType();
+                if (type->kind() == TypeKind::POINTER) {
+                    const auto pointer = dynamic_cast<PointerTypeNode*>(type);
+                    if (pointer->getBase()->kind() == TypeKind::RECORD) {
+                        continue;
+                    }
+                } else if (type->kind() == TypeKind::RECORD) {
+                    continue;
+                }
+            }
+            logger_.error(label->pos(), "constant expression, record type, or pointer type expected.");
+        }
+    }
+    return make_unique<CaseNode>(start, std::move(labels), std::move(stmts));
+}
+
 
 unique_ptr<ForLoopNode>
 Sema::onForLoop(const FilePos &start, [[maybe_unused]] const FilePos &end,
@@ -1037,25 +1085,20 @@ Sema::onRangeExpression(const FilePos &start, [[maybe_unused]] const FilePos &en
         logger_.error(start, "undefined lower bound in range expression.");
         return nullptr;
     }
-    auto loType = lower->getType();
-    if (!loType->isInteger()) {
-        logger_.error(lower->pos(), "integer expression expected.");
-    }
-    int64_t loValue = -1;
-    if (lower->isLiteral()) {
-        loValue = assertInBounds(dynamic_cast<const IntegerLiteralNode *>(lower.get()), 0, 31);
+    const auto loType = lower->getType();
+    if (!loType->isInteger() && !loType->isChar()) {
+        logger_.error(lower->pos(), "integer or character expression expected.");
     }
     if (!upper) {
         logger_.error(start, "undefined upper bound in range expression.");
         return nullptr;
     }
-    auto upType = upper->getType();
-    if (!upType->isInteger()) {
-        logger_.error(upper->pos(), "integer expression expected.");
+    const auto upType = upper->getType();
+    if (!upType->isInteger() && !upType->isChar()) {
+        logger_.error(upper->pos(), "integer or character expression expected.");
     }
-    int64_t upValue = -1;
-    if (upper->isLiteral()) {
-        upValue = assertInBounds(dynamic_cast<const IntegerLiteralNode *>(upper.get()), 0, 31);
+    if ((loType->isInteger() && upType->isChar()) || (loType->isChar() && upType->isInteger())) {
+        logger_.error(start, "type of lower and upper bound in range expression do not match.");
     }
     auto common = loType;
     if (loType->getSize() > upType->getSize()) {
@@ -1063,17 +1106,6 @@ Sema::onRangeExpression(const FilePos &start, [[maybe_unused]] const FilePos &en
     } else if (loType->getSize() < upType->getSize()) {
         cast(lower.get(), upType);
         common = upType;
-    }
-    if (loValue >= 0 && upValue >= 0) {
-        if (loValue >= upValue) {
-            logger_.error(start, "lower bound must be smaller than upper bound.");
-        }
-        bitset<32> result;
-        result.flip();
-        result >>= std::size_t(loValue);
-        result <<= std::size_t(31 - upValue + loValue);
-        result >>= std::size_t(31 - upValue);
-        return make_unique<RangeLiteralNode>(start, result, loValue, upValue, common);
     }
     return make_unique<RangeExpressionNode>(start, std::move(lower), std::move(upper), common);
 }
@@ -1084,28 +1116,41 @@ Sema::onSetExpression(const FilePos &start, [[maybe_unused]] const FilePos &end,
     int64_t last = -1;
     for (auto &elem : elements) {
         if (!elem->getType()->isInteger()) {
-            logger_.error(elem->pos(), "set expression expected.");
+            logger_.error(elem->pos(), "integer expression expected.");
         } else if (elem->getNodeType() == NodeType::range_expression) {
-            auto range = dynamic_cast<RangeExpressionNode *>(elem.get());
-            if (range->getLower()->isLiteral()) {
-                int64_t value = dynamic_cast<const IntegerLiteralNode *>(range->getLower())->value();
-                if (value <= last) {
+            const auto range = dynamic_cast<RangeExpressionNode *>(elem.get());
+            const auto lower = range->getLower();
+            int64_t loValue = -1;
+            if (lower->isLiteral()) {
+                loValue = assertInBounds(dynamic_cast<const IntegerLiteralNode *>(lower), 0, 31);
+                if (loValue <= last) {
                     logger_.error(range->getLower()->pos(), "element must be larger than previous element.");
                 }
-                last = value;
+                last = loValue;
             }
-            if (range->getUpper()->isLiteral()) {
-                last = dynamic_cast<const IntegerLiteralNode *>(range->getUpper())->value();
+            const auto upper = range->getUpper();
+            int64_t upValue = -1;
+            if (upper->isLiteral()) {
+                upValue = assertInBounds(dynamic_cast<const IntegerLiteralNode *>(upper), 0, 31);
+                last = upValue;
             }
-        } else if (elem->getNodeType() == NodeType::range) {
-            auto range = dynamic_cast<RangeLiteralNode *>(elem.get());
-            if (last >= range->lower()) {
-                logger_.error(range->pos(), "element must be larger than previous element.");
+            if (loValue >= 0 && upValue >= 0) {
+                if (loValue >= upValue) {
+                    logger_.error(start, "lower bound must be smaller than upper bound.");
+                }
+                bitset<32> result;
+                result.flip();
+                result >>= static_cast<size_t>(loValue);
+                result <<= static_cast<size_t>(31 - upValue + loValue);
+                result >>= static_cast<size_t>(31 - upValue);
+                auto loType = lower->getType();
+                auto upType = upper->getType();
+                auto common = loType->getSize() > upType->getSize() ? loType : upType;
+                elem = make_unique<RangeLiteralNode>(start, result, loValue, upValue, common);
             }
-            last = range->upper();
         } else {
             if (elem->isLiteral()) {
-                auto value = assertInBounds(dynamic_cast<const IntegerLiteralNode *>(elem.get()), 0, 31);
+                const auto value = assertInBounds(dynamic_cast<const IntegerLiteralNode *>(elem.get()), 0, 31);
                 if (value <= last) {
                     logger_.error(elem->pos(), "element must be larger than previous element.");
                 }
@@ -1118,11 +1163,11 @@ Sema::onSetExpression(const FilePos &start, [[maybe_unused]] const FilePos &end,
         bitset<32> result;
         for (auto &elem : expr->elements()) {
             if (elem->getNodeType() == NodeType::range) {
-                auto range = dynamic_cast<const RangeLiteralNode *>(elem.get());
+                const auto range = dynamic_cast<const RangeLiteralNode *>(elem.get());
                 result |= range->value();
-            } else {
-                int64_t pos = foldInteger(start, end, elem.get());
-                result.set(std::size_t(pos));
+            } else if (elem->getType()->isInteger()) {
+                const int64_t pos = foldInteger(start, end, elem.get());
+                result.set(static_cast<std::size_t>(pos));
             }
         }
         return make_unique<SetLiteralNode>(start, result, setTy_);
@@ -1131,12 +1176,12 @@ Sema::onSetExpression(const FilePos &start, [[maybe_unused]] const FilePos &end,
 }
 
 int64_t
-Sema::assertInBounds(const IntegerLiteralNode *literal, int64_t lower, int64_t upper) {
-    int64_t value = literal->value();
+Sema::assertInBounds(const IntegerLiteralNode *literal, const int64_t lower, const int64_t upper) {
+    const int64_t value = literal->value();
     if (value < lower || value > upper) {
         logger_.error(literal->pos(), "value " + to_string(value) + " out of bounds [" +
                                       to_string(lower) + ".." + to_string(upper) + "].");
-        return lower;
+        return value < lower ? lower : upper;
     }
     return value;
 }

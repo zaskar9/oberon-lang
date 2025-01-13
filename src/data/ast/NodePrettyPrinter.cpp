@@ -399,6 +399,44 @@ void NodePrettyPrinter::visit(AssignmentNode &node) {
     node.getRvalue()->accept(*this);
 }
 
+void NodePrettyPrinter::visit(CaseOfNode &node) {
+    stream_ << "CASE ";
+    node.getExpression()->accept(*this);
+    stream_ << " OF" << std::endl;
+    indent_ += TAB_WIDTH;
+    std::string sep = "  ";
+    for (size_t i = 0; i < node.getCaseCount(); ++i) {
+        indent();
+        stream_ << sep;
+        node.getCase(i)->accept(*this);
+        sep = "| ";
+    }
+    indent_ -= TAB_WIDTH;
+    if (node.hasElse()) {
+        indent();
+        stream_ << "ELSE" << std::endl;
+        indent_ += TAB_WIDTH;
+        node.getElseStatements()->accept(*this);
+        indent_ -= TAB_WIDTH;
+    }
+    indent();
+    stream_ << "END";
+}
+
+void NodePrettyPrinter::visit(CaseNode &node) {
+    string sep;
+    for (size_t i = 0; i < node.getLabelCount(); ++i) {
+        stream_ << sep;
+        node.getLabel(i)->accept(*this);
+        sep = ", ";
+    }
+    stream_ << ": " << std::endl;
+    indent_ += 2 * TAB_WIDTH;
+    node.getStatements()->accept(*this);
+    indent_ -= 2 * TAB_WIDTH;
+}
+
+
 void NodePrettyPrinter::visit(IfThenElseNode &node) {
     stream_ << "IF ";
     node.getCondition()->accept(*this);

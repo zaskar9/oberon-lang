@@ -41,7 +41,9 @@ set(DATA_SOURCES
         data/ast/StatementSequenceNode.cpp data/ast/StatementSequenceNode.h
         data/ast/NodeReference.cpp data/ast/NodeReference.h
         data/ast/NodeVisitor.cpp data/ast/NodeVisitor.h
-        data/ast/NodePrettyPrinter.cpp data/ast/NodePrettyPrinter.h)
+        data/ast/NodePrettyPrinter.cpp data/ast/NodePrettyPrinter.h
+        data/ast/CaseOfNode.cpp
+        data/ast/CaseOfNode.h)
 
 set(SYMTAB_SOURCES
         data/symtab/SymbolTable.cpp data/symtab/SymbolTable.h

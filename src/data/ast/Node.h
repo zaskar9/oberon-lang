@@ -22,7 +22,8 @@ enum class NodeType : char {
     array_type, basic_type, pointer_type, procedure_type, record_type,
     field, parameter, variable, constant, type,
     integer, real, boolean, string, character, pointer, range, set,
-    assignment, loop, while_loop, repeat_loop, for_loop, if_then_else, else_if, qualified_statement, ret
+    assignment, loop, while_loop, repeat_loop, for_loop, if_then_else, else_if, case_of, case_case, ret,
+    qualified_statement
 };
 
 class NodeVisitor;

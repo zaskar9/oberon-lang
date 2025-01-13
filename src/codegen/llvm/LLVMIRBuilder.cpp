@@ -758,6 +758,10 @@ void LLVMIRBuilder::visit(AssignmentNode &node) {
     }
 }
 
+void LLVMIRBuilder::visit(CaseOfNode&) {}
+
+void LLVMIRBuilder::visit(CaseNode&) {}
+
 void LLVMIRBuilder::visit(IfThenElseNode &node) {
     auto tail = BasicBlock::Create(builder_.getContext(), "tail", function_);
     auto if_true = BasicBlock::Create(builder_.getContext(), "if_true", function_);

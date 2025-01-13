@@ -13,10 +13,11 @@
 #include "NodeReference.h"
 #include "ArrayTypeNode.h"
 #include "RecordTypeNode.h"
+#include "PointerTypeNode.h"
 #include "AssignmentNode.h"
+#include "CaseOfNode.h"
 #include "IfThenElseNode.h"
 #include "LoopNode.h"
-#include "PointerTypeNode.h"
 
 class NodeVisitor {
 
@@ -57,6 +58,8 @@ public:
 
     virtual void visit(StatementSequenceNode &) = 0;
     virtual void visit(AssignmentNode &) = 0;
+    virtual void visit(CaseOfNode &) = 0;
+    virtual void visit(CaseNode &) = 0;
     virtual void visit(IfThenElseNode &) = 0;
     virtual void visit(ElseIfNode &) = 0;
     virtual void visit(LoopNode &) = 0;

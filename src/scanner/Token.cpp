@@ -45,6 +45,7 @@ std::ostream& operator<<(std::ostream &stream, const TokenType &type) {
         case TokenType::string_literal: result = "STRING literal"; break;
         case TokenType::const_ident: result = "identifier"; break;
         case TokenType::period: result = "."; break;
+        case TokenType::range: result = ".."; break;
         case TokenType::comma: result = ","; break;
         case TokenType::colon: result = ":"; break;
         case TokenType::semicolon: result = ";"; break;

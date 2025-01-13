@@ -574,7 +574,7 @@ void Parser::fp_section(vector<unique_ptr<ParameterNode>> &params, bool &varargs
 
 // formal_type = { "ARRAY" "OF" } qualident.
 TypeNode *Parser::formal_type() {
-    FilePos start, end;
+    FilePos start;
     unsigned dims = 0;
     while (scanner_.peek()->type() == TokenType::kw_array) {
         token_ = scanner_.next(); // skip keyword "ARRAY"
@@ -592,7 +592,7 @@ TypeNode *Parser::formal_type() {
         if (dims == 0) {
             start = ident->start();
         }
-        end = ident->end();
+        const FilePos end = ident->end();
         return sema_.onTypeReference(start, end, std::move(ident), dims);
     }
     resync({ TokenType::semicolon, TokenType::rparen });
@@ -600,12 +600,13 @@ TypeNode *Parser::formal_type() {
 }
 
 // statement_sequence = statement { ";" statement } .
-void Parser::statement_sequence(StatementSequenceNode* statements) {
+void Parser::statement_sequence(StatementSequenceNode *statements) {
     logger_.debug("statement_sequence");
     auto token = scanner_.peek();
-    // [<UNTIL>, <ELSIF>, <ELSE>, <END>]
+    // [<UNTIL>, <ELSIF>, <ELSE>, <END>, <|>]
     if (token->type() == TokenType::kw_end || token->type() == TokenType::kw_elsif ||
-        token->type() == TokenType::kw_else || token->type() == TokenType::kw_until) {
+        token->type() == TokenType::kw_else || token->type() == TokenType::kw_until ||
+        token->type() == TokenType::pipe) {
         logger_.warning(token->start(), "empty statement sequence.");
     } else {
         while (true) {
@@ -613,19 +614,21 @@ void Parser::statement_sequence(StatementSequenceNode* statements) {
             token = scanner_.peek();
             if (token->type() == TokenType::semicolon) {
                 scanner_.next(); // skip semicolon
-            } else if (token->type() == TokenType::const_ident || token->type() == TokenType::kw_if ||
+            } else if (token->type() == TokenType::const_ident ||
+                       token->type() == TokenType::kw_if || token->type() == TokenType::kw_case ||
                        token->type() == TokenType::kw_loop || token->type() == TokenType::kw_repeat ||
                        token->type() == TokenType::kw_for || token->type() == TokenType::kw_while ||
                        token->type() == TokenType::kw_exit || token->type() == TokenType::kw_return) {
                 logger_.error(token->start(), "semicolon missing.");
             } else if (token->type() == TokenType::kw_end || token->type() == TokenType::kw_elsif ||
-                       token->type() == TokenType::kw_else || token->type() == TokenType::kw_until) {
+                       token->type() == TokenType::kw_else || token->type() == TokenType::kw_until ||
+                       token->type() == TokenType::pipe) {
                 break;
             } else {
                 logger_.error(token->start(), "unexpected token: " + to_string(token->type()) + ".");
-                // [<;>] and [<UNTIL>, <ELSIF>, <ELSE>, <END>]
-                resync({ TokenType::semicolon,
-                               TokenType::kw_end, TokenType::kw_elsif, TokenType::kw_else, TokenType::kw_until});
+                // [<;>] and [<UNTIL>, <ELSIF>, <ELSE>, <END>, <|>]
+                resync({ TokenType::semicolon, TokenType::kw_end, TokenType::kw_elsif, TokenType::kw_else,
+                    TokenType::kw_until, TokenType::pipe });
             }
         }
     }
@@ -637,44 +640,44 @@ void Parser::statement_sequence(StatementSequenceNode* statements) {
 unique_ptr<StatementNode> Parser::statement() {
     logger_.debug("statement");
     auto token = scanner_.peek();
-    if (token->type() == TokenType::const_ident) {
-        FilePos pos = token->start();
-        vector<unique_ptr<Selector>> selectors;
-        auto ident = designator(selectors);
-        token = scanner_.peek();
-        if (token->type() == TokenType::op_eq) {
-            logger_.error(token->start(), "unexpected operator = found, use operator := instead.");
-            return nullptr;
-        } else if (token->type() == TokenType::op_becomes) {
-            return assignment(sema_.onQualifiedExpression(pos, EMPTY_POS, std::move(ident), std::move(selectors)));
-        } else {
+    switch (token->type()) {
+        case TokenType::const_ident: {
+            const FilePos pos = token->start();
+            vector<unique_ptr<Selector>> selectors;
+            auto ident = designator(selectors);
+            token = scanner_.peek();
+            if (token->type() == TokenType::op_eq) {
+                logger_.error(token->start(), "unexpected operator = found, use operator := instead.");
+                return nullptr;
+            }
+            if (token->type() == TokenType::op_becomes) {
+                return assignment(sema_.onQualifiedExpression(pos, EMPTY_POS, std::move(ident), std::move(selectors)));
+            }
             return sema_.onQualifiedStatement(pos, EMPTY_POS, std::move(ident), std::move(selectors));
         }
-    } else if (token->type() == TokenType::kw_if) {
-        return if_statement();
-    } else if (token->type() == TokenType::kw_loop) {
-        return loop_statement();
-    } else if (token->type() == TokenType::kw_while) {
-        return while_statement();
-    } else if (token->type() == TokenType::kw_repeat) {
-        return repeat_statement();
-    } else if (token->type() == TokenType::kw_for) {
-        return for_statement();
-    } else if (token->type() == TokenType::kw_return) {
-        token_ = scanner_.next();
-        std::set follows{ TokenType::semicolon, TokenType::kw_end, TokenType::kw_elsif, TokenType::kw_else, TokenType::kw_until };
-        if (follows.find(scanner_.peek()->type()) != follows.end()) {
-            return sema_.onReturn(token_->start(), token_->end(), nullptr);
+        case TokenType::kw_if: return if_statement();
+        case TokenType::kw_loop: return loop_statement();
+        case TokenType::kw_while: return while_statement();
+        case TokenType::kw_repeat: return repeat_statement();
+        case TokenType::kw_for: return for_statement();
+        case TokenType::kw_case: return case_statement();
+        case TokenType::kw_return: {
+            token_ = scanner_.next();
+            std::set follows{ TokenType::semicolon, TokenType::kw_end, TokenType::kw_elsif, TokenType::kw_else, TokenType::kw_until };
+            if (follows.contains(scanner_.peek()->type())) {
+                return sema_.onReturn(token_->start(), token_->end(), nullptr);
+            }
+            const FilePos start = token_->start();
+            const FilePos end = token->end();
+            return sema_.onReturn(start, end, expression());
         }
-        FilePos start = token_->start();
-        FilePos end = token->end();
-        return sema_.onReturn(start, end, expression());
-    } else if (token->type() == TokenType::semicolon) {
-        logger_.warning(token->start(), "extra semicolon.");
-    } else if (token->type() == TokenType::kw_end) {
-        logger_.warning(token->start(), "semicolon before END.");
-    } else {
-        logger_.error(token->start(), "unknown or empty statement.");
+        case TokenType::semicolon:
+            logger_.warning(token->start(), "extra semicolon.");
+            break;
+        case TokenType::kw_end:
+            logger_.warning(token->start(), "semicolon before END.");
+            break;
+        default: logger_.error(token->start(), "unknown or empty statement.");
     }
     // [<;>, <END>, <ELSIF>, <ELSE>, <UNTIL>]
     // resync({ TokenType::semicolon, TokenType::kw_end, TokenType::kw_elsif, TokenType::kw_else, TokenType::kw_until });
@@ -695,8 +698,8 @@ unique_ptr<StatementNode> Parser::assignment(unique_ptr<QualifiedExpression> lva
 // if_statement = "IF" expression "THEN" statement_sequence { "ELSIF" expression "THEN" statement_sequence } [ "ELSE" statement_sequence ] "END" .
 unique_ptr<StatementNode> Parser::if_statement() {
     logger_.debug("if_statement");
-    token_ = scanner_.next(); // skip IF keyword
-    FilePos ifStart = token_->start();
+    token_ = scanner_.next();  // skip IF keyword
+    const FilePos ifStart = token_->start();
     unique_ptr<ExpressionNode> ifCond = expression();
     auto thenStmts = make_unique<StatementSequenceNode>(EMPTY_POS);
     vector<unique_ptr<ElseIfNode>> elseIfs;
@@ -713,7 +716,7 @@ unique_ptr<StatementNode> Parser::if_statement() {
                 auto elseIfStmts = make_unique<StatementSequenceNode>(EMPTY_POS);
                 statement_sequence(elseIfStmts.get());
                 elseIfs.push_back(sema_.onElseIf(elseIfStart, token_->end(),
-                                                  std::move(elseIfCond), std::move(elseIfStmts)));
+                    std::move(elseIfCond), std::move(elseIfStmts)));
             }
             token_ = scanner_.next();
         }
@@ -727,8 +730,8 @@ unique_ptr<StatementNode> Parser::if_statement() {
     }
     // [<;>, <END>, <ELSIF>, <ELSE>, <UNTIL>]
     // resync({ TokenType::semicolon, TokenType::kw_end, TokenType::kw_elsif, TokenType::kw_else, TokenType::kw_until });
-    return sema_.onIfStatement(ifStart, token_->end(),
-                                std::move(ifCond), std::move(thenStmts), std::move(elseIfs), std::move(elseStmts));
+    return sema_.onIf(ifStart, token_->end(),
+        std::move(ifCond), std::move(thenStmts), std::move(elseIfs), std::move(elseStmts));
 }
 
 // loop_statement = "LOOP" statement_sequence "END" .
@@ -770,7 +773,7 @@ unique_ptr<StatementNode> Parser::while_statement() {
 // repeat_statement = "REPEAT" statement_sequence "UNTIL" expression .
 unique_ptr<StatementNode> Parser::repeat_statement() {
     logger_.debug("repeat_statement");
-    token_ = scanner_.next(); // skip REPEAT keyword
+    token_ = scanner_.next();  // skip REPEAT keyword
     FilePos start = token_->start();
     auto stmts = make_unique<StatementSequenceNode>(EMPTY_POS);
     statement_sequence(stmts.get());
@@ -787,7 +790,7 @@ unique_ptr<StatementNode> Parser::repeat_statement() {
 // for_statement = "FOR" ident ":=" expression "TO" expression [ "BY" const_expression ] "DO" statement_sequence "END" .
 unique_ptr<StatementNode> Parser::for_statement() {
     logger_.debug("for_statement");
-    token_ = scanner_.next(); // skip FOR keyword
+    token_ = scanner_.next();  // skip FOR keyword
     FilePos start = token_->start();
     auto var = qualident();
     token_ = scanner_.next();
@@ -816,16 +819,49 @@ unique_ptr<StatementNode> Parser::for_statement() {
     }
     // [<;>, <END>, <ELSIF>, <ELSE>, <UNTIL>]
     // resync({ TokenType::semicolon, TokenType::kw_end, TokenType::kw_elsif, TokenType::kw_else, TokenType::kw_until });
-    return sema_.onForLoop(start, token_->end(), std::move(var),
-                            std::move(low), std::move(high), std::move(step),
-                            std::move(stmts));
+    return sema_.onForLoop(start, token_->end(),
+        std::move(var), std::move(low), std::move(high), std::move(step), std::move(stmts));
+}
+
+// case_statement = "CASE" expression "OF" case { "|" case } [ "ELSE" statement_sequence ] "END" .
+// case = range_expression_list ":" statement_sequence .
+unique_ptr<StatementNode> Parser::case_statement() {
+    logger_.debug("case_statement");
+    token_ = scanner_.next();  // skip CASE keyword
+    const FilePos start = token_->start();
+    auto expr = expression();
+    vector<unique_ptr<CaseNode>> cases;
+    auto elseStmts = make_unique<StatementSequenceNode>(EMPTY_POS);
+    if (assertToken(scanner_.peek(), TokenType::kw_of)) {
+        scanner_.next();  // skip OF keyword
+        do {
+            vector<unique_ptr<ExpressionNode>> labels;
+            const FilePos caseStart = scanner_.peek()->start();
+            range_expression_list(labels);
+            if (assertToken(scanner_.peek(), TokenType::colon)) {
+                scanner_.next();  // skip colon
+            }
+            auto stmts = make_unique<StatementSequenceNode>(EMPTY_POS);
+            statement_sequence(stmts.get());
+            cases.push_back(sema_.onCase(caseStart, EMPTY_POS, std::move(labels), std::move(stmts)));
+            token_ = scanner_.next();
+        } while (token_->type() == TokenType::pipe);
+        if (token_->type() == TokenType::kw_else) {
+            statement_sequence(elseStmts.get());
+        }
+        if (assertToken(scanner_.peek(), TokenType::kw_end)) {
+            scanner_.next();  // skip END keyword
+        }
+    }
+    return sema_.onCaseOf(start, token_->end(), std::move(expr), std::move(cases), std::move(elseStmts));
 }
 
 // expression_list = expression { "," expression } .
 void Parser::expression_list(vector<unique_ptr<ExpressionNode>> &expressions) {
+    logger_.debug("expression_list");
     expressions.push_back(expression());
     while (scanner_.peek()->type() == TokenType::comma) {
-        token_ = scanner_.next(); // skip comma
+        token_ = scanner_.next();  // skip comma
         expressions.push_back(expression());
     }
 }
@@ -1034,7 +1070,7 @@ unique_ptr<Selector> Parser::selector() {
     return nullptr;
 }
 
-// set = "{" [ element { "," element } ] "}" .
+// set = "{" [ range_expression { "," range_expression } ] "}" .
 unique_ptr<ExpressionNode> Parser::set() {
     logger_.debug("set");
     vector<unique_ptr<ExpressionNode>> elements;
@@ -1043,27 +1079,33 @@ unique_ptr<ExpressionNode> Parser::set() {
         token_ = scanner_.next();
         return sema_.onSetExpression(token->start(), token_->end(), std::move(elements));
     }
-    elements.push_back(element());
-    while (scanner_.peek()->type() == TokenType::comma) {
-        scanner_.next();   // skip comma
-        elements.push_back(element());
-    }
+    range_expression_list(elements);
     if (assertToken(scanner_.peek(), TokenType::rbrace)) {
         token_ = scanner_.next();   // skip closing brace
     }
     return sema_.onSetExpression(token->start(), token_->end(), std::move(elements));
 }
 
-// element = expression [ ".." expression ] .
-unique_ptr<ExpressionNode> Parser::element() {
-    logger_.debug("element");
+// range_expression = expression [ ".." expression ] .
+unique_ptr<ExpressionNode> Parser::range_expression() {
+    logger_.debug("range_expression");
     auto expr = expression();
     if (scanner_.peek()->type() == TokenType::range) {
         scanner_.next();   // skip range indicator
-        FilePos start = expr->pos();
+        const FilePos start = expr->pos();
         return sema_.onRangeExpression(start, EMPTY_POS, std::move(expr), expression());
     }
     return expr;
+}
+
+// range_expression_list = range_expression { "," range_expression }.
+void Parser::range_expression_list(vector<unique_ptr<ExpressionNode>>& expressions) {
+    logger_.debug("range_expression_list");
+    expressions.push_back(range_expression());
+    while (scanner_.peek()->type() == TokenType::comma) {
+        token_ = scanner_.next();  // skip comma
+        expressions.push_back(range_expression());
+    }
 }
 
 bool Parser::assertToken(const Token *token, TokenType expected) {
