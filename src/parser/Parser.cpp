@@ -143,16 +143,16 @@ void Parser::module(ASTContext *context) {
 // import_list = IMPORT import { "," import } ";" .
 void Parser::import_list(vector<unique_ptr<ImportNode>> &imports) {
     logger_.debug("import_list");
-    scanner_.next(); // skip IMPORT keyword
+    scanner_.next();  // skip IMPORT keyword
     while (true) {
         import(imports);
         auto token = scanner_.peek();
         if (token->type() == TokenType::comma) {
-            scanner_.next(); // skip comma
+            scanner_.next();  // skip comma
         } else if (token->type() == TokenType::const_ident) {
             logger_.error(token->start(), "comma missing.");
         } else if (token->type() == TokenType::semicolon) {
-            scanner_.next(); // skip semicolon
+            scanner_.next();  // skip semicolon
             break;
         } else {
             logger_.error(token->start(), to_string(token->type()) + "unexpected.");
@@ -287,7 +287,7 @@ TypeNode* Parser::type() {
 // array_type = "ARRAY" expression { "," expression } "OF" type .
 ArrayTypeNode* Parser::array_type() {
     logger_.debug("array_type");
-    FilePos pos = scanner_.next()->start(); // skip ARRAY keyword and get its position
+    FilePos pos = scanner_.next()->start();  // skip ARRAY keyword and get its position
     vector<unique_ptr<ExpressionNode>> indices;
     indices.push_back(expression());
     while (scanner_.peek()->type() == TokenType::comma) {
@@ -307,15 +307,15 @@ ArrayTypeNode* Parser::array_type() {
 // record_type = "RECORD" field_list { ";" field_list } "END" .
 RecordTypeNode* Parser::record_type() {
     logger_.debug("record_type");
-    FilePos pos = scanner_.next()->start(); // skip RECORD keyword and get its position
+    FilePos pos = scanner_.next()->start();  // skip RECORD keyword and get its position
     vector<unique_ptr<FieldNode>> fields;
     field_list(fields);
     while (scanner_.peek()->type() == TokenType::semicolon) {
-        scanner_.next();
+        token_ = scanner_.next();  // skip semicolon but keep token for error reporting in `Parser::field_list`
         field_list(fields);
     }
     if (assertToken(scanner_.peek(), TokenType::kw_end)) {
-        scanner_.next();
+        scanner_.next();  // skip END keyword
     }
     // [<)>, <;>, <END>]
     // resync({ TokenType::semicolon, TokenType::rparen, TokenType::kw_end });
@@ -341,12 +341,10 @@ void Parser::field_list(vector<unique_ptr<FieldNode>> &fields) {
                 }
             }
         }
+    } else if (next->type() == TokenType::kw_end) {
+        logger_.warning(token_->start(), "redundant semicolon.");
     } else {
-        if (next->type() == TokenType::kw_end) {
-            logger_.error(next->start(), "semicolon before END.");
-        } else {
-            logger_.error(next->start(), "identifier expected.");
-        }
+        logger_.error(next->start(), "identifier expected.");
     }
     // [<;>, <END>]
     resync({ TokenType::semicolon, TokenType::kw_end });
@@ -504,7 +502,7 @@ void Parser::formal_parameters(vector<unique_ptr<ParameterNode>> &params, bool &
                 break;
             }
             if (scanner_.peek()->type() == TokenType::semicolon) {
-                token = scanner_.next(); // skip semicolon
+                token = scanner_.next();  // skip semicolon
                 if (varargs) {
                     logger_.error(token->start(), "variadic arguments must be last formal parameter.");
                 }
@@ -613,7 +611,7 @@ void Parser::statement_sequence(StatementSequenceNode *statements) {
             statements->addStatement(statement());
             token = scanner_.peek();
             if (token->type() == TokenType::semicolon) {
-                scanner_.next(); // skip semicolon
+                token_ = scanner_.next();  // skip semicolon but keep token for error reporting in `Parser::statement`
             } else if (token->type() == TokenType::const_ident ||
                        token->type() == TokenType::kw_if || token->type() == TokenType::kw_case ||
                        token->type() == TokenType::kw_loop || token->type() == TokenType::kw_repeat ||
@@ -672,10 +670,14 @@ unique_ptr<StatementNode> Parser::statement() {
             return sema_.onReturn(start, end, expression());
         }
         case TokenType::semicolon:
-            logger_.warning(token->start(), "extra semicolon.");
+            logger_.warning(token_->start(), "redundant semicolon.");
             break;
         case TokenType::kw_end:
-            logger_.warning(token->start(), "semicolon before END.");
+        case TokenType::kw_else:
+        case TokenType::kw_elsif:
+        case TokenType::kw_until:
+        case TokenType::pipe:
+            logger_.warning(token_->start(), "redundant semicolon.");
             break;
         default: logger_.error(token->start(), "unknown or empty statement.");
     }
@@ -687,7 +689,7 @@ unique_ptr<StatementNode> Parser::statement() {
 // assignment = designator ":=" expression .
 unique_ptr<StatementNode> Parser::assignment(unique_ptr<QualifiedExpression> lvalue) {
     logger_.debug("assignment");
-    scanner_.next(); // skip assign operator
+    scanner_.next();  // skip assign operator
     FilePos start = lvalue->pos();
     auto statement = sema_.onAssignment(start, EMPTY_POS, std::move(lvalue), expression());
     // [<;>, <END>, <ELSIF>, <ELSE>, <UNTIL>]
@@ -737,7 +739,7 @@ unique_ptr<StatementNode> Parser::if_statement() {
 // loop_statement = "LOOP" statement_sequence "END" .
 unique_ptr<StatementNode> Parser::loop_statement() {
     logger_.debug("loop_statement");
-    token_ = scanner_.next(); // skip LOOP keyword
+    token_ = scanner_.next();  // skip LOOP keyword
     FilePos start = token_->start();
     auto stmts = make_unique<StatementSequenceNode>(EMPTY_POS);
     statement_sequence(stmts.get());
@@ -753,7 +755,7 @@ unique_ptr<StatementNode> Parser::loop_statement() {
 // while_statement = "WHILE" expression "DO" statement_sequence "END" .
 unique_ptr<StatementNode> Parser::while_statement() {
     logger_.debug("while_statement");
-    token_ = scanner_.next(); // skip WHILE keyword
+    token_ = scanner_.next();  // skip WHILE keyword
     FilePos start = token_->start();
     auto cond = expression();
     auto stmts = make_unique<StatementSequenceNode>(EMPTY_POS);
@@ -805,7 +807,7 @@ unique_ptr<StatementNode> Parser::for_statement() {
     }
     unique_ptr<ExpressionNode> step;
     if (scanner_.peek()->type() == TokenType::kw_by) {
-        scanner_.next(); // skip BY keyword
+        scanner_.next();  // skip BY keyword
         step = expression();
     }
     token_ = scanner_.next();
@@ -968,11 +970,11 @@ unique_ptr<ExpressionNode> Parser::basic_factor() {
     } else if (token->type() == TokenType::lbrace) {
         return set();
     } else if (token->type() == TokenType::lparen) {
-        scanner_.next();   // skip opening parenthesis
+        scanner_.next();  // skip opening parenthesis
         auto expr = expression();
         token = scanner_.peek();
         if (assertToken(token, TokenType::rparen)) {
-            scanner_.next();
+            scanner_.next();  // skip closing parenthesis
         }
         return expr;
     }

@@ -9,6 +9,7 @@
 #include <bitset>
 #include <map>
 #include <memory>
+#include <optional>
 #include <stack>
 #include <string>
 #include <vector>
@@ -26,6 +27,7 @@
 
 using std::bitset;
 using std::map;
+using std::optional;
 using std::stack;
 using std::string;
 using std::unique_ptr;
@@ -67,8 +69,8 @@ private:
     static int64_t floor_div(int64_t, int64_t);
 
     bool foldBoolean(const FilePos &, const FilePos &, ExpressionNode *);
-    int64_t foldInteger(const FilePos &, const FilePos &, ExpressionNode *);
-    uint8_t foldChar(const FilePos &, const FilePos &, ExpressionNode *);
+    optional<int64_t> foldInteger(const FilePos &, const FilePos &, ExpressionNode *);
+    optional<uint8_t> foldChar(const FilePos &, const FilePos &, ExpressionNode *);
     double foldReal(const FilePos &, const FilePos &, ExpressionNode *);
     string foldString(const FilePos &, const FilePos &, ExpressionNode *);
     bitset<32> foldSet(const FilePos &, const FilePos &, ExpressionNode *);

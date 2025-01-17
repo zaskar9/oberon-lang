@@ -12,6 +12,11 @@ int case_statement(char ch) {
         case 3: return printf("(end of text)");
         case 4: return printf("(end of transmission)");
         case 5: return printf("(enquiry)");
+        case 6:
+        case 7:
+        case 8:
+        case 9:
+        case 10: return printf("labels 6 thru 10");
         default: return printf("unknown character");
     }
 }

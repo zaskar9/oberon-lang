@@ -475,11 +475,22 @@ Sema::onCase(const FilePos &start, [[maybe_unused]] const FilePos &end,
     for (const auto &label : labels) {
         if (label->getNodeType() == NodeType::range_expression) {
             const auto expr = dynamic_cast<RangeExpressionNode *>(label.get());
-            if (!expr->getLower()->isConstant()) {
-                logger_.error(expr->getLower()->pos(), "constant expression expected.");
+            auto lower = expr->getLower();
+            optional<int64_t> loValue;
+            if (lower->getType()->isInteger()) {
+                loValue = foldInteger(lower->pos(), EMPTY_POS, lower);
+            } else {
+                loValue = foldChar(lower->pos(), EMPTY_POS, lower);
             }
-            if (!expr->getUpper()->isConstant()) {
-                logger_.error(expr->getUpper()->pos(), "constant expression expected.");
+            auto upper = expr->getUpper();
+            optional<int64_t> upValue;
+            if (upper->getType()->isInteger()) {
+                upValue = foldInteger(upper->pos(), EMPTY_POS, upper);
+            } else {
+                upValue = foldChar(upper->pos(), EMPTY_POS, upper);
+            }
+            if (loValue.has_value() && upValue.has_value() && upValue.value() <= loValue.value()) {
+                logger_.error(upper->pos(), "upper bound must be greater than lower bound.");
             }
         } else if (!label->isConstant()) {
             if (label->getNodeType() == NodeType::qualified_expression &&
@@ -1136,7 +1147,7 @@ Sema::onSetExpression(const FilePos &start, [[maybe_unused]] const FilePos &end,
             }
             if (loValue >= 0 && upValue >= 0) {
                 if (loValue >= upValue) {
-                    logger_.error(start, "lower bound must be smaller than upper bound.");
+                    logger_.error(upper->pos(), "upper bound must be greater than lower bound.");
                 }
                 bitset<32> result;
                 result.flip();
@@ -1166,8 +1177,8 @@ Sema::onSetExpression(const FilePos &start, [[maybe_unused]] const FilePos &end,
                 const auto range = dynamic_cast<const RangeLiteralNode *>(elem.get());
                 result |= range->value();
             } else if (elem->getType()->isInteger()) {
-                const int64_t pos = foldInteger(start, end, elem.get());
-                result.set(static_cast<std::size_t>(pos));
+                const optional<int64_t> pos = foldInteger(start, end, elem.get());
+                result.set(static_cast<std::size_t>(pos.value_or(0)));
             }
         }
         return make_unique<SetLiteralNode>(start, result, setTy_);
@@ -1283,22 +1294,22 @@ Sema::foldBoolean(const FilePos &start, [[maybe_unused]] const FilePos &end, Exp
     return {};
 }
 
-int64_t
+optional<int64_t>
 Sema::foldInteger(const FilePos &start, [[maybe_unused]] const FilePos &end, ExpressionNode *expr) {
     if (expr->getNodeType() == NodeType::integer) {
         return dynamic_cast<const IntegerLiteralNode *>(expr)->value();
     }
     logger_.error(start, "expression is not a constant integer value.");
-    return {};
+    return std::nullopt;
 }
 
-uint8_t
+optional<uint8_t>
 Sema::foldChar(const FilePos &start, [[maybe_unused]] const FilePos &end, ExpressionNode *expr) {
     if (expr->getNodeType() == NodeType::character) {
         return dynamic_cast<const CharLiteralNode *>(expr)->value();
     }
     logger_.error(start, "expression is not a constant character value.");
-    return {};
+    return std::nullopt;
 }
 
 double
@@ -1307,7 +1318,7 @@ Sema::foldReal(const FilePos &start, [[maybe_unused]] const FilePos &end, Expres
         return dynamic_cast<const RealLiteralNode *>(expr)->value();
     } else if (expr->getNodeType() == NodeType::integer) {
         // promote integer literal to real literal
-        return (double) foldInteger(start, end, expr);
+        return (double) foldInteger(start, end, expr).value_or(0);
     }
     logger_.error(start, "expression is not a constant real value.");
     return {};
@@ -1363,11 +1374,12 @@ Sema::fold(const FilePos &start, const FilePos &end, ExpressionNode *expr) {
         if (type) {
             auto cast = expr->getCast();
             if (type->kind() == TypeKind::CHAR) {
-                return make_unique<CharLiteralNode>(expr->pos(), foldChar(start, end, expr), type, cast);
+                uint8_t value = foldChar(start, end, expr).value_or('\0');
+                return make_unique<CharLiteralNode>(expr->pos(), value, type, cast);
             } else if (type->kind() == TypeKind::SHORTINT ||
                        type->kind() == TypeKind::INTEGER ||
                        type->kind() == TypeKind::LONGINT) {
-                int64_t value = foldInteger(start, end, expr);
+                int64_t value = foldInteger(start, end, expr).value_or(0);
                 return make_unique<IntegerLiteralNode>(expr->pos(), value, intType(value), cast);
             } else if (type->kind() == TypeKind::REAL ||
                        type->kind() == TypeKind::LONGREAL) {
@@ -1400,7 +1412,7 @@ Sema::fold(const FilePos &start, [[maybe_unused]] const FilePos &end, OperatorTy
                 logger_.error(start, "operator " + to_string(op) + " cannot be applied to boolean values.");
         }
     } else if (type->isInteger()) {
-        int64_t value = foldInteger(start, end, expr);
+        int64_t value = foldInteger(start, end, expr).value_or(0);
         switch (op) {
             case OperatorType::PLUS:
                 return make_unique<IntegerLiteralNode>(start, value, type, cast);
@@ -1456,8 +1468,8 @@ Sema::fold(const FilePos &start, [[maybe_unused]] const FilePos &end,
             }
         } else if (lhs->getType()->isNumeric() && rhs->getType()->isNumeric()) {
             if (lhs->getType()->isInteger() && rhs->getType()->isInteger()) {
-                int64_t lvalue = foldInteger(start, end, lhs);
-                int64_t rvalue = foldInteger(start, end, rhs);
+                int64_t lvalue = foldInteger(start, end, lhs).value_or(0);
+                int64_t rvalue = foldInteger(start, end, rhs).value_or(0);
                 auto res = foldRelation(start, op, lvalue, rvalue, common);
                 if (res) {
                     return res;
@@ -1473,8 +1485,8 @@ Sema::fold(const FilePos &start, [[maybe_unused]] const FilePos &end,
                 logger_.error(start, "operator " + to_string(op) + " cannot be applied to real values.");
             }
         } else if (lhs->getType()->isChar() && rhs->getType()->isChar()) {
-            uint8_t lvalue = foldChar(start, end, lhs);
-            uint8_t rvalue = foldChar(start, end, rhs);
+            uint8_t lvalue = foldChar(start, end, lhs).value_or(0);
+            uint8_t rvalue = foldChar(start, end, rhs).value_or(0);
             auto res = foldRelation(start, op, lvalue, rvalue, common);
             if (res) {
                 return res;
@@ -1523,8 +1535,8 @@ Sema::fold(const FilePos &start, [[maybe_unused]] const FilePos &end,
             logger_.error(start, "operator " + to_string(op) + " cannot be applied here.");
         }
     } else if (common->isInteger()) {
-        int64_t lvalue = foldInteger(start, end, lhs);
-        int64_t rvalue = foldInteger(start, end, rhs);
+        int64_t lvalue = foldInteger(start, end, lhs).value_or(0);
+        int64_t rvalue = foldInteger(start, end, rhs).value_or(0);
         int64_t value;
         switch (op) {
             case OperatorType::PLUS:
