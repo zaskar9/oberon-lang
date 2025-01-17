@@ -814,13 +814,21 @@ Sema::onActualParameters(DeclarationNode *context, TypeNode *base, ActualParamet
         if (!expr) {
             continue;
         }
+        auto exprTy = expr->getType();
         if (cnt < proc->parameters().size()) {
             auto param = proc->parameters()[cnt].get();
-            if (assertCompatible(expr->pos(), param->getType(), expr->getType(), param->isVar())) {
+            auto paramTy = param->getType();
+            if (assertCompatible(expr->pos(), paramTy, exprTy)) {
                 if (param->isVar()) {
                     string err;
                     if (!assertAssignable(expr, err)) {
                         logger_.error(expr->pos(), "illegal actual parameter: cannot pass " + err + " by reference.");
+                    } else if (exprTy->isNumeric() && paramTy->isNumeric()) {
+                        // The types of variable parameters need to be an exact match as they are read-write parameters
+                        if (paramTy->kind() != exprTy->kind()) {
+                            logger_.error(expr->pos(), "type mismatch: cannot pass " + to_string(*exprTy->getIdentifier()) +
+                                               " to " + to_string(*paramTy->getIdentifier()) + " by reference.");
+                        }
                     }
                 } else {
                     if (param->getType() != expr->getType()) {
@@ -973,7 +981,7 @@ Sema::onUnaryExpression(const FilePos &start, [[maybe_unused]] const FilePos &en
 }
 
 unique_ptr<ExpressionNode>
-Sema::onBinaryExpression(const FilePos &start, [[maybe_unused]] const FilePos &end,
+Sema::onBinaryExpression(const FilePos &start, const FilePos &end,
                          OperatorType op, unique_ptr<ExpressionNode> lhs, unique_ptr<ExpressionNode> rhs) {
     if (!lhs) {
         logger_.error(start, "undefined left-hand side in binary expression.");
@@ -990,7 +998,7 @@ Sema::onBinaryExpression(const FilePos &start, [[maybe_unused]] const FilePos &e
     }
     auto rhsType = rhs->getType();
     if (!rhsType) {
-        logger_.error(lhs->pos(), "undefined right-hand side type in binary expression.");
+        logger_.error(rhs->pos(), "undefined right-hand side type in binary expression.");
         return nullptr;
     }
     TypeNode *common = nullptr;
@@ -1546,9 +1554,19 @@ Sema::fold(const FilePos &start, [[maybe_unused]] const FilePos &end,
             case OperatorType::TIMES:
                 value = lvalue * rvalue; break;
             case OperatorType::DIV:
-                value = floor_div(lvalue, rvalue); break;
+                if (rvalue == 0) {
+                    logger_.error(rhs->pos(), "division by zero.");
+                    value = 0;
+                }
+                value = floor_div(lvalue, rvalue);
+                break;
             case OperatorType::MOD:
-                value = euclidean_mod(lvalue, rvalue); break;
+                if (rvalue == 0) {
+                    logger_.error(rhs->pos(), "division by zero.");
+                    value = 0;
+                }
+                value = euclidean_mod(lvalue, rvalue);
+                break;
             default:
                 logger_.error(start, "operator " + to_string(op) + " cannot be applied to integer values.");
                 return nullptr;
@@ -1566,7 +1584,12 @@ Sema::fold(const FilePos &start, [[maybe_unused]] const FilePos &end,
             case OperatorType::TIMES:
                 value = lvalue * rvalue; break;
             case OperatorType::DIVIDE:
-                value = lvalue / rvalue; break;
+                if (rvalue == 0) {
+                    logger_.error(rhs->pos(), "division by zero.");
+                    value = 0;
+                }
+                value = lvalue / rvalue;
+                break;
             default:
                 logger_.error(start, "operator " + to_string(op) + " cannot be applied to real values.");
                 return nullptr;
@@ -1656,7 +1679,7 @@ Sema::checkExport(DeclarationNode *node) {
 }
 
 bool
-Sema::assertCompatible(const FilePos &pos, TypeNode *expected, TypeNode *actual, bool var, bool isPtr) {
+Sema::assertCompatible(const FilePos &pos, TypeNode *expected, TypeNode *actual, bool isPtr) {
     if (!expected || !actual) {
         logger_.error(pos, "type mismatch.");
         return false;
@@ -1681,15 +1704,6 @@ Sema::assertCompatible(const FilePos &pos, TypeNode *expected, TypeNode *actual,
         if ((expected->kind() == TypeKind::ENTIRE && actual->isInteger()) ||
             (expected->kind() == TypeKind::FLOATING && actual->isReal()) ||
             (expected->kind() == TypeKind::NUMERIC)) {
-            return true;
-        }
-        if (var) {
-            // The types of variable parameters need to be an exact match as they are read-write parameters
-            if (expected->kind() != actual->kind()) {
-                logger_.error(pos, "type mismatch: cannot pass " + to_string(*actualId) +
-                                   " to " + to_string(*expectedId) + " by reference.");
-                return false;
-            }
             return true;
         }
         // Both expected and actual type are concrete types: assure legal conversion and promotion
@@ -1718,10 +1732,10 @@ Sema::assertCompatible(const FilePos &pos, TypeNode *expected, TypeNode *actual,
             auto act_array = dynamic_cast<ArrayTypeNode *>(actual);
             if (exp_array->dimensions() >= act_array->dimensions()) {
                 if (exp_array->isOpen()) {
-                    return assertCompatible(pos, exp_array->getMemberType(), act_array->getMemberType(), var);
+                    return assertCompatible(pos, exp_array->getMemberType(), act_array->getMemberType());
                 } else {
                     for (size_t i = 0; i < exp_array->dimensions(); ++i) {
-                        if (!assertCompatible(pos, exp_array->types()[i], act_array->types()[i], var)) {
+                        if (!assertCompatible(pos, exp_array->types()[i], act_array->types()[i])) {
                             return false;
                         }
                         if (exp_array->lengths()[i] < act_array->lengths()[i]) {
@@ -1754,7 +1768,7 @@ Sema::assertCompatible(const FilePos &pos, TypeNode *expected, TypeNode *actual,
         if (actual->isPointer()) {
             auto exp_ptr = dynamic_cast<PointerTypeNode *>(expected);
             auto act_ptr = dynamic_cast<PointerTypeNode *>(actual);
-            return assertCompatible(pos, exp_ptr->getBase(), act_ptr->getBase(), var, true);
+            return assertCompatible(pos, exp_ptr->getBase(), act_ptr->getBase(), true);
         } else if (actual->kind() == TypeKind::NILTYPE) {
             return true;
         }

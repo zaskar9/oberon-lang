@@ -884,7 +884,7 @@ unique_ptr<ExpressionNode> Parser::expression() {
         token_ = scanner_.next();
         OperatorType op = token_to_operator(token_->type());
         auto rhs = simple_expression();
-        result = sema_.onBinaryExpression(token_->start(), EMPTY_POS, op, std::move(result), std::move(rhs));
+        result = sema_.onBinaryExpression(result->pos(), EMPTY_POS, op, std::move(result), std::move(rhs));
     }
     if (!result) {
         // [<END>, <ELSE>, <TO>, <THEN>, <UNTIL>, <ELSIF>, <BY>, <DO>, <OF>, <)>, <]>, <,>, <;>]
@@ -1056,7 +1056,7 @@ unique_ptr<Selector> Parser::selector() {
         token_ = scanner_.next();
         return make_unique<Dereference>(token_->start());
     } else if (token->type() == TokenType::lparen) {
-        token_ = scanner_.next(); // skip left parenthesis
+        token_ = scanner_.next();  // skip left parenthesis
         FilePos start = token_->start();
         vector<std::unique_ptr<ExpressionNode>> params;
         auto debug = scanner_.peek()->type();
@@ -1064,7 +1064,7 @@ unique_ptr<Selector> Parser::selector() {
             expression_list(params);
         }
         logger_.debug("actual_parameters");
-        token_ = scanner_.next(); // skip right parenthesis
+        token_ = scanner_.next();  // skip right parenthesis
         assertToken(token_.get(), TokenType::rparen);
         return make_unique<ActualParameters>(start, std::move(params));;
     }

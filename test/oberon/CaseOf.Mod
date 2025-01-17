@@ -11,24 +11,32 @@ CONST
 TYPE
     ObjectDesc = RECORD id: INTEGER END;
     Object = POINTER TO ObjectDesc;
-    PersonDesc = RECORD(* ObjectDesc *) age: INTEGER; END;
+    PersonDesc = RECORD(* ObjectDesc *) age: INTEGER END;
     Person = POINTER TO PersonDesc;
     Vector = ARRAY 10 OF INTEGER;
+
+VAR
+    i: INTEGER;
+    r: REAL;
 
 PROCEDURE CharacterClass(ch: CHAR);
 BEGIN
   CASE ch OF
-      9 .. 1 : Out.String("Test"); Out.Ln;
+      9 .. 1 : Out.String("Test"); Out.Ln
     | "A" .. "Z": Out.String("uppercase letter")
     | "a" .. "z": Out.String("lowercase letter")
     | "0" .. ch: Out.String("digit")
     | ch: Out.String("identity")
     | Object: Out.String("object")
     | ObjectDesc: Out.String("record")
-    | Vector: Out.String("vector");;;;;
+    | Vector: Out.String("vector")
   ELSE
-    Out.String("special character");
+    Out.String("special character")
   END
 END CharacterClass;
 
+(* BEGIN
+    i := 10 MOD 0;
+    i := 10 DIV 0;
+    r := 10 / 0; *)
 END CaseOf.

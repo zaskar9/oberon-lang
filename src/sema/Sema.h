@@ -60,7 +60,7 @@ private:
 
     void checkExport(DeclarationNode *);
 
-    bool assertCompatible(const FilePos &, TypeNode *, TypeNode *, bool = false, bool = false);
+    bool assertCompatible(const FilePos &, TypeNode *, TypeNode *, bool = false);
     TypeNode *commonType(const FilePos &, TypeNode *, TypeNode *) const;
 
     static string format(const TypeNode *, bool = false);
