@@ -32,9 +32,9 @@ public:
     [[nodiscard]] ExpressionNode* getCondition() const;
     [[nodiscard]] StatementSequenceNode* getStatements() const;
 
-    void accept(NodeVisitor& visitor) final;
+    void accept(NodeVisitor&) final;
 
-    void print(std::ostream &stream) const final;
+    void print(std::ostream&) const final;
 
 };
 
@@ -42,7 +42,6 @@ public:
 class IfThenElseNode final : public StatementNode {
 
 private:
-
     unique_ptr<ExpressionNode> condition_;
     unique_ptr<StatementSequenceNode> thenStatements_;
     vector<unique_ptr<ElseIfNode>> elseIfs_;
@@ -58,16 +57,16 @@ public:
     [[nodiscard]] ExpressionNode* getCondition() const;
     [[nodiscard]] StatementSequenceNode* getThenStatements() const;
 
-    [[nodiscard]] ElseIfNode* getElseIf(size_t num) const;
+    [[nodiscard]] ElseIfNode* getElseIf(size_t) const;
     [[nodiscard]] size_t getElseIfCount() const;
     [[nodiscard]] bool hasElseIf() const;
 
     [[nodiscard]] StatementSequenceNode* getElseStatements() const;
     [[nodiscard]] bool hasElse() const;
 
-    void accept(NodeVisitor& visitor) final;
+    void accept(NodeVisitor&) final;
 
-    void print(std::ostream &stream) const final;
+    void print(std::ostream&) const final;
 
 };
 

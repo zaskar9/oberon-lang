@@ -313,7 +313,7 @@ public:
                      TypeNode *type = nullptr, TypeNode *cast = nullptr) :
             LiteralNode(NodeType::range, pos, TypeKind::SET, type, cast), value_(value), lower_(lower), upper_(upper) {};
 
-    [[nodiscard]] bitset<32> value() const;
+    [[nodiscard]] const bitset<32> &value() const;
     [[nodiscard]] int64_t lower() const;
     [[nodiscard]] int64_t upper() const;
 

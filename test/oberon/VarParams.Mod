@@ -51,6 +51,21 @@ BEGIN
     SwapTuple1(t)
 END SwapTuple2;
 
+(* PROCEDURE Test();
+    CONST c = 10;
+    VAR v: INTEGER;
+        s: SHORTINT;
+        l: LONGINT;
+    PROCEDURE p1(VAR x: INTEGER); END p1;
+BEGIN
+    v := 0;
+    p1(v);
+    p1(4 + 5);
+    p1(c);
+    p1(s);
+    p1(l)
+END Test; *)
+
 BEGIN
     a[0] := 42; a[1] := 24;
     SwapList1(a);

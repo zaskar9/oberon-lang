@@ -32,7 +32,7 @@ StatementSequenceNode* IfThenElseNode::getThenStatements() const {
     return thenStatements_.get();
 }
 
-ElseIfNode* IfThenElseNode::getElseIf(size_t num) const {
+ElseIfNode* IfThenElseNode::getElseIf(const size_t num) const {
     return elseIfs_.at(num).get();
 }
 
@@ -61,8 +61,8 @@ void IfThenElseNode::print(std::ostream& stream) const {
     for (auto const& elseIf : elseIfs_) {
         stream << *elseIf;
     }
-    if (elseStatements_ !=nullptr) {
+    if (elseStatements_ != nullptr) {
         stream << " ELSE " << *elseStatements_;
     }
-    stream << "END";
+    stream << " END";
 }

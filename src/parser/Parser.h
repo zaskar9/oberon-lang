@@ -13,8 +13,7 @@
 #include <vector>
 
 #include "scanner/Scanner.h"
-#include "logging/Logger.h"
-#include "data/ast/Node.h"
+#include "data/ast/ASTContext.h"
 #include "data/ast/Ident.h"
 #include "data/ast/ExpressionNode.h"
 #include "data/ast/TypeNode.h"
@@ -26,9 +25,8 @@
 #include "data/ast/StatementNode.h"
 #include "data/ast/StatementSequenceNode.h"
 #include "data/ast/NodeReference.h"
-#include "data/symtab/SymbolTable.h"
 #include "compiler/CompilerConfig.h"
-#include "data/ast/ASTContext.h"
+#include "logging/Logger.h"
 #include "sema/Sema.h"
 
 using std::set;
@@ -72,7 +70,8 @@ private:
     unique_ptr<QualIdent> designator(vector<unique_ptr<Selector>> &);
     unique_ptr<Selector> selector();
     unique_ptr<ExpressionNode> set();
-    unique_ptr<ExpressionNode> element();
+    unique_ptr<ExpressionNode> range_expression();
+    void range_expression_list(vector<unique_ptr<ExpressionNode>> &);
 
     TypeNode* type();
 
@@ -97,6 +96,7 @@ private:
     unique_ptr<StatementNode> while_statement();
     unique_ptr<StatementNode> repeat_statement();
     unique_ptr<StatementNode> for_statement();
+    unique_ptr<StatementNode> case_statement();
 
     bool assertToken(const Token *token, TokenType expected);
     bool assertOberonIdent(const Ident *ident);

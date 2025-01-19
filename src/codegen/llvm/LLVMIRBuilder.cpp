@@ -758,6 +758,34 @@ void LLVMIRBuilder::visit(AssignmentNode &node) {
     }
 }
 
+void LLVMIRBuilder::visit(CaseOfNode& node) {
+    auto tail = BasicBlock::Create(builder_.getContext(), "tail", function_);
+    auto dflt = BasicBlock::Create(builder_.getContext(), "default", function_);
+    setRefMode(true);
+    node.getExpression()->accept(*this);
+    restoreRefMode();
+    auto *type = dyn_cast<IntegerType>(getLLVMType(node.getExpression()->getType()));
+    SwitchInst *inst = builder_.CreateSwitch(value_, dflt, node.getLabelCount());
+    for (size_t i = 0; i < node.getCaseCount(); ++i) {
+        auto block = BasicBlock::Create(builder_.getContext(), "case" + to_string(i), function_);
+        auto c = node.getCase(i);
+        builder_.SetInsertPoint(block);
+        c->getStatements()->accept(*this);
+        builder_.CreateBr(tail);
+        for (int64_t label : c->getCases()) {
+            ConstantInt* value = node.getExpression()->getType()->isChar() ?
+                    ConstantInt::get(type, static_cast<uint64_t>(label)) : ConstantInt::getSigned(type, label);
+            inst->addCase(value, block);
+        }
+    }
+    builder_.SetInsertPoint(dflt);
+    node.getElseStatements()->accept(*this);
+    builder_.CreateBr(tail);
+    builder_.SetInsertPoint(tail);
+}
+
+void LLVMIRBuilder::visit(CaseNode&) {}
+
 void LLVMIRBuilder::visit(IfThenElseNode &node) {
     auto tail = BasicBlock::Create(builder_.getContext(), "tail", function_);
     auto if_true = BasicBlock::Create(builder_.getContext(), "if_true", function_);

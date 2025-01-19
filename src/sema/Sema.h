@@ -9,22 +9,25 @@
 #include <bitset>
 #include <map>
 #include <memory>
+#include <optional>
 #include <stack>
 #include <string>
 #include <vector>
 
 #include "data/ast/ASTContext.h"
 #include "data/ast/ModuleNode.h"
+#include "data/ast/CaseOfNode.h"
+#include "data/ast/IfThenElseNode.h"
+#include "data/ast/LoopNode.h"
 #include "data/symtab/SymbolTable.h"
 #include "data/symtab/SymbolExporter.h"
 #include "data/symtab/SymbolImporter.h"
 #include "logging/Logger.h"
-#include "data/ast/IfThenElseNode.h"
-#include "data/ast/LoopNode.h"
 #include "system/OberonSystem.h"
 
 using std::bitset;
 using std::map;
+using std::optional;
 using std::stack;
 using std::string;
 using std::unique_ptr;
@@ -57,7 +60,7 @@ private:
 
     void checkExport(DeclarationNode *);
 
-    bool assertCompatible(const FilePos &, TypeNode *, TypeNode *, bool = false, bool = false);
+    bool assertCompatible(const FilePos &, TypeNode *, TypeNode *, bool = false);
     TypeNode *commonType(const FilePos &, TypeNode *, TypeNode *) const;
 
     static string format(const TypeNode *, bool = false);
@@ -66,8 +69,8 @@ private:
     static int64_t floor_div(int64_t, int64_t);
 
     bool foldBoolean(const FilePos &, const FilePos &, ExpressionNode *);
-    int64_t foldInteger(const FilePos &, const FilePos &, ExpressionNode *);
-    uint8_t foldChar(const FilePos &, const FilePos &, ExpressionNode *);
+    optional<int64_t> foldInteger(const FilePos &, const FilePos &, ExpressionNode *);
+    optional<uint8_t> foldChar(const FilePos &, const FilePos &, ExpressionNode *);
     double foldReal(const FilePos &, const FilePos &, ExpressionNode *);
     string foldString(const FilePos &, const FilePos &, ExpressionNode *);
     bitset<32> foldSet(const FilePos &, const FilePos &, ExpressionNode *);
@@ -131,11 +134,11 @@ public:
 
     unique_ptr<AssignmentNode> onAssignment(const FilePos &, const FilePos &,
                                             unique_ptr<QualifiedExpression>, unique_ptr<ExpressionNode>);
-    unique_ptr<IfThenElseNode> onIfStatement(const FilePos &, const FilePos &,
-                                             unique_ptr<ExpressionNode>,
-                                             unique_ptr<StatementSequenceNode>,
-                                             vector<unique_ptr<ElseIfNode>>,
-                                             unique_ptr<StatementSequenceNode>);
+    unique_ptr<IfThenElseNode> onIf(const FilePos &, const FilePos &,
+                                    unique_ptr<ExpressionNode>,
+                                    unique_ptr<StatementSequenceNode>,
+                                    vector<unique_ptr<ElseIfNode>>,
+                                    unique_ptr<StatementSequenceNode>);
     unique_ptr<ElseIfNode> onElseIf(const FilePos &, const FilePos &,
                                     unique_ptr<ExpressionNode>,
                                     unique_ptr<StatementSequenceNode>);
@@ -153,6 +156,13 @@ public:
                                       unique_ptr<ExpressionNode>,
                                       unique_ptr<ExpressionNode>,
                                       unique_ptr<StatementSequenceNode>);
+    unique_ptr<CaseOfNode> onCaseOf(const FilePos &, const FilePos &,
+                                    unique_ptr<ExpressionNode>,
+                                    vector<unique_ptr<CaseNode>>,
+                                    unique_ptr<StatementSequenceNode>);
+    unique_ptr<CaseNode> onCase(const FilePos &, const FilePos &,
+                                vector<unique_ptr<ExpressionNode>>,
+                                unique_ptr<StatementSequenceNode>);
     unique_ptr<ReturnNode> onReturn(const FilePos &, const FilePos &, unique_ptr<ExpressionNode>);
 
     unique_ptr<StatementNode> onQualifiedStatement(const FilePos &, const FilePos &,

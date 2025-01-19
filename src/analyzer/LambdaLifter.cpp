@@ -293,6 +293,23 @@ void LambdaLifter::visit(AssignmentNode &node) {
     node.getRvalue()->accept(*this);
 }
 
+void LambdaLifter::visit(CaseOfNode &node) {
+    node.getExpression()->accept(*this);
+    for (size_t i = 0; i < node.getCaseCount(); ++i) {
+        node.getCase(i)->accept(*this);
+    }
+    if (node.hasElse()) {
+        node.getElseStatements()->accept(*this);
+    }
+}
+
+void LambdaLifter::visit(CaseNode &node) {
+    for (size_t i = 0; i < node.getLabelCount(); ++i) {
+        node.getLabel(i)->accept(*this);
+    }
+    node.getStatements()->accept(*this);
+}
+
 void LambdaLifter::visit(IfThenElseNode &node) {
     node.getCondition()->accept(*this);
     node.getThenStatements()->accept(*this);
