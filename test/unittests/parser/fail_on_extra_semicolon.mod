@@ -7,8 +7,8 @@ PROCEDURE Test;
 BEGIN; END Test;
 
 BEGIN
-    Test;
+    Test;;
 END FailOnMissingSemicolon.
 (*
-    CHECK: {{.*}}extra semicolon{{.*}}
+    CHECK: {{.*}}redundant semicolon{{.*}}
 *)

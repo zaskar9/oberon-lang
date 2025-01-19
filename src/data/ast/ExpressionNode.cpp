@@ -321,7 +321,7 @@ void SetLiteralNode::accept(NodeVisitor &visitor) {
 }
 
 
-bitset<32> RangeLiteralNode::value() const {
+const bitset<32> &RangeLiteralNode::value() const {
     return value_;
 }
 

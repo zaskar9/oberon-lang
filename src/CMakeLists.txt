@@ -36,14 +36,13 @@ set(DATA_SOURCES
         data/ast/DeclarationNode.cpp data/ast/DeclarationNode.h
         data/ast/StatementNode.cpp data/ast/StatementNode.h
         data/ast/AssignmentNode.cpp data/ast/AssignmentNode.h
+        data/ast/CaseOfNode.cpp data/ast/CaseOfNode.h
         data/ast/IfThenElseNode.cpp data/ast/IfThenElseNode.h
         data/ast/LoopNode.cpp data/ast/LoopNode.h
         data/ast/StatementSequenceNode.cpp data/ast/StatementSequenceNode.h
         data/ast/NodeReference.cpp data/ast/NodeReference.h
         data/ast/NodeVisitor.cpp data/ast/NodeVisitor.h
-        data/ast/NodePrettyPrinter.cpp data/ast/NodePrettyPrinter.h
-        data/ast/CaseOfNode.cpp
-        data/ast/CaseOfNode.h)
+        data/ast/NodePrettyPrinter.cpp data/ast/NodePrettyPrinter.h)
 
 set(SYMTAB_SOURCES
         data/symtab/SymbolTable.cpp data/symtab/SymbolTable.h

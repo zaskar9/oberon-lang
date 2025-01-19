@@ -1,42 +1,33 @@
 MODULE CaseOf;
 IMPORT Out;
 
-CONST
-    EmptySet = {};
-    FullSet = { 0 .. 31 };
-    Set = { 8, 10 .. 12, 15 };
-    Union = { 0 .. 5 } + { 3, 5, 7 .. 9 };
-    (* chars = { "A" .. "Z", "a" .. "z" }; *)
-
-TYPE
-    ObjectDesc = RECORD id: INTEGER END;
-    Object = POINTER TO ObjectDesc;
-    PersonDesc = RECORD(* ObjectDesc *) age: INTEGER END;
-    Person = POINTER TO PersonDesc;
-    Vector = ARRAY 10 OF INTEGER;
-
-VAR
-    i: INTEGER;
-    r: REAL;
-
-PROCEDURE CharacterClass(ch: CHAR);
+PROCEDURE CharClass(ch: CHAR);
 BEGIN
   CASE ch OF
-      9 .. 1 : Out.String("Test"); Out.Ln
+      " ": Out.String("whitespace character")
+    |  0X: Out.String("string terminator")
+    | ":", ";", ",", ".", "?", "!": Out.String("punctuation")
     | "A" .. "Z": Out.String("uppercase letter")
     | "a" .. "z": Out.String("lowercase letter")
-    | "0" .. ch: Out.String("digit")
-    | ch: Out.String("identity")
-    | Object: Out.String("object")
-    | ObjectDesc: Out.String("record")
-    | Vector: Out.String("vector")
+    | "0" .. "9": Out.String("digit")
   ELSE
     Out.String("special character")
-  END
-END CharacterClass;
+  END;
+  Out.Ln
+END CharClass;
 
-(* BEGIN
-    i := 10 MOD 0;
-    i := 10 DIV 0;
-    r := 10 / 0; *)
+PROCEDURE PrintCharClass(s: ARRAY OF CHAR);
+VAR i: INTEGER;
+    ch: CHAR;
+BEGIN
+    FOR i := 0 TO SHORT(LEN(s)) - 1 DO
+        ch := s[i];
+        Out.Char(ch);
+        Out.String(":\t");
+        CharClass(s[i])
+    END
+END PrintCharClass;
+
+BEGIN
+    PrintCharClass("John's birthday is: August 1st!\n")
 END CaseOf.

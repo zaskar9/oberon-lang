@@ -24,9 +24,9 @@ else
 	O7C = ../build/src/oberon-lang
 endif
 ifeq ($(OS), windows)
-	O7CFLAGS = -q -O3 -fenable-extern -fenable-varargs # --target $(TGT)
+	O7CFLAGS = -q -c -O3 -fenable-extern -fenable-varargs # --target $(TGT)
 else
-	O7CFLAGS = -q -O3 --reloc=pic -fenable-extern -fenable-varargs # --target $(TGT)
+	O7CFLAGS = -q -c -O3 --reloc=pic -fenable-extern -fenable-varargs # --target $(TGT)
 	ifeq ($(PLATFORM), aarch64)
       O7CFLAGS += -fno-stack-protector
     endif

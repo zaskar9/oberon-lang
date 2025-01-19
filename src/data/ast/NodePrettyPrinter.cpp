@@ -402,7 +402,7 @@ void NodePrettyPrinter::visit(AssignmentNode &node) {
 void NodePrettyPrinter::visit(CaseOfNode &node) {
     stream_ << "CASE ";
     node.getExpression()->accept(*this);
-    stream_ << " OF" << std::endl;
+    stream_ << " OF(*Cases:" << node.getLabelCount() << "*)" << std::endl;
     indent_ += TAB_WIDTH;
     std::string sep = "  ";
     for (size_t i = 0; i < node.getCaseCount(); ++i) {

@@ -612,6 +612,9 @@ void Parser::statement_sequence(StatementSequenceNode *statements) {
             token = scanner_.peek();
             if (token->type() == TokenType::semicolon) {
                 token_ = scanner_.next();  // skip semicolon but keep token for error reporting in `Parser::statement`
+                if (scanner_.peek()->type() == TokenType::semicolon) {
+                    logger_.warning(token_->start(), "redundant semicolon.");
+                }
             } else if (token->type() == TokenType::const_ident ||
                        token->type() == TokenType::kw_if || token->type() == TokenType::kw_case ||
                        token->type() == TokenType::kw_loop || token->type() == TokenType::kw_repeat ||
@@ -670,7 +673,7 @@ unique_ptr<StatementNode> Parser::statement() {
             return sema_.onReturn(start, end, expression());
         }
         case TokenType::semicolon:
-            logger_.warning(token_->start(), "redundant semicolon.");
+            logger_.warning(token->start(), "empty statement.");
             break;
         case TokenType::kw_end:
         case TokenType::kw_else:
@@ -836,19 +839,29 @@ unique_ptr<StatementNode> Parser::case_statement() {
     auto elseStmts = make_unique<StatementSequenceNode>(EMPTY_POS);
     if (assertToken(scanner_.peek(), TokenType::kw_of)) {
         scanner_.next();  // skip OF keyword
-        do {
-            vector<unique_ptr<ExpressionNode>> labels;
-            const FilePos caseStart = scanner_.peek()->start();
-            range_expression_list(labels);
-            if (assertToken(scanner_.peek(), TokenType::colon)) {
-                scanner_.next();  // skip colon
-            }
-            auto stmts = make_unique<StatementSequenceNode>(EMPTY_POS);
-            statement_sequence(stmts.get());
-            cases.push_back(sema_.onCase(caseStart, EMPTY_POS, std::move(labels), std::move(stmts)));
-            token_ = scanner_.next();
-        } while (token_->type() == TokenType::pipe);
-        if (token_->type() == TokenType::kw_else) {
+        if (scanner_.peek()->type() == TokenType::kw_else || scanner_.peek()->type() == TokenType::kw_end) {
+            logger_.error(start, "empty case statement.");
+        } else {
+            do {
+                if (scanner_.peek()->type() == TokenType::pipe) {
+                    token_ = scanner_.next();  // skip pipe
+                    if (cases.empty()) {
+                        logger_.warning(token_->start(), "redundant pipe.");
+                    }
+                }
+                vector<unique_ptr<ExpressionNode>> labels;
+                const FilePos caseStart = scanner_.peek()->start();
+                range_expression_list(labels);
+                if (assertToken(scanner_.peek(), TokenType::colon)) {
+                    scanner_.next();  // skip colon
+                }
+                auto stmts = make_unique<StatementSequenceNode>(EMPTY_POS);
+                statement_sequence(stmts.get());
+                cases.push_back(sema_.onCase(caseStart, EMPTY_POS, std::move(labels), std::move(stmts)));
+            } while (scanner_.peek()->type() == TokenType::pipe);
+        }
+        if (scanner_.peek()->type() == TokenType::kw_else) {
+            scanner_.next();  // skip ELSE keyword
             statement_sequence(elseStmts.get());
         }
         if (assertToken(scanner_.peek(), TokenType::kw_end)) {

@@ -8,10 +8,12 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <unordered_set>
 
 using std::bitset;
 using std::make_unique;
 using std::unique_ptr;
+using std::unordered_set;
 using std::set;
 using std::string;
 
@@ -463,7 +465,24 @@ Sema::onCaseOf(const FilePos &start, [[maybe_unused]] const FilePos &end,
     if (!expr) {
         logger_.error(start, "undefined expression in case statement.");
     }
-    if (!expr->getType()->isInteger() && !expr->getType()->isChar()) {
+    auto eType = expr->getType();
+    if (eType->isInteger() || eType->isChar()) {
+        unordered_set<int64_t> labels;
+        for (auto& c: cases) {
+            auto lType = c->getLabelType();
+            if ((eType->isInteger() && lType->isChar()) || (eType->isChar() && lType->isInteger())) {
+                logger_.error(c->pos(), "type mismatch: case label type different from case expression type.");
+            }
+            for (int64_t l : c->getCases()) {
+                if (labels.contains(l)) {
+                    logger_.error(c->pos(), "duplicate labels in case statement.");
+                    break;
+                } else {
+                    labels.insert(l);
+                }
+            }
+        }
+    } else {
         logger_.error(expr->pos(), "integer or character expression expected.");
     }
     return make_unique<CaseOfNode>(start, std::move(expr), std::move(cases), std::move(elseStmts));
@@ -472,46 +491,76 @@ Sema::onCaseOf(const FilePos &start, [[maybe_unused]] const FilePos &end,
 unique_ptr<CaseNode>
 Sema::onCase(const FilePos &start, [[maybe_unused]] const FilePos &end,
              vector<unique_ptr<ExpressionNode>> labels, unique_ptr<StatementSequenceNode> stmts) {
+    set<int64_t> cases;
+    TypeNode *type = nullptr;
     for (const auto &label : labels) {
+        if (type && type != label->getType()) {
+            logger_.error(label->pos(), "type mismatch: case labels must all have the same type.");
+            continue;
+        }
+        type = label->getType();
         if (label->getNodeType() == NodeType::range_expression) {
             const auto expr = dynamic_cast<RangeExpressionNode *>(label.get());
             auto lower = expr->getLower();
             optional<int64_t> loValue;
             if (lower->getType()->isInteger()) {
                 loValue = foldInteger(lower->pos(), EMPTY_POS, lower);
-            } else {
+            } else if (label->getType()->isChar()) {
                 loValue = foldChar(lower->pos(), EMPTY_POS, lower);
             }
             auto upper = expr->getUpper();
             optional<int64_t> upValue;
             if (upper->getType()->isInteger()) {
                 upValue = foldInteger(upper->pos(), EMPTY_POS, upper);
-            } else {
+            } else if (label->getType()->isChar()) {
                 upValue = foldChar(upper->pos(), EMPTY_POS, upper);
             }
-            if (loValue.has_value() && upValue.has_value() && upValue.value() <= loValue.value()) {
-                logger_.error(upper->pos(), "upper bound must be greater than lower bound.");
+            if (loValue.has_value() && upValue.has_value()) {
+                if (upValue.value() > loValue.value()) {
+                    for (int64_t value = loValue.value(); value <= upValue.value(); ++value) {
+                        if (cases.contains(value)) {
+                            logger_.error(expr->pos(), "duplicate labels in case statement.");
+                        }
+                        cases.insert(value);
+                    }
+                } else {
+                    logger_.error(upper->pos(), "upper bound must be greater than lower bound.");
+                }
             }
-        } else if (!label->isConstant()) {
+        } else if (label->isLiteral()) {
+            optional<int64_t> value;
+            if (label->getType()->isInteger()) {
+                value = foldInteger(label->pos(), EMPTY_POS, label.get());
+            } else if (label->getType()->isChar()) {
+                value = foldChar(label->pos(), EMPTY_POS, label.get());
+            } else {
+                logger_.error(label->pos(), "integer or character value expected.");
+            }
+            if (value.has_value()) {
+                if (cases.contains(value.value())) {
+                    logger_.error(label->pos(), "duplicate case labels.");
+                }
+                cases.insert(value.value());
+            }
+        } else {
             if (label->getNodeType() == NodeType::qualified_expression &&
                 label->getType()->kind() == TypeKind::TYPE) {
                 const auto expr = dynamic_cast<QualifiedExpression*>(label.get());
-                const auto type = dynamic_cast<TypeDeclarationNode*>(expr->dereference())->getType();
-                if (type->kind() == TypeKind::POINTER) {
-                    const auto pointer = dynamic_cast<PointerTypeNode*>(type);
+                const auto decl = dynamic_cast<TypeDeclarationNode*>(expr->dereference());
+                if (decl->getType()->kind() == TypeKind::POINTER) {
+                    const auto pointer = dynamic_cast<PointerTypeNode*>(decl->getType());
                     if (pointer->getBase()->kind() == TypeKind::RECORD) {
                         continue;
                     }
-                } else if (type->kind() == TypeKind::RECORD) {
+                } else if (decl->getType()->kind() == TypeKind::RECORD) {
                     continue;
                 }
             }
             logger_.error(label->pos(), "constant expression, record type, or pointer type expected.");
         }
     }
-    return make_unique<CaseNode>(start, std::move(labels), std::move(stmts));
+    return make_unique<CaseNode>(start, std::move(labels), std::move(cases), std::move(stmts));
 }
-
 
 unique_ptr<ForLoopNode>
 Sema::onForLoop(const FilePos &start, [[maybe_unused]] const FilePos &end,
@@ -825,7 +874,7 @@ Sema::onActualParameters(DeclarationNode *context, TypeNode *base, ActualParamet
                         logger_.error(expr->pos(), "illegal actual parameter: cannot pass " + err + " by reference.");
                     } else if (exprTy->isNumeric() && paramTy->isNumeric()) {
                         // The types of variable parameters need to be an exact match as they are read-write parameters
-                        if (paramTy->kind() != exprTy->kind()) {
+                        if (!paramTy->isVirtual() && paramTy->kind() != exprTy->kind()) {
                             logger_.error(expr->pos(), "type mismatch: cannot pass " + to_string(*exprTy->getIdentifier()) +
                                                " to " + to_string(*paramTy->getIdentifier()) + " by reference.");
                         }
