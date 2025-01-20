@@ -473,7 +473,9 @@ void LLVMIRBuilder::visit(UnaryExpressionNode &node) {
             if (type->isSet()) {
                 value_ = builder_.CreateXor(ConstantInt::get(builder_.getInt32Ty(), 0xffffffff), value_);
             } else {
-                value_ = type->isReal() ? builder_.CreateFNeg(value_) : builder_.CreateNeg(value_);
+                auto intTy = dyn_cast<IntegerType>(value_->getType());
+                Function *sub = Intrinsic::getDeclaration(module_, Intrinsic::ssub_with_overflow, {intTy});
+                value_ = type->isReal() ? builder_.CreateFNeg(value_) : builder_.CreateCall(sub, {ConstantInt::get(intTy, 0), value_}); // builder_.CreateNeg(value_);
             }
             break;
         case OperatorType::AND:
@@ -591,15 +593,17 @@ void LLVMIRBuilder::visit(BinaryExpressionNode &node) {
             rhs->getType()->isIntegerTy() && rhs->getType()->getIntegerBitWidth() < 32) {
             rhs = builder_.CreateSExt(rhs, builder_.getInt32Ty());
         }
+        Function *mul = Intrinsic::getDeclaration(module_, Intrinsic::smul_with_overflow);
+        Function *sub = Intrinsic::getDeclaration(module_, Intrinsic::ssub_with_overflow);
         switch (node.getOperator()) {
             case OperatorType::PLUS:
                 value_ = floating ? builder_.CreateFAdd(lhs, rhs) : builder_.CreateAdd(lhs, rhs);
                 break;
             case OperatorType::MINUS:
-                value_ = floating ? builder_.CreateFSub(lhs, rhs) : builder_.CreateSub(lhs, rhs);
+                value_ = floating ? builder_.CreateFSub(lhs, rhs) : builder_.CreateCall(sub, {lhs, rhs});  // builder_.CreateSub(lhs, rhs);
                 break;
             case OperatorType::TIMES:
-                value_ = floating ? builder_.CreateFMul(lhs, rhs) : builder_.CreateMul(lhs, rhs);
+                value_ = floating ? builder_.CreateFMul(lhs, rhs) : builder_.CreateCall(mul, {lhs, rhs});  // builder_.CreateMul(lhs, rhs);
                 break;
             case OperatorType::DIVIDE:
                 value_ = builder_.CreateFDiv(lhs, rhs);
