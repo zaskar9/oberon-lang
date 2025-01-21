@@ -461,6 +461,62 @@ void LLVMIRBuilder::visit(RangeLiteralNode &node) {
     value_ = ConstantInt::get(builder_.getInt32Ty(), static_cast<uint32_t>(node.value().to_ulong()));
 }
 
+Value *LLVMIRBuilder::installTrap(Intrinsic::IndependentIntrinsics intrinsic, Value *lhs, Value *rhs) {
+    auto tail = BasicBlock::Create(builder_.getContext(), "tail", function_);
+    auto trap = BasicBlock::Create(builder_.getContext(), "trap", function_);
+    auto type = dyn_cast<IntegerType>(rhs->getType());
+    Function *fun = Intrinsic::getDeclaration(module_, intrinsic, {type});
+    auto call = builder_.CreateCall(fun, {lhs, rhs});
+    auto result = builder_.CreateExtractValue(call, {0});
+    auto status = builder_.CreateExtractValue(call, {1});
+    auto cond = builder_.CreateXor(status, builder_.getTrue());
+    builder_.CreateCondBr(cond, tail, trap);
+    builder_.SetInsertPoint(trap);
+    fun = Intrinsic::getDeclaration(module_, Intrinsic::ubsantrap);
+    builder_.CreateCall(fun, {builder_.getInt8(8)});
+    builder_.CreateUnreachable();
+    builder_.SetInsertPoint(tail);
+    return result;
+}
+
+Value *LLVMIRBuilder::createNeg(llvm::Value *value, bool sanitize) {
+    if (sanitize) {
+        auto type = dyn_cast<IntegerType>(value->getType());
+        return installTrap(Intrinsic::ssub_with_overflow, ConstantInt::get(type, 0), value);
+    }
+    return builder_.CreateNeg(value);
+}
+
+Value *LLVMIRBuilder::createAdd(Value *lhs, Value *rhs, bool sanitize) {
+    return sanitize ? installTrap(Intrinsic::sadd_with_overflow, lhs, rhs) : builder_.CreateAdd(lhs, rhs);
+}
+
+Value *LLVMIRBuilder::createSub(Value *lhs, llvm::Value *rhs, bool sanitize) {
+    return sanitize ? installTrap(Intrinsic::ssub_with_overflow, lhs, rhs) : builder_.CreateSub(lhs, rhs);
+}
+
+Value *LLVMIRBuilder::createMul(Value *lhs, llvm::Value *rhs, bool sanitize) {
+    return sanitize ? installTrap(Intrinsic::smul_with_overflow, lhs, rhs) : builder_.CreateMul(lhs, rhs);
+}
+
+Value *LLVMIRBuilder::createDiv(Value *lhs, Value *rhs, [[maybe_unused]] bool sanitize) {
+    Value *div = builder_.CreateSDiv(lhs, rhs);
+    value_ = builder_.CreateMul(div, rhs);
+    value_ = builder_.CreateSub(lhs, value_);
+    Value *cmp = builder_.CreateICmpEQ(value_, ConstantInt::get(lhs->getType(), 0));
+    value_ = builder_.CreateXor(lhs, rhs);
+    value_ = builder_.CreateAShr(value_, ConstantInt::get(lhs->getType(), lhs->getType()->getIntegerBitWidth() - 1));
+    value_ = builder_.CreateSelect(cmp, ConstantInt::get(lhs->getType(), 0), value_);
+    return builder_.CreateAdd(value_, div);
+}
+
+Value *LLVMIRBuilder::createMod(Value *lhs, Value *rhs, [[maybe_unused]] bool sanitize) {
+    Value *rem = builder_.CreateSRem(lhs, rhs);
+    value_ = builder_.CreateICmpSLT(rem, ConstantInt::get(lhs->getType(), 0));
+    value_ = builder_.CreateSelect(value_, rhs, ConstantInt::get(lhs->getType(), 0));
+    return builder_.CreateAdd(value_, rem, "", false, true);
+}
+
 void LLVMIRBuilder::visit(UnaryExpressionNode &node) {
     auto type = node.getType();
     node.getExpression()->accept(*this);
@@ -473,9 +529,7 @@ void LLVMIRBuilder::visit(UnaryExpressionNode &node) {
             if (type->isSet()) {
                 value_ = builder_.CreateXor(ConstantInt::get(builder_.getInt32Ty(), 0xffffffff), value_);
             } else {
-                auto intTy = dyn_cast<IntegerType>(value_->getType());
-                Function *sub = Intrinsic::getDeclaration(module_, Intrinsic::ssub_with_overflow, {intTy});
-                value_ = type->isReal() ? builder_.CreateFNeg(value_) : builder_.CreateCall(sub, {ConstantInt::get(intTy, 0), value_}); // builder_.CreateNeg(value_);
+                value_ = type->isReal() ? builder_.CreateFNeg(value_) : createNeg(value_);
             }
             break;
         case OperatorType::AND:
@@ -582,7 +636,6 @@ void LLVMIRBuilder::visit(BinaryExpressionNode &node) {
     } else {
         node.getRightExpression()->accept(*this);
         cast(*node.getRightExpression());
-        bool floating = node.getLeftExpression()->getType()->isReal() || node.getRightExpression()->getType()->isReal();
         auto rhs = value_;
         // TODO This code assumes that the smallest legal integer is 32 bit.
         if (node.getLeftExpression()->getType()->isInteger() &&
@@ -593,38 +646,27 @@ void LLVMIRBuilder::visit(BinaryExpressionNode &node) {
             rhs->getType()->isIntegerTy() && rhs->getType()->getIntegerBitWidth() < 32) {
             rhs = builder_.CreateSExt(rhs, builder_.getInt32Ty());
         }
-        Function *mul = Intrinsic::getDeclaration(module_, Intrinsic::smul_with_overflow);
-        Function *sub = Intrinsic::getDeclaration(module_, Intrinsic::ssub_with_overflow);
+        bool floating = node.getLeftExpression()->getType()->isReal() ||
+                        node.getRightExpression()->getType()->isReal();
         switch (node.getOperator()) {
             case OperatorType::PLUS:
-                value_ = floating ? builder_.CreateFAdd(lhs, rhs) : builder_.CreateAdd(lhs, rhs);
+                value_ = floating ? builder_.CreateFAdd(lhs, rhs) : createAdd(lhs, rhs);
                 break;
             case OperatorType::MINUS:
-                value_ = floating ? builder_.CreateFSub(lhs, rhs) : builder_.CreateCall(sub, {lhs, rhs});  // builder_.CreateSub(lhs, rhs);
+                value_ = floating ? builder_.CreateFSub(lhs, rhs) : createSub(lhs, rhs);
                 break;
             case OperatorType::TIMES:
-                value_ = floating ? builder_.CreateFMul(lhs, rhs) : builder_.CreateCall(mul, {lhs, rhs});  // builder_.CreateMul(lhs, rhs);
+                value_ = floating ? builder_.CreateFMul(lhs, rhs) : createMul(lhs, rhs);
                 break;
             case OperatorType::DIVIDE:
                 value_ = builder_.CreateFDiv(lhs, rhs);
                 break;
             case OperatorType::DIV: {
-                Value *div = builder_.CreateSDiv(lhs, rhs);
-                value_ = builder_.CreateMul(div, rhs);
-                value_ = builder_.CreateSub(lhs, value_);
-                Value *cmp = builder_.CreateICmpEQ(value_, ConstantInt::get(lhs->getType(), 0));
-                value_ = builder_.CreateXor(lhs, rhs);
-                value_ = builder_.CreateAShr(value_, ConstantInt::get(lhs->getType(),
-                                                                      lhs->getType()->getIntegerBitWidth() - 1));
-                value_ = builder_.CreateSelect(cmp, ConstantInt::get(lhs->getType(), 0), value_);
-                value_ = builder_.CreateAdd(value_, div);
+                value_ = createDiv(lhs, rhs);
                 break;
             }
             case OperatorType::MOD: {
-                Value *rem = builder_.CreateSRem(lhs, rhs);
-                value_ = builder_.CreateICmpSLT(rem, ConstantInt::get(lhs->getType(), 0));
-                value_ = builder_.CreateSelect(value_, rhs, ConstantInt::get(lhs->getType(), 0));
-                value_ = builder_.CreateAdd(value_, rem, "", false, true);
+                value_ = createMod(lhs, rhs);
                 break;
             }
             case OperatorType::EQ:

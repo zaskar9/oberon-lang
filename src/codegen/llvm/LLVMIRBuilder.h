@@ -64,7 +64,6 @@ private:
     void restoreRefMode();
     bool deref() const;
 
-
     void cast(ExpressionNode &);
 
     void procedure(ProcedureNode &);
@@ -73,6 +72,14 @@ private:
     using SelectorIterator = Selectors::iterator;
     TypeNode *selectors(TypeNode *, SelectorIterator, SelectorIterator);
     void parameters(ProcedureTypeNode *, ActualParameters *, vector<Value *> &, bool = false);
+
+    Value *installTrap(Intrinsic::IndependentIntrinsics, Value*, Value*);
+    Value *createNeg(Value *, bool = true);
+    Value *createAdd(Value *, Value *, bool = true);
+    Value *createSub(Value *, Value *, bool = true);
+    Value *createMul(Value *, Value *, bool = true);
+    Value *createDiv(Value *, Value *, bool = true);
+    Value *createMod(Value *, Value *, bool = true);
 
     TypeNode *createStaticCall(ProcedureNode *, QualIdent *, Selectors &);
     Value *createPredefinedCall(PredefinedProcedure *, QualIdent *,
