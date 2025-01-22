@@ -6,6 +6,7 @@
 
 #include <filesystem>
 #include <iostream>
+#include <regex>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/program_options.hpp>
@@ -38,6 +39,9 @@ using std::cout;
 using std::cerr;
 using std::endl;
 using std::make_unique;
+using std::regex;
+using std::regex_search;
+using std::smatch;
 using std::string;
 using std::to_string;
 using std::vector;
@@ -146,17 +150,53 @@ int main(const int argc, const char **argv) {
         }
         if (vm.count("-f")) {
             auto params = vm["-f"].as<vector<string>>();
+            regex pattern{"^(no-)?sanitize=(.*)$"};
             for (const auto& flag : params) {
+                smatch matches;
                 if (flag == "enable-extern") {
                     config.setFlag(Flag::ENABLE_EXTERN);
                 } else if (flag == "enable-varargs") {
                     config.setFlag(Flag::ENABLE_VARARGS);
                 } else if (flag == "enable-main") {
                     config.setFlag(Flag::ENABLE_MAIN);
-                } else if (flag == "enable-bound-checks") {
-                    config.setFlag(Flag::ENABLE_BOUND_CHECKS);
                 } else if (flag == "no-stack-protector") {
                     config.setFlag(Flag::NO_STACK_PROTECT);
+                } else if (regex_search(flag, matches, pattern)) {
+                    bool active = flag[0] != 'n';
+                    string opt = matches.str(2);
+                    if (opt == "array-bounds" || opt == "bounds") {
+                        // Out of bounds array indexing.
+                        config.toggleSanitize(Trap::OUT_OF_BOUNDS, active);
+                    } else if (opt == "float-divide-by-zero") {
+                        // Floating point division by zero.
+                        config.toggleSanitize(Trap::FLT_DIVISION, active);
+                    } else if (opt == "function" || opt == "procedure") {
+                        // Indirect call of a procedure through a pointer of the wrong type.
+                        config.toggleSanitize(Trap::PROCEDURE_CALL, active);
+                    } else if (opt == "integer-divide-by-zero") {
+                        // Integer division by zero.
+                        config.toggleSanitize(Trap::INT_DIVISION, active);
+                    } else if (opt == "null") {
+                        // Use of a null pointer or creation of a null reference.
+                        config.toggleSanitize(Trap::NIL_POINTER, active);
+                    } else if (opt == "signed-integer-overflow") {
+                        // Signed integer overflow, where the result of a signed integer computation
+                        // cannot be represented in its type.
+                        config.toggleSanitize(Trap::INT_OVERFLOW, active);
+                    } else if (opt == "undefined") {
+                        config.toggleSanitize(Trap::INT_OVERFLOW, active);
+                        config.toggleSanitize(Trap::INT_DIVISION, active);
+                        config.toggleSanitize(Trap::FLT_DIVISION, active);
+                        config.toggleSanitize(Trap::OUT_OF_BOUNDS, active);
+                    } else if (opt == "all") {
+                        if (active) {
+                            config.setSanitizeAll();
+                        } else {
+                            config.setSanitizeNone();
+                        }
+                    } else {
+                        logger.warning(PROJECT_NAME, "ignoring unrecognized option -f" + flag + ".");
+                    }
                 } else {
                     logger.warning(PROJECT_NAME, "ignoring unrecognized option -f" + flag + ".");
                 }
@@ -204,7 +244,7 @@ int main(const int argc, const char **argv) {
             } else {
                 config.setFileType(OutputFileType::ObjectFile);
             }
-        } else if (vm.count("-S")) { // assemble
+        } else if (vm.count("-S")) {  // assemble
             if (vm.count("emit-llvm")) {
                 config.setFileType(OutputFileType::LLVMIRFile);
             } else {

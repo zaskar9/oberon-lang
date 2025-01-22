@@ -73,13 +73,19 @@ private:
     TypeNode *selectors(TypeNode *, SelectorIterator, SelectorIterator);
     void parameters(ProcedureTypeNode *, ActualParameters *, vector<Value *> &, bool = false);
 
-    Value *installTrap(Intrinsic::IndependentIntrinsics, Value*, Value*);
-    Value *createNeg(Value *, bool = true);
-    Value *createAdd(Value *, Value *, bool = true);
-    Value *createSub(Value *, Value *, bool = true);
-    Value *createMul(Value *, Value *, bool = true);
-    Value *createDiv(Value *, Value *, bool = true);
-    Value *createMod(Value *, Value *, bool = true);
+    void installTrap(Value *, unsigned);
+    void trapFltDivByZero(Value *);
+    void trapIntDivByZero(Value *);
+    Value *trapIntOverflow(Intrinsic::IndependentIntrinsics, Value*, Value*);
+    Value *trapOutOfBounds(Value *, Value *, Value *);
+
+    Value *createNeg(Value *);
+    Value *createAdd(Value *, Value *);
+    Value *createSub(Value *, Value *);
+    Value *createMul(Value *, Value *);
+    Value *createDiv(Value *, Value *);
+    Value *createMod(Value *, Value *);
+    Value *createFDiv(Value *, Value *);
 
     TypeNode *createStaticCall(ProcedureNode *, QualIdent *, Selectors &);
     Value *createPredefinedCall(PredefinedProcedure *, QualIdent *,
@@ -116,9 +122,6 @@ private:
     Value *createSystemCopyCall(Value *, Value *, Value *);
     Value *createSystemValCall(vector<unique_ptr<ExpressionNode>> &, std::vector<Value *> &);
     
-    Value *createTrapCall(unsigned);
-    Value *createInBoundsCheck(Value *, Value *, Value *);
-
     void visit(ModuleNode &) override;
     void visit(ProcedureNode &) override;
 

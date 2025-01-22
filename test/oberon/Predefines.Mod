@@ -62,7 +62,7 @@ VAR l, n: LONGINT;
 BEGIN
     l := MIN(LONGINT);
     n := 63;
-    Out.Long(ROL(l, n), 0); Out.String(",");
+    (* Out.Long(ROL(l, n), 0); Out.String(","); *)
     Out.Long(ROR(l, n), 0); Out.Ln;
     i := MIN(INTEGER);
     n := 31;

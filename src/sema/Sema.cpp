@@ -1504,6 +1504,24 @@ Sema::fold(const FilePos &start, [[maybe_unused]] const FilePos &end, OperatorTy
     return nullptr;
 }
 
+//template<typename L, typename T, typename Op>
+//optional<ExpressionNode>
+//Sema::foldBinOp(const FilePos &start, ExpressionNode *lhs, ExpressionNode *rhs, T neutral, Op op, TypeNode *common) {
+//    if (lhs && rhs) {
+//        T value = op(lhs.value(), rhs.value());
+//        return optional<ExpressionNode>(make_unique<L>(start, value, common));
+//    }
+//    if (lhs && lhs.value() == neutral) {
+//        value = rhs.value();
+//        break;
+//    }
+//    if (ropt && ropt.value() == 0) {
+//        value = lopt.value();
+//        break;
+//    }
+//    return nullptr;
+//}
+
 unique_ptr<LiteralNode>
 Sema::fold(const FilePos &start, [[maybe_unused]] const FilePos &end,
            OperatorType op, ExpressionNode *lhs, ExpressionNode *rhs, TypeNode* common) {
@@ -1603,18 +1621,17 @@ Sema::fold(const FilePos &start, [[maybe_unused]] const FilePos &end,
             case OperatorType::TIMES:
                 value = lvalue * rvalue; break;
             case OperatorType::DIV:
-                if (rvalue == 0) {
-                    logger_.error(rhs->pos(), "division by zero.");
-                    value = 0;
-                }
-                value = floor_div(lvalue, rvalue);
-                break;
             case OperatorType::MOD:
+                value = 0;
                 if (rvalue == 0) {
                     logger_.error(rhs->pos(), "division by zero.");
-                    value = 0;
+                    break;
                 }
-                value = euclidean_mod(lvalue, rvalue);
+                if (rvalue < 0) {
+                    logger_.error(rhs->pos(), "divisor cannot be negative.");
+                    break;
+                }
+                value = op == OperatorType::DIV ? floor_div(lvalue, rvalue) : euclidean_mod(lvalue, rvalue);
                 break;
             default:
                 logger_.error(start, "operator " + to_string(op) + " cannot be applied to integer values.");
@@ -1633,9 +1650,10 @@ Sema::fold(const FilePos &start, [[maybe_unused]] const FilePos &end,
             case OperatorType::TIMES:
                 value = lvalue * rvalue; break;
             case OperatorType::DIVIDE:
+                value = 0;
                 if (rvalue == 0) {
                     logger_.error(rhs->pos(), "division by zero.");
-                    value = 0;
+                    break;
                 }
                 value = lvalue / rvalue;
                 break;

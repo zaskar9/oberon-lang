@@ -10,6 +10,7 @@
 #include <iostream>
 #include <optional>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 #include "logging/Logger.h"
@@ -18,6 +19,7 @@ using std::cout;
 using std::filesystem::path;
 using std::optional;
 using std::string;
+using std::unordered_set;
 using std::vector;
 
 enum class OutputFileType {
@@ -36,8 +38,19 @@ enum class Flag : unsigned {
     ENABLE_EXTERN = 1,
     ENABLE_VARARGS = 2,
     ENABLE_MAIN = 4,
-    ENABLE_BOUND_CHECKS = 8,
-    NO_STACK_PROTECT = 16
+    NO_STACK_PROTECT = 8
+};
+
+enum class Trap : unsigned {
+    OUT_OF_BOUNDS = 1,
+    TYPE_GUARD = 2,
+    COPY_OVERFLOW = 3,
+    NIL_POINTER = 4,
+    PROCEDURE_CALL = 5,
+    INT_DIVISION = 6,
+    ASSERT = 7,
+    INT_OVERFLOW = 8,
+    FLT_DIVISION = 9
 };
 
 enum class Warning : unsigned {
@@ -59,6 +72,7 @@ private:
     vector<path> libpaths_;
     vector<string> libs_;
     unsigned flags_;
+    unordered_set<Trap> traps_;
     unsigned warn_;
     bool jit_;
 
@@ -67,7 +81,8 @@ private:
 public:
     CompilerConfig() : logger_(LogLevel::INFO, cout),
             infiles_(), outfile_(), target_(), symdir_(), type_(OutputFileType::ObjectFile), level_(OptimizationLevel::O0),
-            model_(RelocationModel::DEFAULT), incpaths_(), libpaths_(), libs_(), flags_(0), warn_(0), jit_(false) {
+            model_(RelocationModel::DEFAULT), incpaths_(), libpaths_(), libs_(), flags_(0), traps_(), warn_(0), jit_(false) {
+        setSanitizeAll();
 #ifdef _DEBUG
         logger_.setLevel(LogLevel::DEBUG);
 #endif
@@ -110,6 +125,11 @@ public:
 
     void setFlag(Flag flag);
     [[nodiscard]] bool hasFlag(Flag flag) const;
+
+    void toggleSanitize(Trap, bool);
+    void setSanitizeAll();
+    void setSanitizeNone();
+    [[nodiscard]] bool isSanitized(Trap) const;
 
     void setWarning(Warning warn);
     [[nodiscard]] bool hasWarning(Warning warn) const;

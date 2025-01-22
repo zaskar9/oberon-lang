@@ -41,7 +41,7 @@ PROCEDURE checkThree(i: INTEGER): BOOLEAN;
 CONST Num = 100;
 BEGIN
     Out.String("3 ");
-    RETURN (Num DIV i = Num)
+    RETURN (i > 0) & (Num DIV i = Num)
 END checkThree;
 
 PROCEDURE checkRange(i: INTEGER);

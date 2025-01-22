@@ -68,6 +68,9 @@ private:
     static int64_t euclidean_mod(int64_t, int64_t);
     static int64_t floor_div(int64_t, int64_t);
 
+//    template<typename T, typename Op>
+//    optional<T> foldBinOp(optional<T>, optional<T>, T, Op);
+
     bool foldBoolean(const FilePos &, const FilePos &, ExpressionNode *);
     optional<int64_t> foldInteger(const FilePos &, const FilePos &, ExpressionNode *);
     optional<uint8_t> foldChar(const FilePos &, const FilePos &, ExpressionNode *);
