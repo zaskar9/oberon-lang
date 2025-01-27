@@ -7,6 +7,7 @@
 
 
 #include <bitset>
+#include <functional>
 #include <map>
 #include <memory>
 #include <optional>
@@ -25,6 +26,7 @@
 #include "logging/Logger.h"
 #include "system/OberonSystem.h"
 
+using std::function;
 using std::bitset;
 using std::map;
 using std::optional;
@@ -68,22 +70,39 @@ private:
     static int64_t euclidean_mod(int64_t, int64_t);
     static int64_t floor_div(int64_t, int64_t);
 
-//    template<typename T, typename Op>
-//    optional<T> foldBinOp(optional<T>, optional<T>, T, Op);
-
-    bool foldBoolean(const FilePos &, const FilePos &, ExpressionNode *);
-    optional<int64_t> foldInteger(const FilePos &, const FilePos &, ExpressionNode *);
-    optional<uint8_t> foldChar(const FilePos &, const FilePos &, ExpressionNode *);
-    double foldReal(const FilePos &, const FilePos &, ExpressionNode *);
-    string foldString(const FilePos &, const FilePos &, ExpressionNode *);
-    bitset<32> foldSet(const FilePos &, const FilePos &, ExpressionNode *);
-    unique_ptr<LiteralNode> fold(const FilePos &, const FilePos &, ExpressionNode *);
-    unique_ptr<LiteralNode> fold(const FilePos &, const FilePos &,
-                                 OperatorType, ExpressionNode *);
-    unique_ptr<LiteralNode> fold(const FilePos &, const FilePos &,
-                                 OperatorType, ExpressionNode *, ExpressionNode *, TypeNode *);
+    template<typename L, typename T>
+    optional<unique_ptr<ExpressionNode>> foldBinaryOp(const FilePos &, const FilePos &,
+                                                      unique_ptr<ExpressionNode> &, unique_ptr<ExpressionNode> &,
+                                                      optional<T>, optional<T>, function<T(T, T)>, TypeNode *);
+    optional<unique_ptr<ExpressionNode>> foldBooleanOp(const FilePos &, const FilePos &, OperatorType,
+                                                       unique_ptr<ExpressionNode> &, unique_ptr<ExpressionNode> &, TypeNode*);
     template<typename T>
-    unique_ptr<BooleanLiteralNode> foldRelation(const FilePos &, OperatorType, T lhs, T rhs, TypeNode *);
+    optional<unique_ptr<BooleanLiteralNode>> foldRelationOp(const FilePos &, const FilePos &,
+                                                            OperatorType, unique_ptr<ExpressionNode> &, unique_ptr<ExpressionNode> &, TypeNode *);
+    optional<unique_ptr<ExpressionNode>> foldDivModOp(const FilePos &, const FilePos &,
+                                                      OperatorType, unique_ptr<ExpressionNode> &, unique_ptr<ExpressionNode> &, TypeNode *);
+    optional<unique_ptr<ExpressionNode>> foldFDivOp(const FilePos &, const FilePos &,
+                                                    unique_ptr<ExpressionNode> &, unique_ptr<ExpressionNode> &, TypeNode *);
+    template<typename L, typename T>
+    optional<unique_ptr<ExpressionNode>> foldSubOp(const FilePos &, const FilePos &,
+                                                   unique_ptr<ExpressionNode> &, unique_ptr<ExpressionNode> &, TypeNode *);
+
+    template<typename L, typename T>
+    optional<unique_ptr<LiteralNode<T>>> clone(const FilePos &, const FilePos &, LiteralNode<T> *);
+    optional<bool> boolean_cast(const ExpressionNode *);
+    optional<int64_t> integer_cast(const ExpressionNode *);
+    optional<uint8_t> char_cast(const ExpressionNode *);
+    optional<double> real_cast(const ExpressionNode *);
+    optional<string> string_cast(const ExpressionNode *);
+    optional<bitset<32>> set_cast(const ExpressionNode *);
+
+    optional<unique_ptr<ExpressionNode>> fold(const FilePos &, const FilePos &, ExpressionNode *);
+
+    optional<unique_ptr<ExpressionNode>> fold(const FilePos &, const FilePos &,
+            OperatorType, unique_ptr<ExpressionNode> &);
+
+    optional<unique_ptr<ExpressionNode>> fold(const FilePos &, const FilePos &,
+            OperatorType, unique_ptr<ExpressionNode> &, unique_ptr<ExpressionNode> &, TypeNode *);
 
     void onBlockStart();
     void onBlockEnd();
@@ -172,8 +191,8 @@ public:
                                                    unique_ptr<QualIdent>, vector<unique_ptr<Selector>>);
     unique_ptr<QualifiedExpression> onQualifiedExpression(const FilePos &, const FilePos &,
                                                           unique_ptr<QualIdent>, vector<unique_ptr<Selector>>);
-    unique_ptr<LiteralNode> onQualifiedConstant(const FilePos &, const FilePos &,
-                                                unique_ptr<QualIdent>, vector<unique_ptr<Selector>>);
+    unique_ptr<ExpressionNode> onQualifiedConstant(const FilePos &, const FilePos &,
+                                                   unique_ptr<QualIdent>, vector<unique_ptr<Selector>>);
 
     unique_ptr<ExpressionNode> onUnaryExpression(const FilePos &, const FilePos &,
                                                  OperatorType,

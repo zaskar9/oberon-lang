@@ -18,7 +18,7 @@ endif
 LIB = ./lib
 INC = .:./include
 O7C = ../../build/src/oberon-lang
-O7CFLAGS = -O3 -I$(INC) -L$(LIB) -loberon -fenable-main # --target $(TGT)
+O7CFLAGS = -c -O3 -I$(INC) -L$(LIB) -loberon -fenable-main # --target $(TGT)
 LDFLAGS = -loberon
 PFX =
 ifeq ($(OS), macos)
@@ -50,7 +50,7 @@ endif
 	@$(O7C) $(O7CFLAGS) $<
 
 %.s : %.Mod
-	@$(O7C) $(O7CFLAGS) --filetype=asm $<
+	@$(O7C) $(O7CFLAGS) -S $<
 
 %.ll : %.Mod
-	@$(O7C) $(O7CFLAGS) --filetype=ll $<
+	@$(O7C) $(O7CFLAGS) -S --emit-llvm $<

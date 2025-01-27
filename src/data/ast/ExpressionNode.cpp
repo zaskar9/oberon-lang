@@ -205,34 +205,38 @@ void SetExpressionNode::print(std::ostream &stream) const {
     stream << " }";
 }
 
+template<typename T>
+T LiteralNode<T>::value() const {
+    return value_;
+}
 
-bool LiteralNode::isConstant() const {
+template<typename T>
+bool LiteralNode<T>::isConstant() const {
     return true;
 }
 
-bool LiteralNode::isLiteral() const {
+template<typename T>
+bool LiteralNode<T>::isLiteral() const {
     return true;
 }
 
-TypeKind LiteralNode::kind() const {
+template<typename T>
+TypeKind LiteralNode<T>::kind() const {
     return kind_;
 }
 
-int LiteralNode::getPrecedence() const {
+template<typename T>
+int LiteralNode<T>::getPrecedence() const {
     return 4;
 }
 
-
-bool BooleanLiteralNode::value() const {
-    return value_;
-}
 
 void BooleanLiteralNode::accept(NodeVisitor& visitor) {
     visitor.visit(*this);
 }
 
 void BooleanLiteralNode::print(std::ostream &stream) const {
-    stream << (value_ ? "TRUE" : "FALSE");
+    stream << (value() ? "TRUE" : "FALSE");
 }
 
 bool IntegerLiteralNode::isShort() const {
@@ -243,16 +247,12 @@ bool IntegerLiteralNode::isLong() const {
     return getType()->kind() == TypeKind::LONGINT;
 }
 
-int64_t IntegerLiteralNode::value() const {
-    return value_;
-}
-
 void IntegerLiteralNode::accept(NodeVisitor& visitor) {
     visitor.visit(*this);
 }
 
 void IntegerLiteralNode::print(std::ostream &stream) const {
-    stream << value_;
+    stream << value();
 }
 
 
@@ -260,42 +260,30 @@ bool RealLiteralNode::isLong() const {
     return getType()->kind() == TypeKind::LONGREAL;
 }
 
-double RealLiteralNode::value() const {
-    return value_;
-}
-
 void RealLiteralNode::accept(NodeVisitor &visitor) {
     visitor.visit(*this);
 }
 
 void RealLiteralNode::print(std::ostream &stream) const {
-    stream << value_;
+    stream << value();
 }
 
-
-std::string StringLiteralNode::value() const {
-    return value_;
-}
 
 void StringLiteralNode::accept(NodeVisitor& visitor) {
     visitor.visit(*this);
 }
 
 void StringLiteralNode::print(std::ostream &stream) const {
-    stream << value_;
+    stream << value();
 }
 
-
-uint8_t CharLiteralNode::value() const {
-    return value_;
-}
 
 void CharLiteralNode::accept(NodeVisitor &visitor) {
     visitor.visit(*this);
 }
 
 void CharLiteralNode::print(std::ostream &stream) const {
-    stream << value_;
+    stream << value();
 }
 
 
@@ -308,22 +296,14 @@ void NilLiteralNode::print(std::ostream &stream) const {
 }
 
 
-bitset<32> SetLiteralNode::value() const {
-    return value_;
-}
-
 void SetLiteralNode::print(std::ostream &stream) const {
-    stream << value_;
+    stream << value();
 }
 
 void SetLiteralNode::accept(NodeVisitor &visitor) {
     visitor.visit(*this);
 }
 
-
-const bitset<32> &RangeLiteralNode::value() const {
-    return value_;
-}
 
 int64_t RangeLiteralNode::lower() const {
     return lower_;
@@ -333,10 +313,10 @@ int64_t RangeLiteralNode::upper() const {
     return upper_;
 }
 
-void RangeLiteralNode::print(std::ostream &stream) const {
-    stream << value_;
-}
-
 void RangeLiteralNode::accept(NodeVisitor &visitor) {
     visitor.visit(*this);
+}
+
+void RangeLiteralNode::print(std::ostream &stream) const {
+    stream << value();
 }

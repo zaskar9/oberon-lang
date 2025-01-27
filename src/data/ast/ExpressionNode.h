@@ -157,19 +157,21 @@ public:
 
 };
 
-
+template<typename T>
 class LiteralNode : public ExpressionNode {
 
 private:
     TypeKind kind_;
+    T value_;
 
 public:
-    LiteralNode(const NodeType nodeType, const FilePos &pos, TypeKind kind, TypeNode *type = nullptr,
+    LiteralNode(const NodeType nodeType, const FilePos &pos, TypeKind kind, T value, TypeNode *type = nullptr,
                          TypeNode *cast = nullptr) :
-            ExpressionNode(nodeType, pos, type, cast), kind_(kind) {};
+            ExpressionNode(nodeType, pos, type, cast), kind_(kind), value_(value) {};
     ~LiteralNode() override = default;
 
     [[nodiscard]] TypeKind kind() const;
+    [[nodiscard]] T value() const;
 
     void accept(NodeVisitor &visitor) override = 0;
 
@@ -180,17 +182,21 @@ public:
 };
 
 
-class BooleanLiteralNode final : public LiteralNode {
+template<typename T>
+optional<T> literal_cast(const ExpressionNode &expr) {
+    if (auto literal = dynamic_cast<const LiteralNode<T> *>(&expr)) {
+        return optional(literal->value());
+    }
+    return std::nullopt;
+}
 
-private:
-    bool value_;
+
+class BooleanLiteralNode final : public LiteralNode<bool> {
 
 public:
     BooleanLiteralNode(const FilePos &pos, bool value, TypeNode *type = nullptr, TypeNode *cast = nullptr) :
-            LiteralNode(NodeType::boolean, pos, TypeKind::BOOLEAN, type, cast), value_(value) {};
+            LiteralNode(NodeType::boolean, pos, TypeKind::BOOLEAN, value, type, cast) {};
     ~BooleanLiteralNode() final = default;
-
-    [[nodiscard]] bool value() const;
 
     void accept(NodeVisitor &visitor) final;
     void print(std::ostream &stream) const final;
@@ -198,19 +204,15 @@ public:
 };
 
 
-class IntegerLiteralNode final : public LiteralNode {
-
-private:
-    int64_t value_;
+class IntegerLiteralNode final : public LiteralNode<int64_t> {
 
 public:
     IntegerLiteralNode(const FilePos &pos, int64_t value, TypeNode *type = nullptr, TypeNode *cast = nullptr) :
-            LiteralNode(NodeType::integer, pos, TypeKind::INTEGER, type, cast), value_(value) {};
+            LiteralNode(NodeType::integer, pos, TypeKind::INTEGER, value, type, cast) {};
     ~IntegerLiteralNode() final = default;
 
     [[nodiscard]] bool isShort() const;
     [[nodiscard]] bool isLong() const;
-    [[nodiscard]] int64_t value() const;
 
     void accept(NodeVisitor &visitor) final;
     void print(std::ostream &stream) const final;
@@ -218,18 +220,14 @@ public:
 };
 
 
-class RealLiteralNode final : public LiteralNode {
-
-private:
-    double value_;
+class RealLiteralNode final : public LiteralNode<double> {
 
 public:
     RealLiteralNode(const FilePos &pos, double value, TypeNode *type = nullptr, TypeNode *cast = nullptr) :
-            LiteralNode(NodeType::real, pos, TypeKind::REAL, type, cast), value_(value) {};
+            LiteralNode(NodeType::real, pos, TypeKind::REAL, value, type, cast) {};
     ~RealLiteralNode() final = default;
 
     [[nodiscard]] bool isLong() const;
-    [[nodiscard]] double value() const;
 
     void accept(NodeVisitor &visitor) final;
     void print(std::ostream &stream) const final;
@@ -237,17 +235,12 @@ public:
 };
 
 
-class StringLiteralNode final : public LiteralNode {
-
-private:
-    string value_;
+class StringLiteralNode final : public LiteralNode<string> {
 
 public:
     StringLiteralNode(const FilePos &pos, string value, TypeNode *type = nullptr, TypeNode *cast = nullptr) :
-            LiteralNode(NodeType::string, pos, TypeKind::STRING, type, cast), value_(std::move(value)) {};
+            LiteralNode(NodeType::string, pos, TypeKind::STRING, value, type, cast) {};
     ~StringLiteralNode() final = default;
-
-    [[nodiscard]] string value() const;
 
     void accept(NodeVisitor &visitor) final;
     void print(std::ostream &stream) const final;
@@ -255,17 +248,12 @@ public:
 };
 
 
-class CharLiteralNode final : public LiteralNode {
-
-private:
-    uint8_t value_;
+class CharLiteralNode final : public LiteralNode<uint8_t> {
 
 public:
     CharLiteralNode(const FilePos &pos, uint8_t value, TypeNode *type = nullptr, TypeNode *cast = nullptr) :
-            LiteralNode(NodeType::character, pos, TypeKind::CHAR, type, cast), value_(value) {};
+            LiteralNode(NodeType::character, pos, TypeKind::CHAR, value, type, cast) {};
     ~CharLiteralNode() final = default;
-
-    [[nodiscard]] uint8_t value() const;
 
     void accept(NodeVisitor &visitor) final;
     void print(std::ostream &stream) const final;
@@ -273,27 +261,23 @@ public:
 };
 
 
-class NilLiteralNode final : public LiteralNode {
+class NilLiteralNode final : public LiteralNode<nullptr_t> {
 
 public:
     NilLiteralNode(const FilePos &pos, TypeNode *type = nullptr) :
-            LiteralNode(NodeType::pointer, pos, TypeKind::POINTER, type, nullptr) {};
+            LiteralNode(NodeType::pointer, pos, TypeKind::POINTER, nullptr, type, nullptr) {};
 
     void accept(NodeVisitor &visitor) final;
     void print(std::ostream &stream) const final;
+
 };
 
 
-class SetLiteralNode final : public LiteralNode {
-
-private:
-    bitset<32> value_;
+class SetLiteralNode final : public LiteralNode<bitset<32>> {
 
 public:
     SetLiteralNode(const FilePos &pos, bitset<32> value, TypeNode *type = nullptr, TypeNode *cast = nullptr) :
-            LiteralNode(NodeType::set, pos, TypeKind::SET, type, cast), value_(value) {};
-
-    [[nodiscard]] bitset<32> value() const;
+            LiteralNode(NodeType::set, pos, TypeKind::SET, value, type, cast) {};
 
     void accept(NodeVisitor &visitor) final;
     void print(std::ostream &stream) const final;
@@ -301,19 +285,17 @@ public:
 };
 
 
-class RangeLiteralNode final : public LiteralNode {
+class RangeLiteralNode final : public LiteralNode<bitset<32>> {
 
 private:
-    bitset<32> value_;
     int64_t lower_;
     int64_t upper_;
 
 public:
     RangeLiteralNode(const FilePos &pos, bitset<32> value, int64_t lower, int64_t upper,
                      TypeNode *type = nullptr, TypeNode *cast = nullptr) :
-            LiteralNode(NodeType::range, pos, TypeKind::SET, type, cast), value_(value), lower_(lower), upper_(upper) {};
+            LiteralNode(NodeType::range, pos, TypeKind::SET, value, type, cast), lower_(lower), upper_(upper) {};
 
-    [[nodiscard]] const bitset<32> &value() const;
     [[nodiscard]] int64_t lower() const;
     [[nodiscard]] int64_t upper() const;
 
