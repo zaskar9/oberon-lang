@@ -206,11 +206,6 @@ void SetExpressionNode::print(std::ostream &stream) const {
 }
 
 template<typename T>
-T LiteralNode<T>::value() const {
-    return value_;
-}
-
-template<typename T>
 bool LiteralNode<T>::isConstant() const {
     return true;
 }

@@ -171,7 +171,10 @@ public:
     ~LiteralNode() override = default;
 
     [[nodiscard]] TypeKind kind() const;
-    [[nodiscard]] T value() const;
+
+    [[nodiscard]] T value() const {
+        return value_;
+    }
 
     void accept(NodeVisitor &visitor) override = 0;
 

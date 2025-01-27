@@ -98,8 +98,8 @@ int main(const int argc, const char **argv) {
         cout << visible << endl;
         return EXIT_SUCCESS;
     } else if (vm.count("version")) {
-        cout << PROJECT_NAME << " version " << PROJECT_VERSION << endl;
-        cout << "Build:    " << GIT_BRANCH << "@" << GIT_COMMIT << endl;
+        cout << PROJECT_NAME << " version " << PROJECT_VERSION;
+        cout << " (build " << GIT_COMMIT << "@" << GIT_BRANCH << ")" << endl;
         cout << "Target:   " << codegen->getDescription() << endl;
         cout << "Includes: ";
         cout << "Boost " << BOOST_VERSION / 100000 << "."
