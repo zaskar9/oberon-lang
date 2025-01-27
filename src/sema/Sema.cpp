@@ -1492,7 +1492,7 @@ Sema::fold(const FilePos &start, const FilePos &, OperatorType op, unique_ptr<Ex
             }
         }
     }
-    logger_.error(start, "invalid unary expression.");
+    // logger_.error(start, "invalid unary expression.");
     return std::nullopt;
 }
 
@@ -1772,7 +1772,7 @@ Sema::fold(const FilePos &start, const FilePos &end,
             }
         }
     }
-    logger_.error(start, "invalid binary expression.");
+    // logger_.error(start, "invalid binary expression.");
     return std::nullopt;
 }
 
