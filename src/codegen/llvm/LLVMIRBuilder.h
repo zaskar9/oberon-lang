@@ -77,7 +77,8 @@ private:
     void trapFltDivByZero(Value *);
     void trapIntDivByZero(Value *);
     Value *trapIntOverflow(Intrinsic::IndependentIntrinsics, Value*, Value*);
-    Value *trapOutOfBounds(Value *, Value *, Value *);
+    void trapOutOfBounds(Value *, Value *, Value *);
+    void trapNILPtr(Value *);
 
     Value *createNeg(Value *);
     Value *createAdd(Value *, Value *);

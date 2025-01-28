@@ -311,6 +311,10 @@ TypeNode *LLVMIRBuilder::selectors(TypeNode *base, SelectorIterator start, Selec
             value = processGEP(base, value, indices);
             // create a load to dereference the pointer
             value = builder_.CreateLoad(getLLVMType(selector_t), value);
+            // trap NIL pointer access
+            if (config_.isSanitized(Trap::NIL_POINTER)) {
+                trapNILPtr(value);
+            }
             selector_t = dynamic_cast<PointerTypeNode *>(selector_t)->getBase();
             base = selector_t;
         } else if (sel->getNodeType() == NodeType::record_type) {
@@ -494,12 +498,16 @@ Value *LLVMIRBuilder::trapIntOverflow(Intrinsic::IndependentIntrinsics intrinsic
     return result;
 }
 
-Value *LLVMIRBuilder::trapOutOfBounds(Value *value, Value *lower, Value *upper) {
+void LLVMIRBuilder::trapOutOfBounds(Value *value, Value *lower, Value *upper) {
     Value *lowerLT = builder_.CreateICmpSGE(value, lower);
     Value *upperGE = builder_.CreateICmpSLT(value, upper);
     Value *cond = builder_.CreateAnd(lowerLT, upperGE);
     installTrap(cond, static_cast<unsigned>(Trap::OUT_OF_BOUNDS));
-    return value;
+}
+
+void LLVMIRBuilder::trapNILPtr(llvm::Value *value) {
+    Value *cond = builder_.CreateIsNotNull(value);
+    installTrap(cond, static_cast<unsigned>(Trap::NIL_POINTER));
 }
 
 Value *LLVMIRBuilder::createNeg(llvm::Value *value) {
