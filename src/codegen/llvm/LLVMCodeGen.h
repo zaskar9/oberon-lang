@@ -8,8 +8,11 @@
 #define OBERON_LANG_LLVMCODEGEN_H
 
 
+#include <csignal>
 #include <string>
 #include <filesystem>
+
+#include <boost/predef.h>
 
 #include <llvm/ExecutionEngine/Orc/LLJIT.h>
 #include <llvm/Passes/PassBuilder.h>
@@ -19,7 +22,13 @@
 #include "codegen/CodeGen.h"
 #include "logging/Logger.h"
 
-int mingw_noop_main(void);
+int mingw_noop_main();
+
+void ubsantrap_handler(uint16_t code);
+[[noreturn]] void trap_handler(int, siginfo_t*, void*);
+#if BOOST_ARCH_ARM || BOOST_ARCH_X86
+void register_signal_handler();
+#endif
 
 using std::filesystem::path;
 using std::string;

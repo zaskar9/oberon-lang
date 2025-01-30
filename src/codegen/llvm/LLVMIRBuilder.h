@@ -64,7 +64,6 @@ private:
     void restoreRefMode();
     bool deref() const;
 
-
     void cast(ExpressionNode &);
 
     void procedure(ProcedureNode &);
@@ -73,6 +72,23 @@ private:
     using SelectorIterator = Selectors::iterator;
     TypeNode *selectors(TypeNode *, SelectorIterator, SelectorIterator);
     void parameters(ProcedureTypeNode *, ActualParameters *, vector<Value *> &, bool = false);
+
+    void installTrap(Value *, unsigned);
+    void trapAssert(Value *);
+    void trapFltDivByZero(Value *);
+    void trapIntDivByZero(Value *);
+    void trapCopyOverflow(Value *, Value *);
+    Value *trapIntOverflow(Intrinsic::IndependentIntrinsics, Value*, Value*);
+    void trapOutOfBounds(Value *, Value *, Value *);
+    void trapNILPtr(Value *);
+
+    Value *createNeg(Value *);
+    Value *createAdd(Value *, Value *);
+    Value *createSub(Value *, Value *);
+    Value *createMul(Value *, Value *);
+    Value *createDiv(Value *, Value *);
+    Value *createMod(Value *, Value *);
+    Value *createFDiv(Value *, Value *);
 
     TypeNode *createStaticCall(ProcedureNode *, QualIdent *, Selectors &);
     Value *createPredefinedCall(PredefinedProcedure *, QualIdent *,
@@ -109,9 +125,6 @@ private:
     Value *createSystemCopyCall(Value *, Value *, Value *);
     Value *createSystemValCall(vector<unique_ptr<ExpressionNode>> &, std::vector<Value *> &);
     
-    Value *createTrapCall(unsigned);
-    Value *createInBoundsCheck(Value *, Value *, Value *);
-
     void visit(ModuleNode &) override;
     void visit(ProcedureNode &) override;
 

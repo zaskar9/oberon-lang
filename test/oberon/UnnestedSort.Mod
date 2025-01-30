@@ -1,6 +1,7 @@
 (* This is a generated file. Do not edit. *)
 
 MODULE UnnestedSort(*0*);
+IMPORT Out, Random;
 
    CONST Dim(*1*) = 50;
          MaxVal(*1*) = 10 * Dim;
@@ -11,47 +12,28 @@ MODULE UnnestedSort(*0*);
 
    VAR list(*1*): Vector;
 
-   PROCEDURE printf(*1*)(format(*2*): ARRAY OF CHAR; ...): INTEGER; EXTERN;
-
-   PROCEDURE rand(*1*)(): INTEGER; EXTERN;
-
-   PROCEDURE Write(*1*)(str(*2*): ARRAY OF CHAR);
-   BEGIN
-      printf(str)
-   END Write;
-
-   PROCEDURE WriteLn(*1*)();
-   BEGIN
-      printf("\n")
-   END WriteLn;
-
-   PROCEDURE WriteInt(*1*)(val(*2*): INTEGER);
-   BEGIN
-      printf("%d", val)
-   END WriteInt;
-
    PROCEDURE Init(*1*)(VAR a(*2*): Vector);
       VAR i(*2*): INTEGER;
    BEGIN
       FOR i := 0 TO Dim - 1 BY 1 DO
-         a[i] := rand() MOD MaxVal
+         a[i] := Random.Int(MaxVal)
       END
    END Init;
 
    PROCEDURE Print(*1*)(VAR a(*2*): Vector);
       VAR i(*2*): INTEGER;
    BEGIN
-      Write("[");
+      Out.Char("[");
       i := 0;
       WHILE i < Dim DO
-         WriteInt(a[i]);
+         Out.Int(a[i], 0);
          IF i + 1 < Dim THEN
-            Write(",")
+            Out.Char(",")
          END;
          i := i + 1
       END;
-      Write("]");
-      WriteLn()
+      Out.Char("]");
+      Out.Ln
    END Print;
 
    PROCEDURE Swap(*1*)(VAR a(*2*): INTEGER; VAR b(*2*): INTEGER);
@@ -202,32 +184,32 @@ MODULE UnnestedSort(*0*);
    END MergeSort;
 
 BEGIN
-   Write("--- Bubble Sort");
-   WriteLn();
+   Out.String("--- Bubble Sort");
+   Out.Ln;
    Init(list);
    Print(list);
    BubbleSort(list);
    Print(list);
-   Write("--- Insertion Sort");
-   WriteLn();
+   Out.String("--- Insertion Sort");
+   Out.Ln;
    Init(list);
    Print(list);
    InsertionSort(list);
    Print(list);
-   Write("--- Selection Sort");
-   WriteLn();
+   Out.String("--- Selection Sort");
+   Out.Ln;
    Init(list);
    Print(list);
    SelectionSort(list);
    Print(list);
-   Write("--- Merge Sort");
-   WriteLn();
+   Out.String("--- Merge Sort");
+   Out.Ln;
    Init(list);
    Print(list);
    MergeSort(list);
    Print(list);
-   Write("--- Quick Sort");
-   WriteLn();
+   Out.String("--- Quick Sort");
+   Out.Ln;
    Init(list);
    Print(list);
    QuickSort(list);

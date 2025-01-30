@@ -18,5 +18,8 @@ void ImportNode::accept(NodeVisitor& visitor) {
 }
 
 void ImportNode::print(std::ostream &stream) const {
-    stream << (alias_ ? "" : to_string(*alias_) + " := ") << to_string(*module_);
+    if (alias_) {
+        stream << *this->getAlias() << " := ";
+    }
+    stream << *this->getModule();
 }

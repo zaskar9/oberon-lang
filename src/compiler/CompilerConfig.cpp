@@ -100,6 +100,28 @@ bool CompilerConfig::hasFlag(Flag flag) const {
     return flags_ & static_cast<unsigned>(flag);
 }
 
+void CompilerConfig::toggleSanitize(Trap trap, bool active) {
+    if (active) {
+        traps_.insert(trap);
+    } else {
+        traps_.erase(trap);
+    }
+}
+
+void CompilerConfig::setSanitizeAll() {
+    traps_.insert({Trap::OUT_OF_BOUNDS, Trap::TYPE_GUARD, Trap::COPY_OVERFLOW, Trap::NIL_POINTER,
+                   Trap::PROCEDURE_CALL, Trap::INT_DIVISION, Trap::ASSERT, Trap::INT_OVERFLOW,
+                   Trap::FLT_DIVISION});
+}
+
+void CompilerConfig::setSanitizeNone() {
+    traps_.clear();
+}
+
+bool CompilerConfig::isSanitized(Trap trap) const {
+    return traps_.contains(trap);
+}
+
 void CompilerConfig::setWarning(Warning warn) {
     warn_ |= static_cast<unsigned>(warn);
 }

@@ -23,9 +23,9 @@ private:
     string name_;
 
 public:
-    explicit Ident(const string &name) : start_(EMPTY_POS), end_(EMPTY_POS), name_(name) {};
-    Ident(const FilePos &start, const FilePos &end, string name) : start_(start), end_(end), name_(std::move(name)) {};
-    explicit Ident(Ident *ident) : start_(ident->start_), end_(ident->end_), name_(ident->name_) {};
+    explicit Ident(string name) : start_(EMPTY_POS), end_(EMPTY_POS), name_(std::move(name)) {};
+    Ident(FilePos start, FilePos end, string name) : start_(std::move(start)), end_(std::move(end)), name_(std::move(name)) {};
+    explicit Ident(const Ident *ident) : start_(ident->start_), end_(ident->end_), name_(ident->name_) {};
     virtual ~Ident();
 
     [[nodiscard]] FilePos start() const;
@@ -49,7 +49,7 @@ private:
     bool exported_;
 
 public:
-    explicit IdentDef(const string &name, bool exported = false) :
+    explicit IdentDef(const string &name, const bool exported = false) :
             Ident(name), exported_(exported) {};
     IdentDef(const FilePos &start, const FilePos &end, const string &name, bool exported = false) :
             Ident(start, end, name), exported_(exported) {};

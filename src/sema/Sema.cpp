@@ -504,16 +504,16 @@ Sema::onCase(const FilePos &start, [[maybe_unused]] const FilePos &end,
             auto lower = expr->getLower();
             optional<int64_t> loValue;
             if (lower->getType()->isInteger()) {
-                loValue = foldInteger(lower->pos(), EMPTY_POS, lower);
+                loValue = integer_cast(lower);
             } else if (label->getType()->isChar()) {
-                loValue = foldChar(lower->pos(), EMPTY_POS, lower);
+                loValue = char_cast(lower);
             }
             auto upper = expr->getUpper();
             optional<int64_t> upValue;
             if (upper->getType()->isInteger()) {
-                upValue = foldInteger(upper->pos(), EMPTY_POS, upper);
+                upValue = integer_cast(upper);
             } else if (label->getType()->isChar()) {
-                upValue = foldChar(upper->pos(), EMPTY_POS, upper);
+                upValue = char_cast(upper);
             }
             if (loValue.has_value() && upValue.has_value()) {
                 if (upValue.value() > loValue.value()) {
@@ -530,9 +530,9 @@ Sema::onCase(const FilePos &start, [[maybe_unused]] const FilePos &end,
         } else if (label->isLiteral()) {
             optional<int64_t> value;
             if (label->getType()->isInteger()) {
-                value = foldInteger(label->pos(), EMPTY_POS, label.get());
+                value = integer_cast(label.get());
             } else if (label->getType()->isChar()) {
-                value = foldChar(label->pos(), EMPTY_POS, label.get());
+                value = char_cast(label.get());
             } else {
                 logger_.error(label->pos(), "integer or character value expected.");
             }
@@ -705,7 +705,7 @@ Sema::onQualifiedExpression(const FilePos &start, [[maybe_unused]] const FilePos
     return make_unique<QualifiedExpression>(start, std::move(ident), std::move(selectors), sym, nullTy_);;
 }
 
-unique_ptr<LiteralNode>
+unique_ptr<ExpressionNode>
 Sema::onQualifiedConstant(const FilePos &start, const FilePos &end,
                           unique_ptr<QualIdent> ident, vector<unique_ptr<Selector>> selectors) {
     DeclarationNode* sym = symbols_->lookup(ident.get());
@@ -720,7 +720,9 @@ Sema::onQualifiedConstant(const FilePos &start, const FilePos &end,
             logger_.warning(sel->pos(), "ignoring unexpected selector(s).");
         }
         auto decl = dynamic_cast<ConstantDeclarationNode *>(sym);
-        return fold(start, end, decl->getValue());
+        if (auto opt = fold(start, end, decl->getValue())) {
+            return std::move(opt.value());
+        }
     }
     logger_.error(ident->start(), "constant expected.");
     return nullptr;
@@ -863,7 +865,7 @@ Sema::onActualParameters(DeclarationNode *context, TypeNode *base, ActualParamet
         if (!expr) {
             continue;
         }
-        auto exprTy = expr->getType();
+        auto exprTy = expr->getCast() ? expr->getCast() : expr->getType();
         if (cnt < proc->parameters().size()) {
             auto param = proc->parameters()[cnt].get();
             auto paramTy = param->getType();
@@ -1023,8 +1025,8 @@ Sema::onUnaryExpression(const FilePos &start, [[maybe_unused]] const FilePos &en
         logger_.error(start, "undefined type in unary expression.");
         type = nullTy_;
     }
-    if (expr->isConstant()) {
-        return fold(start, end, op, expr.get());
+    if (auto opt = fold(start, end, op, expr)) {
+        return std::move(opt.value());
     }
     return make_unique<UnaryExpressionNode>(start, op, std::move(expr), type);
 }
@@ -1134,8 +1136,10 @@ Sema::onBinaryExpression(const FilePos &start, const FilePos &end,
         result = nullTy_;
     }
     // Folding
-    if (result != nullTy_ && lhs->isConstant() && rhs->isConstant()) {
-        return fold(start, end, op, lhs.get(), rhs.get(), result);
+    if (result != nullTy_) {
+        if (auto opt = fold(start, end, op, lhs, rhs, result)) {
+            return std::move(opt.value());
+        }
     }
     if (common) {
         // Casting left-hand side to common type
@@ -1234,8 +1238,10 @@ Sema::onSetExpression(const FilePos &start, [[maybe_unused]] const FilePos &end,
                 const auto range = dynamic_cast<const RangeLiteralNode *>(elem.get());
                 result |= range->value();
             } else if (elem->getType()->isInteger()) {
-                const optional<int64_t> pos = foldInteger(start, end, elem.get());
-                result.set(static_cast<std::size_t>(pos.value_or(0)));
+                auto pos = integer_cast(elem.get());
+                if (pos) {
+                    result.set(static_cast<std::size_t>(pos.value()));
+                }
             }
         }
         return make_unique<SetLiteralNode>(start, result, setTy_);
@@ -1342,223 +1348,333 @@ Sema::floor_div(int64_t x, int64_t y) {
     return r ? (d - ((x < 0) ^ (y < 0))) : d;
 }
 
-bool
-Sema::foldBoolean(const FilePos &start, [[maybe_unused]] const FilePos &end, ExpressionNode *expr) {
-    if (expr->getNodeType() == NodeType::boolean) {
-        return dynamic_cast<const BooleanLiteralNode *>(expr)->value();
+template<typename L, typename T>
+optional<unique_ptr<LiteralNode<T>>>
+Sema::clone(const FilePos &start, const FilePos &, LiteralNode<T> *literal) {
+    if (literal) {
+        T value = literal->value();
+        return make_unique<L>(start, value, literal->getType(), literal->getCast());
     }
-    logger_.error(start, "expression is not a constant boolean value.");
-    return {};
+    return std::nullopt;
+}
+
+optional<bool>
+Sema::boolean_cast(const ExpressionNode *expr) {
+    if (expr->getNodeType() == NodeType::boolean) {
+        return { dynamic_cast<const BooleanLiteralNode *>(expr)->value() };
+    }
+    return std::nullopt;
 }
 
 optional<int64_t>
-Sema::foldInteger(const FilePos &start, [[maybe_unused]] const FilePos &end, ExpressionNode *expr) {
+Sema::integer_cast(const ExpressionNode *expr) {
     if (expr->getNodeType() == NodeType::integer) {
-        return dynamic_cast<const IntegerLiteralNode *>(expr)->value();
+        return { dynamic_cast<const IntegerLiteralNode *>(expr)->value() };
     }
-    logger_.error(start, "expression is not a constant integer value.");
     return std::nullopt;
 }
 
 optional<uint8_t>
-Sema::foldChar(const FilePos &start, [[maybe_unused]] const FilePos &end, ExpressionNode *expr) {
+Sema::char_cast(const ExpressionNode *expr) {
     if (expr->getNodeType() == NodeType::character) {
-        return dynamic_cast<const CharLiteralNode *>(expr)->value();
+        return { dynamic_cast<const CharLiteralNode *>(expr)->value() };
     }
-    logger_.error(start, "expression is not a constant character value.");
     return std::nullopt;
 }
 
-double
-Sema::foldReal(const FilePos &start, [[maybe_unused]] const FilePos &end, ExpressionNode *expr) {
+optional<double>
+Sema::real_cast(const ExpressionNode *expr) {
     if (expr->getNodeType() == NodeType::real) {
-        return dynamic_cast<const RealLiteralNode *>(expr)->value();
+        return { dynamic_cast<const RealLiteralNode *>(expr)->value() };
     } else if (expr->getNodeType() == NodeType::integer) {
         // promote integer literal to real literal
-        return (double) foldInteger(start, end, expr).value_or(0);
+        auto value = dynamic_cast<const IntegerLiteralNode *>(expr)->value();
+        return { static_cast<double>(value) };
     }
-    logger_.error(start, "expression is not a constant real value.");
-    return {};
+    return std::nullopt;
 }
 
-string
-Sema::foldString(const FilePos &start, [[maybe_unused]] const FilePos &end, ExpressionNode *expr) {
+optional<string>
+Sema::string_cast(const ExpressionNode *expr) {
     if (expr->getNodeType() == NodeType::string) {
         return dynamic_cast<const StringLiteralNode *>(expr)->value();
     } else if (expr->getNodeType() == NodeType::character) {
         // promote character literal to string literal
-        auto value = dynamic_cast<CharLiteralNode *>(expr)->value();
-        return { static_cast<char>(value) };
+        auto value = dynamic_cast<const CharLiteralNode *>(expr)->value();
+        return { string{static_cast<char>(value)} };
     }
-    logger_.error(start, "expression is not a constant string value.");
-    return {};
+    return std::nullopt;
 }
 
-bitset<32>
-Sema::foldSet(const FilePos &start, [[maybe_unused]] const FilePos &end, ExpressionNode *expr) {
+optional<bitset<32>>
+Sema::set_cast(const ExpressionNode *expr) {
     if (expr->getNodeType() == NodeType::set) {
-        return dynamic_cast<const SetLiteralNode *>(expr)->value();
+        return { dynamic_cast<const SetLiteralNode *>(expr)->value() };
     }
-    logger_.error(start, "expression is not a constant set value.");
-    return {};
+    return std::nullopt;
 }
 
-template<typename T>
-unique_ptr<BooleanLiteralNode>
-Sema::foldRelation(const FilePos &start, OperatorType op, T lvalue, T rvalue, TypeNode *common) {
-    switch (op) {
-        case OperatorType::EQ:
-            return make_unique<BooleanLiteralNode>(start, lvalue == rvalue, common);
-        case OperatorType::NEQ:
-            return make_unique<BooleanLiteralNode>(start, lvalue != rvalue, common);
-        case OperatorType::LT:
-            return make_unique<BooleanLiteralNode>(start, lvalue <= rvalue, common);
-        case OperatorType::LEQ:
-            return make_unique<BooleanLiteralNode>(start, lvalue < rvalue, common);
-        case OperatorType::GT:
-            return make_unique<BooleanLiteralNode>(start, lvalue > rvalue, common);
-        case OperatorType::GEQ:
-            return make_unique<BooleanLiteralNode>(start, lvalue >= rvalue, common);
-        default:
-            return nullptr;
-    }
-}
-
-std::unique_ptr<LiteralNode>
+optional<unique_ptr<ExpressionNode>>
 Sema::fold(const FilePos &start, const FilePos &end, ExpressionNode *expr) {
-    if (expr) {
+    if (expr && expr->isLiteral()) {
         auto type = expr->getType();
         if (type) {
-            auto cast = expr->getCast();
+            // auto cast = expr->getCast();
             if (type->kind() == TypeKind::CHAR) {
-                uint8_t value = foldChar(start, end, expr).value_or('\0');
-                return make_unique<CharLiteralNode>(expr->pos(), value, type, cast);
+                return clone<CharLiteralNode>(start, end, dynamic_cast<CharLiteralNode*>(expr));
             } else if (type->kind() == TypeKind::SHORTINT ||
                        type->kind() == TypeKind::INTEGER ||
                        type->kind() == TypeKind::LONGINT) {
-                int64_t value = foldInteger(start, end, expr).value_or(0);
-                return make_unique<IntegerLiteralNode>(expr->pos(), value, intType(value), cast);
+                return clone<IntegerLiteralNode>(start, end, dynamic_cast<IntegerLiteralNode*>(expr));
             } else if (type->kind() == TypeKind::REAL ||
                        type->kind() == TypeKind::LONGREAL) {
-                return make_unique<RealLiteralNode>(expr->pos(), foldReal(start, end, expr), type, cast);
+                return clone<RealLiteralNode>(start, end, dynamic_cast<RealLiteralNode*>(expr));
             } else if (type->kind() == TypeKind::BOOLEAN) {
-                return make_unique<BooleanLiteralNode>(expr->pos(), foldBoolean(start, end, expr), type, cast);
+                return clone<BooleanLiteralNode>(start, end, dynamic_cast<BooleanLiteralNode*>(expr));
             } else if (type->kind() == TypeKind::STRING) {
-                return make_unique<StringLiteralNode>(expr->pos(), foldString(start, end, expr), type, cast);
+                return clone<StringLiteralNode>(start, end, dynamic_cast<StringLiteralNode*>(expr));
             } else if (type->kind() == TypeKind::SET) {
-                return make_unique<SetLiteralNode>(expr->pos(), foldSet(start, end, expr), type, cast);
+                return clone<SetLiteralNode>(start, end, dynamic_cast<SetLiteralNode*>(expr));
             }
             logger_.error(start, "unsupported literal type: " + to_string(*type->getIdentifier()) + ".");
         } else {
             logger_.error(start, "unsupported literal type.");
         }
     }
-    return nullptr;
+    return std::nullopt;
 }
 
-unique_ptr<LiteralNode>
-Sema::fold(const FilePos &start, [[maybe_unused]] const FilePos &end, OperatorType op, ExpressionNode *expr) {
+optional<unique_ptr<ExpressionNode>>
+Sema::fold(const FilePos &start, const FilePos &, OperatorType op, unique_ptr<ExpressionNode> &expr) {
     auto type = expr->getType();
     auto cast = expr->getCast();
     if (type->isBoolean()) {
-        bool value = foldBoolean(start, end, expr);
-        switch (op) {
-            case OperatorType::NOT:
-                return make_unique<BooleanLiteralNode>(start, !value, type, cast);
-            default:
-                logger_.error(start, "operator " + to_string(op) + " cannot be applied to boolean values.");
-        }
-    } else if (type->isInteger()) {
-        int64_t value = foldInteger(start, end, expr).value_or(0);
-        switch (op) {
-            case OperatorType::PLUS:
-                return make_unique<IntegerLiteralNode>(start, value, type, cast);
-            case OperatorType::NEG: {
-                // negating an integer literal can change its type from LONGINT to INTEGER or INTEGER to SHORTINT
-                value = -value;
-                return make_unique<IntegerLiteralNode>(start, value, intType(value), cast);
-            }
-            default:
-                logger_.error(start, "operator " + to_string(op) + " cannot be applied to integer values.");
-        }
-    } else if (type->isReal()) {
-        double value = foldReal(start, end, expr);
-        switch (op) {
-            case OperatorType::PLUS:
-                return make_unique<RealLiteralNode>(start, value, type, cast);
-            case OperatorType::NEG:
-                return make_unique<RealLiteralNode>(start, -value, type, cast);
-            default:
-                logger_.error(start, "operator " + to_string(op) + " cannot be applied to real values.");
-        }
-    } else if (type->isSet()) {
-        auto value = foldSet(start, end, expr);
-        switch (op) {
-            case OperatorType::NEG:
-                return make_unique<SetLiteralNode>(start, value.flip(), type, cast);
-            default:
-                logger_.error(start, "operator " + to_string(op) + " cannot be applied to set values.");
-        }
-    }
-    logger_.error(start, "invalid unary expression.");
-    return nullptr;
-}
-
-unique_ptr<LiteralNode>
-Sema::fold(const FilePos &start, [[maybe_unused]] const FilePos &end,
-           OperatorType op, ExpressionNode *lhs, ExpressionNode *rhs, TypeNode* common) {
-    if (common->isBoolean()) {
-        if (lhs->getType()->isBoolean() && rhs->getType()->isBoolean()) {
-            bool lvalue = foldBoolean(start, end, lhs);
-            bool rvalue = foldBoolean(start, end, rhs);
+        if (auto opt = boolean_cast(expr.get())) {
             switch (op) {
-                case OperatorType::AND:
-                    return make_unique<BooleanLiteralNode>(start, lvalue && rvalue, common);
-                case OperatorType::OR:
-                    return make_unique<BooleanLiteralNode>(start, lvalue || rvalue, common);
-                case OperatorType::EQ:
-                    return make_unique<BooleanLiteralNode>(start, lvalue == rvalue, common);
-                case OperatorType::NEQ:
-                    return make_unique<BooleanLiteralNode>(start, lvalue != rvalue, common);
+                case OperatorType::NOT:
+                    return make_unique<BooleanLiteralNode>(start, !opt.value(), type, cast);
                 default:
                     logger_.error(start, "operator " + to_string(op) + " cannot be applied to boolean values.");
             }
+        }
+    } else if (type->isInteger()) {
+        if (auto opt = integer_cast(expr.get())) {
+            switch (op) {
+                case OperatorType::PLUS:
+                    return make_unique<IntegerLiteralNode>(start, opt.value(), type, cast);
+                case OperatorType::NEG: {
+                    // negating an integer literal can change its type from LONGINT to INTEGER or INTEGER to SHORTINT
+                    int64_t value = -opt.value();
+                    return make_unique<IntegerLiteralNode>(start, value, intType(value), cast);
+                }
+                default:
+                    logger_.error(start, "operator " + to_string(op) + " cannot be applied to integer values.");
+            }
+        }
+    } else if (type->isReal()) {
+        if (auto opt = real_cast(expr.get())) {
+            switch (op) {
+                case OperatorType::PLUS:
+                    return make_unique<RealLiteralNode>(start, opt.value(), type, cast);
+                case OperatorType::NEG:
+                    return make_unique<RealLiteralNode>(start, -opt.value(), type, cast);
+                default:
+                    logger_.error(start, "operator " + to_string(op) + " cannot be applied to real values.");
+            }
+        }
+    } else if (type->isSet()) {
+        if (auto opt = set_cast(expr.get())) {
+            switch (op) {
+                case OperatorType::NEG:
+                    return make_unique<SetLiteralNode>(start, opt.value().flip(), type, cast);
+                default:
+                    logger_.error(start, "operator " + to_string(op) + " cannot be applied to set values.");
+            }
+        }
+    }
+    // logger_.error(start, "invalid unary expression.");
+    return std::nullopt;
+}
+
+template<typename L, typename T>
+optional<unique_ptr<ExpressionNode>>
+Sema::foldBinaryOp(const FilePos &start, const FilePos &,
+                   unique_ptr<ExpressionNode> &lhs, unique_ptr<ExpressionNode> &rhs,
+                   optional<T> neutral, optional<T> zero, function<T(T, T)> op, TypeNode *common) {
+    optional<T> lvalue = literal_cast<T>(*lhs);
+    optional<T> rvalue = literal_cast<T>(*rhs);
+    if (lvalue && rvalue) {
+        T result = op(lvalue.value(), rvalue.value());
+        return make_unique<L>(start, result, common->isInteger() ? intType(static_cast<int64_t>(result)) : common);
+    }
+    if (lvalue) {
+        if (neutral && neutral.value() == lvalue.value()) {
+            return optional(std::move(rhs));
+        }
+        if (zero && zero.value() == lvalue.value()) {
+            return make_unique<L>(start, 0, common->isInteger() ? shortIntTy_ : common);
+        }
+    }
+    if (rvalue) {
+        if (neutral && neutral.value() == rvalue.value()) {
+            return optional(std::move(lhs));
+        }
+        if (zero && zero.value() == rvalue.value()) {
+            return make_unique<L>(start, 0, common->isInteger() ? shortIntTy_ : common);
+        }
+    }
+    return std::nullopt;
+}
+
+optional<unique_ptr<ExpressionNode>>
+Sema::foldBooleanOp(const FilePos &start, const FilePos &end,
+                    OperatorType op, unique_ptr<ExpressionNode> &lhs, unique_ptr<ExpressionNode> &rhs, TypeNode* common) {
+    switch (op) {
+        case OperatorType::AND:
+            return foldBinaryOp<BooleanLiteralNode, bool>(start, end, lhs, rhs, true, {}, std::logical_and(), common);
+        case OperatorType::OR:
+            return foldBinaryOp<BooleanLiteralNode, bool>(start, end, lhs, rhs, false, {}, std::logical_or(), common);
+        case OperatorType::EQ:
+            return foldBinaryOp<BooleanLiteralNode, bool>(start, end, lhs, rhs, {}, {}, std::equal_to(), common);
+        case OperatorType::NEQ:
+            return foldBinaryOp<BooleanLiteralNode, bool>(start, end, lhs, rhs, {}, {}, std::not_equal_to(), common);
+        default:
+            logger_.error(start, "operator " + to_string(op) + " cannot be applied to boolean values.");
+            return std::nullopt;
+    }
+}
+
+template<typename T>
+optional<unique_ptr<BooleanLiteralNode>>
+Sema::foldRelationOp(const FilePos &start, const FilePos &,
+                     OperatorType op, unique_ptr<ExpressionNode> &lhs, unique_ptr<ExpressionNode> &rhs, TypeNode *common) {
+    auto lopt = literal_cast<T>(*lhs);
+    auto ropt = literal_cast<T>(*rhs);
+    if (lopt && ropt) {
+        T lvalue = lopt.value();
+        T rvalue = ropt.value();
+        switch (op) {
+            case OperatorType::EQ:
+                return make_unique<BooleanLiteralNode>(start, lvalue == rvalue, common);
+            case OperatorType::NEQ:
+                return make_unique<BooleanLiteralNode>(start, lvalue != rvalue, common);
+            case OperatorType::LT:
+                return make_unique<BooleanLiteralNode>(start, lvalue <= rvalue, common);
+            case OperatorType::LEQ:
+                return make_unique<BooleanLiteralNode>(start, lvalue < rvalue, common);
+            case OperatorType::GT:
+                return make_unique<BooleanLiteralNode>(start, lvalue > rvalue, common);
+            case OperatorType::GEQ:
+                return make_unique<BooleanLiteralNode>(start, lvalue >= rvalue, common);
+            default:
+                logger_.error(start, "operator " + to_string(op) + " does not return a boolean value.");
+        }
+    }
+    return std::nullopt;
+}
+
+optional<unique_ptr<ExpressionNode>>
+Sema::foldDivModOp(const FilePos &start, const FilePos &,
+                   OperatorType op, unique_ptr<ExpressionNode> &lhs, unique_ptr<ExpressionNode> &rhs, TypeNode *common) {
+    auto lopt = integer_cast(lhs.get());
+    auto ropt = integer_cast(rhs.get());
+    if (ropt) {
+        auto rvalue = ropt.value();
+        if (rvalue == 0) {
+            logger_.error(rhs->pos(), "division by zero.");
+            return std::nullopt;
+        }
+        if (rvalue < 0) {
+            logger_.error(rhs->pos(), "divisor cannot be negative.");
+            return std::nullopt;
+        }
+        if (rvalue == 1) {
+            if (lopt) {
+                return make_unique<IntegerLiteralNode>(start, lopt.value(), common);
+            }
+            return std::move(lhs);
+        }
+        if (lopt) {
+            auto lvalue = lopt.value();
+            auto result = op == OperatorType::DIV ? floor_div(lvalue, rvalue) : euclidean_mod(lvalue, rvalue);
+            return make_unique<IntegerLiteralNode>(start, result, common);
+        }
+    }
+    return std::nullopt;
+}
+
+optional<unique_ptr<ExpressionNode>>
+Sema::foldFDivOp(const FilePos &start, const FilePos &,
+                 unique_ptr<ExpressionNode> &lhs, unique_ptr<ExpressionNode> &rhs, TypeNode *common) {
+    auto lopt = real_cast(lhs.get());
+    auto ropt = real_cast(rhs.get());
+    if (ropt) {
+        auto rvalue = ropt.value();
+        if (rvalue == 0) {
+            logger_.error(rhs->pos(), "division by zero.");
+            return std::nullopt;
+        }
+        if (rvalue == 1) {
+            if (lopt) {
+                return make_unique<RealLiteralNode>(start, lopt.value(), common);
+            }
+            lhs->setCast(common);
+            return std::move(lhs);
+        }
+        if (lopt) {
+            return make_unique<RealLiteralNode>(start, lopt.value() / rvalue, common);
+        }
+    }
+    return std::nullopt;
+}
+
+template<typename L, typename T>
+optional<unique_ptr<ExpressionNode>>
+Sema::foldSubOp(const FilePos &start, const FilePos &,
+                unique_ptr<ExpressionNode> &lhs, unique_ptr<ExpressionNode> &rhs, TypeNode *common) {
+    auto lopt = literal_cast<T>(*lhs);
+    auto ropt = literal_cast<T>(*rhs);
+    if (lopt && ropt) {
+        T result = lopt.value() - ropt.value();
+        return make_unique<L>(start, result, common->isInteger() ? intType(static_cast<int64_t>(result)) : common);
+    }
+    if (lopt && lopt.value() == 0) {
+        return make_unique<UnaryExpressionNode>(start, OperatorType::NEG, std::move(rhs), common);
+    }
+    if (ropt && ropt.value() == 0) {
+        return std::move(lhs);
+    }
+    return std::nullopt;
+}
+
+optional<unique_ptr<ExpressionNode>>
+Sema::fold(const FilePos &start, const FilePos &end,
+           OperatorType op, unique_ptr<ExpressionNode> &lhs, unique_ptr<ExpressionNode> &rhs, TypeNode* common) {
+    if (common->isBoolean()) {
+        if (lhs->getType()->isBoolean() && rhs->getType()->isBoolean()) {
+            return foldBooleanOp(start, end, op, lhs, rhs, common);
         } else if (lhs->getType()->isNumeric() && rhs->getType()->isNumeric()) {
             if (lhs->getType()->isInteger() && rhs->getType()->isInteger()) {
-                int64_t lvalue = foldInteger(start, end, lhs).value_or(0);
-                int64_t rvalue = foldInteger(start, end, rhs).value_or(0);
-                auto res = foldRelation(start, op, lvalue, rvalue, common);
-                if (res) {
-                    return res;
-                }
-                logger_.error(start, "operator " + to_string(op) + " cannot be applied to integer values.");
+                return foldRelationOp<int64_t>(start, end, op, lhs, rhs, common);
             } else {
-                double lvalue = foldReal(start, end, lhs);
-                double rvalue = foldReal(start, end, rhs);
-                auto res = foldRelation(start, op, lvalue, rvalue, common);
-                if (res) {
-                    return res;
-                }
-                logger_.error(start, "operator " + to_string(op) + " cannot be applied to real values.");
+                return foldRelationOp<double>(start, end, op, lhs, rhs, common);
             }
         } else if (lhs->getType()->isChar() && rhs->getType()->isChar()) {
-            uint8_t lvalue = foldChar(start, end, lhs).value_or(0);
-            uint8_t rvalue = foldChar(start, end, rhs).value_or(0);
-            auto res = foldRelation(start, op, lvalue, rvalue, common);
-            if (res) {
-                return res;
-            }
-            logger_.error(start, "operator " + to_string(op) + " cannot be applied to character values.");
+            return foldRelationOp<uint8_t>(start, end, op, lhs, rhs, common);
         } else if (lhs->getType()->isString() && rhs->getType()->isString()) {
-            string lvalue = foldString(start, end, lhs);
-            string rvalue = foldString(start, end, rhs);
-            switch (op) {
-                case OperatorType::EQ:
-                    return make_unique<BooleanLiteralNode>(start, lvalue == rvalue, common);
-                case OperatorType::NEQ:
-                    return make_unique<BooleanLiteralNode>(start, lvalue != rvalue, common);
-                default:
-                    logger_.error(start, "operator " + to_string(op) + " cannot be applied to string values.");
+            auto lopt = string_cast(lhs.get());
+            auto ropt = string_cast(rhs.get());
+            if (lopt && ropt) {
+                string lvalue = lopt.value();
+                string rvalue = ropt.value();
+                switch (op) {
+                    case OperatorType::EQ:
+                        return make_unique<BooleanLiteralNode>(start, lvalue == rvalue, common);
+                    case OperatorType::NEQ:
+                        return make_unique<BooleanLiteralNode>(start, lvalue != rvalue, common);
+                    default:
+                        logger_.error(start, "operator " + to_string(op) + " does not return a boolean value.");
+                }
             }
         } else if (lhs->getType()->kind() == TypeKind::NILTYPE && rhs->getType()->kind() == TypeKind::NILTYPE) {
             switch (op) {
@@ -1567,113 +1683,97 @@ Sema::fold(const FilePos &start, [[maybe_unused]] const FilePos &end,
                 case OperatorType::NEQ:
                     return make_unique<BooleanLiteralNode>(start, false, common);
                 default:
-                    logger_.error(start, "operator " + to_string(op) + " cannot be applied to NIL values.");
+                    logger_.error(start, "operator " + to_string(op) + " does not return a boolean value.");
             }
         } else if (rhs->getType()->isSet()) {
-            auto rvalue = foldSet(start, end, rhs);
-            if (lhs->getType()->isSet()) {
-                auto lvalue = foldSet(start, end, lhs);
-                switch (op) {
-                    case OperatorType::EQ:
-                        return make_unique<BooleanLiteralNode>(start, lvalue == rvalue, common);
-                    case OperatorType::NEQ:
-                        return make_unique<BooleanLiteralNode>(start, lvalue != rvalue, common);
-                    case OperatorType::LEQ:
-                        return make_unique<BooleanLiteralNode>(start, (lvalue & rvalue.flip()).none(), common);
-                    case OperatorType::GEQ:
-                        return make_unique<BooleanLiteralNode>(start, (rvalue & lvalue.flip()).none(), common);
-                    default:
-                        logger_.error(start, "operator " + to_string(op) + " cannot be applied to set values.");
+            auto ropt = set_cast(rhs.get());
+            if (ropt) {
+                auto rvalue = ropt.value();
+                if (lhs->getType()->isSet()) {
+                    auto lopt = set_cast(lhs.get());
+                    if (lopt) {
+                        auto lvalue = lopt.value();
+                        switch (op) {
+                            case OperatorType::EQ:
+                                return make_unique<BooleanLiteralNode>(start, lvalue == rvalue, common);
+                            case OperatorType::NEQ:
+                                return make_unique<BooleanLiteralNode>(start, lvalue != rvalue, common);
+                            case OperatorType::LEQ:
+                                return make_unique<BooleanLiteralNode>(start, (lvalue & rvalue.flip()).none(), common);
+                            case OperatorType::GEQ:
+                                return make_unique<BooleanLiteralNode>(start, (rvalue & lvalue.flip()).none(), common);
+                            default:
+                                logger_.error(start, "operator " + to_string(op) + " does not return a boolean value.");
+                        }
+                    }
+                } else if (op == OperatorType::IN && lhs->getType()->isInteger()) {
+                    auto lvalue = assertInBounds(dynamic_cast<IntegerLiteralNode *>(lhs.get()), 0, 31);
+                    return make_unique<BooleanLiteralNode>(start, rvalue.test(std::size_t(lvalue)), common);
+                } else {
+                    logger_.error(start, "operator " + to_string(op) + " cannot be applied here.");
                 }
-            } else if (op == OperatorType::IN && lhs->getType()->isInteger()) {
-                auto lvalue = assertInBounds(dynamic_cast<IntegerLiteralNode *>(lhs), 0, 31);
-                return make_unique<BooleanLiteralNode>(start, rvalue.test(std::size_t(lvalue)), common);
             }
-            logger_.error(start, "operator " + to_string(op) + " cannot be applied here.");
         }
     } else if (common->isInteger()) {
-        int64_t lvalue = foldInteger(start, end, lhs).value_or(0);
-        int64_t rvalue = foldInteger(start, end, rhs).value_or(0);
-        int64_t value;
         switch (op) {
             case OperatorType::PLUS:
-                value = lvalue + rvalue; break;
+                return foldBinaryOp<IntegerLiteralNode, int64_t>(start, end, lhs, rhs, 0, {}, std::plus(), common);
             case OperatorType::MINUS:
-                value = lvalue - rvalue; break;
+                return foldSubOp<IntegerLiteralNode, int64_t>(start, end, lhs, rhs, common);
             case OperatorType::TIMES:
-                value = lvalue * rvalue; break;
+                return foldBinaryOp<IntegerLiteralNode, int64_t>(start, end, lhs, rhs, 1, 0, std::multiplies(), common);
             case OperatorType::DIV:
-                if (rvalue == 0) {
-                    logger_.error(rhs->pos(), "division by zero.");
-                    value = 0;
-                }
-                value = floor_div(lvalue, rvalue);
-                break;
             case OperatorType::MOD:
-                if (rvalue == 0) {
-                    logger_.error(rhs->pos(), "division by zero.");
-                    value = 0;
-                }
-                value = euclidean_mod(lvalue, rvalue);
-                break;
+                return foldDivModOp(start, end, op, lhs, rhs, common);
             default:
                 logger_.error(start, "operator " + to_string(op) + " cannot be applied to integer values.");
-                return nullptr;
         }
-        return make_unique<IntegerLiteralNode>(start, value, intType(value));
-} else if (common->isReal()) {
-        double lvalue = foldReal(start, end, lhs);
-        double rvalue = foldReal(start, end, rhs);
-        double value;
+    } else if (common->isReal()) {
         switch (op) {
             case OperatorType::PLUS:
-                value = lvalue + rvalue; break;
+                return foldBinaryOp<RealLiteralNode, double>(start, end, lhs, rhs, 0, {}, std::plus(), common);
             case OperatorType::MINUS:
-                value = lvalue - rvalue; break;
+                return foldSubOp<RealLiteralNode, double>(start, end, lhs, rhs, common);
             case OperatorType::TIMES:
-                value = lvalue * rvalue; break;
+                return foldBinaryOp<RealLiteralNode, double>(start, end, lhs, rhs, 1, 0, std::multiplies(), common);
             case OperatorType::DIVIDE:
-                if (rvalue == 0) {
-                    logger_.error(rhs->pos(), "division by zero.");
-                    value = 0;
-                }
-                value = lvalue / rvalue;
-                break;
+                return foldFDivOp(start, end, lhs, rhs, common);
             default:
                 logger_.error(start, "operator " + to_string(op) + " cannot be applied to real values.");
-                return nullptr;
         }
-        if (common->kind() == TypeKind::REAL) {
-            return make_unique<RealLiteralNode>(start, static_cast<float>(value), realTy_);
-        }
-        return make_unique<RealLiteralNode>(start, value, longRealTy_);
     } else if (common->isString()) {
-        string lvalue = foldString(start, end, lhs);
-        string rvalue = foldString(start, end, rhs);
-        switch (op) {
-            case OperatorType::PLUS:
-                return make_unique<StringLiteralNode>(start, lvalue + rvalue, common);
-            default:
-                logger_.error(start, "operator " + to_string(op) + " cannot be applied to string values.");
+        auto lopt = string_cast(lhs.get());
+        auto ropt = string_cast(rhs.get());
+        if (lopt && ropt) {
+            switch (op) {
+                case OperatorType::PLUS:
+                    return make_unique<StringLiteralNode>(start, lopt.value() + ropt.value(), common);
+                default:
+                    logger_.error(start, "operator " + to_string(op) + " cannot be applied to string values.");
+            }
         }
     } else if (common->isSet()) {
-        auto lvalue = foldSet(start, end, lhs);
-        auto rvalue = foldSet(start, end, rhs);
-        switch (op) {
-            case OperatorType::PLUS:
-                return make_unique<SetLiteralNode>(start, lvalue | rvalue, common);
-            case OperatorType::MINUS:
-                return make_unique<SetLiteralNode>(start, lvalue & rvalue.flip(), common);
-            case OperatorType::TIMES:
-                return make_unique<SetLiteralNode>(start, lvalue & rvalue, common);
-            case OperatorType::DIVIDE:
-                return make_unique<SetLiteralNode>(start, lvalue ^ rvalue, common);
-            default:
-                logger_.error(start, "operator " + to_string(op) + " cannot be applied to set values.");
+        auto lopt = set_cast(lhs.get());
+        auto ropt = set_cast(rhs.get());
+        if (lopt && ropt) {
+            auto lvalue = lopt.value();
+            auto rvalue = ropt.value();
+            switch (op) {
+                case OperatorType::PLUS:
+                    return make_unique<SetLiteralNode>(start, lvalue | rvalue, common);
+                case OperatorType::MINUS:
+                    return make_unique<SetLiteralNode>(start, lvalue & rvalue.flip(), common);
+                case OperatorType::TIMES:
+                    return make_unique<SetLiteralNode>(start, lvalue & rvalue, common);
+                case OperatorType::DIVIDE:
+                    return make_unique<SetLiteralNode>(start, lvalue ^ rvalue, common);
+                default:
+                    logger_.error(start, "operator " + to_string(op) + " cannot be applied to set values.");
+            }
         }
     }
-    logger_.error(start, "invalid binary expression.");
-    return nullptr;
+    // logger_.error(start, "invalid binary expression.");
+    return std::nullopt;
 }
 
 bool
@@ -1889,7 +1989,7 @@ void Sema::castLiteral(unique_ptr<ExpressionNode> &literal, TypeNode *expected) 
     if (expected->isArray()) {
         if (actual->isChar()) {
             auto value = dynamic_cast<CharLiteralNode *>(literal.get());
-            literal = onStringLiteral(literal->pos(), EMPTY_POS, foldString(literal->pos(), EMPTY_POS, value));
+            literal = onStringLiteral(literal->pos(), EMPTY_POS, string_cast(value).value());
         } else if (actual->isString()) {
             auto value = dynamic_cast<StringLiteralNode *>(literal.get())->value();
             auto array = dynamic_cast<ArrayTypeNode *>(expected);
@@ -1900,7 +2000,7 @@ void Sema::castLiteral(unique_ptr<ExpressionNode> &literal, TypeNode *expected) 
         }
     } else if (expected->isReal() && actual->isInteger()) {
         auto value = dynamic_cast<IntegerLiteralNode *>(literal.get());
-        literal = onRealLiteral(literal->pos(), EMPTY_POS, foldReal(literal->pos(), EMPTY_POS, value));
+        literal = onRealLiteral(literal->pos(), EMPTY_POS, real_cast(value).value());
         cast(literal.get(), expected);
     } else if ((expected->isInteger() && actual->isInteger())
             || (expected->isReal() && actual->isReal())

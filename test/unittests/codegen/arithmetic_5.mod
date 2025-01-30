@@ -7,9 +7,10 @@
 MODULE Arithmetic5;
 
 PROCEDURE Test;
-VAR c : INTEGER;
+VAR a, b, c : INTEGER;
 BEGIN
-  c := 10 MOD -3
+  a := 10; b := -3;
+  c := a MOD b
 END Test;
 
 BEGIN

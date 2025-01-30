@@ -7,6 +7,8 @@
 #include "LLVMCodeGen.h"
 #include "LLVMIRBuilder.h"
 #include <sstream>
+#include <unistd.h>
+#include <unordered_set>
 #include <llvm/Bitcode/BitcodeWriter.h>
 #include <llvm/ExecutionEngine/Orc/ExecutionUtils.h>
 #include <llvm/ExecutionEngine/Orc/LLJIT.h>
@@ -33,6 +35,68 @@ int mingw_noop_main(void) {
   //        ORC tools (the problem isn't lli specific).
   return 0;
 }
+
+void ubsantrap_handler(uint16_t code) {
+    std::cerr << std::endl << "Oberon program trapped with code " << code;
+    switch (code) {
+        case 1: std::cerr << " (array index out of range)"; break;
+        case 2: std::cerr << " (type guard failure)"; break;
+        case 3: std::cerr << " (array or string copy overflow)"; break;
+        case 4: std::cerr << " (access via NIL pointer)"; break;
+        case 5: std::cerr << " (illegal procedure call)"; break;
+        case 6: std::cerr << " (integer division by zero)"; break;
+        case 7: std::cerr << " (assertion violated)"; break;
+        case 8: std::cerr << " (integer overflow)"; break;
+        case 9: std::cerr << " (floating point division by zero)"; break;
+        default: break;
+    }
+    std::cerr << std::endl;
+}
+
+[[noreturn]] void trap_handler(int, siginfo_t* info, void*) {
+#if BOOST_ARCH_ARM
+    // Get the address of the trapped instruction from info->si_addr
+    auto pc = (uint32_t*)info->si_addr;
+    // Read the instruction at the trapped PC
+    uint32_t instr = *pc;
+    // Check if it is a `BRK` instruction (0xD4200000 mask)
+    if ((instr & 0xFFE00000) == 0xD4200000) {
+        // Mask out the opcode and extract the immediate (lower 16 bits)
+        uint16_t code = (instr >> 5) & 0xFF;
+        ubsantrap_handler(code);
+    }
+#elif BOOST_ARCH_X86
+    std::unordered_set<uint8_t> prefixes({ 0xF0, 0xF2, 0xF3, 0x2E, 0x36, 0x3E, 0x26, 0x64, 0x65, 0x66, 0x67 });
+    auto instr = static_cast<uint8_t*>(info->si_addr);
+    size_t pos = 0;
+    // Skip Prefixes
+    while (true) {
+        if (prefixes.contains(instr[pos]) || (instr[pos] >= 0x40 && instr[pos] <= 0x4F)) {
+            ++pos;
+            continue;
+        }
+        break;
+    }
+    // Check if it is a `UD1` instruction (0F B9 opcode)
+    if (instr[pos] == 0x0F || instr[pos + 1] == 0xB9) {
+        pos += 3;  // Move past the opcode and ModR/M byte
+        uint16_t code = static_cast<uint8_t>(instr[pos]);
+        ubsantrap_handler(code);
+    }
+#endif
+    _exit(1);
+}
+
+#if BOOST_ARCH_ARM || BOOST_ARCH_X86
+void register_signal_handler() {
+    struct sigaction sa{};
+    sa.sa_sigaction = trap_handler;
+    sa.sa_flags = SA_SIGINFO;
+    sigemptyset(&sa.sa_mask);
+    sigaction(SIGTRAP, &sa, nullptr);
+    sigaction(SIGILL, &sa, nullptr);
+}
+#endif
 
 LLVMCodeGen::LLVMCodeGen(CompilerConfig &config) :
         config_(config), logger_(config_.logger()), type_(OutputFileType::ObjectFile), ctx_(), pb_(),
@@ -217,6 +281,10 @@ int LLVMCodeGen::jit(ASTContext *ast, std::filesystem::path path) {
         exitOnErr_(jit_->addIRModule(orc::ThreadSafeModule(std::move(module), std::move(context))));
 
         // TODO link with other imported modules (*.o and *.obj files)
+
+#if BOOST_ARCH_ARM || BOOST_ARCH_X86
+        register_signal_handler();
+#endif
 
         std:: string entry = ast->getTranslationUnit()->getIdentifier()->name();
         auto mainAddr = exitOnErr_(jit_->lookup(entry));

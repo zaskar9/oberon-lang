@@ -67,6 +67,7 @@ VAR a1, a2: TArray;
     i: INTEGER;
 BEGIN
     FOR i := 0 TO Dim - 1 DO
+        Out.Int(i, 0); Out.Ln;
         a1[i] := i
     END;
     print(a1);
