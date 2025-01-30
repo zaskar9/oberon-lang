@@ -6,17 +6,21 @@
 #define OBERON_LANG_IMPORTNODE_H
 
 
+#include <memory>
+
 #include "Node.h"
 #include "Ident.h"
+
+using std::unique_ptr;
 
 class ImportNode : public Node {
 
 private:
-    std::unique_ptr<Ident> alias_;
-    std::unique_ptr<Ident> module_;
+    unique_ptr<Ident> alias_;
+    unique_ptr<Ident> module_;
 
 public:
-    explicit ImportNode(const FilePos &pos, std::unique_ptr<Ident> alias, std::unique_ptr<Ident> module) :
+    explicit ImportNode(const FilePos &pos, unique_ptr<Ident> alias, unique_ptr<Ident> module) :
             Node(NodeType::import, pos), alias_(std::move(alias)), module_(std::move(module)) {};
     ~ImportNode() override = default;
 
