@@ -17,7 +17,7 @@
 #include "codegen/llvm/LLVMCodeGen.h"
 #include "logging/Logger.h"
 
-// For certain modules, LLVM emmits stack protection functionality under Windows that 
+// For certain modules, LLVM emits stack protection functionality under Windows that
 // involves calls to the standard runtime of the target platform. Since these libraries 
 // are not loaded into the JIT environment by default, running these modules in JIT 
 // mode will fail. As a work-around, the following pragma directives tell the linker to

@@ -6,11 +6,9 @@
 
 #include "LLVMCodeGen.h"
 #include "LLVMIRBuilder.h"
-#include <csignal>
 #include <sstream>
 #include <unistd.h>
 #include <unordered_set>
-#include <boost/predef.h>
 #include <llvm/Bitcode/BitcodeWriter.h>
 #include <llvm/ExecutionEngine/Orc/ExecutionUtils.h>
 #include <llvm/ExecutionEngine/Orc/LLJIT.h>
@@ -69,7 +67,7 @@ void ubsantrap_handler(uint16_t code) {
     }
 #elif BOOST_ARCH_X86
     std::unordered_set<uint8_t> prefixes({ 0xF0, 0xF2, 0xF3, 0x2E, 0x36, 0x3E, 0x26, 0x64, 0x65, 0x66, 0x67 });
-    auto instr = (uint8_t*) info->si_addr;
+    auto instr = static_cast<uint8_t*>(info->si_addr);
     size_t pos = 0;
     // Skip Prefixes
     while (true) {

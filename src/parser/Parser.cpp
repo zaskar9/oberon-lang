@@ -885,7 +885,7 @@ void Parser::expression_list(vector<unique_ptr<ExpressionNode>> &expressions) {
 unique_ptr<ExpressionNode> Parser::expression() {
     logger_.debug("expression");
     auto result = simple_expression();
-    TokenType token = scanner_.peek()->type();
+    const TokenType token = scanner_.peek()->type();
     if (token == TokenType::op_eq
         || token == TokenType::op_neq
         || token == TokenType::op_lt
@@ -895,9 +895,10 @@ unique_ptr<ExpressionNode> Parser::expression() {
         || token == TokenType::op_in
         || token == TokenType::op_is) {
         token_ = scanner_.next();
-        OperatorType op = token_to_operator(token_->type());
+        const OperatorType op = token_to_operator(token_->type());
         auto rhs = simple_expression();
-        result = sema_.onBinaryExpression(result->pos(), EMPTY_POS, op, std::move(result), std::move(rhs));
+        const auto start = result->pos();
+        result = sema_.onBinaryExpression(start, EMPTY_POS, op, std::move(result), std::move(rhs));
     }
     if (!result) {
         // [<END>, <ELSE>, <TO>, <THEN>, <UNTIL>, <ELSIF>, <BY>, <DO>, <OF>, <)>, <]>, <,>, <;>]
