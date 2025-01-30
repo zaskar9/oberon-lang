@@ -6,6 +6,7 @@
 #define OBERON_LANG_COMPILERCONFIG_H
 
 
+#include <cstdint>
 #include <filesystem>
 #include <iostream>
 #include <optional>
@@ -41,7 +42,7 @@ enum class Flag : unsigned {
     NO_STACK_PROTECT = 8
 };
 
-enum class Trap : unsigned {
+enum class Trap : uint8_t {
     OUT_OF_BOUNDS = 1,
     TYPE_GUARD = 2,
     COPY_OVERFLOW = 3,

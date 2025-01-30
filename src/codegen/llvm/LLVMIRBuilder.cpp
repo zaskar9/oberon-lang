@@ -476,15 +476,24 @@ void LLVMIRBuilder::installTrap(Value *condition, unsigned code) {
     builder_.SetInsertPoint(tail);
 }
 
+void LLVMIRBuilder::trapAssert(llvm::Value *cond) {
+    installTrap(cond, static_cast<uint8_t>(Trap::ASSERT));
+}
+
 void LLVMIRBuilder::trapFltDivByZero(Value *divisor) {
     auto cond = builder_.CreateFCmpUNE(divisor, ConstantFP::get(divisor->getType(), 0));
-    installTrap(cond, static_cast<unsigned>(Trap::FLT_DIVISION));
+    installTrap(cond, static_cast<uint8_t>(Trap::FLT_DIVISION));
 }
 
 void LLVMIRBuilder::trapIntDivByZero(Value *divisor) {
     auto type = dyn_cast<IntegerType>(divisor->getType());
     auto cond = builder_.CreateICmpSGT(divisor, ConstantInt::get(type, 0));
-    installTrap(cond, static_cast<unsigned>(Trap::INT_DIVISION));
+    installTrap(cond, static_cast<uint8_t>(Trap::INT_DIVISION));
+}
+
+void LLVMIRBuilder::trapCopyOverflow(Value *lsize, Value *rsize) {
+    auto cond = builder_.CreateICmpUGE(lsize, rsize);
+    installTrap(cond, static_cast<uint8_t>(Trap::COPY_OVERFLOW));
 }
 
 Value *LLVMIRBuilder::trapIntOverflow(Intrinsic::IndependentIntrinsics intrinsic, Value *lhs, Value *rhs) {
@@ -494,7 +503,7 @@ Value *LLVMIRBuilder::trapIntOverflow(Intrinsic::IndependentIntrinsics intrinsic
     auto result = builder_.CreateExtractValue(call, {0});
     auto status = builder_.CreateExtractValue(call, {1});
     auto cond = builder_.CreateXor(status, builder_.getTrue());
-    installTrap(cond, static_cast<unsigned>(Trap::INT_OVERFLOW));
+    installTrap(cond, static_cast<uint8_t>(Trap::INT_OVERFLOW));
     return result;
 }
 
@@ -502,12 +511,12 @@ void LLVMIRBuilder::trapOutOfBounds(Value *value, Value *lower, Value *upper) {
     Value *lowerLT = builder_.CreateICmpSGE(value, lower);
     Value *upperGE = builder_.CreateICmpSLT(value, upper);
     Value *cond = builder_.CreateAnd(lowerLT, upperGE);
-    installTrap(cond, static_cast<unsigned>(Trap::OUT_OF_BOUNDS));
+    installTrap(cond, static_cast<uint8_t>(Trap::OUT_OF_BOUNDS));
 }
 
 void LLVMIRBuilder::trapNILPtr(llvm::Value *value) {
     Value *cond = builder_.CreateIsNotNull(value);
-    installTrap(cond, static_cast<unsigned>(Trap::NIL_POINTER));
+    installTrap(cond, static_cast<uint8_t>(Trap::NIL_POINTER));
 }
 
 Value *LLVMIRBuilder::createNeg(llvm::Value *value) {
@@ -828,6 +837,9 @@ void LLVMIRBuilder::visit(AssignmentNode &node) {
         if (len == 0) {
             Value *lhs = lArray->isOpen() ? (Value *) builder_.CreateLoad(builder_.getInt64Ty(), lValue) : builder_.getInt64(lSize);
             Value *rhs = rArray->isOpen() ? (Value *) builder_.CreateLoad(builder_.getInt64Ty(), rValue) : builder_.getInt64(rSize);
+            if (config_.isSanitized(Trap::COPY_OVERFLOW)) {
+                trapCopyOverflow(lhs, rhs);
+            }
             size = builder_.CreateIntrinsic(Intrinsic::umin, {builder_.getInt64Ty()}, {lhs, rhs});
             size = builder_.CreateMul(size, builder_.getInt64(elemSize));
         } else {
@@ -1172,12 +1184,16 @@ LLVMIRBuilder::createAsrCall(vector<unique_ptr<ExpressionNode>> &actuals, std::v
 
 Value *
 LLVMIRBuilder::createAssertCall(Value *param) {
-    auto tail = BasicBlock::Create(builder_.getContext(), "tail", function_);
-    auto abort = BasicBlock::Create(builder_.getContext(), "abort", function_);
-    builder_.CreateCondBr(param, tail, abort);
-    builder_.SetInsertPoint(abort);
-    value_ = createAbortCall();
-    builder_.SetInsertPoint(tail);
+    if (config_.isSanitized(Trap::ASSERT)) {
+        trapAssert(param);
+    } else {
+        auto tail = BasicBlock::Create(builder_.getContext(), "tail", function_);
+        auto abort = BasicBlock::Create(builder_.getContext(), "abort", function_);
+        builder_.CreateCondBr(param, tail, abort);
+        builder_.SetInsertPoint(abort);
+        value_ = createAbortCall();
+        builder_.SetInsertPoint(tail);
+    }
     return value_;
 }
 
@@ -1318,9 +1334,9 @@ LLVMIRBuilder::createIncDecCall(ProcKind kind,
     }
     Value *value = builder_.CreateLoad(target, params[0]);
     if (kind == ProcKind::INC) {
-        value = builder_.CreateAdd(value, delta);
+        value = createAdd(value, delta);
     } else {
-        value = builder_.CreateSub(value, delta);
+        value = createSub(value, delta);
     }
     return builder_.CreateStore(value, params[0]);
 }
