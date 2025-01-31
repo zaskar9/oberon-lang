@@ -304,7 +304,7 @@ ArrayTypeNode* Parser::array_type() {
 }
 
 // record_type = "RECORD" [ "(" qualident ")" ] [ field_list { ";" field_list } ] END.
-RecordTypeNode* Parser::record_type(Ident* identifier) {
+RecordTypeNode* Parser::record_type() {
     logger_.debug("record_type");
     FilePos pos = scanner_.next()->start(); // skip RECORD keyword and get its position
     unique_ptr<QualIdent> base;
@@ -328,7 +328,7 @@ RecordTypeNode* Parser::record_type(Ident* identifier) {
     }
     // [<)>, <;>, <END>]
     // resync({ TokenType::semicolon, TokenType::rparen, TokenType::kw_end });
-    return sema_.onRecordType(pos, EMPTY_POS, identifier, std::move(base), std::move(fields));
+    return sema_.onRecordType(pos, EMPTY_POS, std::move(base), std::move(fields));
 }
 
 // field_list = ident_list ":" type .
