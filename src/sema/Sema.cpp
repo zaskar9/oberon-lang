@@ -1922,7 +1922,7 @@ Sema::assertCompatible(const FilePos &pos, TypeNode *expected, TypeNode *actual,
                             return false;
                         }
                         if (exp_array->lengths()[i] < act_array->lengths()[i]) {
-                            logger_.error(pos, "type mismatch: incompatible array lengths, found " +
+                            logger_.error(pos, "type mismatch: incompatible array lengths found " +
                                                to_string(act_array->lengths()[i]) + " > " +
                                                to_string(exp_array->lengths()[i]) + ".");
                             return false;
@@ -1948,9 +1948,7 @@ Sema::assertCompatible(const FilePos &pos, TypeNode *expected, TypeNode *actual,
     }
     // Check record type
     if (expected->isRecord() && actual->isRecord()) {
-        if (var) {
-            return actual->extends(expected);
-        }
+        return actual->extends(expected);
     }
     // Check pointer type
     if (expected->isPointer()) {

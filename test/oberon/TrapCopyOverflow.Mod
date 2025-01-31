@@ -7,7 +7,7 @@ TYPE Vector = ARRAY 10 OF INTEGER;
 VAR v: Vector;
     l: List;
     i: INTEGER;
-    str: ARRAY 20 OF CHAR;
+    str: ARRAY 10 OF CHAR;
 
 PROCEDURE assign(VAR v: Vector; a: ARRAY OF INTEGER);
 BEGIN
