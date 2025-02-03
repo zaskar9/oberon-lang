@@ -42,8 +42,8 @@ private:
     Value *value_;
     map<DeclarationNode*, Value*> values_;
     map<TypeNode*, Type*> types_;
-    map<TypeNode*, StructType*> leafTypes_;
-    unordered_set<TypeNode *> hasArray_;
+    map<Node*, Value*> dopeVecs_;
+    map<PointerTypeNode*, StructType*> ptrTypes_;
     map<ProcedureNode*, Function*> functions_;
     map<string, Constant*> strings_;
     stack<bool> deref_ctx;
@@ -53,12 +53,14 @@ private:
     ASTContext *ast_;
     Type *recordTdTy_;
 
-    Type *getLLVMType(TypeNode *type, bool = true);
+    Type *getLLVMType(TypeNode *type);
     MaybeAlign getLLVMAlign(TypeNode *type);
 
-    Value *processGEP(TypeNode *, Value *, vector<Value *> &);
-    void arrayInitializers(TypeNode *);
-    void arrayInitializers(TypeNode *, TypeNode *, vector<Value *> &);
+    Value *processGEP(Type *, Value *, vector<Value *> &);
+    Value *createDopeVector(ArrayTypeNode*, const string &);
+
+    // void arrayInitializers(TypeNode *);
+    // void arrayInitializers(TypeNode *, TypeNode *, vector<Value *> &);
 
     string qualifiedName(DeclarationNode *) const;
 
