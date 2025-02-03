@@ -52,7 +52,7 @@ public:
     [[deprecated]]
     ArrayTypeNode *getOrInsertArrayType(const FilePos &, const FilePos &, unsigned, TypeNode *);
     ArrayTypeNode *getOrInsertArrayType(const FilePos &, const FilePos &, unsigned, vector<unsigned>, vector<TypeNode *>);
-    RecordTypeNode *getOrInsertRecordType(const FilePos &, const FilePos &, vector<unique_ptr<FieldNode>>);
+    RecordTypeNode *getOrInsertRecordType(const FilePos &, const FilePos &, RecordTypeNode *, vector<unique_ptr<FieldNode>>);
     PointerTypeNode *getOrInsertPointerType(const FilePos &, const FilePos &, TypeNode *);
     ProcedureTypeNode *getOrInsertProcedureType(const FilePos &, const FilePos &,
                                                 vector<unique_ptr<ParameterNode>>, bool, TypeNode *);

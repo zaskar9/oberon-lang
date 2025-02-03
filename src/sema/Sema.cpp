@@ -73,7 +73,7 @@ unique_ptr<ModuleNode>
 Sema::onModuleStart(const FilePos &start, unique_ptr<Ident> ident) {
     auto module = make_unique<ModuleNode>(start, std::move(ident));
     assertUnique(module->getIdentifier(), module.get());
-    module->setLevel(symbols_->getLevel());
+    module->setScope(symbols_->getLevel());
     onBlockStart();
     return module;
 }
@@ -130,7 +130,7 @@ Sema::onConstant(const FilePos &start, [[maybe_unused]] const FilePos &end,
     }
     auto node = make_unique<ConstantDeclarationNode>(start, std::move(ident), std::move(expr), expr ? expr->getType() : nullTy_);
     assertUnique(node->getIdentifier(), node.get());
-    node->setLevel(symbols_->getLevel());
+    node->setScope(symbols_->getLevel());
     node->setModule(context_->getTranslationUnit());
     checkExport(node.get());
     return node;
@@ -141,7 +141,7 @@ Sema::onType(const FilePos &start, [[maybe_unused]] const FilePos &end,
              unique_ptr<IdentDef> ident, TypeNode *type) {
     auto node = make_unique<TypeDeclarationNode>(start, std::move(ident), type ? type : nullTy_);
     assertUnique(node->getIdentifier(), node.get());
-    node->setLevel(symbols_->getLevel());
+    node->setScope(symbols_->getLevel());
     node->setModule(context_->getTranslationUnit());
     checkExport(node.get());
     if (type) {
@@ -236,7 +236,7 @@ Sema::onPointerType([[maybe_unused]] const FilePos &start, const FilePos &end, T
 }
 
 ProcedureTypeNode *
-Sema::onProcedureType([[maybe_unused]] const FilePos &start, const FilePos &end,
+Sema::onProcedureType(const FilePos &start, const FilePos &end,
                       vector<unique_ptr<ParameterNode>> params, bool varargs, TypeNode *ret) {
     return context_->getOrInsertProcedureType(start, end, std::move(params), varargs, ret);
 }
@@ -250,20 +250,41 @@ Sema::onParameter(const FilePos &start, [[maybe_unused]] const FilePos &end,
     }
     auto node = make_unique<ParameterNode>(start, std::move(ident), type, is_var, index);
     assertUnique(node->getIdentifier(), node.get());
-    node->setLevel(symbols_->getLevel());
+    node->setScope(symbols_->getLevel());
     return node;
 }
 
 RecordTypeNode *
-Sema::onRecordType(const FilePos &start, const FilePos &end, vector<unique_ptr<FieldNode>> fields) {
-    auto node = context_->getOrInsertRecordType(start, end, std::move(fields));
+Sema::onRecordType(const FilePos &start, const FilePos &end,
+                   unique_ptr<QualIdent> ident, vector<unique_ptr<FieldNode>> fields) {
+    RecordTypeNode *base = nullptr;
+    if (ident) {
+        auto sym = symbols_->lookup(ident.get());
+        if (sym && sym->getNodeType() == NodeType::type) {
+            auto type = dynamic_cast<TypeDeclarationNode *>(sym)->getType();
+            if (type->isRecord()) {
+                base = dynamic_cast<RecordTypeNode *>(type);
+            } else {
+                logger_.error(ident->start(), "base type must be a record type.");
+            }
+        } else {
+            logger_.error(start, "undefined type: " + to_string(*ident) + ".");
+        }
+    }
+    auto node = context_->getOrInsertRecordType(start, end, base, std::move(fields));
     set<string> names;
     for (size_t i = 0; i < node->getFieldCount(); i++) {
         auto field = node->getField(i);
-        if (names.count(field->getIdentifier()->name())) {
+        auto name = field->getIdentifier()->name();
+        if (base && base->getField(name)) {
+            logger_.error(field->pos(), "redefinition of record field: " + to_string(*field->getIdentifier()) + ".");
+            continue;
+        }
+        if (names.count(name)) {
             logger_.error(field->pos(), "duplicate record field: " + to_string(*field->getIdentifier()) + ".");
+            continue;
         } else {
-            names.insert(field->getIdentifier()->name());
+            names.insert(name);
         }
     }
     return node;
@@ -319,7 +340,7 @@ Sema::onVariable(const FilePos &start, [[maybe_unused]] const FilePos &end,
     }
     auto node = make_unique<VariableDeclarationNode>(start, std::move(ident), type, index);
     assertUnique(node->getIdentifier(), node.get());
-    node->setLevel(symbols_->getLevel());
+    node->setScope(symbols_->getLevel());
     node->setModule(context_->getTranslationUnit());
     checkExport(node.get());
     return node;
@@ -330,7 +351,7 @@ Sema::onProcedureStart(const FilePos &start, unique_ptr<IdentDef> ident) {
     procs_.push(make_unique<ProcedureNode>(start, std::move(ident)));
     auto proc = procs_.top().get();
     assertUnique(proc->getIdentifier(), proc);
-    proc->setLevel(symbols_->getLevel());
+    proc->setScope(symbols_->getLevel());
     proc->setModule(context_->getTranslationUnit());
     checkExport(proc);
     onBlockStart();
@@ -348,7 +369,7 @@ Sema::onProcedureEnd([[maybe_unused]] const FilePos &end, unique_ptr<Ident> iden
         logger_.error(proc->pos(), "result type of a procedure can neither be a record nor an array.");
     }
     if (proc->isExtern()) {
-        if (proc->getLevel() != SymbolTable::MODULE_LEVEL) {
+        if (proc->getScope() != SymbolTable::MODULE_SCOPE) {
             logger_.error(proc->pos(), "only top-level procedures can be external.");
         }
     } else {
@@ -805,6 +826,8 @@ Sema::assertAssignable(const ExpressionNode *expr, string &err) const {
             if (decl->getNodeType() == NodeType::parameter) {
                 auto type = decl->getType();
                 if (type->isStructured()) {
+                    // O07.9.1: If a value parameter is structured (of array or record type),
+                    // no assignment to it or to its elements are permitted.
                     auto param = dynamic_cast<const ParameterNode *>(decl);
                     err = "a non-variable structured parameter";
                     return param->isVar();
@@ -993,24 +1016,35 @@ FieldNode *Sema::onRecordField(TypeNode *base, RecordField *sel) {
 }
 
 TypeNode *Sema::onTypeguard(DeclarationNode *sym, [[maybe_unused]] TypeNode *base, Typeguard *sel) {
-    auto type = symbols_->lookup(sel->ident());
-    if (type) {
+    FilePos start = sel->ident()->start();
+    auto decl = symbols_->lookup(sel->ident());
+    if (decl) {
         // O07.8.1: in v(T), v is a variable parameter of record type, or v is a pointer.
-        if ((sym->getNodeType() == NodeType::parameter && dynamic_cast<ParameterNode *>(sym)->isVar() &&
-             sym->getType()->isRecord()) || sym->getType()->isPointer()) {
-            if (type->getNodeType() == NodeType::type) {
-                // TODO check if type-guard is compatible with base type.
-                return dynamic_cast<TypeDeclarationNode *>(type)->getType();
+        if (sym->getType()->isPointer() || (sym->getType()->isRecord() &&
+                                            sym->getNodeType() == NodeType::parameter &&
+                                            dynamic_cast<ParameterNode *>(sym)->isVar())) {
+            TypeNode *actual = sym->getType();
+            if (decl->getNodeType() == NodeType::type) {
+                auto guard = dynamic_cast<TypeDeclarationNode *>(decl)->getType();
+                if (guard->isPointer() || guard->isRecord()) {
+                    if (!guard->extends(actual)) {
+                        logger_.error(start, "type mismatch: " + format(guard) + " is not an extension of "
+                                             + format(actual) + ".");
+                    }
+                } else {
+                    logger_.error(start, "type mismatch: record type or pointer to record type expected.");
+                }
+                return guard;
             } else {
-                logger_.error(sel->pos(), "unexpected selector.");
+                logger_.error(start, "unexpected selector.");
             }
         } else {
-            logger_.error(sel->pos(), "a type guard can only be applied to a variable parameter of record type or a pointer.");
+            logger_.error(start, "type mismatch: a type guard can only be applied to a variable parameter of record type or a pointer.");
         }
     } else {
-        logger_.error(sel->pos(), "undefined identifier: " + to_string(*sel->ident()) + ".");
+        logger_.error(start, "undefined identifier: " + to_string(*sel->ident()) + ".");
     }
-    return nullptr;
+    return nullTy_;
 }
 
 unique_ptr<ExpressionNode>
@@ -1808,7 +1842,7 @@ Sema::assertUnique(IdentDef *ident, DeclarationNode *node) {
 void
 Sema::checkExport(DeclarationNode *node) {
     if (node->getIdentifier()->isExported()) {
-        if (node->getLevel() != SymbolTable::MODULE_LEVEL) {
+        if (node->getScope() != SymbolTable::MODULE_SCOPE) {
             logger_.error(node->getIdentifier()->start(), "only top-level declarations can be exported.");
         }
     } else {
@@ -1888,7 +1922,7 @@ Sema::assertCompatible(const FilePos &pos, TypeNode *expected, TypeNode *actual,
                             return false;
                         }
                         if (exp_array->lengths()[i] < act_array->lengths()[i]) {
-                            logger_.error(pos, "type mismatch: incompatible array lengths, found " +
+                            logger_.error(pos, "type mismatch: incompatible array lengths found " +
                                                to_string(act_array->lengths()[i]) + " > " +
                                                to_string(exp_array->lengths()[i]) + ".");
                             return false;
@@ -1912,9 +1946,16 @@ Sema::assertCompatible(const FilePos &pos, TypeNode *expected, TypeNode *actual,
             }
         }
     }
+    // Check record type
+    if (expected->isRecord() && actual->isRecord()) {
+        return actual->extends(expected);
+    }
     // Check pointer type
     if (expected->isPointer()) {
         if (actual->isPointer()) {
+            if (actual->extends(expected)) {
+                return true;
+            }
             auto exp_ptr = dynamic_cast<PointerTypeNode *>(expected);
             auto act_ptr = dynamic_cast<PointerTypeNode *>(actual);
             return assertCompatible(pos, exp_ptr->getBase(), act_ptr->getBase(), true);

@@ -27,12 +27,14 @@ private:
     ModuleNode *module_;
     unique_ptr<IdentDef> ident_;
     TypeNode *type_;
-    unsigned int index_;
-    unsigned int level_;
+    unsigned int seqId_;
+    unsigned int scope_;
+
+    void setScope(unsigned int);
 
 public:
-    DeclarationNode(const NodeType nodeType, const FilePos &pos, unique_ptr<IdentDef> ident, TypeNode *type, unsigned int index = 0) :
-            Node(nodeType, pos), module_(), ident_(std::move(ident)), type_(type), index_(index), level_() {};
+    DeclarationNode(const NodeType nodeType, const FilePos &pos, unique_ptr<IdentDef> ident, TypeNode *type, unsigned seqId = 0) :
+            Node(nodeType, pos), module_(), ident_(std::move(ident)), type_(type), seqId_(seqId), scope_() {};
     ~DeclarationNode() override = default;
 
     void setModule(ModuleNode *);
@@ -44,14 +46,18 @@ public:
     void setType(TypeNode *);
     [[nodiscard]] TypeNode *getType() const;
 
-    [[nodiscard]] unsigned int index() const;
+    [[nodiscard]] unsigned int seqId() const;
 
-    void setLevel(unsigned int level);
-    [[nodiscard]] unsigned int getLevel() const;
+    [[nodiscard]] unsigned int getScope() const;
 
     void accept(NodeVisitor &) override = 0;
 
     void print(std::ostream &) const override;
+
+    friend class LambdaLifter;
+    friend class Sema;
+    friend class SymbolTable;
+    friend class SymbolImporter;
 
 };
 
@@ -98,23 +104,36 @@ public:
 class VariableDeclarationNode final : public DeclarationNode {
 
 public:
-    VariableDeclarationNode(const FilePos &pos, unique_ptr<IdentDef> ident, TypeNode *type, unsigned int index = 0) :
-            DeclarationNode(NodeType::variable, pos, std::move(ident), type, index) {};
+    VariableDeclarationNode(const FilePos &pos, unique_ptr<IdentDef> ident, TypeNode *type, unsigned seqId = 0) :
+            DeclarationNode(NodeType::variable, pos, std::move(ident), type, seqId) {};
     ~VariableDeclarationNode() final = default;
 
     void accept(NodeVisitor& visitor) override;
 
 };
 
+class RecordTypeNode;
 
 class FieldNode final : public DeclarationNode {
 
+private:
+    RecordTypeNode *parent_;
+    unsigned index_;
+
+    void setRecordType(RecordTypeNode *);
+    void setIndex(unsigned);
+
 public:
-    FieldNode(const FilePos &pos, unique_ptr<IdentDef> ident, TypeNode *type, unsigned int index = 0) :
-            DeclarationNode(NodeType::field, pos, std::move(ident), type, index) {};
+    FieldNode(const FilePos &pos, unique_ptr<IdentDef> ident, TypeNode *type, unsigned seqId = 0) :
+            DeclarationNode(NodeType::field, pos, std::move(ident), type, seqId) {};
     ~FieldNode() final = default;
 
+    [[nodiscard]] RecordTypeNode *getRecordType() const;
+    [[nodiscard]] unsigned getIndex() const;
+
     void accept(NodeVisitor& visitor) override;
+
+    friend class RecordTypeNode;
 
 };
 
@@ -125,8 +144,8 @@ private:
     bool var_;
 
 public:
-    ParameterNode(const FilePos &pos, unique_ptr<Ident> ident, TypeNode *type, bool var, unsigned int index = 0) :
-            DeclarationNode(NodeType::parameter, pos, make_unique<IdentDef>(ident->start(), ident->end(), ident->name()), type, index), var_(var) {};
+    ParameterNode(const FilePos &pos, unique_ptr<Ident> ident, TypeNode *type, bool var, unsigned seqId = 0) :
+            DeclarationNode(NodeType::parameter, pos, make_unique<IdentDef>(ident->start(), ident->end(), ident->name()), type, seqId), var_(var) {};
     ~ParameterNode() final = default;
 
     [[nodiscard]] bool isVar() const;

@@ -13,6 +13,10 @@ TypeNode *PointerTypeNode::getBase() const {
     return base_;
 }
 
+bool PointerTypeNode::extends(TypeNode *base) const {
+    return base_->extends(dynamic_cast<PointerTypeNode *>(base)->getBase());
+}
+
 void PointerTypeNode::accept(NodeVisitor &visitor) {
     visitor.visit(*this);
 }
