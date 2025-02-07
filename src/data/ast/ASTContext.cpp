@@ -33,20 +33,7 @@ ASTContext::getOrInsertArrayType(const FilePos &start, const FilePos &end,
 ArrayTypeNode *
 ASTContext::getOrInsertArrayType(const FilePos &start, [[maybe_unused]] const FilePos &end,
                                  unsigned dimensions, vector<unsigned> lengths, vector<TypeNode *> types) {
-    for (auto &type : array_ts_) {
-        if (type->dimensions() == dimensions) {
-            bool found = true;
-            for (unsigned i = 0; i < dimensions; i++) {
-                if (lengths[i] != type->lengths()[i] || types[i] != type->types()[i]) {
-                    found = false;
-                    break;
-                }
-            }
-            if (found) {
-                return type.get();
-            }
-        }
-    }
+    // compute the (logical) memory size of this array type
     unsigned size = 1;
     for (unsigned length : lengths) {
         size *= length;
@@ -55,14 +42,15 @@ ASTContext::getOrInsertArrayType(const FilePos &start, [[maybe_unused]] const Fi
     auto type = make_unique<ArrayTypeNode>(start, dimensions, std::move(lengths), std::move(types));
     type->setSize(size);
     auto res = type.get();
+    // cache the new array type
     array_ts_.push_back(std::move(type));
     return res;
 }
 
 RecordTypeNode *
 ASTContext::getOrInsertRecordType(const FilePos &start, [[maybe_unused]] const FilePos &end,
-                                  vector<unique_ptr<FieldNode>> fields) {
-    auto type = make_unique<RecordTypeNode>(start, std::move(fields));
+                                  RecordTypeNode *base, vector<unique_ptr<FieldNode>> fields) {
+    auto type = make_unique<RecordTypeNode>(start, base, std::move(fields));
     auto res = type.get();
     record_ts_.push_back(std::move(type));
     return res;

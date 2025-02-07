@@ -74,6 +74,8 @@ public:
 
     [[nodiscard]] bool isVirtual() const;
 
+    [[nodiscard]] virtual bool extends(TypeNode *) const;
+
     void setRef(int);
     [[nodiscard]] int getRef() const;
 

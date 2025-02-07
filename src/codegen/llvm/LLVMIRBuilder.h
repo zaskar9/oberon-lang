@@ -42,21 +42,26 @@ private:
     Value *value_;
     map<DeclarationNode*, Value*> values_;
     map<TypeNode*, Type*> types_;
-    unordered_set<TypeNode *> hasArray_;
+    map<ArrayTypeNode*, Value*> typeDopes_;
+    map<DeclarationNode*, Value*> valueDopes_;
+    map<PointerTypeNode*, StructType*> ptrTypes_;
     map<ProcedureNode*, Function*> functions_;
     map<string, Constant*> strings_;
     stack<bool> deref_ctx;
-    unsigned int level_;
+    unsigned int scope_;
     Function *function_;
     AttrBuilder attrs_;
     ASTContext *ast_;
+    Type *recordTdTy_;
 
     Type *getLLVMType(TypeNode *type);
     MaybeAlign getLLVMAlign(TypeNode *type);
 
-    Value *processGEP(TypeNode *, Value *, vector<Value *> &);
-    void arrayInitializers(TypeNode *);
-    void arrayInitializers(TypeNode *, TypeNode *, vector<Value *> &);
+    Value *processGEP(Type *, Value *, vector<Value *> &);
+
+    Value *getArrayLength(ExpressionNode *, uint32_t);
+    Value *getOpenArrayLength(Value *, ArrayTypeNode *, uint32_t);
+    Value *getDopeVector(ExpressionNode *);
 
     string qualifiedName(DeclarationNode *) const;
 
@@ -70,7 +75,7 @@ private:
 
     using Selectors = vector<unique_ptr<Selector>>;
     using SelectorIterator = Selectors::iterator;
-    TypeNode *selectors(TypeNode *, SelectorIterator, SelectorIterator);
+    TypeNode *selectors(ExpressionNode *, TypeNode *, SelectorIterator, SelectorIterator);
     void parameters(ProcedureTypeNode *, ActualParameters *, vector<Value *> &, bool = false);
 
     void installTrap(Value *, unsigned);

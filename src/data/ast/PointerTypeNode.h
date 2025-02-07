@@ -21,6 +21,8 @@ public:
     void setBase(TypeNode *base);
     [[nodiscard]] TypeNode *getBase() const;
 
+    [[nodiscard]] bool extends(TypeNode *) const override;
+
     void accept(NodeVisitor &visitor) final;
 
     void print(std::ostream &stream) const final;

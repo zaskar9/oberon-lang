@@ -261,7 +261,7 @@ TypeNode *SymbolImporter::readProcedureType(SymbolFile *file) {
             index++;
         }
         auto param = make_unique<ParameterNode>(EMPTY_POS, make_unique<Ident>("_"), type, (var == 0), index);
-        param->setLevel(SymbolTable::MODULE_LEVEL);
+        param->setScope(SymbolTable::MODULE_SCOPE);
         params.push_back(std::move(param));
         // check for terminator
         ch = file->readChar();
@@ -303,8 +303,7 @@ TypeNode *SymbolImporter::readRecordType(SymbolFile *file) {
         // check for terminator
         ch = file->readChar();
     }
-    auto res = context_->getOrInsertRecordType(EMPTY_POS, EMPTY_POS, std::move(fields));
-    res->setBaseType(base_t);
+    auto res = context_->getOrInsertRecordType(EMPTY_POS, EMPTY_POS, base_t, std::move(fields));
     res->setSize(size);
     return res;
 }

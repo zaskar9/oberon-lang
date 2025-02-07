@@ -43,7 +43,7 @@ public:
     explicit ArrayIndex(const FilePos &pos, vector<unique_ptr<ExpressionNode>> indices);
     ~ArrayIndex() override;
 
-    [[nodiscard]] const vector<unique_ptr<ExpressionNode>> &indices() const;
+    [[nodiscard]] vector<unique_ptr<ExpressionNode>> &indices();
 
 };
 

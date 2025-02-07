@@ -22,7 +22,7 @@ ArrayIndex::ArrayIndex(const FilePos &pos, std::vector<std::unique_ptr<Expressio
 
 ArrayIndex::~ArrayIndex() = default;
 
-const vector<unique_ptr<ExpressionNode>> &ArrayIndex::indices() const {
+vector<unique_ptr<ExpressionNode>> &ArrayIndex::indices() {
     return indices_;
 }
 

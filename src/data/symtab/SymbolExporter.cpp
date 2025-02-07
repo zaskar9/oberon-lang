@@ -217,7 +217,7 @@ void SymbolExporter::writeRecordType(SymbolFile *file, RecordTypeNode *type) {
         }
         // write out field type: if successive fields have the same type,
         // write it out the first time and write `NOTYPE` for following fields
-        writeType(file, field->index() == 0 ? field->getType() : nullptr);
+        writeType(file, field->seqId() == 0 ? field->getType() : nullptr);
         // write out field offset
         file->writeInt(static_cast<int>(offset));
         offset += field->getType()->getSize();
@@ -237,5 +237,5 @@ void SymbolExporter::writeParameter(SymbolFile *file, ParameterNode *param) {
     }
     // write out parameter type: if successive parameters have the same type,
     // only write it out the first time and write `NOTYPE` for following parameters
-    writeType(file, param->index() == 0 ? param->getType() : nullptr);
+    writeType(file, param->seqId() == 0 ? param->getType() : nullptr);
 }

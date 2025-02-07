@@ -73,7 +73,7 @@ unique_ptr<ModuleNode>
 Sema::onModuleStart(const FilePos &start, unique_ptr<Ident> ident) {
     auto module = make_unique<ModuleNode>(start, std::move(ident));
     assertUnique(module->getIdentifier(), module.get());
-    module->setLevel(symbols_->getLevel());
+    module->setScope(symbols_->getLevel());
     onBlockStart();
     return module;
 }
@@ -130,7 +130,7 @@ Sema::onConstant(const FilePos &start, [[maybe_unused]] const FilePos &end,
     }
     auto node = make_unique<ConstantDeclarationNode>(start, std::move(ident), std::move(expr), expr ? expr->getType() : nullTy_);
     assertUnique(node->getIdentifier(), node.get());
-    node->setLevel(symbols_->getLevel());
+    node->setScope(symbols_->getLevel());
     node->setModule(context_->getTranslationUnit());
     checkExport(node.get());
     return node;
@@ -141,7 +141,7 @@ Sema::onType(const FilePos &start, [[maybe_unused]] const FilePos &end,
              unique_ptr<IdentDef> ident, TypeNode *type) {
     auto node = make_unique<TypeDeclarationNode>(start, std::move(ident), type ? type : nullTy_);
     assertUnique(node->getIdentifier(), node.get());
-    node->setLevel(symbols_->getLevel());
+    node->setScope(symbols_->getLevel());
     node->setModule(context_->getTranslationUnit());
     checkExport(node.get());
     if (type) {
@@ -199,9 +199,9 @@ Sema::onArrayType(const FilePos &start, const FilePos &end, vector<unique_ptr<Ex
     vector<unsigned> lengths;
     vector<TypeNode *> types;
     if (type->isArray()) {
-        auto arrayTy = dynamic_cast<ArrayTypeNode *>(type);
-        lengths.insert(lengths.begin(), arrayTy->lengths().begin(), arrayTy->lengths().end());
-        types.insert(types.begin(), arrayTy->types().begin(), arrayTy->types().end());
+        auto array_t = dynamic_cast<ArrayTypeNode *>(type);
+        lengths.insert(lengths.begin(), array_t->lengths().begin(), array_t->lengths().end());
+        types.insert(types.begin(), array_t->types().begin(), array_t->types().end());
         logger_.warning(start, "nested array found, use multi-dimensional array instead.");
     }
     for (size_t i = values.size(); i > 0; --i) {
@@ -209,7 +209,9 @@ Sema::onArrayType(const FilePos &start, const FilePos &end, vector<unique_ptr<Ex
         types.insert(types.begin(), type);
         type = context_->getOrInsertArrayType(start, end, lengths.size(), lengths, types);
     }
-    return dynamic_cast<ArrayTypeNode *>(type);
+    auto array_t = dynamic_cast<ArrayTypeNode *>(type);
+    array_t->setBase(array_t);
+    return array_t;
 }
 
 PointerTypeNode *
@@ -236,7 +238,7 @@ Sema::onPointerType([[maybe_unused]] const FilePos &start, const FilePos &end, T
 }
 
 ProcedureTypeNode *
-Sema::onProcedureType([[maybe_unused]] const FilePos &start, const FilePos &end,
+Sema::onProcedureType(const FilePos &start, const FilePos &end,
                       vector<unique_ptr<ParameterNode>> params, bool varargs, TypeNode *ret) {
     return context_->getOrInsertProcedureType(start, end, std::move(params), varargs, ret);
 }
@@ -250,20 +252,41 @@ Sema::onParameter(const FilePos &start, [[maybe_unused]] const FilePos &end,
     }
     auto node = make_unique<ParameterNode>(start, std::move(ident), type, is_var, index);
     assertUnique(node->getIdentifier(), node.get());
-    node->setLevel(symbols_->getLevel());
+    node->setScope(symbols_->getLevel());
     return node;
 }
 
 RecordTypeNode *
-Sema::onRecordType(const FilePos &start, const FilePos &end, vector<unique_ptr<FieldNode>> fields) {
-    auto node = context_->getOrInsertRecordType(start, end, std::move(fields));
+Sema::onRecordType(const FilePos &start, const FilePos &end,
+                   unique_ptr<QualIdent> ident, vector<unique_ptr<FieldNode>> fields) {
+    RecordTypeNode *base = nullptr;
+    if (ident) {
+        auto sym = symbols_->lookup(ident.get());
+        if (sym && sym->getNodeType() == NodeType::type) {
+            auto type = dynamic_cast<TypeDeclarationNode *>(sym)->getType();
+            if (type->isRecord()) {
+                base = dynamic_cast<RecordTypeNode *>(type);
+            } else {
+                logger_.error(ident->start(), "base type must be a record type.");
+            }
+        } else {
+            logger_.error(start, "undefined type: " + to_string(*ident) + ".");
+        }
+    }
+    auto node = context_->getOrInsertRecordType(start, end, base, std::move(fields));
     set<string> names;
     for (size_t i = 0; i < node->getFieldCount(); i++) {
         auto field = node->getField(i);
-        if (names.count(field->getIdentifier()->name())) {
+        auto name = field->getIdentifier()->name();
+        if (base && base->getField(name)) {
+            logger_.error(field->pos(), "redefinition of record field: " + to_string(*field->getIdentifier()) + ".");
+            continue;
+        }
+        if (names.count(name)) {
             logger_.error(field->pos(), "duplicate record field: " + to_string(*field->getIdentifier()) + ".");
+            continue;
         } else {
-            names.insert(field->getIdentifier()->name());
+            names.insert(name);
         }
     }
     return node;
@@ -303,7 +326,10 @@ Sema::onTypeReference(const FilePos &start, const FilePos &end,
             lengths.insert(lengths.begin(), 0);
             types.insert(types.begin(), type);
             type = context_->getOrInsertArrayType(start, end, lengths.size(), lengths, types);
+
         }
+        auto array_t = dynamic_cast<ArrayTypeNode *>(type);
+        array_t->setBase(array_t);
     } else {
         logger_.error(start, "undefined type: " + to_string(*ident) + ".");
     }
@@ -319,7 +345,7 @@ Sema::onVariable(const FilePos &start, [[maybe_unused]] const FilePos &end,
     }
     auto node = make_unique<VariableDeclarationNode>(start, std::move(ident), type, index);
     assertUnique(node->getIdentifier(), node.get());
-    node->setLevel(symbols_->getLevel());
+    node->setScope(symbols_->getLevel());
     node->setModule(context_->getTranslationUnit());
     checkExport(node.get());
     return node;
@@ -330,7 +356,7 @@ Sema::onProcedureStart(const FilePos &start, unique_ptr<IdentDef> ident) {
     procs_.push(make_unique<ProcedureNode>(start, std::move(ident)));
     auto proc = procs_.top().get();
     assertUnique(proc->getIdentifier(), proc);
-    proc->setLevel(symbols_->getLevel());
+    proc->setScope(symbols_->getLevel());
     proc->setModule(context_->getTranslationUnit());
     checkExport(proc);
     onBlockStart();
@@ -348,7 +374,7 @@ Sema::onProcedureEnd([[maybe_unused]] const FilePos &end, unique_ptr<Ident> iden
         logger_.error(proc->pos(), "result type of a procedure can neither be a record nor an array.");
     }
     if (proc->isExtern()) {
-        if (proc->getLevel() != SymbolTable::MODULE_LEVEL) {
+        if (proc->getScope() != SymbolTable::MODULE_SCOPE) {
             logger_.error(proc->pos(), "only top-level procedures can be external.");
         }
     } else {
@@ -731,6 +757,9 @@ Sema::onQualifiedConstant(const FilePos &start, const FilePos &end,
 TypeNode *
 Sema::onSelectors(const FilePos &start, const FilePos &end,
                   DeclarationNode *sym, TypeNode *base, vector<unique_ptr<Selector>> &selectors) {
+    if (selectors.size() > 1) {
+        handleRepeatedIndices(start, end, selectors);
+    }
     auto it = selectors.begin();
     it = handleMissingParameters(start, end, base, selectors, it);
     auto context = sym;
@@ -740,15 +769,15 @@ Sema::onSelectors(const FilePos &start, const FilePos &end,
             logger_.error(sel->pos(), "unexpected selector.");
             return nullptr;
         }
-        // check for implicit pointer de-referencing
+        // Check for implicit pointer de-referencing
         if (base->isPointer() && (sel->getNodeType() == NodeType::array_type ||
                                   sel->getNodeType() == NodeType::record_type)) {
             auto caret = make_unique<Dereference>(sel->pos());
-            // place caret before the current element
+            // Place caret before the current element
             it = selectors.insert(it, std::move(caret));
             sel = (*it).get();
         }
-        // if necessary, convert from actual parameters to type guard
+        // If necessary, convert from actual parameters to type guard
         if (sel->getNodeType() == NodeType::parameter && !base->isProcedure()) {
             auto params = dynamic_cast<ActualParameters *>(sel);
             if (params->parameters().size() == 1) {
@@ -805,6 +834,8 @@ Sema::assertAssignable(const ExpressionNode *expr, string &err) const {
             if (decl->getNodeType() == NodeType::parameter) {
                 auto type = decl->getType();
                 if (type->isStructured()) {
+                    // O07.9.1: If a value parameter is structured (of array or record type),
+                    // no assignment to it or to its elements are permitted.
                     auto param = dynamic_cast<const ParameterNode *>(decl);
                     err = "a non-variable structured parameter";
                     return param->isVar();
@@ -829,8 +860,8 @@ Sema::assertAssignable(const ExpressionNode *expr, string &err) const {
 }
 
 Sema::SelectorIterator &
-Sema::handleMissingParameters(const FilePos &start, [[maybe_unused]] const FilePos &end,
-                              TypeNode *base, Sema::Selectors &selectors, Sema::SelectorIterator &it) {
+Sema::handleMissingParameters(const FilePos &start, [[maybe_unused]] const FilePos &,
+                              TypeNode *base, Selectors &selectors, SelectorIterator &it) {
     if (base && base->isProcedure()) {
         bool found = false;
         if (selectors.empty()) {
@@ -846,6 +877,36 @@ Sema::handleMissingParameters(const FilePos &start, [[maybe_unused]] const FileP
         }
     }
     return it;
+}
+
+void Sema::handleRepeatedIndices(const FilePos &, const FilePos &, Selectors &selectors) {
+    auto it = selectors.begin();
+    while (it != selectors.end()) {
+        auto cur = (*it).get();
+        if (cur->getNodeType() == NodeType::array_type) {
+            auto first = it;
+            auto last = first;
+            while (last != selectors.end() && (*last)->getNodeType() == NodeType::array_type) {
+                ++last;
+            }
+            if (first != last - 1) {
+                vector<unique_ptr<ExpressionNode>> indices;
+                for (auto acc = first; acc != last; ++acc) {
+                    auto index = dynamic_cast<ArrayIndex *>((*acc).get());
+                    for (auto &sel: index->indices()) {
+                        indices.push_back(std::move(sel));
+                    }
+                }
+                // Report a warning
+                logger_.warning((*first).get()->pos(), "use multi-dimensional index to access multi-dimensional array.");
+                // Erase the repeated array indices
+                auto pos = selectors.erase(first, last);
+                // Place the new combined array index before the current position
+                it = selectors.insert(pos, make_unique<ArrayIndex>(EMPTY_POS, std::move(indices)));
+            }
+        }
+        ++it;
+    }
 }
 
 TypeNode *
@@ -993,24 +1054,35 @@ FieldNode *Sema::onRecordField(TypeNode *base, RecordField *sel) {
 }
 
 TypeNode *Sema::onTypeguard(DeclarationNode *sym, [[maybe_unused]] TypeNode *base, Typeguard *sel) {
-    auto type = symbols_->lookup(sel->ident());
-    if (type) {
+    FilePos start = sel->ident()->start();
+    auto decl = symbols_->lookup(sel->ident());
+    if (decl) {
         // O07.8.1: in v(T), v is a variable parameter of record type, or v is a pointer.
-        if ((sym->getNodeType() == NodeType::parameter && dynamic_cast<ParameterNode *>(sym)->isVar() &&
-             sym->getType()->isRecord()) || sym->getType()->isPointer()) {
-            if (type->getNodeType() == NodeType::type) {
-                // TODO check if type-guard is compatible with base type.
-                return dynamic_cast<TypeDeclarationNode *>(type)->getType();
+        if (sym->getType()->isPointer() || (sym->getType()->isRecord() &&
+                                            sym->getNodeType() == NodeType::parameter &&
+                                            dynamic_cast<ParameterNode *>(sym)->isVar())) {
+            TypeNode *actual = sym->getType();
+            if (decl->getNodeType() == NodeType::type) {
+                auto guard = dynamic_cast<TypeDeclarationNode *>(decl)->getType();
+                if (guard->isPointer() || guard->isRecord()) {
+                    if (!guard->extends(actual)) {
+                        logger_.error(start, "type mismatch: " + format(guard) + " is not an extension of "
+                                             + format(actual) + ".");
+                    }
+                } else {
+                    logger_.error(start, "type mismatch: record type or pointer to record type expected.");
+                }
+                return guard;
             } else {
-                logger_.error(sel->pos(), "unexpected selector.");
+                logger_.error(start, "unexpected selector.");
             }
         } else {
-            logger_.error(sel->pos(), "a type guard can only be applied to a variable parameter of record type or a pointer.");
+            logger_.error(start, "type mismatch: a type guard can only be applied to a variable parameter of record type or a pointer.");
         }
     } else {
-        logger_.error(sel->pos(), "undefined identifier: " + to_string(*sel->ident()) + ".");
+        logger_.error(start, "undefined identifier: " + to_string(*sel->ident()) + ".");
     }
-    return nullptr;
+    return nullTy_;
 }
 
 unique_ptr<ExpressionNode>
@@ -1419,7 +1491,6 @@ Sema::fold(const FilePos &start, const FilePos &end, ExpressionNode *expr) {
     if (expr && expr->isLiteral()) {
         auto type = expr->getType();
         if (type) {
-            // auto cast = expr->getCast();
             if (type->kind() == TypeKind::CHAR) {
                 return clone<CharLiteralNode>(start, end, dynamic_cast<CharLiteralNode*>(expr));
             } else if (type->kind() == TypeKind::SHORTINT ||
@@ -1492,7 +1563,6 @@ Sema::fold(const FilePos &start, const FilePos &, OperatorType op, unique_ptr<Ex
             }
         }
     }
-    // logger_.error(start, "invalid unary expression.");
     return std::nullopt;
 }
 
@@ -1772,7 +1842,6 @@ Sema::fold(const FilePos &start, const FilePos &end,
             }
         }
     }
-    // logger_.error(start, "invalid binary expression.");
     return std::nullopt;
 }
 
@@ -1808,7 +1877,7 @@ Sema::assertUnique(IdentDef *ident, DeclarationNode *node) {
 void
 Sema::checkExport(DeclarationNode *node) {
     if (node->getIdentifier()->isExported()) {
-        if (node->getLevel() != SymbolTable::MODULE_LEVEL) {
+        if (node->getScope() != SymbolTable::MODULE_SCOPE) {
             logger_.error(node->getIdentifier()->start(), "only top-level declarations can be exported.");
         }
     } else {
@@ -1888,7 +1957,7 @@ Sema::assertCompatible(const FilePos &pos, TypeNode *expected, TypeNode *actual,
                             return false;
                         }
                         if (exp_array->lengths()[i] < act_array->lengths()[i]) {
-                            logger_.error(pos, "type mismatch: incompatible array lengths, found " +
+                            logger_.error(pos, "type mismatch: incompatible array lengths found " +
                                                to_string(act_array->lengths()[i]) + " > " +
                                                to_string(exp_array->lengths()[i]) + ".");
                             return false;
@@ -1912,9 +1981,16 @@ Sema::assertCompatible(const FilePos &pos, TypeNode *expected, TypeNode *actual,
             }
         }
     }
+    // Check record type
+    if (expected->isRecord() && actual->isRecord() && actual->extends(expected)) {
+        return true;
+    }
     // Check pointer type
     if (expected->isPointer()) {
         if (actual->isPointer()) {
+            if (actual->extends(expected)) {
+                return true;
+            }
             auto exp_ptr = dynamic_cast<PointerTypeNode *>(expected);
             auto act_ptr = dynamic_cast<PointerTypeNode *>(actual);
             return assertCompatible(pos, exp_ptr->getBase(), act_ptr->getBase(), true);

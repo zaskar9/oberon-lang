@@ -21,17 +21,21 @@ private:
     uint32_t dimensions_;
     vector<uint32_t> lengths_;
     vector<TypeNode *> types_;
+    ArrayTypeNode *base_;
 
 public:
     ArrayTypeNode(const FilePos &pos, uint32_t dimensions, vector<uint32_t> lengths, vector<TypeNode *> types) :
             TypeNode(NodeType::array_type, pos, TypeKind::ARRAY, 0),
-            dimensions_(dimensions), lengths_(std::move(lengths)), types_(std::move(types)) {};
+            dimensions_(dimensions), lengths_(std::move(lengths)), types_(std::move(types)), base_(nullptr) {};
     ~ArrayTypeNode() final = default;
 
     [[nodiscard]] uint32_t dimensions() const;
     [[nodiscard]] const vector<uint32_t> &lengths() const;
     [[nodiscard]] const vector<TypeNode *> &types() const;
     [[nodiscard]] TypeNode *getMemberType() const;
+
+    [[nodiscard]] ArrayTypeNode *getBase() const;
+    void setBase(ArrayTypeNode *);
 
     [[nodiscard]] bool isOpen() const;
 
