@@ -53,6 +53,13 @@ BEGIN
     ASSERT(LEN(str) = 13)
 END TestStrLen;
 
+PROCEDURE TestMixing();
+VAR a: ARRAY Dim OF INTEGER;
+PROCEDURE Call(a: Vector); END Call;
+BEGIN
+    Call(a)
+END TestMixing;
+
 BEGIN
     ASSERT(LEN(v) = Dim);
     Assert1(v, Dim);

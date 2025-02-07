@@ -111,6 +111,7 @@ private:
     using SelectorIterator = Selectors::iterator;
     SelectorIterator &handleMissingParameters(const FilePos &, const FilePos &,
                                               TypeNode*, Selectors &, SelectorIterator &);
+    void handleRepeatedIndices(const FilePos &, const FilePos &, Selectors &);
     TypeNode *onSelectors(const FilePos &, const FilePos &, DeclarationNode *, TypeNode*, Selectors &);
     TypeNode *onActualParameters(DeclarationNode*, TypeNode*, ActualParameters*);
     TypeNode *onArrayIndex(TypeNode*, ArrayIndex*);

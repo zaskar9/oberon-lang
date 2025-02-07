@@ -199,9 +199,9 @@ Sema::onArrayType(const FilePos &start, const FilePos &end, vector<unique_ptr<Ex
     vector<unsigned> lengths;
     vector<TypeNode *> types;
     if (type->isArray()) {
-        auto arrayTy = dynamic_cast<ArrayTypeNode *>(type);
-        lengths.insert(lengths.begin(), arrayTy->lengths().begin(), arrayTy->lengths().end());
-        types.insert(types.begin(), arrayTy->types().begin(), arrayTy->types().end());
+        auto array_t = dynamic_cast<ArrayTypeNode *>(type);
+        lengths.insert(lengths.begin(), array_t->lengths().begin(), array_t->lengths().end());
+        types.insert(types.begin(), array_t->types().begin(), array_t->types().end());
         logger_.warning(start, "nested array found, use multi-dimensional array instead.");
     }
     for (size_t i = values.size(); i > 0; --i) {
@@ -209,7 +209,9 @@ Sema::onArrayType(const FilePos &start, const FilePos &end, vector<unique_ptr<Ex
         types.insert(types.begin(), type);
         type = context_->getOrInsertArrayType(start, end, lengths.size(), lengths, types);
     }
-    return dynamic_cast<ArrayTypeNode *>(type);
+    auto array_t = dynamic_cast<ArrayTypeNode *>(type);
+    array_t->setBase(array_t);
+    return array_t;
 }
 
 PointerTypeNode *
@@ -324,7 +326,10 @@ Sema::onTypeReference(const FilePos &start, const FilePos &end,
             lengths.insert(lengths.begin(), 0);
             types.insert(types.begin(), type);
             type = context_->getOrInsertArrayType(start, end, lengths.size(), lengths, types);
+
         }
+        auto array_t = dynamic_cast<ArrayTypeNode *>(type);
+        array_t->setBase(array_t);
     } else {
         logger_.error(start, "undefined type: " + to_string(*ident) + ".");
     }
@@ -752,6 +757,9 @@ Sema::onQualifiedConstant(const FilePos &start, const FilePos &end,
 TypeNode *
 Sema::onSelectors(const FilePos &start, const FilePos &end,
                   DeclarationNode *sym, TypeNode *base, vector<unique_ptr<Selector>> &selectors) {
+    if (selectors.size() > 1) {
+        handleRepeatedIndices(start, end, selectors);
+    }
     auto it = selectors.begin();
     it = handleMissingParameters(start, end, base, selectors, it);
     auto context = sym;
@@ -761,15 +769,15 @@ Sema::onSelectors(const FilePos &start, const FilePos &end,
             logger_.error(sel->pos(), "unexpected selector.");
             return nullptr;
         }
-        // check for implicit pointer de-referencing
+        // Check for implicit pointer de-referencing
         if (base->isPointer() && (sel->getNodeType() == NodeType::array_type ||
                                   sel->getNodeType() == NodeType::record_type)) {
             auto caret = make_unique<Dereference>(sel->pos());
-            // place caret before the current element
+            // Place caret before the current element
             it = selectors.insert(it, std::move(caret));
             sel = (*it).get();
         }
-        // if necessary, convert from actual parameters to type guard
+        // If necessary, convert from actual parameters to type guard
         if (sel->getNodeType() == NodeType::parameter && !base->isProcedure()) {
             auto params = dynamic_cast<ActualParameters *>(sel);
             if (params->parameters().size() == 1) {
@@ -852,8 +860,8 @@ Sema::assertAssignable(const ExpressionNode *expr, string &err) const {
 }
 
 Sema::SelectorIterator &
-Sema::handleMissingParameters(const FilePos &start, [[maybe_unused]] const FilePos &end,
-                              TypeNode *base, Sema::Selectors &selectors, Sema::SelectorIterator &it) {
+Sema::handleMissingParameters(const FilePos &start, [[maybe_unused]] const FilePos &,
+                              TypeNode *base, Selectors &selectors, SelectorIterator &it) {
     if (base && base->isProcedure()) {
         bool found = false;
         if (selectors.empty()) {
@@ -869,6 +877,36 @@ Sema::handleMissingParameters(const FilePos &start, [[maybe_unused]] const FileP
         }
     }
     return it;
+}
+
+void Sema::handleRepeatedIndices(const FilePos &, const FilePos &, Selectors &selectors) {
+    auto it = selectors.begin();
+    while (it != selectors.end()) {
+        auto cur = (*it).get();
+        if (cur->getNodeType() == NodeType::array_type) {
+            auto first = it;
+            auto last = first;
+            while (last != selectors.end() && (*last)->getNodeType() == NodeType::array_type) {
+                ++last;
+            }
+            if (first != last - 1) {
+                vector<unique_ptr<ExpressionNode>> indices;
+                for (auto acc = first; acc != last; ++acc) {
+                    auto index = dynamic_cast<ArrayIndex *>((*acc).get());
+                    for (auto &sel: index->indices()) {
+                        indices.push_back(std::move(sel));
+                    }
+                }
+                // Report a warning
+                logger_.warning((*first).get()->pos(), "use multi-dimensional index to access multi-dimensional array.");
+                // Erase the repeated array indices
+                auto pos = selectors.erase(first, last);
+                // Place the new combined array index before the current position
+                it = selectors.insert(pos, make_unique<ArrayIndex>(EMPTY_POS, std::move(indices)));
+            }
+        }
+        ++it;
+    }
 }
 
 TypeNode *
@@ -1453,7 +1491,6 @@ Sema::fold(const FilePos &start, const FilePos &end, ExpressionNode *expr) {
     if (expr && expr->isLiteral()) {
         auto type = expr->getType();
         if (type) {
-            // auto cast = expr->getCast();
             if (type->kind() == TypeKind::CHAR) {
                 return clone<CharLiteralNode>(start, end, dynamic_cast<CharLiteralNode*>(expr));
             } else if (type->kind() == TypeKind::SHORTINT ||
@@ -1526,7 +1563,6 @@ Sema::fold(const FilePos &start, const FilePos &, OperatorType op, unique_ptr<Ex
             }
         }
     }
-    // logger_.error(start, "invalid unary expression.");
     return std::nullopt;
 }
 
@@ -1806,7 +1842,6 @@ Sema::fold(const FilePos &start, const FilePos &end,
             }
         }
     }
-    // logger_.error(start, "invalid binary expression.");
     return std::nullopt;
 }
 
@@ -1947,8 +1982,8 @@ Sema::assertCompatible(const FilePos &pos, TypeNode *expected, TypeNode *actual,
         }
     }
     // Check record type
-    if (expected->isRecord() && actual->isRecord()) {
-        return actual->extends(expected);
+    if (expected->isRecord() && actual->isRecord() && actual->extends(expected)) {
+        return true;
     }
     // Check pointer type
     if (expected->isPointer()) {

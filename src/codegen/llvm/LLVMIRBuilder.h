@@ -42,7 +42,8 @@ private:
     Value *value_;
     map<DeclarationNode*, Value*> values_;
     map<TypeNode*, Type*> types_;
-    map<Node*, Value*> dopeVecs_;
+    map<ArrayTypeNode*, Value*> typeDopes_;
+    map<DeclarationNode*, Value*> valueDopes_;
     map<PointerTypeNode*, StructType*> ptrTypes_;
     map<ProcedureNode*, Function*> functions_;
     map<string, Constant*> strings_;
@@ -57,10 +58,10 @@ private:
     MaybeAlign getLLVMAlign(TypeNode *type);
 
     Value *processGEP(Type *, Value *, vector<Value *> &);
-    Value *createDopeVector(ArrayTypeNode*, const string &);
 
-    // void arrayInitializers(TypeNode *);
-    // void arrayInitializers(TypeNode *, TypeNode *, vector<Value *> &);
+    Value *getArrayLength(ExpressionNode *, uint32_t);
+    Value *getOpenArrayLength(Value *, ArrayTypeNode *, uint32_t);
+    Value *getDopeVector(ExpressionNode *);
 
     string qualifiedName(DeclarationNode *) const;
 
@@ -74,7 +75,7 @@ private:
 
     using Selectors = vector<unique_ptr<Selector>>;
     using SelectorIterator = Selectors::iterator;
-    TypeNode *selectors(TypeNode *, SelectorIterator, SelectorIterator);
+    TypeNode *selectors(ExpressionNode *, TypeNode *, SelectorIterator, SelectorIterator);
     void parameters(ProcedureTypeNode *, ActualParameters *, vector<Value *> &, bool = false);
 
     void installTrap(Value *, unsigned);
