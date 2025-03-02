@@ -1,5 +1,5 @@
 # Compiler and linker settings
-O7C = ..\..\build\src\oberon-lang.exe
+O7C = ..\..\build\src\Release\oberon-lang.exe
 LD = link.exe
 INC = ".;.\include"
 
@@ -16,7 +16,7 @@ clean:
 	@$(O7C) --filetype=ll $<
 
 .Mod.obj:
-	$(O7C) -O3 -I$(INC) -fenable-main $<
+	@$(O7C) -q -c -O3 -I$(INC) -fenable-main $<
 
 .Mod.exe:
 	@make.bat $*.obj
