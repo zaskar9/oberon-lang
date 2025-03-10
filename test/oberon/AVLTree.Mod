@@ -125,11 +125,11 @@ PROCEDURE Insert(VAR node: TreeNode; key: INTEGER);
 PROCEDURE InOrderTraversal(node: TreeNode);
   BEGIN
     IF node # NIL THEN
-      Out.String("(");
+      Out.Char("(");
       InOrderTraversal(node.left);
       Out.Int(node.key, 0); (* Print the value *)
       InOrderTraversal(node.right);
-      Out.String(")")
+      Out.Char(")")
     END
   END InOrderTraversal;
 

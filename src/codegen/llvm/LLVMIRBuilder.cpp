@@ -16,6 +16,7 @@ using std::vector;
 
 LLVMIRBuilder::LLVMIRBuilder(CompilerConfig &config, LLVMContext &builder, Module *module) :
         NodeVisitor(), config_(config), logger_(config_.logger()), builder_(builder), module_(module),
+        triple_(module->getTargetTriple()),
         value_(), values_(), types_(), hasArray_(), functions_(), strings_(), deref_ctx(), level_(0),
         function_(), attrs_(AttrBuilder(builder)) {
     attrs_
@@ -67,7 +68,10 @@ void LLVMIRBuilder::visit(ModuleNode &node) {
     }
     // generate code for body
     auto body = module_->getOrInsertFunction(node.getIdentifier()->name(), builder_.getInt32Ty());
-    function_ = ::cast<Function>(body.getCallee());
+    function_ = dyn_cast<Function>(body.getCallee());
+    if (triple_.isOSWindows() && !config_.hasFlag(Flag::ENABLE_MAIN)) {
+        function_->setDLLStorageClass(llvm::GlobalValue::DLLStorageClassTypes::DLLExportStorageClass);
+    }
     auto entry = BasicBlock::Create(builder_.getContext(), "entry", function_);
     builder_.SetInsertPoint(entry);
     level_ = node.getLevel() + 1;
@@ -190,7 +194,7 @@ void LLVMIRBuilder::arrayInitializers(TypeNode *base, TypeNode *type, vector<Val
     } else if (type->isRecord()) {
         auto record_t = dynamic_cast<RecordTypeNode *>(type);
         for (size_t i = 0; i < record_t->getFieldCount(); ++i) {
-            indices.push_back(builder_.getInt32(i));
+            indices.push_back(builder_.getInt32(static_cast<uint32_t>(i)));
             arrayInitializers(base, record_t->getField(i)->getType(), indices);
             indices.pop_back();
         }
@@ -323,7 +327,7 @@ TypeNode *LLVMIRBuilder::selectors(TypeNode *base, SelectorIterator start, Selec
             auto record_t = dynamic_cast<RecordTypeNode *>(selector_t);
             for (size_t pos = 0; pos < record_t->getFieldCount(); pos++) {
                 if (field == record_t->getField(pos)) {
-                    indices.push_back(builder_.getInt32(pos));
+                    indices.push_back(builder_.getInt32(static_cast<uint32_t>(pos)));
                     break;
                 }
             }
@@ -465,7 +469,7 @@ void LLVMIRBuilder::visit(RangeLiteralNode &node) {
     value_ = ConstantInt::get(builder_.getInt32Ty(), static_cast<uint32_t>(node.value().to_ulong()));
 }
 
-void LLVMIRBuilder::installTrap(Value *condition, unsigned code) {
+void LLVMIRBuilder::installTrap(Value *condition, uint8_t code) {
     auto tail = BasicBlock::Create(builder_.getContext(), "tail", function_);
     auto trap = BasicBlock::Create(builder_.getContext(), "trap", function_);
     builder_.CreateCondBr(condition, tail, trap);
@@ -870,7 +874,7 @@ void LLVMIRBuilder::visit(CaseOfNode& node) {
     node.getExpression()->accept(*this);
     restoreRefMode();
     auto *type = dyn_cast<IntegerType>(getLLVMType(node.getExpression()->getType()));
-    SwitchInst *inst = builder_.CreateSwitch(value_, dflt, node.getLabelCount());
+    SwitchInst *inst = builder_.CreateSwitch(value_, dflt, static_cast<unsigned int>(node.getLabelCount()));
     for (size_t i = 0; i < node.getCaseCount(); ++i) {
         auto block = BasicBlock::Create(builder_.getContext(), "case" + to_string(i), function_);
         auto c = node.getCase(i);
@@ -1751,7 +1755,11 @@ void LLVMIRBuilder::procedure(ProcedureNode &node) {
     }
     auto type = FunctionType::get(getLLVMType(node.getType()->getReturnType()), params, node.getType()->hasVarArgs());
     auto callee = module_->getOrInsertFunction(name, type);
-    functions_[&node] = ::cast<Function>(callee.getCallee());
+    auto function = dyn_cast<Function>(callee.getCallee());
+    if (triple_.isOSWindows() && node.getIdentifier()->isExported() && !config_.hasFlag(Flag::ENABLE_MAIN)) {
+        function->setDLLStorageClass(llvm::GlobalValue::DLLStorageClassTypes::DLLExportStorageClass);
+    }
+    functions_[&node] = function;
 }
 
 std::string LLVMIRBuilder::qualifiedName(DeclarationNode *node) const {

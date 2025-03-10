@@ -24,8 +24,9 @@
         "-I.;.\\include",
         "-L.;.\\lib",
         "-loberon",
-        "--run",
-        "Vigenere.Mod"
+        "-S",
+        "--emit-llvm",
+        "AVLTree.Mod"
       ]
     }
   ]

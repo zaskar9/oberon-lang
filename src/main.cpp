@@ -290,7 +290,7 @@ int main(const int argc, const char **argv) {
         if (logger.getErrorCount() != 0) {
             return EXIT_FAILURE;
         }
-        auto inputs = vm["inputs"].as<vector<string>>();
+        auto &inputs = vm["inputs"].as<vector<string>>();
         if (config.isJit()) {
 #ifndef _LLVM_LEGACY
             if (inputs.size() != 1) {
