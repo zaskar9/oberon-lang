@@ -207,7 +207,7 @@ Sema::onArrayType(const FilePos &start, const FilePos &end, vector<unique_ptr<Ex
     for (size_t i = values.size(); i > 0; --i) {
         lengths.insert(lengths.begin(), values[i - 1]);
         types.insert(types.begin(), type);
-        type = context_->getOrInsertArrayType(start, end, lengths.size(), lengths, types);
+        type = context_->getOrInsertArrayType(start, end, static_cast<unsigned>(lengths.size()), lengths, types);
     }
     return dynamic_cast<ArrayTypeNode *>(type);
 }
@@ -302,7 +302,7 @@ Sema::onTypeReference(const FilePos &start, const FilePos &end,
         for (size_t i = dimensions; i > 0; --i) {
             lengths.insert(lengths.begin(), 0);
             types.insert(types.begin(), type);
-            type = context_->getOrInsertArrayType(start, end, lengths.size(), lengths, types);
+            type = context_->getOrInsertArrayType(start, end, static_cast<unsigned>(lengths.size()), lengths, types);
         }
     } else {
         logger_.error(start, "undefined type: " + to_string(*ident) + ".");

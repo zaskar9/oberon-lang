@@ -37,7 +37,7 @@ int32_t rt_reals_expoL(double x) {
 }
 
 float rt_reals_ten(int32_t e) {
-    return powf(10.0, e);
+    return powf(10.0, (float) e);
 }
 
 double rt_reals_tenL(int32_t e) {

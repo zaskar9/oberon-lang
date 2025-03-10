@@ -31,10 +31,10 @@ clean:
 
 lib: runtime.obj Oberon.obj Math.obj Reals.obj Texts.obj Random.obj Out.obj
 	@$(CXX) /nologo /D_USRDLL /D_WINDLL runtime.obj Oberon.obj Math.obj Reals.obj Texts.obj Random.obj Out.obj /MT /link /DLL /out:oberon.dll
-#	@move oberon.dll $(LIB_DIR) >nul
-#	@move oberon.lib $(LIB_DIR) >nul
+	@move oberon.dll $(LIB_DIR) >nul
+	@move oberon.lib $(LIB_DIR) >nul
 	@$(LIBX) /nologo /machine:$(CPU_ARCH) runtime.obj Oberon.obj Math.obj Reals.obj Texts.obj Random.obj Out.obj /out:oberon-static.lib
-#	@move oberon-static.lib $(LIB_DIR) >nul
+	@move oberon-static.lib $(LIB_DIR) >nul
 
 inc:
 	@move Math.smb $(INC_DIR) >nul

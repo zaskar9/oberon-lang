@@ -5,7 +5,7 @@ set(SMB_FILE_VERSION 4)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     # warning level 4
-    add_compile_options(/Wall /W4 /external:anglebrackets /external:W0)
+    add_compile_options(/Wall /W4 /external:anglebrackets /external:W0 /utf-8)
 else ()
     # lots of warnings and all warnings as errors -Wglobal-constructors -Wexit-time-destructors
     add_compile_options(-W -Wall -Wextra -Werror -Wpedantic -Wno-error=deprecated -Wunreachable-code -Winvalid-pch -Wcast-align -Wformat=2 -Wformat-nonliteral -Wmissing-declarations -Wmissing-noreturn -Wmissing-format-attribute -Wmissing-include-dirs -Wredundant-decls -Wswitch-default -Wsign-conversion -Wfloat-conversion)

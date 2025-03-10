@@ -81,7 +81,7 @@ void SymbolExporter::writeDeclaration(SymbolFile *file, DeclarationNode *decl) {
                     file->writeInt(static_cast<int>(dynamic_cast<IntegerLiteralNode *>(con->getValue())->value()));
                     break;
                 case TypeKind::LONGINT:
-                    file->writeLong(dynamic_cast<IntegerLiteralNode *>(con->getValue())->value());
+                    file->writeLong(static_cast<long>(dynamic_cast<IntegerLiteralNode *>(con->getValue())->value()));
                     break;
                 case TypeKind::REAL:
                     file->writeFloat(static_cast<float>(dynamic_cast<RealLiteralNode *>(con->getValue())->value()));
@@ -197,7 +197,7 @@ void SymbolExporter::writeRecordType(SymbolFile *file, RecordTypeNode *type) {
         file->writeInt(-1);
     }
     // write out the number of fields in this record
-    file->writeInt(type->getFieldCount());
+    file->writeInt(static_cast<int>(type->getFieldCount()));
     // write out the size of the type, i.e., sum of the sizes of the type of all fields
     file->writeInt(static_cast<int>(type->getSize()));
     auto offset = 0u;

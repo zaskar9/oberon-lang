@@ -244,7 +244,7 @@ void Parser::type_declarations(vector<unique_ptr<TypeDeclarationNode>> & types) 
     logger_.debug("type_declarations");
     FilePos pos = scanner_.next()->start();  // skip TYPE keyword and get its position
     while (scanner_.peek()->type() == TokenType::const_ident) {
-        auto pos = scanner_.peek()->start();
+        pos = scanner_.peek()->start();
         auto ident = identdef();
         auto token = scanner_.next();
         if (assertToken(token.get(), TokenType::op_eq)) {
