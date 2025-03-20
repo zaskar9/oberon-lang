@@ -3,13 +3,14 @@ config.name = "Oberon"
 config.test_format = lit.formats.ShTest(True)
 config.suffixes = ['.mod']
 config.excludes = ['tmp', 'lib', 'include']
-config.llvm_src_root = r"@CMAKE_CURRENT_SOURCE_DIR@"
-config.llvm_obj_root = r"@CMAKE_CURRENT_BINARY_DIR@"
-config.test_source_root = os.path.join(config.llvm_src_root, "unittests")
-config.test_exec_root = os.path.join(config.llvm_obj_root)
-inc = os.path.abspath(os.path.join(config.llvm_obj_root, "..", "liboberon"))
-lib = os.path.abspath(os.path.join(config.llvm_obj_root, "..", "liboberon"))
-exe = os.path.abspath(os.path.join(config.llvm_obj_root, "..", "src", "oberon-lang"))
+
+config.test_source_root = os.path.join(r"@CMAKE_CURRENT_SOURCE_DIR@", "unittests")
+config.test_exec_root = os.path.join(r"@CMAKE_CURRENT_BINARY_DIR@")
+
+inc = os.path.abspath(os.path.join(config.test_exec_root, "..", "liboberon"))
+lib = os.path.dirname(r"$<TARGET_FILE:liboberon-shared>")
+exe = r"$<TARGET_FILE:oberon-lang>"
+
 config.substitutions.append((r"%inc", inc))
 config.substitutions.append((r"%lib", lib))
 config.substitutions.append((r"%oberon", exe))
