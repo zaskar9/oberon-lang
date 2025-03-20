@@ -26,7 +26,7 @@
         "-loberon",
         "-S",
         "--emit-llvm",
-        "AVLTree.Mod"
+        "../unittests/codegen/builtin_len.mod"
       ]
     }
   ]
