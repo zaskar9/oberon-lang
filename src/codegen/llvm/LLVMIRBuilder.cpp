@@ -51,7 +51,7 @@ void LLVMIRBuilder::visit(ModuleNode &node) {
                                         expo ? GlobalValue::ExternalLinkage : GlobalValue::InternalLinkage,
                                         Constant::getNullValue(type),
                                         expo ? prefix + variable->getIdentifier()->name() : variable->getIdentifier()->name());
-        value->setAlignment(getLLVMAlign(variable->getType()));
+        value->setAlignment(module_->getDataLayout().getPreferredAlign(value));
         values_[variable] = value;
     }
     // generate external procedure signatures
@@ -246,7 +246,7 @@ void LLVMIRBuilder::visit(QualifiedExpression &node) {
         auto variable = dynamic_cast<VariableDeclarationNode *>(decl);
         auto value = new GlobalVariable(*module_, getLLVMType(variable->getType()), false,
                                         GlobalValue::ExternalLinkage, nullptr, qualifiedName(decl));
-        value->setAlignment(getLLVMAlign(variable->getType()));
+        value->setAlignment(module_->getDataLayout().getPreferredAlign(value));
         values_[decl] = value;
         value_ = value;
     }
@@ -436,16 +436,16 @@ void LLVMIRBuilder::visit(RealLiteralNode &node) {
 }
 
 void LLVMIRBuilder::visit(StringLiteralNode &node) {
-    string val = node.value();
-    auto len = val.size() + 1;
+    string str = node.value();
+    auto len = str.size() + 1;
     auto type = StructType::get(builder_.getInt64Ty(), ArrayType::get(builder_.getInt8Ty(), len));
-    value_ = strings_[val];
+    value_ = strings_[str];
     if (!value_) {
-        auto initializer = ConstantStruct::get(type, {builder_.getInt64(len), ConstantDataArray::getRaw(val, len, builder_.getInt8Ty())});
-        auto str = new GlobalVariable(*module_, type, true, GlobalValue::PrivateLinkage, initializer, ".str");
-        str->setAlignment(module_->getDataLayout().getPrefTypeAlign(type));
-        strings_[val] = str;
-        value_ = strings_[val];
+        auto initializer = ConstantStruct::get(type, {builder_.getInt64(len), ConstantDataArray::getRaw(str, len, builder_.getInt8Ty())});
+        auto value = new GlobalVariable(*module_, type, true, GlobalValue::PrivateLinkage, initializer, ".str");
+        value->setAlignment(module_->getDataLayout().getPreferredAlign(value));
+        strings_[str] = value;
+        value_ = strings_[str];
     }
     if (deref()) {
         value_ = builder_.CreateLoad(type, value_);

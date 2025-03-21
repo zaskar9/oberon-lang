@@ -1,5 +1,6 @@
 set(LIBOBERON_SHARED "liboberon-shared")
 set(LIBOBERON_STATIC "liboberon-static")
+set(LIBOBERON_NAME "oberon")
 
 set(O_EXT ${CMAKE_C_OUTPUT_EXTENSION})
 
@@ -16,20 +17,26 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
   set(OBFLAGS -c -q -O3 -fenable-extern -fenable-varargs)
 endif()
 
+if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    set(LIBOBERON_NAME_STATIC "oberon-static")
+else()
+    set(LIBOBERON_NAME_STATIC ${LIBOBERON_NAME})
+endif()
+
 # add source tree to search path to avoid relative includes
 include_directories(BEFORE .)
 
 function(add_oberon_module target depends)
-  add_custom_command(
-    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${target}${O_EXT}
-    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${target}.smb
-    COMMAND $<TARGET_FILE:oberon-lang> 
-            -I${CMAKE_CURRENT_BINARY_DIR} 
-            ${OBFLAGS}
-            --sym-dir=${CMAKE_CURRENT_BINARY_DIR}
-            -o ${CMAKE_CURRENT_BINARY_DIR}/${target}${O_EXT}
-            ${CMAKE_CURRENT_SOURCE_DIR}/${target}.Mod
-    DEPENDS ${depends}
+    add_custom_command(
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${target}${O_EXT}
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${target}.smb
+        COMMAND $<TARGET_FILE:oberon-lang>
+        -I${CMAKE_CURRENT_BINARY_DIR}
+        ${OBFLAGS}
+        --sym-dir=${CMAKE_CURRENT_BINARY_DIR}
+        -o ${CMAKE_CURRENT_BINARY_DIR}/${target}${O_EXT}
+        ${CMAKE_CURRENT_SOURCE_DIR}/${target}.Mod
+        DEPENDS ${depends}
     )
 endfunction()
 
@@ -52,7 +59,7 @@ add_library(${LIBOBERON_SHARED} SHARED
 
 set_target_properties(
   ${LIBOBERON_SHARED} PROPERTIES
-  OUTPUT_NAME oberon
+  OUTPUT_NAME ${LIBOBERON_NAME}
 )
 
 add_library(${LIBOBERON_STATIC} STATIC
@@ -67,7 +74,7 @@ add_library(${LIBOBERON_STATIC} STATIC
 
 set_target_properties(
   ${LIBOBERON_STATIC} PROPERTIES
-  OUTPUT_NAME oberon
+  OUTPUT_NAME ${LIBOBERON_NAME_STATIC}
   ARCHIVE_OUTPUT_DIRECTORY static
 )
 
