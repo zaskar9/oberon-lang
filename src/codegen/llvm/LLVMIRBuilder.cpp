@@ -232,6 +232,8 @@ Value *LLVMIRBuilder::getArrayLength(ExpressionNode *expr, uint32_t dim) {
 
 Value *LLVMIRBuilder::getOpenArrayLength(llvm::Value *dopeV, ArrayTypeNode *type, uint32_t dim) {
     auto dopeTy = ArrayType::get(builder_.getInt64Ty(), type->dimensions());
+    // dereference the pointer to the dope vector
+    dopeV = builder_.CreateLoad(builder_.getPtrTy(), dopeV);
     Value *value = builder_.CreateInBoundsGEP(dopeTy, dopeV, {builder_.getInt32(0), builder_.getInt32(dim) });
     return builder_.CreateLoad(builder_.getInt64Ty(), value);
 }
@@ -253,8 +255,6 @@ Value *LLVMIRBuilder::getDopeVector(ExpressionNode *expr) {
                 auto dopeTy = ArrayType::get(builder_.getInt64Ty(), base->dimensions());
                 dopeV = deref() ? builder_.CreateLoad(builder_.getPtrTy(), dopeV) : dopeV;
                 dopeV = builder_.CreateInBoundsGEP(dopeTy, dopeV, {builder_.getInt32(0), builder_.getInt32(delta)});
-            } else {
-                dopeV = deref() ? builder_.CreateLoad(builder_.getPtrTy(), dopeV) : dopeV;
             }
         } else if (decl->getType()->isArray()) {
             dopeV = valueDopes_[decl];
@@ -1374,7 +1374,7 @@ LLVMIRBuilder::createInclCall(llvm::Value *set, llvm::Value *element) {
 Value *
 LLVMIRBuilder::createLenCall(vector<unique_ptr<ExpressionNode>> &actuals, std::vector<Value *> &params) {
     // `params[0]`: the array for which the length will be returned
-    // `params[1]`: the dope vector of the array
+    // `params[1]`: pointer to the dope vector of the array
     // `params[2]`: the (optional) dimension of the array
     auto param0 = actuals[0].get();
     if (param0->getType()->isString() && param0->isLiteral()) {
