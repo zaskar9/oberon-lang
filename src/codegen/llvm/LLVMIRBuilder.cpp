@@ -1751,7 +1751,7 @@ void LLVMIRBuilder::procedure(ProcedureNode &node) {
     std::vector<Type*> params;
     for (auto &param : node.getType()->parameters()) {
         auto param_t = getLLVMType(param->getType());
-        params.push_back(param->isVar() || param->getType()->isStructured() ? param_t->getPointerTo() : param_t);
+        params.push_back(param->isVar() || param->getType()->isStructured() ? PointerType::getUnqual(param_t) : param_t);
     }
     auto type = FunctionType::get(getLLVMType(node.getType()->getReturnType()), params, node.getType()->hasVarArgs());
     auto callee = module_->getOrInsertFunction(name, type);
