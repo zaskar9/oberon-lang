@@ -1,12 +1,12 @@
 cmake_minimum_required(VERSION 3.30)
 
+project(oberon-lang VERSION 0.1.0)
+set(SMB_FILE_VERSION 4)
+
 if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     message(WARNING "No build type set, defaulting to \"Release\".")
     set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build." FORCE)
 endif()
-
-project(oberon-lang VERSION 0.1.0)
-set(SMB_FILE_VERSION 4)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     # warning level 4
