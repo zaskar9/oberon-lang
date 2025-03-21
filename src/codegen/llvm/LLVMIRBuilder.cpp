@@ -474,7 +474,11 @@ void LLVMIRBuilder::installTrap(Value *condition, uint8_t code) {
     auto trap = BasicBlock::Create(builder_.getContext(), "trap", function_);
     builder_.CreateCondBr(condition, tail, trap);
     builder_.SetInsertPoint(trap);
-    Function *fun = Intrinsic::getDeclaration(module_, Intrinsic::ubsantrap);
+#ifndef _LLVM_20
+    Function* fun = Intrinsic::getDeclaration(module_, Intrinsic::ubsantrap);
+#else
+    Function* fun = Intrinsic::getOrInsertDeclaration(module_, Intrinsic::ubsantrap);
+#endif
     builder_.CreateCall(fun, {builder_.getInt8(code)});
     builder_.CreateUnreachable();
     builder_.SetInsertPoint(tail);
@@ -502,7 +506,11 @@ void LLVMIRBuilder::trapCopyOverflow(Value *lsize, Value *rsize) {
 
 Value *LLVMIRBuilder::trapIntOverflow(Intrinsic::IndependentIntrinsics intrinsic, Value *lhs, Value *rhs) {
     auto type = dyn_cast<IntegerType>(rhs->getType());
-    Function *fun = Intrinsic::getDeclaration(module_, intrinsic, {type});
+#ifndef _LLVM_20
+    Function* fun = Intrinsic::getDeclaration(module_, intrinsic, { type });
+#else
+    Function* fun = Intrinsic::getOrInsertDeclaration(module_, intrinsic, { type });
+#endif
     auto call = builder_.CreateCall(fun, {lhs, rhs});
     auto result = builder_.CreateExtractValue(call, {0});
     auto status = builder_.CreateExtractValue(call, {1});

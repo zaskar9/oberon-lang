@@ -341,14 +341,14 @@ void LLVMCodeGen::emit(Module *module, std::filesystem::path path, OutputFileTyp
     CodeGenFileType ft;
     switch (type) {
         case OutputFileType::AssemblyFile:
-#ifdef _LLVM_18
+#if defined(_LLVM_18) || defined(_LLVM_19)  || defined(_LLVM_20)
             ft = CodeGenFileType::AssemblyFile;
 #else
             ft = CodeGenFileType::CGFT_AssemblyFile;
 #endif
             break;
         default:
-#ifdef _LLVM_18
+#if defined(_LLVM_18) || defined(_LLVM_19)  || defined(_LLVM_20)
             ft = CodeGenFileType::ObjectFile;
 #else
             ft = CodeGenFileType::CGFT_ObjectFile;
