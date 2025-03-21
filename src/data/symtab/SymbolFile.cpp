@@ -15,7 +15,7 @@ std::string SymbolFile::path() const {
 }
 
 signed char SymbolFile::readChar() {
-    signed char val;
+    signed char val = 0;
     file_.read(reinterpret_cast<char *>(&val), sizeof(val));
 #ifdef _DEBUG
     std::cout << (int) val << "|";
@@ -31,7 +31,7 @@ void SymbolFile::writeChar(signed char val) {
 }
 
 short SymbolFile::readShort() {
-    short val;
+    short val = 0;
     file_.read(reinterpret_cast<char *>(&val), sizeof(val));
 #ifdef _DEBUG
     std::cout << val << "|";
@@ -47,7 +47,7 @@ void SymbolFile::writeShort(short val) {
 }
 
 int SymbolFile::readInt() {
-    int val;
+    int val = 0;
     file_.read(reinterpret_cast<char *>(&val), sizeof(val));
 #ifdef _DEBUG
     std::cout << val << "|";
@@ -63,7 +63,7 @@ void SymbolFile::writeInt(int val) {
 }
 
 long SymbolFile::readLong() {
-    long val;
+    long val = 0;
     file_.read(reinterpret_cast<char *>(&val), sizeof(val));
 #ifdef _DEBUG
     std::cout << val << "|";
@@ -79,7 +79,7 @@ void SymbolFile::writeLong(long val) {
 }
 
 float SymbolFile::readFloat() {
-    float val;
+    float val = 0.0;
     file_.read(reinterpret_cast<char *>(&val), sizeof(val));
 #ifdef _DEBUG
     std::cout << val << "|";
@@ -95,7 +95,7 @@ void SymbolFile::writeFloat(float val) {
 }
 
 double SymbolFile::readDouble() {
-    double val;
+    double val = 0.0;
     file_.read(reinterpret_cast<char *>(&val), sizeof(val));
 #ifdef _DEBUG
     std::cout << val << "|";
@@ -111,7 +111,7 @@ void SymbolFile::writeDouble(double val) {
 }
 
 std::string SymbolFile::readString() {
-    unsigned long len;
+    unsigned long len = 0;
     file_.read(reinterpret_cast<char *>(&len), sizeof(len));
 #ifdef _DEBUG
     std::cout << len << ":";
@@ -127,7 +127,7 @@ std::string SymbolFile::readString() {
 }
 
 void SymbolFile::writeString(const std::string &val) {
-    unsigned long len = val.length();
+    unsigned long len = static_cast<unsigned long>(val.length());
 #ifdef _DEBUG
     std::cout << len << ":";
 #endif

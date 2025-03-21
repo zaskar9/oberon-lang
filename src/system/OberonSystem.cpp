@@ -74,7 +74,7 @@ PointerTypeNode *OberonSystem::createPointerType(TypeNode *base) {
 }
 
 ArrayTypeNode *OberonSystem::createArrayType(const vector<unsigned> &dimensions, const vector<TypeNode *> &types) {
-    auto type = make_unique<ArrayTypeNode>(EMPTY_POS, dimensions.size(), dimensions, types);
+    auto type = make_unique<ArrayTypeNode>(EMPTY_POS, static_cast<unsigned>(dimensions.size()), dimensions, types);
     auto ptr = type.get();
     types_.push_back(std::move(type));
     symbols_->setRef(static_cast<unsigned char>(TypeKind::ARRAY), ptr);

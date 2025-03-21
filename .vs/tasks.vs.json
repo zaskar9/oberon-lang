@@ -6,6 +6,11 @@
       "appliesTo": "CMakeLists.txt",
       "contextType": "build",
       "type": "launch"
+    },
+    {
+      "taskLabel": "task-CMakeLists",
+      "appliesTo": "CMakeLists.txt",
+      "type": "launch"
     }
   ]
 }

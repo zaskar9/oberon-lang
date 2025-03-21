@@ -7,7 +7,6 @@
 #include "LLVMCodeGen.h"
 #include "LLVMIRBuilder.h"
 #include <sstream>
-#include <unistd.h>
 #include <unordered_set>
 #include <llvm/Bitcode/BitcodeWriter.h>
 #include <llvm/ExecutionEngine/Orc/ExecutionUtils.h>
@@ -53,6 +52,7 @@ void ubsantrap_handler(uint16_t code) {
     std::cerr << std::endl;
 }
 
+#if defined(TRAP_HANDLING)
 [[noreturn]] void trap_handler(int, siginfo_t* info, void*) {
 #if BOOST_ARCH_ARM
     // Get the address of the trapped instruction from info->si_addr
@@ -86,17 +86,18 @@ void ubsantrap_handler(uint16_t code) {
 #endif
     _exit(1);
 }
+#endif
 
-#if BOOST_ARCH_ARM || BOOST_ARCH_X86
 void register_signal_handler() {
+#if defined(TRAP_HANDLER)
     struct sigaction sa{};
     sa.sa_sigaction = trap_handler;
     sa.sa_flags = SA_SIGINFO;
     sigemptyset(&sa.sa_mask);
     sigaction(SIGTRAP, &sa, nullptr);
     sigaction(SIGILL, &sa, nullptr);
-}
 #endif
+}
 
 LLVMCodeGen::LLVMCodeGen(CompilerConfig &config) :
         config_(config), logger_(config_.logger()), type_(OutputFileType::ObjectFile), ctx_(), pb_(),
@@ -282,9 +283,7 @@ int LLVMCodeGen::jit(ASTContext *ast, std::filesystem::path path) {
 
         // TODO link with other imported modules (*.o and *.obj files)
 
-#if BOOST_ARCH_ARM || BOOST_ARCH_X86
         register_signal_handler();
-#endif
 
         std:: string entry = ast->getTranslationUnit()->getIdentifier()->name();
         auto mainAddr = exitOnErr_(jit_->lookup(entry));
@@ -342,14 +341,14 @@ void LLVMCodeGen::emit(Module *module, std::filesystem::path path, OutputFileTyp
     CodeGenFileType ft;
     switch (type) {
         case OutputFileType::AssemblyFile:
-#ifdef _LLVM_18
+#if defined(_LLVM_18) || defined(_LLVM_19)  || defined(_LLVM_20)
             ft = CodeGenFileType::AssemblyFile;
 #else
             ft = CodeGenFileType::CGFT_AssemblyFile;
 #endif
             break;
         default:
-#ifdef _LLVM_18
+#if defined(_LLVM_18) || defined(_LLVM_19)  || defined(_LLVM_20)
             ft = CodeGenFileType::ObjectFile;
 #else
             ft = CodeGenFileType::CGFT_ObjectFile;

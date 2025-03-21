@@ -16,6 +16,7 @@ using std::vector;
 
 LLVMIRBuilder::LLVMIRBuilder(CompilerConfig &config, LLVMContext &builder, Module *module) :
         NodeVisitor(), config_(config), logger_(config_.logger()), builder_(builder), module_(module),
+        triple_(module->getTargetTriple()),
         value_(), values_(), types_(), hasArray_(), functions_(), strings_(), deref_ctx(), level_(0),
         function_(), attrs_(AttrBuilder(builder)) {
     attrs_
@@ -50,7 +51,7 @@ void LLVMIRBuilder::visit(ModuleNode &node) {
                                         expo ? GlobalValue::ExternalLinkage : GlobalValue::InternalLinkage,
                                         Constant::getNullValue(type),
                                         expo ? prefix + variable->getIdentifier()->name() : variable->getIdentifier()->name());
-        value->setAlignment(getLLVMAlign(variable->getType()));
+        value->setAlignment(module_->getDataLayout().getPreferredAlign(value));
         values_[variable] = value;
     }
     // generate external procedure signatures
@@ -67,7 +68,10 @@ void LLVMIRBuilder::visit(ModuleNode &node) {
     }
     // generate code for body
     auto body = module_->getOrInsertFunction(node.getIdentifier()->name(), builder_.getInt32Ty());
-    function_ = ::cast<Function>(body.getCallee());
+    function_ = dyn_cast<Function>(body.getCallee());
+    if (triple_.isOSWindows() && !config_.hasFlag(Flag::ENABLE_MAIN)) {
+        function_->setDLLStorageClass(llvm::GlobalValue::DLLStorageClassTypes::DLLExportStorageClass);
+    }
     auto entry = BasicBlock::Create(builder_.getContext(), "entry", function_);
     builder_.SetInsertPoint(entry);
     level_ = node.getLevel() + 1;
@@ -190,7 +194,7 @@ void LLVMIRBuilder::arrayInitializers(TypeNode *base, TypeNode *type, vector<Val
     } else if (type->isRecord()) {
         auto record_t = dynamic_cast<RecordTypeNode *>(type);
         for (size_t i = 0; i < record_t->getFieldCount(); ++i) {
-            indices.push_back(builder_.getInt32(i));
+            indices.push_back(builder_.getInt32(static_cast<uint32_t>(i)));
             arrayInitializers(base, record_t->getField(i)->getType(), indices);
             indices.pop_back();
         }
@@ -242,7 +246,7 @@ void LLVMIRBuilder::visit(QualifiedExpression &node) {
         auto variable = dynamic_cast<VariableDeclarationNode *>(decl);
         auto value = new GlobalVariable(*module_, getLLVMType(variable->getType()), false,
                                         GlobalValue::ExternalLinkage, nullptr, qualifiedName(decl));
-        value->setAlignment(getLLVMAlign(variable->getType()));
+        value->setAlignment(module_->getDataLayout().getPreferredAlign(value));
         values_[decl] = value;
         value_ = value;
     }
@@ -323,7 +327,7 @@ TypeNode *LLVMIRBuilder::selectors(TypeNode *base, SelectorIterator start, Selec
             auto record_t = dynamic_cast<RecordTypeNode *>(selector_t);
             for (size_t pos = 0; pos < record_t->getFieldCount(); pos++) {
                 if (field == record_t->getField(pos)) {
-                    indices.push_back(builder_.getInt32(pos));
+                    indices.push_back(builder_.getInt32(static_cast<uint32_t>(pos)));
                     break;
                 }
             }
@@ -432,16 +436,16 @@ void LLVMIRBuilder::visit(RealLiteralNode &node) {
 }
 
 void LLVMIRBuilder::visit(StringLiteralNode &node) {
-    string val = node.value();
-    auto len = val.size() + 1;
+    string str = node.value();
+    auto len = str.size() + 1;
     auto type = StructType::get(builder_.getInt64Ty(), ArrayType::get(builder_.getInt8Ty(), len));
-    value_ = strings_[val];
+    value_ = strings_[str];
     if (!value_) {
-        auto initializer = ConstantStruct::get(type, {builder_.getInt64(len), ConstantDataArray::getRaw(val, len, builder_.getInt8Ty())});
-        auto str = new GlobalVariable(*module_, type, true, GlobalValue::PrivateLinkage, initializer, ".str");
-        str->setAlignment(module_->getDataLayout().getPrefTypeAlign(type));
-        strings_[val] = str;
-        value_ = strings_[val];
+        auto initializer = ConstantStruct::get(type, {builder_.getInt64(len), ConstantDataArray::getRaw(str, len, builder_.getInt8Ty())});
+        auto value = new GlobalVariable(*module_, type, true, GlobalValue::PrivateLinkage, initializer, ".str");
+        value->setAlignment(module_->getDataLayout().getPreferredAlign(value));
+        strings_[str] = value;
+        value_ = strings_[str];
     }
     if (deref()) {
         value_ = builder_.CreateLoad(type, value_);
@@ -465,12 +469,16 @@ void LLVMIRBuilder::visit(RangeLiteralNode &node) {
     value_ = ConstantInt::get(builder_.getInt32Ty(), static_cast<uint32_t>(node.value().to_ulong()));
 }
 
-void LLVMIRBuilder::installTrap(Value *condition, unsigned code) {
+void LLVMIRBuilder::installTrap(Value *condition, uint8_t code) {
     auto tail = BasicBlock::Create(builder_.getContext(), "tail", function_);
     auto trap = BasicBlock::Create(builder_.getContext(), "trap", function_);
     builder_.CreateCondBr(condition, tail, trap);
     builder_.SetInsertPoint(trap);
-    Function *fun = Intrinsic::getDeclaration(module_, Intrinsic::ubsantrap);
+#ifndef _LLVM_20
+    Function* fun = Intrinsic::getDeclaration(module_, Intrinsic::ubsantrap);
+#else
+    Function* fun = Intrinsic::getOrInsertDeclaration(module_, Intrinsic::ubsantrap);
+#endif
     builder_.CreateCall(fun, {builder_.getInt8(code)});
     builder_.CreateUnreachable();
     builder_.SetInsertPoint(tail);
@@ -498,7 +506,11 @@ void LLVMIRBuilder::trapCopyOverflow(Value *lsize, Value *rsize) {
 
 Value *LLVMIRBuilder::trapIntOverflow(Intrinsic::IndependentIntrinsics intrinsic, Value *lhs, Value *rhs) {
     auto type = dyn_cast<IntegerType>(rhs->getType());
-    Function *fun = Intrinsic::getDeclaration(module_, intrinsic, {type});
+#ifndef _LLVM_20
+    Function* fun = Intrinsic::getDeclaration(module_, intrinsic, { type });
+#else
+    Function* fun = Intrinsic::getOrInsertDeclaration(module_, intrinsic, { type });
+#endif
     auto call = builder_.CreateCall(fun, {lhs, rhs});
     auto result = builder_.CreateExtractValue(call, {0});
     auto status = builder_.CreateExtractValue(call, {1});
@@ -870,7 +882,7 @@ void LLVMIRBuilder::visit(CaseOfNode& node) {
     node.getExpression()->accept(*this);
     restoreRefMode();
     auto *type = dyn_cast<IntegerType>(getLLVMType(node.getExpression()->getType()));
-    SwitchInst *inst = builder_.CreateSwitch(value_, dflt, node.getLabelCount());
+    SwitchInst *inst = builder_.CreateSwitch(value_, dflt, static_cast<unsigned int>(node.getLabelCount()));
     for (size_t i = 0; i < node.getCaseCount(); ++i) {
         auto block = BasicBlock::Create(builder_.getContext(), "case" + to_string(i), function_);
         auto c = node.getCase(i);
@@ -1747,11 +1759,15 @@ void LLVMIRBuilder::procedure(ProcedureNode &node) {
     std::vector<Type*> params;
     for (auto &param : node.getType()->parameters()) {
         auto param_t = getLLVMType(param->getType());
-        params.push_back(param->isVar() || param->getType()->isStructured() ? param_t->getPointerTo() : param_t);
+        params.push_back(param->isVar() || param->getType()->isStructured() ? PointerType::getUnqual(param_t) : param_t);
     }
     auto type = FunctionType::get(getLLVMType(node.getType()->getReturnType()), params, node.getType()->hasVarArgs());
     auto callee = module_->getOrInsertFunction(name, type);
-    functions_[&node] = ::cast<Function>(callee.getCallee());
+    auto function = dyn_cast<Function>(callee.getCallee());
+    if (triple_.isOSWindows() && node.getIdentifier()->isExported() && !config_.hasFlag(Flag::ENABLE_MAIN)) {
+        function->setDLLStorageClass(llvm::GlobalValue::DLLStorageClassTypes::DLLExportStorageClass);
+    }
+    functions_[&node] = function;
 }
 
 std::string LLVMIRBuilder::qualifiedName(DeclarationNode *node) const {

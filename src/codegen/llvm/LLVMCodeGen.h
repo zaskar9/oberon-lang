@@ -12,6 +12,12 @@
 #include <string>
 #include <filesystem>
 
+// Signal handling only supported on POSIX platforms
+#if !defined(_WIN32) && defined(_WIN64) || defined(__MINGW32__)
+#define TRAP_HANDLING
+#include <unistd.h>
+#endif
+
 #include <boost/predef.h>
 
 #include <llvm/ExecutionEngine/Orc/LLJIT.h>
@@ -25,10 +31,10 @@
 int mingw_noop_main();
 
 void ubsantrap_handler(uint16_t code);
+#if defined(TRAP_HANDLING)
 [[noreturn]] void trap_handler(int, siginfo_t*, void*);
-#if BOOST_ARCH_ARM || BOOST_ARCH_X86
-void register_signal_handler();
 #endif
+void register_signal_handler();
 
 using std::filesystem::path;
 using std::string;
