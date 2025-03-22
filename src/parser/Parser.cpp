@@ -398,8 +398,8 @@ void Parser::var_declarations(vector<unique_ptr<VariableDeclarationNode>> &vars)
 void Parser::procedure_declaration(vector<unique_ptr<ProcedureNode>> &procs) {
     logger_.debug("procedure_declaration");
     token_ = scanner_.next(); // skip PROCEDURE keyword
-    FilePos start = token_->start();
-    auto proc = sema_.onProcedureStart(start, identdef(false));
+    const FilePos start = token_->start();
+    const auto proc = sema_.onProcedureStart(start, identdef(false));
     auto token = scanner_.peek();
     if (token->type() == TokenType::lparen) {
         // parse formal parameters
@@ -412,7 +412,7 @@ void Parser::procedure_declaration(vector<unique_ptr<ProcedureNode>> &procs) {
         if (assertToken(token, TokenType::const_ident)) {
             vector<unique_ptr<ParameterNode>> params;
             auto ident = qualident();
-            auto type = sema_.onTypeReference(ident->start(), ident->end(), std::move(ident));
+            const auto type = sema_.onTypeReference(token->start(), token->end(), std::move(ident));
             proc->setType(sema_.onProcedureType(token->start(), token->end(), std::move(params), false, type));
         }
     } else {
@@ -426,7 +426,7 @@ void Parser::procedure_declaration(vector<unique_ptr<ProcedureNode>> &procs) {
     }
     unique_ptr<Ident> name;
     if (scanner_.peek()->type() == TokenType::kw_extern) {
-        auto ext = scanner_.next(); // skip EXTERN keyword
+        const auto ext = scanner_.next(); // skip EXTERN keyword
         proc->setExtern(true);
         if (!config_.hasFlag(Flag::ENABLE_EXTERN)) {
             logger_.error(ext->start(), "external procedure support disabled [-fenable-extern].");
