@@ -72,6 +72,6 @@ void RecordTypeNode::print(std::ostream &out) const {
     if (this->isAnonymous()) {
         out << "record type";
     } else {
-        out << *this->getIdentifier();
+        out << this->getIdentifier()->name();
     }
 }

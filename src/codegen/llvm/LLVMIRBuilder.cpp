@@ -15,8 +15,8 @@ using std::vector;
 
 LLVMIRBuilder::LLVMIRBuilder(CompilerConfig &config, LLVMContext &builder, Module *module) :
         NodeVisitor(), config_(config), logger_(config_.logger()), builder_(builder), module_(module),
-        value_(), values_(), types_(), typeDopes_(), valueDopes_(), ptrTypes_(), functions_(), strings_(),
-        deref_ctx(), scope_(0), function_(), attrs_(AttrBuilder(builder)) {
+        value_(), values_(), types_(), typeDopes_(), valueDopes_(), ptrTypes_(), recTypeIds_(), recTypeTds_(),
+        functions_(), strings_(), deref_ctx(), scope_(0), function_(), attrs_(AttrBuilder(builder)) {
     attrs_
             .addAttribute(Attribute::NoInline)
             .addAttribute(Attribute::NoUnwind)
@@ -31,6 +31,7 @@ LLVMIRBuilder::LLVMIRBuilder(CompilerConfig &config, LLVMContext &builder, Modul
     }
 #endif
     recordTdTy_ = StructType::create(builder_.getContext(), {builder_.getPtrTy(), builder_.getInt32Ty()});
+    recordTdTy_->setName("record.record_td");
 }
 
 void LLVMIRBuilder::build(ASTContext *ast) {
@@ -538,12 +539,29 @@ void LLVMIRBuilder::trapOutOfBounds(Value *value, Value *lower, Value *upper) {
     installTrap(cond, static_cast<uint8_t>(Trap::OUT_OF_BOUNDS));
 }
 
-void LLVMIRBuilder::trapNILPtr(llvm::Value *value) {
+void LLVMIRBuilder::trapNILPtr(Value *value) {
     Value *cond = builder_.CreateIsNotNull(value);
     installTrap(cond, static_cast<uint8_t>(Trap::NIL_POINTER));
 }
 
-Value *LLVMIRBuilder::createNeg(llvm::Value *value) {
+Value *LLVMIRBuilder::createTypeTest(Value *lhs, ExpressionNode *rhs) {
+    auto decl = dynamic_cast<QualifiedExpression *>(rhs)->dereference();
+    RecordTypeNode* record_t = dynamic_cast<RecordTypeNode *>(decl->getType());
+    Value *td = nullptr;
+    if (!record_t) {
+        auto pointer_t = dynamic_cast<PointerTypeNode *>(decl->getType());
+        record_t = dynamic_cast<RecordTypeNode *>(pointer_t->getBase());
+        td = builder_.CreateInBoundsGEP(ptrTypes_[pointer_t], lhs, {builder_.getInt32(0), builder_.getInt32(0)});
+    }
+    Value *value = builder_.CreateLoad(builder_.getPtrTy(), td);
+    auto tds = builder_.CreateInBoundsGEP(recordTdTy_, value, {builder_.getInt32(0), builder_.getInt32(0)});
+    value = builder_.CreateLoad(builder_.getPtrTy(), tds);
+    auto rid = builder_.CreateInBoundsGEP(builder_.getPtrTy(), value, {builder_.getInt32(record_t->getLevel())});
+    value = builder_.CreateLoad(builder_.getPtrTy(), rid);
+    return builder_.CreateICmpEQ(recTypeIds_[record_t], value);
+}
+
+Value *LLVMIRBuilder::createNeg(Value *value) {
     if (config_.isSanitized(Trap::INT_OVERFLOW)) {
         auto type = dyn_cast<IntegerType>(value->getType());
         return trapIntOverflow(Intrinsic::ssub_with_overflow, ConstantInt::get(type, 0), value);
@@ -670,6 +688,8 @@ void LLVMIRBuilder::visit(BinaryExpressionNode &node) {
         phi->addIncoming(lhs, lhsBB);
         phi->addIncoming(value_, rhsBB);
         value_ = phi;
+    } else if (node.getOperator() == OperatorType::IS) {
+        value_ = createTypeTest(lhs, node.getRightExpression());
     } else if (node.getLeftExpression()->getType()->isSet() || node.getRightExpression()->getType()->isSet()) {
         node.getRightExpression()->accept(*this);
         cast(*node.getRightExpression());
@@ -767,9 +787,10 @@ void LLVMIRBuilder::visit(BinaryExpressionNode &node) {
             case OperatorType::GEQ:
                 value_ = floating ? builder_.CreateFCmpUGE(lhs, rhs) : builder_.CreateICmpSGE(lhs, rhs);
                 break;
+            case OperatorType::IS:
             case OperatorType::AND:
             case OperatorType::OR:
-                // Unreachable code due to the if-branch of this else-branch
+                // Unreachable code due to the if-branch and elsif-branch of this else-branch
                 break;
             case OperatorType::NOT:
             case OperatorType::NEG:
@@ -1511,9 +1532,16 @@ LLVMIRBuilder::createNewCall(TypeNode *type, llvm::Value *param) {
     }
     value_ = builder_.CreateCall(FunctionCallee(fun), values);
     // TODO Remove next line (bit-cast) once non-opaque pointers are no longer supported
-    value_ = builder_.CreateBitCast(value_, getLLVMType(ptr));
-    Value *value = builder_.CreateStore(value_, param);
-    return value;
+    Value *value = builder_.CreateBitCast(value_, getLLVMType(ptr));
+    builder_.CreateStore(value, param);
+    if (base->isRecord()) {
+        // Value *id = builder_.CreateLoad(builder_.getPtrTy(), recTypeTds_[dynamic_cast<RecordTypeNode *>(base)]);
+        Value *id = recTypeTds_[dynamic_cast<RecordTypeNode *>(base)];
+        value = builder_.CreateLoad(builder_.getPtrTy(), param);
+        value = builder_.CreateInBoundsGEP(ptrTypes_[ptr], value, {builder_.getInt32(0), builder_.getInt32(0)});
+        builder_.CreateStore(id, value);
+    }
+    return value_;
 }
 
 Value *
@@ -1629,10 +1657,6 @@ LLVMIRBuilder::createSystemAdrCall(vector<unique_ptr<ExpressionNode>> &actuals, 
                 logger_.error(actual->pos(), "expected array of basic type or CHAR");
                 return value_;
             }
-            // for (size_t i = 0; i < atype->dimensions(); ++i) {
-            //    indices.push_back(builder_.getInt32(1));   // The array is the second field in the struct
-            //    indices.push_back(builder_.getInt32(0));
-            // }
         }
         value_ = builder_.CreateInBoundsGEP(arrayTy, params[0], indices);
     } else if (type->isRecord()) {
@@ -1837,6 +1861,31 @@ Type* LLVMIRBuilder::getLLVMType(TypeNode *type) {
         structTy->setBody(elemTys);
         if (!recordTy->isAnonymous()) {
             structTy->setName("record." + recordTy->getIdentifier()->name());
+            // Create an id for the record type by defining a global int32 variable and using its address.
+            auto id = new GlobalVariable(*module_, builder_.getInt32Ty(), true, GlobalValue::ExternalLinkage,
+                                         Constant::getNullValue(builder_.getInt32Ty()),
+                                         module_->getModuleIdentifier() + "_" + recordTy->getIdentifier()->name() + "_id");
+            id->setAlignment(module_->getDataLayout().getPreferredAlign(id));
+            recTypeIds_[recordTy] = id;
+            // Collect the ids of the record types from which this type is extended.
+            vector<Constant *> typeIds;
+            auto cur = recordTy;
+            while (cur->isExtended()) {
+                typeIds.insert(typeIds.begin(), recTypeIds_[cur]);
+                cur = cur->getBaseType();
+            }
+            typeIds.insert(typeIds.begin(), recTypeIds_[cur]);
+            auto arrayTy = ArrayType::get(builder_.getPtrTy(), typeIds.size());
+            auto ids = new GlobalVariable(*module_, arrayTy, true, GlobalValue::ExternalLinkage,
+                                          ConstantArray::get(arrayTy, typeIds),
+                                          module_->getModuleIdentifier() + "_" + recordTy->getIdentifier()->name() + "_ids");
+            ids->setAlignment(module_->getDataLayout().getPreferredAlign(ids));
+            // Create the type descriptor.
+            auto td = new GlobalVariable(*module_, recordTdTy_, true, GlobalValue::ExternalLinkage,
+                                         ConstantStruct::get(recordTdTy_, {ids, ConstantInt::get(builder_.getInt32Ty(), recordTy->getLevel())}),
+                                         module_->getModuleIdentifier() + "_" + recordTy->getIdentifier()->name() + "_td");
+            td->setAlignment(module_->getDataLayout().getPreferredAlign(td));
+            recTypeTds_[recordTy] = td;
         }
         result = structTy;
     } else if (type->getNodeType() == NodeType::pointer_type) {

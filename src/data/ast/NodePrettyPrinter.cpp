@@ -153,13 +153,11 @@ void NodePrettyPrinter::visit(ImportNode &node) {
 
 void NodePrettyPrinter::visit(QualifiedStatement &node) {
     qualident(node.dereference());
-    // stream_ << *node.ident();
     selectors(node.selectors());
 }
 
 void NodePrettyPrinter::visit(QualifiedExpression &node) {
     qualident(node.dereference());
-    // stream_ << *node.ident();
     selectors(node.selectors());
 }
 

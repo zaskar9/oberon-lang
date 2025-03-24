@@ -45,6 +45,8 @@ private:
     map<ArrayTypeNode*, Value*> typeDopes_;
     map<DeclarationNode*, Value*> valueDopes_;
     map<PointerTypeNode*, StructType*> ptrTypes_;
+    map<RecordTypeNode*, GlobalValue*> recTypeIds_;
+    map<RecordTypeNode*, GlobalValue*> recTypeTds_;
     map<ProcedureNode*, Function*> functions_;
     map<string, Constant*> strings_;
     stack<bool> deref_ctx;
@@ -52,7 +54,7 @@ private:
     Function *function_;
     AttrBuilder attrs_;
     ASTContext *ast_;
-    Type *recordTdTy_;
+    StructType *recordTdTy_;
 
     Type *getLLVMType(TypeNode *type);
     MaybeAlign getLLVMAlign(TypeNode *type);
@@ -86,6 +88,8 @@ private:
     Value *trapIntOverflow(Intrinsic::IndependentIntrinsics, Value*, Value*);
     void trapOutOfBounds(Value *, Value *, Value *);
     void trapNILPtr(Value *);
+
+    Value *createTypeTest(Value *, ExpressionNode *);
 
     Value *createNeg(Value *);
     Value *createAdd(Value *, Value *);

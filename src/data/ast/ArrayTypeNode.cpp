@@ -51,6 +51,6 @@ void ArrayTypeNode::print(std::ostream &out) const {
     if (this->isAnonymous()) {
         out << "array type";
     } else {
-        out << *this->getIdentifier();
+        out << this->getIdentifier()->name();
     }
 }

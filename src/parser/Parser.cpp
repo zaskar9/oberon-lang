@@ -213,6 +213,7 @@ void Parser::declarations(vector<unique_ptr<ConstantDeclarationNode>> & consts,
         procedure_declaration(procs);
     }
     expect({ TokenType::kw_begin, TokenType::kw_end });
+    sema_.onDeclarations();
 }
 
 // TODO const_declaration = identdef "=" const_expression .

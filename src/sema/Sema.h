@@ -43,7 +43,7 @@ private:
     OberonSystem *system_;
 
     Logger &logger_;
-    map<string, PointerTypeNode *> forwards_;
+    vector<pair<unique_ptr<QualIdent>, PointerTypeNode *>> forwards_;
     stack<unique_ptr<ProcedureNode>> procs_;
     SymbolTable *symbols_;
     SymbolImporter importer_;
@@ -151,6 +151,8 @@ public:
 
     unique_ptr<VariableDeclarationNode> onVariable(const FilePos &, const FilePos &,
                                                    unique_ptr<IdentDef>, TypeNode*, int = 0);
+
+    void onDeclarations();
 
     ProcedureNode *onProcedureStart(const FilePos &, unique_ptr<IdentDef>);
     unique_ptr<ProcedureNode> onProcedureEnd(const FilePos &, unique_ptr<Ident>);

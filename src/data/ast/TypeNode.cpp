@@ -133,7 +133,7 @@ bool TypeNode::isBasic() const {
     return isBoolean() || isNumeric() || isSet();
 }
 
-bool TypeNode::extends([[maybe_unused]] TypeNode *base) const {
+bool TypeNode::extends(TypeNode *) const {
     return false;
 }
 
