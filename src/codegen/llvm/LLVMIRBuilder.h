@@ -47,6 +47,7 @@ private:
     map<PointerTypeNode*, StructType*> ptrTypes_;
     map<RecordTypeNode*, GlobalValue*> recTypeIds_;
     map<RecordTypeNode*, GlobalValue*> recTypeTds_;
+    map<DeclarationNode *, Value *> valueTds_;
     map<ProcedureNode*, Function*> functions_;
     map<string, Constant*> strings_;
     stack<bool> deref_ctx;
@@ -65,6 +66,8 @@ private:
     Value *getOpenArrayLength(Value *, ArrayTypeNode *, uint32_t);
     Value *getDopeVector(ExpressionNode *);
 
+    Value *getTypeDescriptor(Value *, QualifiedExpression *, TypeNode *);
+
     string qualifiedName(DeclarationNode *) const;
 
     void setRefMode(bool deref);
@@ -77,19 +80,20 @@ private:
 
     using Selectors = vector<unique_ptr<Selector>>;
     using SelectorIterator = Selectors::iterator;
-    TypeNode *selectors(ExpressionNode *, TypeNode *, SelectorIterator, SelectorIterator);
+    TypeNode *selectors(QualifiedExpression *, TypeNode *, SelectorIterator, SelectorIterator);
     void parameters(ProcedureTypeNode *, ActualParameters *, vector<Value *> &, bool = false);
 
     void installTrap(Value *, unsigned);
-    void trapAssert(Value *);
-    void trapFltDivByZero(Value *);
-    void trapIntDivByZero(Value *);
-    void trapCopyOverflow(Value *, Value *);
-    Value *trapIntOverflow(Intrinsic::IndependentIntrinsics, Value*, Value*);
     void trapOutOfBounds(Value *, Value *, Value *);
+    void trapTypeGuard(Value *);
+    void trapCopyOverflow(Value *, Value *);
     void trapNILPtr(Value *);
+    void trapIntDivByZero(Value *);
+    void trapAssert(Value *);
+    Value *trapIntOverflow(Intrinsic::IndependentIntrinsics, Value*, Value*);
+    void trapFltDivByZero(Value *);
 
-    Value *createTypeTest(Value *, ExpressionNode *);
+    Value *createTypeTest(Value *, TypeNode *);
 
     Value *createNeg(Value *);
     Value *createAdd(Value *, Value *);

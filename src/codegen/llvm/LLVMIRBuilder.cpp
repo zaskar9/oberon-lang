@@ -14,8 +14,8 @@
 using std::vector;
 
 LLVMIRBuilder::LLVMIRBuilder(CompilerConfig &config, LLVMContext &builder, Module *module) :
-        NodeVisitor(), config_(config), logger_(config_.logger()), builder_(builder), module_(module),
-        value_(), values_(), types_(), typeDopes_(), valueDopes_(), ptrTypes_(), recTypeIds_(), recTypeTds_(),
+        NodeVisitor(), config_(config), logger_(config_.logger()), builder_(builder), module_(module), value_(), values_(),
+        types_(), typeDopes_(), valueDopes_(), ptrTypes_(), recTypeIds_(), recTypeTds_(), valueTds_(),
         functions_(), strings_(), deref_ctx(), scope_(0), function_(), attrs_(AttrBuilder(builder)) {
     attrs_
             .addAttribute(Attribute::NoInline)
@@ -124,12 +124,18 @@ void LLVMIRBuilder::visit(ProcedureNode &node) {
         Value *value = builder_.CreateAlloca(type, nullptr, param->getIdentifier()->name());
         builder_.CreateStore(arg, value);
         values_[param.get()] = value;
-        // Handle the parameter containing the "dope vector" of an open array
         if (param->getType()->isArray() && dynamic_cast<ArrayTypeNode*>(param->getType())->isOpen()) {
+            // Handle the parameter containing the dope vector of an open array
             arg = args++;
             value = builder_.CreateAlloca(builder_.getPtrTy(), nullptr, param->getIdentifier()->name() + ".dv");
             builder_.CreateStore(arg, value);
             valueDopes_[param.get()] = value;
+        } else if (param->getType()->isRecord() && param->isVar()) {
+            // Handle the parameter containing the type descriptor of a variable record
+            arg = args++;
+            value = builder_.CreateAlloca(builder_.getPtrTy(), nullptr, param->getIdentifier()->name() + ".td");
+            builder_.CreateStore(arg, value);
+            valueTds_[param.get()] = value;
         }
     }
     // Allocate space for variables
@@ -267,8 +273,23 @@ Value *LLVMIRBuilder::getDopeVector(ExpressionNode *expr) {
     return dopeV;
 }
 
+Value *LLVMIRBuilder::getTypeDescriptor(Value *value, QualifiedExpression *expr, TypeNode *type) {
+    Value *typeD = nullptr;
+    auto decl = expr->dereference();
+    if (type->isPointer()) {
+        auto pointer_t = dynamic_cast<PointerTypeNode *>(type);
+        typeD = builder_.CreateInBoundsGEP(ptrTypes_[pointer_t], value, {builder_.getInt32(0), builder_.getInt32(0)});
+    } else if (decl->getType()->isRecord() && type->isRecord() && type->extends(decl->getType())) {
+        typeD = valueTds_[decl];
+    }
+    if (!typeD) {
+        logger_.error(expr->pos(), "cannot determine type description of expression.");
+    }
+    return typeD;
+}
 
-TypeNode *LLVMIRBuilder::selectors(ExpressionNode *expr, TypeNode *base, SelectorIterator start, SelectorIterator end) {
+
+TypeNode *LLVMIRBuilder::selectors(QualifiedExpression *expr, TypeNode *base, SelectorIterator start, SelectorIterator end) {
     if (!base || base->isVirtual()) {
         return nullptr;
     }
@@ -351,7 +372,15 @@ TypeNode *LLVMIRBuilder::selectors(ExpressionNode *expr, TypeNode *base, Selecto
             base = field->getType();
             baseTy = getLLVMType(base);
         } else if (sel->getNodeType() == NodeType::type) {
-            logger_.error(sel->pos(), "type-guards are not yet supported.");
+            auto guard = dynamic_cast<Typeguard *>(sel);
+            if (config_.isSanitized(Trap::TYPE_GUARD)) {
+                auto val = guard->getType()->isPointer() ? builder_.CreateLoad(builder_.getPtrTy(), value_) : value_;
+                auto td = getTypeDescriptor(val, expr, guard->getType());
+                auto cond = createTypeTest(td, guard->getType());
+                trapTypeGuard(cond);
+            }
+            base = guard->getType();
+            baseTy = getLLVMType(base);
         } else {
             logger_.error(sel->pos(), "unsupported selector.");
         }
@@ -368,39 +397,45 @@ TypeNode *LLVMIRBuilder::selectors(ExpressionNode *expr, TypeNode *base, Selecto
 void
 LLVMIRBuilder::parameters(ProcedureTypeNode *proc, ActualParameters *actuals, vector<llvm::Value *> &values, bool) {
     for (size_t i = 0; i < actuals->parameters().size(); i++) {
-        auto param = actuals->parameters()[i].get();
-        auto type = param->getType();
-        ParameterNode *expected = nullptr;
+        auto actualParam = actuals->parameters()[i].get();
+        auto actualType = actualParam->getType();
+        ParameterNode *formalParam = nullptr;
         if (i < proc->parameters().size()) {
             // Non-variadic argument
-            expected = proc->parameters()[i].get();
-            if (expected->isVar()           // VAR parameter
-                || type->isStructured()     // ARRAY or RECORD
-                || type->isString()) {      // STRING literal parameter
+            formalParam = proc->parameters()[i].get();
+            if (formalParam->isVar()              // VAR parameter
+                || actualType->isStructured()     // ARRAY or RECORD
+                || actualType->isString()) {      // STRING literal parameter
                 setRefMode(false);
             } else {
                 setRefMode(true);
             }
         } else {
             // Variadic argument
-            setRefMode(type->isBasic() || type->isString());
+            setRefMode(actualType->isBasic() || actualType->isString());
         }
-        param->accept(*this);
-        cast(*param);
+        actualParam->accept(*this);
+        cast(*actualParam);
         values.push_back(value_);
         restoreRefMode();
-        // Add a pointer to the dope vector of an open array
-        if (expected && expected->getType()->isArray() && dynamic_cast<ArrayTypeNode*>(expected->getType())->isOpen()) {
-            if (type->isString() && param->isLiteral()) {
-                // Create a "dope vector" on-the-fly for string literals
-                auto str = dynamic_cast<StringLiteralNode *>(param);
-                Value *dopeV = builder_.CreateAlloca(ArrayType::get(builder_.getInt64Ty(), 1));
-                builder_.CreateStore(builder_.getInt64(str->value().size() + 1), dopeV);
-                values.push_back(dopeV);
-            } else {
-                // Lookup the "dope vector" of explicitly defined array types
-                Value *dopeV = getDopeVector(param);
-                values.push_back(dopeV);
+        if (formalParam) {
+            auto formalType = formalParam->getType();
+            if (formalType->isArray() && dynamic_cast<ArrayTypeNode*>(formalType)->isOpen()) {
+                // Add a pointer to the dope vector of an open array
+                if (actualType->isString() && actualParam->isLiteral()) {
+                    // Create a "dope vector" on-the-fly for string literals
+                    auto str = dynamic_cast<StringLiteralNode *>(actualParam);
+                    Value *dopeV = builder_.CreateAlloca(ArrayType::get(builder_.getInt64Ty(), 1));
+                    builder_.CreateStore(builder_.getInt64(str->value().size() + 1), dopeV);
+                    values.push_back(dopeV);
+                } else {
+                    // Lookup the "dope vector" of explicitly defined array types
+                    Value *dopeV = getDopeVector(actualParam);
+                    values.push_back(dopeV);
+                }
+            } else if (formalType->isRecord() && formalParam->isVar()) {
+                // Add a pointer to the type descriptor of the variable record
+                values.push_back(recTypeTds_[dynamic_cast<RecordTypeNode *>(actualType)]);
             }
         }
     }
@@ -490,10 +525,10 @@ void LLVMIRBuilder::visit(RangeLiteralNode &node) {
     value_ = ConstantInt::get(builder_.getInt32Ty(), static_cast<uint32_t>(node.value().to_ulong()));
 }
 
-void LLVMIRBuilder::installTrap(Value *condition, unsigned code) {
+void LLVMIRBuilder::installTrap(Value *cond, unsigned code) {
     auto tail = BasicBlock::Create(builder_.getContext(), "tail", function_);
     auto trap = BasicBlock::Create(builder_.getContext(), "trap", function_);
-    builder_.CreateCondBr(condition, tail, trap);
+    builder_.CreateCondBr(cond, tail, trap);
     builder_.SetInsertPoint(trap);
     Function *fun = Intrinsic::getDeclaration(module_, Intrinsic::ubsantrap);
     builder_.CreateCall(fun, {builder_.getInt8(code)});
@@ -501,13 +536,26 @@ void LLVMIRBuilder::installTrap(Value *condition, unsigned code) {
     builder_.SetInsertPoint(tail);
 }
 
-void LLVMIRBuilder::trapAssert(llvm::Value *cond) {
-    installTrap(cond, static_cast<uint8_t>(Trap::ASSERT));
+void LLVMIRBuilder::trapOutOfBounds(Value *value, Value *lower, Value *upper) {
+    Value *lowerLT = builder_.CreateICmpSGE(value, lower);
+    Value *upperGE = builder_.CreateICmpSLT(value, upper);
+    Value *cond = builder_.CreateAnd(lowerLT, upperGE);
+    installTrap(cond, static_cast<uint8_t>(Trap::OUT_OF_BOUNDS));
 }
 
-void LLVMIRBuilder::trapFltDivByZero(Value *divisor) {
-    auto cond = builder_.CreateFCmpUNE(divisor, ConstantFP::get(divisor->getType(), 0));
-    installTrap(cond, static_cast<uint8_t>(Trap::FLT_DIVISION));
+void LLVMIRBuilder::trapTypeGuard(Value *cond) {
+    // auto value = builder_.CreateNot(cond);
+    installTrap(cond, static_cast<uint8_t>(Trap::TYPE_GUARD));
+}
+
+void LLVMIRBuilder::trapCopyOverflow(Value *lsize, Value *rsize) {
+    auto cond = builder_.CreateICmpUGE(lsize, rsize);
+    installTrap(cond, static_cast<uint8_t>(Trap::COPY_OVERFLOW));
+}
+
+void LLVMIRBuilder::trapNILPtr(Value *value) {
+    Value *cond = builder_.CreateIsNotNull(value);
+    installTrap(cond, static_cast<uint8_t>(Trap::NIL_POINTER));
 }
 
 void LLVMIRBuilder::trapIntDivByZero(Value *divisor) {
@@ -516,9 +564,8 @@ void LLVMIRBuilder::trapIntDivByZero(Value *divisor) {
     installTrap(cond, static_cast<uint8_t>(Trap::INT_DIVISION));
 }
 
-void LLVMIRBuilder::trapCopyOverflow(Value *lsize, Value *rsize) {
-    auto cond = builder_.CreateICmpUGE(lsize, rsize);
-    installTrap(cond, static_cast<uint8_t>(Trap::COPY_OVERFLOW));
+void LLVMIRBuilder::trapAssert(llvm::Value *cond) {
+    installTrap(cond, static_cast<uint8_t>(Trap::ASSERT));
 }
 
 Value *LLVMIRBuilder::trapIntOverflow(Intrinsic::IndependentIntrinsics intrinsic, Value *lhs, Value *rhs) {
@@ -532,26 +579,16 @@ Value *LLVMIRBuilder::trapIntOverflow(Intrinsic::IndependentIntrinsics intrinsic
     return result;
 }
 
-void LLVMIRBuilder::trapOutOfBounds(Value *value, Value *lower, Value *upper) {
-    Value *lowerLT = builder_.CreateICmpSGE(value, lower);
-    Value *upperGE = builder_.CreateICmpSLT(value, upper);
-    Value *cond = builder_.CreateAnd(lowerLT, upperGE);
-    installTrap(cond, static_cast<uint8_t>(Trap::OUT_OF_BOUNDS));
+void LLVMIRBuilder::trapFltDivByZero(Value *divisor) {
+    auto cond = builder_.CreateFCmpUNE(divisor, ConstantFP::get(divisor->getType(), 0));
+    installTrap(cond, static_cast<uint8_t>(Trap::FLT_DIVISION));
 }
 
-void LLVMIRBuilder::trapNILPtr(Value *value) {
-    Value *cond = builder_.CreateIsNotNull(value);
-    installTrap(cond, static_cast<uint8_t>(Trap::NIL_POINTER));
-}
-
-Value *LLVMIRBuilder::createTypeTest(Value *lhs, ExpressionNode *rhs) {
-    auto decl = dynamic_cast<QualifiedExpression *>(rhs)->dereference();
-    RecordTypeNode* record_t = dynamic_cast<RecordTypeNode *>(decl->getType());
-    Value *td = nullptr;
+Value *LLVMIRBuilder::createTypeTest(Value *td, TypeNode *type) {
+    RecordTypeNode *record_t = dynamic_cast<RecordTypeNode *>(type);
     if (!record_t) {
-        auto pointer_t = dynamic_cast<PointerTypeNode *>(decl->getType());
+        auto pointer_t = dynamic_cast<PointerTypeNode *>(type);
         record_t = dynamic_cast<RecordTypeNode *>(pointer_t->getBase());
-        td = builder_.CreateInBoundsGEP(ptrTypes_[pointer_t], lhs, {builder_.getInt32(0), builder_.getInt32(0)});
     }
     Value *value = builder_.CreateLoad(builder_.getPtrTy(), td);
     auto tds = builder_.CreateInBoundsGEP(recordTdTy_, value, {builder_.getInt32(0), builder_.getInt32(0)});
@@ -689,7 +726,11 @@ void LLVMIRBuilder::visit(BinaryExpressionNode &node) {
         phi->addIncoming(value_, rhsBB);
         value_ = phi;
     } else if (node.getOperator() == OperatorType::IS) {
-        value_ = createTypeTest(lhs, node.getRightExpression());
+        auto lExpr = dynamic_cast<QualifiedExpression *>(node.getLeftExpression());
+        auto rExpr = dynamic_cast<QualifiedExpression *>(node.getRightExpression());
+        auto type = rExpr->dereference()->getType();
+        auto td = getTypeDescriptor(lhs, lExpr, type);
+        value_ = createTypeTest(td, type);
     } else if (node.getLeftExpression()->getType()->isSet() || node.getRightExpression()->getType()->isSet()) {
         node.getRightExpression()->accept(*this);
         cast(*node.getRightExpression());
@@ -1790,8 +1831,9 @@ void LLVMIRBuilder::procedure(ProcedureNode &node) {
         auto type = param->getType();
         auto param_t = getLLVMType(type);
         params.push_back(param->isVar() || type->isStructured() ? param_t->getPointerTo() : param_t);
-        // Add a parameter for the "dope vector" in case of an open array
-        if (type->isArray() && dynamic_cast<ArrayTypeNode*>(type)->isOpen()) {
+        // Add a parameter for the "dope vector" in case of an open array parameter
+        // or for the type descriptor in case of a variable record parameter
+        if ((type->isArray() && dynamic_cast<ArrayTypeNode*>(type)->isOpen()) || (type->isRecord() && param->isVar())) {
             params.push_back(builder_.getPtrTy());
         }
     }

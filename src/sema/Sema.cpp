@@ -1036,13 +1036,12 @@ FieldNode *Sema::onRecordField(TypeNode *base, RecordField *sel) {
         return nullptr;
     }
     auto record = dynamic_cast<RecordTypeNode *>(base);
-    auto ref = dynamic_cast<RecordField *>(sel);
-    auto field = record->getField(ref->ident()->name());
+    auto field = record->getField(sel->ident()->name());
     if (!field) {
-        logger_.error(ref->pos(), "undefined record field: " + to_string(*ref->ident()) + ".");
+        logger_.error(sel->pos(), "undefined record field: " + to_string(*sel->ident()) + ".");
         return nullptr;
     } else {
-        ref->setField(field);
+        sel->setField(field);
         return field;
     }
 }
@@ -1066,6 +1065,7 @@ TypeNode *Sema::onTypeguard(DeclarationNode *sym, [[maybe_unused]] TypeNode *bas
                 } else {
                     logger_.error(start, "type mismatch: record type or pointer to record type expected.");
                 }
+                sel->setType(guard);
                 return guard;
             } else {
                 logger_.error(start, "unexpected selector.");
