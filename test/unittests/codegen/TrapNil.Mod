@@ -1,3 +1,7 @@
+(*
+  RUN: %oberon -I "%S%{pathsep}%inc" -L "%S%{pathsep}%lib" -l oberon --run %s
+  XFAIL: *
+*)
 MODULE TrapNil;
 IMPORT Out;
 

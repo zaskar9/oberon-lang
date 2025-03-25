@@ -1,7 +1,7 @@
 import lit.formats
 config.name = "Oberon"
 config.test_format = lit.formats.ShTest(True)
-config.suffixes = ['.mod']
+config.suffixes = ['.mod', '.Mod']
 config.excludes = ['tmp', 'lib', 'include']
 config.llvm_src_root = r"@CMAKE_CURRENT_SOURCE_DIR@"
 config.llvm_obj_root = r"@CMAKE_CURRENT_BINARY_DIR@"

@@ -595,7 +595,8 @@ Value *LLVMIRBuilder::createTypeTest(Value *td, TypeNode *type) {
     value = builder_.CreateLoad(builder_.getPtrTy(), tds);
     auto rid = builder_.CreateInBoundsGEP(builder_.getPtrTy(), value, {builder_.getInt32(record_t->getLevel())});
     value = builder_.CreateLoad(builder_.getPtrTy(), rid);
-    return builder_.CreateICmpEQ(recTypeIds_[record_t], value);
+    auto tid = recTypeIds_[record_t];
+    return builder_.CreateICmpEQ(tid /* recTypeIds_[record_t] */, value);
 }
 
 Value *LLVMIRBuilder::createNeg(Value *value) {

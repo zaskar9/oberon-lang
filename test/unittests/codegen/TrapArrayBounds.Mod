@@ -1,3 +1,7 @@
+(*
+  RUN: %oberon --run %s
+  XFAIL: *
+*)
 MODULE TrapArrayBounds;
 
 VAR a: ARRAY 3 OF INTEGER;
