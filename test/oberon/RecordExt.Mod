@@ -25,12 +25,16 @@ TYPE
         centre: Point3D;
         radius: REAL
     END;
+    ShapeList = ARRAY 10 OF Shape;
+    ShapeRecord = RECORD a, b, c, e: INTEGER; s: Shape END;
 
 VAR o: Object;
     s: Shape;
     c: Circle;
     p: Sphere;
     cd: CircleDesc;
+    sl: ShapeList;
+    sr: ShapeRecord;
 
 PROCEDURE PrintPoint2D(p: Point2D);
 BEGIN
@@ -40,8 +44,8 @@ END PrintPoint2D;
 PROCEDURE PrintCircle(cd: CircleDesc);
 BEGIN
     Out.String("{ centre: "); PrintPoint2D(cd.centre);
-    Out.String(", radius: "); Out.Real(cd.radius, 0);
-    Out.String(", area: "); Out.Real(cd.area, 0); Out.String(" }")
+    Out.String(", radius: "); Out.Real(cd.radius, 13);
+    Out.String(", area: "); Out.Real(cd.area, 13); Out.String(" }")
 END PrintCircle;
 
 PROCEDURE PrintShapeDesc(VAR sd: ShapeDesc);
@@ -82,7 +86,7 @@ BEGIN
     RETURN Math.pi * radius * radius
 END CircleArea;
 
-PROCEDURE Test();
+(* PROCEDURE Test();
     TYPE Object = POINTER TO ObjectDesc;
          ObjectDesc = RECORD id: INTEGER END;
          Element = POINTER TO ElementDesc;
@@ -96,7 +100,7 @@ BEGIN
     o := e;
     ASSERT(o IS Element);
     DISPOSE(e)
-END Test;
+END Test; *)
 
 BEGIN
     cd.centre.x := 1;
@@ -120,7 +124,16 @@ BEGIN
     ASSERT(o IS Shape);
     ASSERT(o IS Circle);
     ASSERT(~(o IS Sphere));
-    DISPOSE(c);
-    Test();
+    sl[5] := c;
+    ASSERT(sl[5] IS Circle);
+    IF sl[5] IS Circle THEN PrintCircle(sl[5](Circle)^); Out.Ln END;
+    sr.s := c;
+    ASSERT(sr.s IS Circle);
+    IF sr.s IS Circle THEN PrintCircle(sr.s(Circle)^); Out.Ln END;
+    (* DISPOSE(c); *)
+    (* Test(); *)
+    o := NIL;
+    (* Out.Real(o(Shape).area, 12); Out.Ln; *)
+    ASSERT(o IS Shape);
     Out.String("All assertions passed."); Out.Ln
 END RecordExt.

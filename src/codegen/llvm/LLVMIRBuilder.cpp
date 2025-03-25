@@ -288,7 +288,6 @@ Value *LLVMIRBuilder::getTypeDescriptor(Value *value, QualifiedExpression *expr,
     return typeD;
 }
 
-
 TypeNode *LLVMIRBuilder::selectors(QualifiedExpression *expr, TypeNode *base, SelectorIterator start, SelectorIterator end) {
     if (!base || base->isVirtual()) {
         return nullptr;
@@ -374,9 +373,14 @@ TypeNode *LLVMIRBuilder::selectors(QualifiedExpression *expr, TypeNode *base, Se
         } else if (sel->getNodeType() == NodeType::type) {
             auto guard = dynamic_cast<Typeguard *>(sel);
             if (config_.isSanitized(Trap::TYPE_GUARD)) {
-                auto val = guard->getType()->isPointer() ? builder_.CreateLoad(builder_.getPtrTy(), value_) : value_;
-                auto td = getTypeDescriptor(val, expr, guard->getType());
-                auto cond = createTypeTest(td, guard->getType());
+                auto guard_t = guard->getType();
+                auto tmp = value;
+                if (guard_t->isPointer()) {
+                    value = processGEP(baseTy, value, indices);
+                    tmp = builder_.CreateLoad(builder_.getPtrTy(), value);
+                }
+                // auto td = getTypeDescriptor(tmp, expr, guard->getType());
+                auto cond = createTypeTest(tmp, expr, guard_t);
                 trapTypeGuard(cond);
             }
             base = guard->getType();
@@ -590,13 +594,51 @@ Value *LLVMIRBuilder::createTypeTest(Value *td, TypeNode *type) {
         auto pointer_t = dynamic_cast<PointerTypeNode *>(type);
         record_t = dynamic_cast<RecordTypeNode *>(pointer_t->getBase());
     }
+    Value *level = builder_.getInt32(record_t->getLevel());
     Value *value = builder_.CreateLoad(builder_.getPtrTy(), td);
+    auto len = builder_.CreateInBoundsGEP(recordTdTy_, value, {builder_.getInt32(0), builder_.getInt32(1)});
+    len = builder_.CreateLoad(builder_.getInt32Ty(), len);
+    auto cond = builder_.CreateICmpULE(level, len);
+    auto cur = builder_.GetInsertBlock();
+    auto test = BasicBlock::Create(builder_.getContext(), "test", function_);
+    auto skip = BasicBlock::Create(builder_.getContext(), "skip", function_);
+    builder_.CreateCondBr(cond, test, skip);
+    builder_.SetInsertPoint(test);
     auto tds = builder_.CreateInBoundsGEP(recordTdTy_, value, {builder_.getInt32(0), builder_.getInt32(0)});
     value = builder_.CreateLoad(builder_.getPtrTy(), tds);
-    auto rid = builder_.CreateInBoundsGEP(builder_.getPtrTy(), value, {builder_.getInt32(record_t->getLevel())});
+    auto rid = builder_.CreateInBoundsGEP(builder_.getPtrTy(), value, {level});
     value = builder_.CreateLoad(builder_.getPtrTy(), rid);
-    auto tid = recTypeIds_[record_t];
-    return builder_.CreateICmpEQ(tid /* recTypeIds_[record_t] */, value);
+    cond = builder_.CreateICmpEQ(recTypeIds_[record_t], value);
+    builder_.CreateBr(skip);
+    builder_.SetInsertPoint(skip);
+    auto phi = builder_.CreatePHI(builder_.getInt1Ty(), 2);
+    phi->addIncoming(builder_.getFalse(), cur);
+    phi->addIncoming(cond, test);
+    return phi;
+}
+
+Value *LLVMIRBuilder::createTypeTest(Value *value, QualifiedExpression *expr, TypeNode *type) {
+    auto prv = builder_.GetInsertBlock();
+    BasicBlock *test, *skip = nullptr;
+    if (type->isPointer()) {
+        auto nil = builder_.CreateIsNotNull(value);
+        test = BasicBlock::Create(builder_.getContext(), "test", function_);
+        skip = BasicBlock::Create(builder_.getContext(), "skip", function_);
+        builder_.CreateCondBr(nil, test, skip);
+        builder_.SetInsertPoint(test);
+    }
+    auto td = getTypeDescriptor(value, expr, type);
+    auto res = createTypeTest(td, type);
+    if (skip) {
+        auto cur= builder_.GetInsertBlock();
+        builder_.CreateBr(skip);
+        builder_.SetInsertPoint(skip);
+        auto phi = builder_.CreatePHI(builder_.getInt1Ty(), 2);
+        phi->addIncoming(res, cur);
+        phi->addIncoming(builder_.getFalse(), prv);
+        return phi;
+    }
+    return res;
 }
 
 Value *LLVMIRBuilder::createNeg(Value *value) {
@@ -730,8 +772,8 @@ void LLVMIRBuilder::visit(BinaryExpressionNode &node) {
         auto lExpr = dynamic_cast<QualifiedExpression *>(node.getLeftExpression());
         auto rExpr = dynamic_cast<QualifiedExpression *>(node.getRightExpression());
         auto type = rExpr->dereference()->getType();
-        auto td = getTypeDescriptor(lhs, lExpr, type);
-        value_ = createTypeTest(td, type);
+        // auto td = getTypeDescriptor(lhs, lExpr, type);
+        value_ = createTypeTest(lhs, lExpr, type);
     } else if (node.getLeftExpression()->getType()->isSet() || node.getRightExpression()->getType()->isSet()) {
         node.getRightExpression()->accept(*this);
         cast(*node.getRightExpression());

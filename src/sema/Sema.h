@@ -113,11 +113,11 @@ private:
                                               TypeNode*, Selectors &, SelectorIterator &);
     void handleRepeatedIndices(const FilePos &, const FilePos &, Selectors &);
     TypeNode *onSelectors(const FilePos &, const FilePos &, DeclarationNode *, TypeNode*, Selectors &);
-    TypeNode *onActualParameters(DeclarationNode*, TypeNode*, ActualParameters*);
-    TypeNode *onArrayIndex(TypeNode*, ArrayIndex*);
-    TypeNode *onDereference(TypeNode*, Dereference*);
-    FieldNode *onRecordField(TypeNode*, RecordField*);
-    TypeNode *onTypeguard(DeclarationNode*, TypeNode*, Typeguard*);
+    TypeNode *onActualParameters(DeclarationNode *, TypeNode *, ActualParameters *);
+    TypeNode *onArrayIndex(TypeNode *, ArrayIndex *);
+    TypeNode *onDereference(TypeNode *, Dereference *);
+    FieldNode *onRecordField(TypeNode *, RecordField *);
+    TypeNode *onTypeguard(DeclarationNode *, TypeNode *, Typeguard *);
 
 public:
     Sema(CompilerConfig &, ASTContext *, OberonSystem *);

@@ -1046,12 +1046,12 @@ FieldNode *Sema::onRecordField(TypeNode *base, RecordField *sel) {
     }
 }
 
-TypeNode *Sema::onTypeguard(DeclarationNode *sym, [[maybe_unused]] TypeNode *base, Typeguard *sel) {
+TypeNode *Sema::onTypeguard(DeclarationNode *sym, TypeNode *base, Typeguard *sel) {
     FilePos start = sel->ident()->start();
     auto decl = symbols_->lookup(sel->ident());
     if (decl) {
         // O07.8.1: in v(T), v is a variable parameter of record type, or v is a pointer.
-        auto actual = sym->getType();
+        auto actual = base->isPointer() ? base : sym->getType();
         if (actual->isPointer() || (actual->isRecord() &&
                                     sym->getNodeType() == NodeType::parameter &&
                                     dynamic_cast<ParameterNode *>(sym)->isVar())) {
@@ -1061,6 +1061,8 @@ TypeNode *Sema::onTypeguard(DeclarationNode *sym, [[maybe_unused]] TypeNode *bas
                     if (!guard->extends(actual)) {
                         logger_.error(start, "type mismatch: " + format(guard) + " is not an extension of "
                                              + format(actual) + ".");
+                    } else if (actual->extends(guard)) {
+                        logger_.warning(start, "type guard is always true.");
                     }
                 } else {
                     logger_.error(start, "type mismatch: record type or pointer to record type expected.");
@@ -1209,7 +1211,7 @@ Sema::onBinaryExpression(const FilePos &start, const FilePos &end,
                                              dynamic_cast<ParameterNode *>(lhsDecl)->isVar())) {
                     if (type->isPointer() || type->isRecord()) {
                         if (lhsType->extends(type)) {
-                            logger_.warning(start, "conditions is always true.");
+                            logger_.warning(start, "condition is always true.");
                         } else if (!type->extends(lhsType)) {
                             logger_.error(rhs->pos(), "type mismatch: " + format(type) + " is not an extension of " +
                                                       format(lhsType) + ".");
