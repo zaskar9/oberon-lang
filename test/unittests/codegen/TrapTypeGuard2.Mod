@@ -4,10 +4,10 @@
 *)
 MODULE TrapTypeGuard2;
 
-TYPE R0 = RECORD END;
-     R1 = RECORD (R0) v: INTEGER END;
-     P0 = POINTER TO R0;
+TYPE P0 = POINTER TO R0;
+     R0 = RECORD END;
      P1 = POINTER TO R1;
+     R1 = RECORD (R0) v: INTEGER END;
 
 VAR p: P0;
 

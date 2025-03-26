@@ -7,16 +7,17 @@
 #include "LLVMIRBuilder.h"
 
 #include <limits>
-#include <csignal>
+#include <sstream>
 #include <vector>
 #include <llvm/IR/Verifier.h>
 
+using std::ostringstream;
 using std::vector;
 
 LLVMIRBuilder::LLVMIRBuilder(CompilerConfig &config, LLVMContext &builder, Module *module) :
         NodeVisitor(), config_(config), logger_(config_.logger()), builder_(builder), module_(module), value_(), values_(),
         types_(), typeDopes_(), valueDopes_(), ptrTypes_(), recTypeIds_(), recTypeTds_(), valueTds_(),
-        functions_(), strings_(), deref_ctx(), scope_(0), function_(), attrs_(AttrBuilder(builder)) {
+        functions_(), strings_(), deref_ctx(), scope_(0), scopes_(), function_(), attrs_(AttrBuilder(builder)) {
     attrs_
             .addAttribute(Attribute::NoInline)
             .addAttribute(Attribute::NoUnwind)
@@ -110,8 +111,14 @@ void LLVMIRBuilder::visit(ProcedureNode &node) {
     if (node.isExtern() || node.isImported()) {
         return;
     }
+    string name = node.getIdentifier()->name();
+    scopes_.push_back(name);
     if (node.getProcedureCount() > 0) {
-        logger_.error(node.pos(), "found unsupported nested procedures in " + to_string(node.getIdentifier()) + ".");
+        logger_.error(node.pos(), "found unsupported nested procedures in " + name + ".");
+    }
+    // Generate type declarations and cache corresponding LLVM types
+    for (size_t i = 0; i < node.getTypeDeclarationCount(); ++i) {
+        node.getTypeDeclaration(i)->accept(*this);
     }
     function_ = functions_[&node];
     function_->addFnAttrs(attrs_);
@@ -166,6 +173,7 @@ void LLVMIRBuilder::visit(ProcedureNode &node) {
         }
     }
     verifyFunction(*function_, &errs());
+    scopes_.pop_back();
 }
 
 void LLVMIRBuilder::visit(ImportNode &node) {
@@ -927,7 +935,10 @@ void LLVMIRBuilder::visit(SetExpressionNode &node) {
 }
 
 void LLVMIRBuilder::visit(TypeDeclarationNode &node) {
-    node.getType()->accept(*this);
+    string name = node.getIdentifier()->name();
+    scopes_.push_back(name);
+    getLLVMType(node.getType());
+    scopes_.pop_back();
 }
 
 void LLVMIRBuilder::visit(ArrayTypeNode &node) {
@@ -982,6 +993,8 @@ void LLVMIRBuilder::visit(ProcedureTypeNode &node) {
 void LLVMIRBuilder::visit(RecordTypeNode &node) {
     // Create an empty struct and add it to the lookup table immediately to support recursive records
     auto structTy = StructType::create(builder_.getContext());
+    string name = createScopedName(&node);
+    structTy->setName("record." + name);
     types_[&node] = structTy;
     vector<Type *> elemTys;
     // Add field for base record
@@ -994,50 +1007,45 @@ void LLVMIRBuilder::visit(RecordTypeNode &node) {
         elemTys.push_back(getLLVMType(fieldTy));
     }
     structTy->setBody(elemTys);
-    if (!node.isAnonymous()) {
-        structTy->setName("record." + node.getIdentifier()->name());
-        // Create an id for the record type by defining a global int32 variable and using its address
-        auto id = new GlobalVariable(*module_, builder_.getInt32Ty(), true, GlobalValue::ExternalLinkage,
-                                     Constant::getNullValue(builder_.getInt32Ty()),
-                                     module_->getModuleIdentifier() + "_" + node.getIdentifier()->name() + "_id");
-        id->setAlignment(module_->getDataLayout().getPreferredAlign(id));
-        recTypeIds_[&node] = id;
-        // Collect the ids of the record types from which this type is extended
-        vector<Constant *> typeIds;
-        auto cur = &node;
-        while (cur->isExtended()) {
-            typeIds.insert(typeIds.begin(), recTypeIds_[cur]);
-            cur = cur->getBaseType();
-        }
+    name = module_->getModuleIdentifier() + "__" + name;
+    // Create an id for the record type by defining a global int32 variable and using its address
+    auto id = new GlobalVariable(*module_, builder_.getInt32Ty(), true, GlobalValue::ExternalLinkage,
+                                 Constant::getNullValue(builder_.getInt32Ty()), name + "_id");
+    id->setAlignment(module_->getDataLayout().getPreferredAlign(id));
+    recTypeIds_[&node] = id;
+    // Collect the ids of the record types from which this type is extended
+    vector<Constant *> typeIds;
+    auto cur = &node;
+    while (cur->isExtended()) {
         typeIds.insert(typeIds.begin(), recTypeIds_[cur]);
-        auto idsType = ArrayType::get(builder_.getPtrTy(), typeIds.size());
-        auto ids = new GlobalVariable(*module_, idsType, true, GlobalValue::ExternalLinkage,
-                                      ConstantArray::get(idsType, typeIds),
-                                      module_->getModuleIdentifier() + "_" + node.getIdentifier()->name() + "_ids");
-        ids->setAlignment(module_->getDataLayout().getPreferredAlign(ids));
-        // Create the type descriptor
-        auto td = new GlobalVariable(*module_, recordTdTy_, true, GlobalValue::ExternalLinkage,
-                                     ConstantStruct::get(recordTdTy_, {ids, ConstantInt::get(builder_.getInt32Ty(), node.getLevel())}),
-                                     module_->getModuleIdentifier() + "_" + node.getIdentifier()->name() + "_td");
-        td->setAlignment(module_->getDataLayout().getPreferredAlign(td));
-        recTypeTds_[&node] = td;
+        cur = cur->getBaseType();
     }
+    typeIds.insert(typeIds.begin(), recTypeIds_[cur]);
+    auto idsType = ArrayType::get(builder_.getPtrTy(), typeIds.size());
+    auto ids = new GlobalVariable(*module_, idsType, true, GlobalValue::ExternalLinkage,
+                                  ConstantArray::get(idsType, typeIds), name + "_ids");
+    ids->setAlignment(module_->getDataLayout().getPreferredAlign(ids));
+    // Create the type descriptor
+    auto td = new GlobalVariable(*module_, recordTdTy_, true, GlobalValue::ExternalLinkage,
+                                 ConstantStruct::get(recordTdTy_, {ids, ConstantInt::get(builder_.getInt32Ty(), node.getLevel())}),
+                                 name + "_td");
+    td->setAlignment(module_->getDataLayout().getPreferredAlign(td));
+    recTypeTds_[&node] = td;
 }
 
 void LLVMIRBuilder::visit(PointerTypeNode &node) {
     auto base = node.getBase();
+    auto type = getLLVMType(base);
     if (base->isRecord()) {
         auto ptrType = ptrTypes_[&node];
         if (!ptrType) {
-            ptrType = StructType::create(builder_.getContext(), {builder_.getPtrTy(), getLLVMType(base)});
-            if (!node.isAnonymous()) {
-                ptrType->setName("record." + to_string(*node.getIdentifier()) + ".ptr");
-            }
+            ptrType = StructType::create(builder_.getContext(), {builder_.getPtrTy(), type});
+            ptrType->setName("record." + createScopedName(&node) + ".ptr");
             ptrTypes_[&node] = ptrType;
         }
         types_[&node] = PointerType::get(ptrType, 0);
     } else {
-        types_[&node] = PointerType::get(getLLVMType(base), 0);
+        types_[&node] = PointerType::get(type, 0);
     }
 }
 
@@ -1992,7 +2000,7 @@ void LLVMIRBuilder::procedure(ProcedureNode &node) {
     functions_[&node] = dyn_cast<Function>(callee.getCallee());
 }
 
-std::string LLVMIRBuilder::qualifiedName(DeclarationNode *node) const {
+string LLVMIRBuilder::qualifiedName(DeclarationNode *node) const {
     if (node->getNodeType() == NodeType::procedure) {
         auto proc = dynamic_cast<ProcedureNode *>(node);
         if ((proc->isExtern() || proc->isImported()) && node->getModule() == ast_->getTranslationUnit()) {
@@ -2000,6 +2008,20 @@ std::string LLVMIRBuilder::qualifiedName(DeclarationNode *node) const {
         }
     }
     return node->getModule()->getIdentifier()->name() + "_" + node->getIdentifier()->name();
+}
+
+string LLVMIRBuilder::createScopedName(TypeNode *type) const {
+    if (scopes_.size() == 1 && !type->isAnonymous()) {
+        return type->getIdentifier()->name();
+    }
+    size_t end = type->isAnonymous() ? scopes_.size() : scopes_.size() - 1;
+    ostringstream oss;
+    string sep = "";
+    for (size_t i = 0; i < end; ++i) {
+        oss << sep << scopes_[i];
+        sep = "_";
+    }
+    return type->isAnonymous() ? oss.str() : oss.str() + "_" + type->getIdentifier()->name();
 }
 
 Value *LLVMIRBuilder::processGEP(Type *base, Value *value, vector<Value *> &indices) {

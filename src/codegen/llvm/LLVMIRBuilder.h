@@ -52,6 +52,7 @@ private:
     map<string, Constant*> strings_;
     stack<bool> deref_ctx;
     unsigned int scope_;
+    vector<string> scopes_;
     Function *function_;
     AttrBuilder attrs_;
     ASTContext *ast_;
@@ -69,6 +70,7 @@ private:
     Value *getTypeDescriptor(Value *, QualifiedExpression *, TypeNode *);
 
     string qualifiedName(DeclarationNode *) const;
+    string createScopedName(TypeNode *) const;
 
     void setRefMode(bool deref);
     void restoreRefMode();

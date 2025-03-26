@@ -2,8 +2,8 @@ MODULE RecordExt;
 IMPORT Out, Math;
 
 TYPE
-    Object = POINTER TO ObjectDesc;
     ObjectDesc = RECORD END;
+    Object = POINTER TO ObjectDesc;
     Point2D* = RECORD (ObjectDesc)
         x*, y*: INTEGER
     END;
@@ -53,7 +53,7 @@ BEGIN
     IF sd IS SphereDesc THEN
         Out.String("SphereDesc")
     ELSIF sd IS CircleDesc THEN
-        Out.String("CircleDesc"); PrintCircle(sd(CircleDesc)) (* Out.Int(sd(SphereDesc).centre.x, 0) *)
+        Out.String("CircleDesc"); PrintCircle(sd(CircleDesc))
     ELSE
         Out.String("ShapeDesc")
     END
@@ -64,7 +64,7 @@ BEGIN
     IF s IS Sphere THEN
         Out.String("Sphere")
     ELSIF s IS Circle THEN
-        Out.String("Circle"); PrintCircle(s(Circle)^) (* Out.Int(s(Sphere).centre.x, 0) *)
+        Out.String("Circle"); PrintCircle(s(Circle)^)
     ELSE
         Out.String("Shape")
     END
@@ -86,7 +86,7 @@ BEGIN
     RETURN Math.pi * radius * radius
 END CircleArea;
 
-(* PROCEDURE Test();
+PROCEDURE Test();
     TYPE Object = POINTER TO ObjectDesc;
          ObjectDesc = RECORD id: INTEGER END;
          Element = POINTER TO ElementDesc;
@@ -100,7 +100,7 @@ BEGIN
     o := e;
     ASSERT(o IS Element);
     DISPOSE(e)
-END Test; *)
+END Test;
 
 BEGIN
     cd.centre.x := 1;
@@ -130,10 +130,11 @@ BEGIN
     sr.s := c;
     ASSERT(sr.s IS Circle);
     IF sr.s IS Circle THEN PrintCircle(sr.s(Circle)^); Out.Ln END;
-    (* DISPOSE(c); *)
-    (* Test(); *)
-    o := NIL;
-    (* Out.Real(o(Shape).area, 12); Out.Ln; *)
-    ASSERT(o IS Shape);
+    DISPOSE(c);
+    Test();
+    NEW(o);
+    ASSERT(o IS Object);
+    DISPOSE(o);
+    ASSERT(~(o IS Object));
     Out.String("All assertions passed."); Out.Ln
 END RecordExt.
