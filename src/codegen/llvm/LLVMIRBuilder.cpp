@@ -41,9 +41,13 @@ void LLVMIRBuilder::build(ASTContext *ast) {
 
 void LLVMIRBuilder::visit(ModuleNode &node) {
     module_->setModuleIdentifier(node.getIdentifier()->name());
+    // Generate type declarations and cache corresponding LLVM types
+    for (size_t i = 0; i < node.getTypeDeclarationCount(); ++i) {
+        node.getTypeDeclaration(i)->accept(*this);
+    }
     // Allocate global variables
     string prefix = node.getIdentifier()->name() + "_";
-    for (size_t i = 0; i < node.getVariableCount(); i++) {
+    for (size_t i = 0; i < node.getVariableCount(); ++i) {
         auto variable = node.getVariable(i);
         auto type = getLLVMType(variable->getType());
         bool expo = variable->getIdentifier()->isExported();
@@ -55,15 +59,15 @@ void LLVMIRBuilder::visit(ModuleNode &node) {
         values_[variable] = value;
     }
     // Generate external procedure signatures
-    for (size_t i = 0; i < ast_->getExternalProcedureCount(); i++) {
+    for (size_t i = 0; i < ast_->getExternalProcedureCount(); ++i) {
         procedure(*ast_->getExternalProcedure(i));
     }
     // Generate procedure signatures
-    for (size_t i = 0; i < node.getProcedureCount(); i++) {
+    for (size_t i = 0; i < node.getProcedureCount(); ++i) {
         procedure(*node.getProcedure(i));
     }
     // Generate code for procedures
-    for (size_t i = 0; i < node.getProcedureCount(); i++) {
+    for (size_t i = 0; i < node.getProcedureCount(); ++i) {
         node.getProcedure(i)->accept(*this);
     }
     // Generate code for body
@@ -922,17 +926,120 @@ void LLVMIRBuilder::visit(SetExpressionNode &node) {
     value_ = result;
 }
 
-void LLVMIRBuilder::visit(TypeDeclarationNode &) {}
+void LLVMIRBuilder::visit(TypeDeclarationNode &node) {
+    node.getType()->accept(*this);
+}
 
-void LLVMIRBuilder::visit(ArrayTypeNode &) {}
+void LLVMIRBuilder::visit(ArrayTypeNode &node) {
+    types_[&node] = ArrayType::get(getLLVMType(node.types()[0]), node.lengths()[0]);
+    // If necessary, create dope vector
+    if (node.getBase() == &node && !node.isOpen()) {
+        vector<Constant *> dims;
+        for (auto len: node.lengths()) {
+            dims.push_back(ConstantInt::get(builder_.getInt64Ty(), len));
+        }
+        auto dvType = ArrayType::get(builder_.getInt64Ty(), node.dimensions());
+        auto init = ConstantArray::get(dvType, dims);
+        string id = node.getIdentifier() ? node.getIdentifier()->name() : "";
+        auto dv = new GlobalVariable(*module_, dvType, true, GlobalValue::InternalLinkage, init, id + ".dv");
+        dv->setAlignment(getLLVMAlign(&node));
+        typeDopes_[&node] = dv;
+    }
+}
 
-void LLVMIRBuilder::visit(BasicTypeNode &) {}
+void LLVMIRBuilder::visit(BasicTypeNode &node) {
+    switch (node.kind()) {
+        case TypeKind::BOOLEAN:
+            types_[&node] = builder_.getInt1Ty(); break;
+        case TypeKind::BYTE:
+        case TypeKind::CHAR:
+            types_[&node] = builder_.getInt8Ty(); break;
+        case TypeKind::SHORTINT:
+            types_[&node] = builder_.getInt16Ty(); break;
+        case TypeKind::INTEGER:
+            types_[&node] = builder_.getInt32Ty(); break;
+        case TypeKind::LONGINT:
+            types_[&node] = builder_.getInt64Ty(); break;
+        case TypeKind::REAL:
+            types_[&node] = builder_.getFloatTy(); break;
+        case TypeKind::LONGREAL:
+            types_[&node] = builder_.getDoubleTy(); break;
+        case TypeKind::STRING:
+            types_[&node] = builder_.getPtrTy(); break;
+        case TypeKind::SET:
+            types_[&node] = builder_.getInt32Ty(); break;
+        default:
+            logger_.error(node.pos(), "cannot map type" + to_string(node.kind()) + " to LLVM intermediate representation.");
+            types_[&node] = builder_.getVoidTy();
+    }
+}
 
-void LLVMIRBuilder::visit(ProcedureTypeNode &) {}
+void LLVMIRBuilder::visit(ProcedureTypeNode &node) {
+    logger_.error(node.pos(), "cannot map type" + to_string(node.kind()) + " to LLVM intermediate representation.");
+    types_[&node] = builder_.getVoidTy();
+}
 
-void LLVMIRBuilder::visit(RecordTypeNode &) {}
+void LLVMIRBuilder::visit(RecordTypeNode &node) {
+    // Create an empty struct and add it to the lookup table immediately to support recursive records
+    auto structTy = StructType::create(builder_.getContext());
+    types_[&node] = structTy;
+    vector<Type *> elemTys;
+    // Add field for base record
+    if (node.isExtended()) {
+        elemTys.push_back(getLLVMType(node.getBaseType()));
+    }
+    // Add regular record fields
+    for (size_t i = 0; i < node.getFieldCount(); i++) {
+        auto fieldTy = node.getField(i)->getType();
+        elemTys.push_back(getLLVMType(fieldTy));
+    }
+    structTy->setBody(elemTys);
+    if (!node.isAnonymous()) {
+        structTy->setName("record." + node.getIdentifier()->name());
+        // Create an id for the record type by defining a global int32 variable and using its address
+        auto id = new GlobalVariable(*module_, builder_.getInt32Ty(), true, GlobalValue::ExternalLinkage,
+                                     Constant::getNullValue(builder_.getInt32Ty()),
+                                     module_->getModuleIdentifier() + "_" + node.getIdentifier()->name() + "_id");
+        id->setAlignment(module_->getDataLayout().getPreferredAlign(id));
+        recTypeIds_[&node] = id;
+        // Collect the ids of the record types from which this type is extended
+        vector<Constant *> typeIds;
+        auto cur = &node;
+        while (cur->isExtended()) {
+            typeIds.insert(typeIds.begin(), recTypeIds_[cur]);
+            cur = cur->getBaseType();
+        }
+        typeIds.insert(typeIds.begin(), recTypeIds_[cur]);
+        auto idsType = ArrayType::get(builder_.getPtrTy(), typeIds.size());
+        auto ids = new GlobalVariable(*module_, idsType, true, GlobalValue::ExternalLinkage,
+                                      ConstantArray::get(idsType, typeIds),
+                                      module_->getModuleIdentifier() + "_" + node.getIdentifier()->name() + "_ids");
+        ids->setAlignment(module_->getDataLayout().getPreferredAlign(ids));
+        // Create the type descriptor
+        auto td = new GlobalVariable(*module_, recordTdTy_, true, GlobalValue::ExternalLinkage,
+                                     ConstantStruct::get(recordTdTy_, {ids, ConstantInt::get(builder_.getInt32Ty(), node.getLevel())}),
+                                     module_->getModuleIdentifier() + "_" + node.getIdentifier()->name() + "_td");
+        td->setAlignment(module_->getDataLayout().getPreferredAlign(td));
+        recTypeTds_[&node] = td;
+    }
+}
 
-void LLVMIRBuilder::visit(PointerTypeNode &) {}
+void LLVMIRBuilder::visit(PointerTypeNode &node) {
+    auto base = node.getBase();
+    if (base->isRecord()) {
+        auto ptrType = ptrTypes_[&node];
+        if (!ptrType) {
+            ptrType = StructType::create(builder_.getContext(), {builder_.getPtrTy(), getLLVMType(base)});
+            if (!node.isAnonymous()) {
+                ptrType->setName("record." + to_string(*node.getIdentifier()) + ".ptr");
+            }
+            ptrTypes_[&node] = ptrType;
+        }
+        types_[&node] = PointerType::get(ptrType, 0);
+    } else {
+        types_[&node] = PointerType::get(getLLVMType(base), 0);
+    }
+}
 
 void LLVMIRBuilder::visit(StatementSequenceNode &node) {
     for (size_t i = 0; i < node.getStatementCount(); i++) {
@@ -1906,117 +2013,12 @@ Value *LLVMIRBuilder::processGEP(Type *base, Value *value, vector<Value *> &indi
 }
 
 Type* LLVMIRBuilder::getLLVMType(TypeNode *type) {
-    Type* result = nullptr;
     if (type == nullptr) {
         return builder_.getVoidTy();
-    } else if (types_[type]) {
-        result = types_[type];
-    } else if (type->getNodeType() == NodeType::array_type) {
-        auto array_t = dynamic_cast<ArrayTypeNode *>(type);
-        result = ArrayType::get(getLLVMType(array_t->types()[0]), array_t->lengths()[0]);
-        types_[type] = result;
-        // If necessary, create dope vector
-        if (array_t->getBase() == array_t && !array_t->isOpen()) {
-            vector<Constant *> dims;
-            for (auto len: array_t->lengths()) {
-                dims.push_back(ConstantInt::get(builder_.getInt64Ty(), len));
-            }
-            auto arrayTy = ArrayType::get(builder_.getInt64Ty(), array_t->dimensions());
-            auto init = ConstantArray::get(arrayTy, dims);
-            string id = array_t->getIdentifier() ? array_t->getIdentifier()->name() : "";
-            auto dopeV = new GlobalVariable(*module_, arrayTy, true, GlobalValue::InternalLinkage, init, id + ".dv");
-            dopeV->setAlignment(getLLVMAlign(type));
-            typeDopes_[array_t] = dopeV;
-        }
-    } else if (type->getNodeType() == NodeType::record_type) {
-        // Create an empty struct and add it to the lookup table immediately to support recursive records
-        auto structTy = StructType::create(builder_.getContext());
-        types_[type] = structTy;
-        vector<Type *> elemTys;
-        auto recordTy = dynamic_cast<RecordTypeNode *>(type);
-        // Add field for base record
-        if (recordTy->isExtended()) {
-            elemTys.push_back(getLLVMType(recordTy->getBaseType()));
-        }
-        // Add regular record fields
-        for (size_t i = 0; i < recordTy->getFieldCount(); i++) {
-            auto fieldTy = recordTy->getField(i)->getType();
-            elemTys.push_back(getLLVMType(fieldTy));
-        }
-        structTy->setBody(elemTys);
-        if (!recordTy->isAnonymous()) {
-            structTy->setName("record." + recordTy->getIdentifier()->name());
-            // Create an id for the record type by defining a global int32 variable and using its address.
-            auto id = new GlobalVariable(*module_, builder_.getInt32Ty(), true, GlobalValue::ExternalLinkage,
-                                         Constant::getNullValue(builder_.getInt32Ty()),
-                                         module_->getModuleIdentifier() + "_" + recordTy->getIdentifier()->name() + "_id");
-            id->setAlignment(module_->getDataLayout().getPreferredAlign(id));
-            recTypeIds_[recordTy] = id;
-            // Collect the ids of the record types from which this type is extended.
-            vector<Constant *> typeIds;
-            auto cur = recordTy;
-            while (cur->isExtended()) {
-                typeIds.insert(typeIds.begin(), recTypeIds_[cur]);
-                cur = cur->getBaseType();
-            }
-            typeIds.insert(typeIds.begin(), recTypeIds_[cur]);
-            auto arrayTy = ArrayType::get(builder_.getPtrTy(), typeIds.size());
-            auto ids = new GlobalVariable(*module_, arrayTy, true, GlobalValue::ExternalLinkage,
-                                          ConstantArray::get(arrayTy, typeIds),
-                                          module_->getModuleIdentifier() + "_" + recordTy->getIdentifier()->name() + "_ids");
-            ids->setAlignment(module_->getDataLayout().getPreferredAlign(ids));
-            // Create the type descriptor.
-            auto td = new GlobalVariable(*module_, recordTdTy_, true, GlobalValue::ExternalLinkage,
-                                         ConstantStruct::get(recordTdTy_, {ids, ConstantInt::get(builder_.getInt32Ty(), recordTy->getLevel())}),
-                                         module_->getModuleIdentifier() + "_" + recordTy->getIdentifier()->name() + "_td");
-            td->setAlignment(module_->getDataLayout().getPreferredAlign(td));
-            recTypeTds_[recordTy] = td;
-        }
-        result = structTy;
-    } else if (type->getNodeType() == NodeType::pointer_type) {
-        auto pointer = dynamic_cast<PointerTypeNode *>(type);
-        auto base = pointer->getBase();
-        if (base->isRecord()) {
-            auto ptrType = ptrTypes_[pointer];
-            if (!ptrType) {
-                ptrType = StructType::create(builder_.getContext(), {builder_.getPtrTy(), getLLVMType(base)});
-                if (!type->isAnonymous()) {
-                    ptrType->setName("record." + to_string(*type->getIdentifier()) + ".ptr");
-                }
-                ptrTypes_[pointer] = ptrType;
-            }
-            result = PointerType::get(ptrType, 0);
-        } else {
-            result = PointerType::get(getLLVMType(base), 0);
-        }
-        types_[type] = result;
-    } else if (type->getNodeType() == NodeType::basic_type) {
-        if (type->kind() == TypeKind::BOOLEAN) {
-            result = builder_.getInt1Ty();
-        } else if (type->kind() == TypeKind::BYTE || type->kind() == TypeKind::CHAR) {
-            result = builder_.getInt8Ty();
-        } else if (type->kind() == TypeKind::SHORTINT) {
-            result = builder_.getInt16Ty();
-        } else if (type->kind() == TypeKind::INTEGER) {
-            result = builder_.getInt32Ty();
-        } else if (type->kind() == TypeKind::LONGINT) {
-            result = builder_.getInt64Ty();
-        } else if (type->kind() == TypeKind::REAL) {
-            result = builder_.getFloatTy();
-        } else if (type->kind() == TypeKind::LONGREAL) {
-            result = builder_.getDoubleTy();
-        } else if (type->kind() == TypeKind::STRING) {
-            result = builder_.getPtrTy();
-        } else if (type->kind() == TypeKind::SET) {
-            result = builder_.getInt32Ty();
-        }
-        types_[type] = result;
+    } else if (!types_[type]) {
+        type->accept(*this);
     }
-    if (result == nullptr) {
-        logger_.error(type->pos(), "cannot map " + to_string(type->kind()) + " to LLVM intermediate representation.");
-        exit(1);
-    }
-    return result;
+    return types_[type];
 }
 
 MaybeAlign LLVMIRBuilder::getLLVMAlign(TypeNode *type) {
