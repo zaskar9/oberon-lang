@@ -784,7 +784,6 @@ void LLVMIRBuilder::visit(BinaryExpressionNode &node) {
         auto lExpr = dynamic_cast<QualifiedExpression *>(node.getLeftExpression());
         auto rExpr = dynamic_cast<QualifiedExpression *>(node.getRightExpression());
         auto type = rExpr->dereference()->getType();
-        // auto td = getTypeDescriptor(lhs, lExpr, type);
         value_ = createTypeTest(lhs, lExpr, type);
     } else if (node.getLeftExpression()->getType()->isSet() || node.getRightExpression()->getType()->isSet()) {
         node.getRightExpression()->accept(*this);

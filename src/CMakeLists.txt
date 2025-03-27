@@ -128,6 +128,11 @@ if (LLVM_FOUND)
     target_link_libraries(${OBERON_LANG} PRIVATE ${llvm_libs})
 endif ()
 
+find_package(BDWgc REQUIRED)
+if (BDWgc_FOUND)
+    message(STATUS "Found BDWgc: ${BDWgc_VERSION}")
+    target_link_libraries(${OBERON_LANG} PRIVATE BDWgc::gc)
+endif ()
 
 set(GRAMMAR_SOURCES
         compiler/CompilerConfig.cpp compiler/CompilerConfig.h
@@ -137,9 +142,7 @@ set(GRAMMAR_SOURCES
 
 add_executable(${GRAMMAR_TOOL} grammar/main.cpp ${GRAMMAR_SOURCES} ${SCANNER_SOURCES} ${LOGGING_SOURCES})
 
-find_package(Boost REQUIRED)
 if (Boost_FOUND)
-    message(STATUS "Found Boost: ${Boost_VERSION}")
     target_link_libraries(${GRAMMAR_TOOL} PRIVATE Boost::headers)
 endif ()
 

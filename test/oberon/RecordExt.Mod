@@ -70,16 +70,24 @@ BEGIN
     END
 END PrintShape;
 
-(*
-PROCEDURE PrintShape2(s: Shape);
+PROCEDURE PrintShapeDescCase(VAR sd: ShapeDesc);
+BEGIN
+    CASE sd OF
+        ShapeDesc: Out.String("ShapeDesc")
+      | CircleDesc: Out.String("CircleDesc")
+      | SphereDesc: Out.String("SphereDesc")
+    END
+END PrintShapeDescCase;
+
+PROCEDURE PrintShapeCase(s: Shape);
 BEGIN
     CASE s OF
         Shape: Out.String("Shape")
       | Circle: Out.String("Circle")
       | Sphere: Out.String("Sphere")
+      | Sphere: Out.String("Panic!")
     END
-END PrintShape2;
-*)
+END PrintShapeCase;
 
 PROCEDURE CircleArea(radius: REAL): REAL;
 BEGIN

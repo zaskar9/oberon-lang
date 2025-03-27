@@ -488,12 +488,12 @@ Sema::onCaseOf(const FilePos &start, [[maybe_unused]] const FilePos &end,
     auto eType = expr->getType();
     if (eType->isInteger() || eType->isChar()) {
         unordered_set<int64_t> labels;
-        for (auto& c: cases) {
+        for (auto &c: cases) {
             auto lType = c->getLabelType();
             if ((eType->isInteger() && lType->isChar()) || (eType->isChar() && lType->isInteger())) {
                 logger_.error(c->pos(), "type mismatch: case label type different from case expression type.");
             }
-            for (int64_t l : c->getCases()) {
+            for (int64_t l: c->getCases()) {
                 if (labels.contains(l)) {
                     logger_.error(c->pos(), "duplicate labels in case statement.");
                     break;
@@ -502,8 +502,18 @@ Sema::onCaseOf(const FilePos &start, [[maybe_unused]] const FilePos &end,
                 }
             }
         }
+    } else if (eType->isPointer() || eType->isRecord()) {
+        if (expr->getNodeType() == NodeType::qualified_expression) {
+            auto decl = dynamic_cast<QualifiedExpression *>(expr.get())->dereference();
+            if (eType->isRecord() && (decl->getNodeType() != NodeType::parameter ||
+                                      !dynamic_cast<ParameterNode *>(decl)->isVar())) {
+                logger_.error(expr->pos(), "record must be a variable parameter.");
+            }
+        } else {
+            logger_.error(start, "qualified expression expected.");
+        }
     } else {
-        logger_.error(expr->pos(), "integer or character expression expected.");
+        logger_.error(expr->pos(), "type mismatch: case expression type must be integer, character, pointer, or record.");
     }
     return make_unique<CaseOfNode>(start, std::move(expr), std::move(cases), std::move(elseStmts));
 }
@@ -1203,8 +1213,8 @@ Sema::onBinaryExpression(const FilePos &start, const FilePos &end,
                 break;
             }
             if (rhsType->kind() == TypeKind::TYPE) {
-                auto lhsDecl = dynamic_cast<NodeReference *>(lhs.get())->dereference();
-                auto rhsDecl = dynamic_cast<NodeReference *>(rhs.get())->dereference();
+                auto lhsDecl = dynamic_cast<QualifiedExpression *>(lhs.get())->dereference();
+                auto rhsDecl = dynamic_cast<QualifiedExpression *>(rhs.get())->dereference();
                 auto type = rhsDecl->getType();
                 if (lhsType->isPointer() || (lhsType->isRecord() &&
                                              lhsDecl->getNodeType() == NodeType::parameter &&
@@ -1220,7 +1230,7 @@ Sema::onBinaryExpression(const FilePos &start, const FilePos &end,
                         logger_.error(rhs->pos(), "type mismatch: record type or pointer to record type expected.");
                     }
                 } else {
-                    logger_.error(start, "variable parameter of record type or variable of pointer type expected.");
+                    logger_.error(start, "variable parameter of record type or expression of pointer type expected.");
                 }
             } else {
                 logger_.error(rhs->pos(), "type identifier expected.");
@@ -1258,7 +1268,7 @@ Sema::onRangeExpression(const FilePos &start, [[maybe_unused]] const FilePos &en
     }
     const auto loType = lower->getType();
     if (!loType->isInteger() && !loType->isChar()) {
-        logger_.error(lower->pos(), "integer or character expression expected.");
+        logger_.error(lower->pos(), "range expression requires integer or character values.");
     }
     if (!upper) {
         logger_.error(start, "undefined upper bound in range expression.");
@@ -1266,7 +1276,7 @@ Sema::onRangeExpression(const FilePos &start, [[maybe_unused]] const FilePos &en
     }
     const auto upType = upper->getType();
     if (!upType->isInteger() && !upType->isChar()) {
-        logger_.error(upper->pos(), "integer or character expression expected.");
+        logger_.error(upper->pos(), "range expression requires integer or character values.");
     }
     if ((loType->isInteger() && upType->isChar()) || (loType->isChar() && upType->isInteger())) {
         logger_.error(start, "type of lower and upper bound in range expression do not match.");
