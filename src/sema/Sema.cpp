@@ -490,7 +490,7 @@ Sema::onCaseOf(const FilePos &start, [[maybe_unused]] const FilePos &end,
         unordered_set<int64_t> labels;
         for (auto &c: cases) {
             auto lType = c->getLabelType();
-            if ((eType->isInteger() && lType->isChar()) || (eType->isChar() && lType->isInteger())) {
+            if ((eType->isInteger() && !lType->isInteger()) || (eType->isChar() && !lType->isChar())) {
                 logger_.error(c->pos(), "type mismatch: case label type different from case expression type.");
             }
             for (int64_t l: c->getCases()) {
@@ -511,6 +511,16 @@ Sema::onCaseOf(const FilePos &start, [[maybe_unused]] const FilePos &end,
             }
         } else {
             logger_.error(start, "qualified expression expected.");
+        }
+        unordered_set<TypeNode *> labels;
+        for (auto &c: cases) {
+            auto tmp = c->getLabel(0);
+            auto label = dynamic_cast<QualifiedExpression *>(tmp);
+            auto decl = dynamic_cast<TypeDeclarationNode *>(label->dereference());
+            auto lType = decl->getType();
+            if ((eType->isPointer() && !lType->isPointer()) || (eType->isRecord() && !lType->isRecord())) {
+                logger_.error(c->pos(), "type mismatch: case label type different from case expression type.");
+            }
         }
     } else {
         logger_.error(expr->pos(), "type mismatch: case expression type must be integer, character, pointer, or record.");
@@ -575,6 +585,10 @@ Sema::onCase(const FilePos &start, [[maybe_unused]] const FilePos &end,
         } else {
             if (label->getNodeType() == NodeType::qualified_expression &&
                 label->getType()->kind() == TypeKind::TYPE) {
+                if (labels.size() > 1) {
+                    logger_.error(labels[1]->pos(), "case must have a single type as label.");
+                    break;
+                }
                 const auto expr = dynamic_cast<QualifiedExpression*>(label.get());
                 const auto decl = dynamic_cast<TypeDeclarationNode*>(expr->dereference());
                 if (decl->getType()->kind() == TypeKind::POINTER) {
