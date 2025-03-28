@@ -512,14 +512,26 @@ Sema::onCaseOf(const FilePos &start, [[maybe_unused]] const FilePos &end,
         } else {
             logger_.error(start, "qualified expression expected.");
         }
-        unordered_set<TypeNode *> labels;
+        vector<TypeNode *> labels;
         for (auto &c: cases) {
-            auto tmp = c->getLabel(0);
-            auto label = dynamic_cast<QualifiedExpression *>(tmp);
-            auto decl = dynamic_cast<TypeDeclarationNode *>(label->dereference());
-            auto lType = decl->getType();
-            if ((eType->isPointer() && !lType->isPointer()) || (eType->isRecord() && !lType->isRecord())) {
-                logger_.error(c->pos(), "type mismatch: case label type different from case expression type.");
+            auto label = c->getLabel(0);
+            if (auto lExpr = dynamic_cast<QualifiedExpression *>(label)) {
+                auto decl = dynamic_cast<TypeDeclarationNode *>(lExpr->dereference());
+                auto lType = decl->getType();
+                if ((eType->isPointer() && !lType->isPointer()) || (eType->isRecord() && !lType->isRecord())) {
+                    logger_.error(c->pos(), "type mismatch: case label type different from case expression type.");
+                }
+                for (auto l: labels) {
+                    if (l == lType) {
+                        logger_.error(label->pos(), "duplicate labels in case statement.");
+                        break;
+                    } else if (lType->extends(l)) {
+                        logger_.warning(label->pos(), "unreachable label in case statement.");
+                    }
+                }
+                labels.push_back(lType);
+            } else {
+                logger_.error(label->pos(), "type mismatch: case label type must be pointer or record.");
             }
         }
     } else {

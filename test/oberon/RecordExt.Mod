@@ -73,20 +73,18 @@ END PrintShape;
 PROCEDURE PrintShapeDescCase(VAR sd: ShapeDesc);
 BEGIN
     CASE sd OF
-        CircleDesc: Out.String("CircleDesc")
+        CircleDesc: Out.String("CircleDesc"); PrintCircle(sd)
       | SphereDesc: Out.String("SphereDesc")
       | ShapeDesc: Out.String("ShapeDesc")
-      | 5: Out.String("Panic")
     END
 END PrintShapeDescCase;
 
 PROCEDURE PrintShapeCase(s: Shape);
 BEGIN
     CASE s OF
-        Circle: Out.String("Circle")
+        Circle: Out.String("Circle"); PrintCircle(s^)
       | Sphere: Out.String("Sphere")
       | Shape: Out.String("Shape")
-      | Sphere: Out.String("Panic!")
     END
 END PrintShapeCase;
 
