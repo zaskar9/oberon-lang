@@ -427,13 +427,17 @@ void NodePrettyPrinter::visit(CaseOfNode &node) {
     stream_ << "END";
 }
 
-void NodePrettyPrinter::visit(CaseNode &node) {
+void NodePrettyPrinter::visit(CaseLabelNode &node) {
     string sep;
-    for (size_t i = 0; i < node.getLabelCount(); ++i) {
+    for (size_t i = 0; i < node.getValueCount(); ++i) {
         stream_ << sep;
-        node.getLabel(i)->accept(*this);
+        node.getValue(i)->accept(*this);
         sep = ", ";
     }
+}
+
+void NodePrettyPrinter::visit(CaseNode &node) {
+    node.getLabel()->accept(*this);
     stream_ << ": " << std::endl;
     indent_ += 2 * TAB_WIDTH;
     node.getStatements()->accept(*this);

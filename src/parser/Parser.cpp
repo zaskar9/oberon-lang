@@ -865,9 +865,10 @@ unique_ptr<StatementNode> Parser::case_statement() {
                 if (assertToken(scanner_.peek(), TokenType::colon)) {
                     scanner_.next();  // skip colon
                 }
+                auto label = sema_.onCaseLabel(caseStart, EMPTY_POS, expr, std::move(labels));
                 auto stmts = make_unique<StatementSequenceNode>(EMPTY_POS);
                 statement_sequence(stmts.get());
-                cases.push_back(sema_.onCase(caseStart, EMPTY_POS, std::move(labels), std::move(stmts)));
+                cases.push_back(sema_.onCase(caseStart, EMPTY_POS, std::move(label), std::move(stmts)));
             } while (scanner_.peek()->type() == TokenType::pipe);
         }
         if (scanner_.peek()->type() == TokenType::kw_else) {

@@ -59,6 +59,7 @@ public:
     virtual void visit(StatementSequenceNode &) = 0;
     virtual void visit(AssignmentNode &) = 0;
     virtual void visit(CaseOfNode &) = 0;
+    virtual void visit(CaseLabelNode &) = 0;
     virtual void visit(CaseNode &) = 0;
     virtual void visit(IfThenElseNode &) = 0;
     virtual void visit(ElseIfNode &) = 0;

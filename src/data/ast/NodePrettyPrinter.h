@@ -69,6 +69,7 @@ private:
     void visit(StatementSequenceNode &) override;
     void visit(AssignmentNode &) override;
     void visit(CaseOfNode &) override;
+    void visit(CaseLabelNode &) override;
     void visit(CaseNode &) override;
     void visit(IfThenElseNode &) override;
     void visit(ElseIfNode &) override;

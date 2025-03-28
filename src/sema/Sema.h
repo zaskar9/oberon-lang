@@ -185,8 +185,11 @@ public:
                                     unique_ptr<ExpressionNode>,
                                     vector<unique_ptr<CaseNode>>,
                                     unique_ptr<StatementSequenceNode>);
+    unique_ptr<CaseLabelNode> onCaseLabel(const FilePos &, const FilePos &,
+                                          unique_ptr<ExpressionNode> &,
+                                          vector<unique_ptr<ExpressionNode>>);
     unique_ptr<CaseNode> onCase(const FilePos &, const FilePos &,
-                                vector<unique_ptr<ExpressionNode>>,
+                                unique_ptr<CaseLabelNode>,
                                 unique_ptr<StatementSequenceNode>);
     unique_ptr<ReturnNode> onReturn(const FilePos &, const FilePos &, unique_ptr<ExpressionNode>);
 

@@ -303,10 +303,14 @@ void LambdaLifter::visit(CaseOfNode &node) {
     }
 }
 
-void LambdaLifter::visit(CaseNode &node) {
-    for (size_t i = 0; i < node.getLabelCount(); ++i) {
-        node.getLabel(i)->accept(*this);
+void LambdaLifter::visit(CaseLabelNode &node) {
+    for (size_t i = 0; i < node.getValueCount(); ++i) {
+        node.getValue(i)->accept(*this);
     }
+}
+
+void LambdaLifter::visit(CaseNode &node) {
+    node.getLabel()->accept(*this);
     node.getStatements()->accept(*this);
 }
 

@@ -1118,7 +1118,7 @@ void LLVMIRBuilder::visit(CaseOfNode& node) {
         builder_.SetInsertPoint(block);
         c->getStatements()->accept(*this);
         builder_.CreateBr(tail);
-        for (int64_t label : c->getCases()) {
+        for (int64_t label : c->getLabel()->getValues()) {
             ConstantInt* value = node.getExpression()->getType()->isChar() ?
                     ConstantInt::get(type, static_cast<uint64_t>(label)) : ConstantInt::getSigned(type, label);
             inst->addCase(value, block);
@@ -1129,6 +1129,8 @@ void LLVMIRBuilder::visit(CaseOfNode& node) {
     builder_.CreateBr(tail);
     builder_.SetInsertPoint(tail);
 }
+
+void LLVMIRBuilder::visit(CaseLabelNode&) {}
 
 void LLVMIRBuilder::visit(CaseNode&) {}
 

@@ -70,6 +70,16 @@ BEGIN
     END
 END PrintShape;
 
+PROCEDURE PrintShapeList(VAR list: ARRAY OF Shape);
+TYPE ptr = POINTER TO Point2D;
+BEGIN
+    CASE list[0] OF
+        Circle: Out.String("X")
+      | CircleDesc: Out.String("Y")
+      | ptr: Out.String("Z")
+    END
+END PrintShapeList;
+
 PROCEDURE PrintShapeDescCase(VAR sd: ShapeDesc);
 BEGIN
     CASE sd OF
@@ -85,7 +95,8 @@ BEGIN
         Circle: Out.String("Circle"); PrintCircle(s^)
       | Sphere: Out.String("Sphere")
       | Shape: Out.String("Shape")
-    END
+    END;
+    Out.Int(s.centre.z, 0)
 END PrintShapeCase;
 
 PROCEDURE CircleArea(radius: REAL): REAL;
