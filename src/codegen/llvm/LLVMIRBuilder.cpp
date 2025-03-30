@@ -311,6 +311,7 @@ TypeNode *LLVMIRBuilder::selectors(QualifiedExpression *expr, TypeNode *base, Se
         return nullptr;
     }
     auto selector_t = base;
+    auto baseTy = getLLVMType(selector_t);
     auto value = value_;
     vector<Value *> indices;
     indices.push_back(builder_.getInt32(0));
@@ -318,28 +319,29 @@ TypeNode *LLVMIRBuilder::selectors(QualifiedExpression *expr, TypeNode *base, Se
         auto sel = (*it).get();
         if (sel->getNodeType() == NodeType::parameter) {
             auto params = dynamic_cast<ActualParameters *>(sel);
-            auto type = dynamic_cast<ProcedureTypeNode *>(selector_t);
+            auto procedure_t = dynamic_cast<ProcedureTypeNode *>(selector_t);
             vector<Value*> values;
             parameters(procedure_t, params, values);
-            auto funTy = getLLVMType(type);
+            auto funTy = getLLVMType(procedure_t);
             // Output the GEP up to the procedure call
             value = processGEP(baseTy, value, indices);
             // Create a load to dereference the function pointer
             value = builder_.CreateLoad(funTy, value);
             value_ = builder_.CreateCall(dyn_cast<FunctionType>(funTy), value, values);
             selector_t = procedure_t->getReturnType();
+            baseTy = getLLVMType(selector_t);
         } else if (sel->getNodeType() == NodeType::array_type) {
             auto array = dynamic_cast<ArrayIndex *>(sel);
-            auto type = dynamic_cast<ArrayTypeNode *>(selector_t);
+            auto array_t = dynamic_cast<ArrayTypeNode *>(selector_t);
             setRefMode(true);
             Value *dopeV = nullptr;
             for (size_t i = 0; i < array->indices().size(); ++i) {
                 auto index = array->indices()[i].get();
                 index->accept(*this);
-                if (config_.isSanitized(Trap::OUT_OF_BOUNDS) && (type->isOpen() || !index->isLiteral())) {
+                if (config_.isSanitized(Trap::OUT_OF_BOUNDS) && (array_t->isOpen() || !index->isLiteral())) {
                     Value *lower = builder_.getInt64(0);
                     Value *upper;
-                    if (type->isOpen()) {
+                    if (array_t->isOpen()) {
                         dopeV = dopeV ? dopeV : getDopeVector(expr);
                         upper = getOpenArrayLength(dopeV, array_t, i);
                     } else {
@@ -351,32 +353,31 @@ TypeNode *LLVMIRBuilder::selectors(QualifiedExpression *expr, TypeNode *base, Se
             }
             restoreRefMode();
             value = processGEP(baseTy, value, indices);
-            selector_t = type->types()[array->indices().size() - 1];
-            base = selector_t;
+            selector_t = array_t->types()[array->indices().size() - 1];
+            baseTy = getLLVMType(selector_t);
         } else if (sel->getNodeType() == NodeType::pointer_type) {
             // Output the GEP up to the pointer
-            value = processGEP(base, value, indices);
+            value = processGEP(baseTy, value, indices);
             // Create a load to dereference the pointer
-            value = builder_.CreateLoad(base, value);
+            value = builder_.CreateLoad(baseTy, value);
             // Trap NIL pointer access
             if (config_.isSanitized(Trap::NIL_POINTER)) {
                 trapNILPtr(value);
             }
-            auto type = dynamic_cast<PointerTypeNode *>(base);
-            base = type->getBase();
+            auto pointer_t = dynamic_cast<PointerTypeNode *>(selector_t);
+            selector_t = pointer_t->getBase();
             // Handle values of record base type
-            if (base->isRecord()) {
+            if (selector_t->isRecord()) {
                 // Skip the first field (type descriptor tag) of a leaf record type
                 indices.push_back(builder_.getInt32(1));
-                baseTy = ptrTypes_[type];
+                baseTy = ptrTypes_[pointer_t];
             } else {
-                baseTy = getLLVMType(base);  // TODO switch to LLVM types
+                baseTy = getLLVMType(selector_t);  // TODO switch to LLVM types
             }
-            selector_t = base;
         } else if (sel->getNodeType() == NodeType::record_type) {
             // Handle record field access
             auto field = dynamic_cast<RecordField *>(sel)->getField();
-            auto record_t = dynamic_cast<RecordTypeNode *>(base);
+            auto record_t = dynamic_cast<RecordTypeNode *>(selector_t);
             // Navigate through the base records
             unsigned current = field->getRecordType()->getLevel();
             for (unsigned level = current; level < record_t->getLevel(); level++) {
@@ -385,9 +386,9 @@ TypeNode *LLVMIRBuilder::selectors(QualifiedExpression *expr, TypeNode *base, Se
             // Access the field by its index (increase index at levels > 0)
             indices.push_back(builder_.getInt32(current == 0 ? field->getIndex() : field->getIndex() + 1));
             // Output GEP up to the record field
-            value = processGEP(base, value, indices);
+            value = processGEP(baseTy, value, indices);
             selector_t = field->getType();
-            base = selector_t;
+            baseTy = getLLVMType(selector_t);
         } else if (sel->getNodeType() == NodeType::type) {
             auto guard = dynamic_cast<Typeguard *>(sel);
             if (config_.isSanitized(Trap::TYPE_GUARD)) {
@@ -397,18 +398,18 @@ TypeNode *LLVMIRBuilder::selectors(QualifiedExpression *expr, TypeNode *base, Se
                     value = processGEP(baseTy, value, indices);
                     tmp = builder_.CreateLoad(builder_.getPtrTy(), value);
                 }
-                auto cond = createTypeTest(tmp, expr, base, guard_t);
+                auto cond = createTypeTest(tmp, expr, selector_t, guard_t);
                 trapTypeGuard(cond);
             }
             selector_t = guard->getType();
-            base = selector_t;
+            baseTy = getLLVMType(selector_t);
         } else {
             logger_.error(sel->pos(), "unsupported selector.");
         }
     }
     // Clean up: emit any remaining indices
     if (indices.size() > 1) {
-        value_ = processGEP(base, value, indices);
+        value_ = processGEP(baseTy, value, indices);
     } else {
         value_ = value;
     }
@@ -546,7 +547,7 @@ void LLVMIRBuilder::visit(RangeLiteralNode &node) {
     value_ = ConstantInt::get(builder_.getInt32Ty(), static_cast<uint32_t>(node.value().to_ulong()));
 }
 
-void LLVMIRBuilder::installTrap(Value *condition, uint8_t code) {
+void LLVMIRBuilder::installTrap(Value *cond, uint8_t code) {
     auto tail = BasicBlock::Create(builder_.getContext(), "tail", function_);
     auto trap = BasicBlock::Create(builder_.getContext(), "trap", function_);
     builder_.CreateCondBr(cond, tail, trap);

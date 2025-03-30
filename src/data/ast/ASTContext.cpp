@@ -47,9 +47,6 @@ ASTContext::getOrInsertRecordType(const FilePos &start, const FilePos &,
                                   RecordTypeNode *base, vector<unique_ptr<FieldNode>> fields, ModuleNode *module) {
     auto type = make_unique<RecordTypeNode>(start, base, std::move(fields));
     type->setModule(module ? module : module_.get());
-    if (type->getModule() == nullptr) {
-        std::cerr << "Ohoh!" << std::endl;
-    }
     auto res = type.get();
     record_ts_.push_back(std::move(type));
     return res;

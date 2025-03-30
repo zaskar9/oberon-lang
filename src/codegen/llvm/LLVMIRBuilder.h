@@ -88,11 +88,6 @@ private:
     void parameters(ProcedureTypeNode *, ActualParameters *, vector<Value *> &, bool = false);
 
     void installTrap(Value *, uint8_t);
-    void trapAssert(Value *);
-    void trapFltDivByZero(Value *);
-    void trapIntDivByZero(Value *);
-    void trapCopyOverflow(Value *, Value *);
-    Value *trapIntOverflow(Intrinsic::IndependentIntrinsics, Value*, Value*);
     void trapOutOfBounds(Value *, Value *, Value *);
     void trapTypeGuard(Value *);
     void trapCopyOverflow(Value *, Value *);
