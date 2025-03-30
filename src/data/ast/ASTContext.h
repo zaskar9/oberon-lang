@@ -49,13 +49,13 @@ public:
     [[nodiscard]] ModuleNode *getTranslationUnit() const;
     void setTranslationUnit(unique_ptr<ModuleNode>);
 
-    [[deprecated]]
-    ArrayTypeNode *getOrInsertArrayType(const FilePos &, const FilePos &, unsigned, TypeNode *);
-    ArrayTypeNode *getOrInsertArrayType(const FilePos &, const FilePos &, unsigned, vector<unsigned>, vector<TypeNode *>);
-    RecordTypeNode *getOrInsertRecordType(const FilePos &, const FilePos &, vector<unique_ptr<FieldNode>>);
-    PointerTypeNode *getOrInsertPointerType(const FilePos &, const FilePos &, TypeNode *);
+    ArrayTypeNode *getOrInsertArrayType(const FilePos &, const FilePos &,
+                                        unsigned, vector<unsigned>, vector<TypeNode *>, ModuleNode * = nullptr);
+    RecordTypeNode *getOrInsertRecordType(const FilePos &, const FilePos &,
+                                          RecordTypeNode *, vector<unique_ptr<FieldNode>>, ModuleNode * = nullptr);
+    PointerTypeNode *getOrInsertPointerType(const FilePos &, const FilePos &, TypeNode *, ModuleNode * = nullptr);
     ProcedureTypeNode *getOrInsertProcedureType(const FilePos &, const FilePos &,
-                                                vector<unique_ptr<ParameterNode>>, bool, TypeNode *);
+                                                vector<unique_ptr<ParameterNode>>, bool, TypeNode *, ModuleNode * = nullptr);
 
     // mainly for memory management as an anchor for smart pointers
     void addExternalModule(unique_ptr<ModuleNode> module);

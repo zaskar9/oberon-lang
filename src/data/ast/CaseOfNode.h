@@ -20,26 +20,41 @@ using std::ostream;
 using std::set;
 using std::unique_ptr;
 
+class CaseLabelNode : public Node {
+
+private:
+    vector<unique_ptr<ExpressionNode>> labels_;
+    set<int64_t> values_;
+
+public:
+    CaseLabelNode(const FilePos &pos, vector<std::unique_ptr<ExpressionNode>> &&labels, set<int64_t> &&values) :
+        Node(NodeType::case_label, pos), labels_(std::move(labels)), values_(values) {};
+    ~CaseLabelNode() override = default;
+
+    [[nodiscard]] TypeNode* getType() const;
+
+    [[nodiscard]] ExpressionNode* getValue(size_t num) const;
+    [[nodiscard]] size_t getValueCount() const;
+    [[nodiscard]] const set<int64_t> &getValues() const;
+
+    void accept(NodeVisitor&) override;
+
+    void print(ostream &) const override;
+
+};
+
 class CaseNode final : public Node {
 
 private:
-    vector<std::unique_ptr<ExpressionNode>> labels_;
-    set<int64_t> cases_;
+    unique_ptr<CaseLabelNode> label_;
     unique_ptr<StatementSequenceNode> statements_;
 
 public:
-    CaseNode(const FilePos &pos, vector<std::unique_ptr<ExpressionNode>> &&labels, set<int64_t> &&cases,
-             unique_ptr<StatementSequenceNode> stmts) :
-        Node(NodeType::case_case, pos), labels_(std::move(labels)), cases_(cases), statements_(std::move(stmts)) {}
+    CaseNode(const FilePos &pos, unique_ptr<CaseLabelNode> label, unique_ptr<StatementSequenceNode> stmts) :
+            Node(NodeType::case_case, pos), label_(std::move(label)), statements_(std::move(stmts)) {}
     ~CaseNode() override = default;
 
-    [[nodiscard]] const set<int64_t> &getCases() const;
-
-    [[nodiscard]] ExpressionNode* getLabel(size_t num) const;
-    [[nodiscard]] size_t getLabelCount() const;
-
-    [[nodiscard]] TypeNode* getLabelType() const;
-
+    [[nodiscard]] CaseLabelNode* getLabel() const;
     [[nodiscard]] StatementSequenceNode* getStatements() const;
 
     void accept(NodeVisitor&) override;

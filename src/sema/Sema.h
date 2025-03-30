@@ -8,7 +8,7 @@
 
 #include <bitset>
 #include <functional>
-#include <map>
+#include <unordered_map>
 #include <memory>
 #include <optional>
 #include <stack>
@@ -28,7 +28,7 @@
 
 using std::function;
 using std::bitset;
-using std::map;
+using std::unordered_map;
 using std::optional;
 using std::stack;
 using std::string;
@@ -43,13 +43,14 @@ private:
     OberonSystem *system_;
 
     Logger &logger_;
-    map<string, PointerTypeNode *> forwards_;
+    vector<pair<unique_ptr<QualIdent>, PointerTypeNode *>> forwards_;
     stack<unique_ptr<ProcedureNode>> procs_;
+    unordered_map<QualifiedExpression *, TypeNode *> caseTys_;
     SymbolTable *symbols_;
     SymbolImporter importer_;
     SymbolExporter exporter_;
     TypeNode *boolTy_, *byteTy_, *charTy_, *shortIntTy_, *integerTy_, *longIntTy_, *realTy_, *longRealTy_,
-             *stringTy_, *setTy_, *nullTy_, *typeTy_;
+             *stringTy_, *setTy_, *noTy_, *typeTy_;
 
     bool assertEqual(Ident *, Ident *) const;
     void assertUnique(IdentDef *, DeclarationNode *);
@@ -111,12 +112,13 @@ private:
     using SelectorIterator = Selectors::iterator;
     SelectorIterator &handleMissingParameters(const FilePos &, const FilePos &,
                                               TypeNode*, Selectors &, SelectorIterator &);
+    void handleRepeatedIndices(const FilePos &, const FilePos &, Selectors &);
     TypeNode *onSelectors(const FilePos &, const FilePos &, DeclarationNode *, TypeNode*, Selectors &);
-    TypeNode *onActualParameters(DeclarationNode*, TypeNode*, ActualParameters*);
-    TypeNode *onArrayIndex(TypeNode*, ArrayIndex*);
-    TypeNode *onDereference(TypeNode*, Dereference*);
-    FieldNode *onRecordField(TypeNode*, RecordField*);
-    TypeNode *onTypeguard(DeclarationNode*, TypeNode*, Typeguard*);
+    TypeNode *onActualParameters(DeclarationNode *, TypeNode *, ActualParameters *);
+    TypeNode *onArrayIndex(TypeNode *, ArrayIndex *);
+    TypeNode *onDereference(TypeNode *, Dereference *);
+    FieldNode *onRecordField(TypeNode *, RecordField *);
+    TypeNode *onTypeguard(DeclarationNode *, TypeNode *, Typeguard *);
 
 public:
     Sema(CompilerConfig &, ASTContext *, OberonSystem *);
@@ -143,13 +145,15 @@ public:
                                        vector<unique_ptr<ParameterNode>>, bool varargs, TypeNode *);
     unique_ptr<ParameterNode> onParameter(const FilePos &, const FilePos &,
                                           unique_ptr<Ident>, TypeNode *, bool, unsigned = 0);
-    RecordTypeNode *onRecordType(const FilePos &, const FilePos &, vector<unique_ptr<FieldNode>>);
+    RecordTypeNode *onRecordType(const FilePos &, const FilePos &, unique_ptr<QualIdent>, vector<unique_ptr<FieldNode>>);
     unique_ptr<FieldNode> onField(const FilePos&, const FilePos&, unique_ptr<IdentDef>, TypeNode*, unsigned = 0);
 
     TypeNode *onTypeReference(const FilePos &, const FilePos &, unique_ptr<QualIdent>, unsigned = 0);
 
     unique_ptr<VariableDeclarationNode> onVariable(const FilePos &, const FilePos &,
                                                    unique_ptr<IdentDef>, TypeNode*, int = 0);
+
+    void onDeclarations();
 
     ProcedureNode *onProcedureStart(const FilePos &, unique_ptr<IdentDef>);
     unique_ptr<ProcedureNode> onProcedureEnd(const FilePos &, unique_ptr<Ident>);
@@ -178,12 +182,18 @@ public:
                                       unique_ptr<ExpressionNode>,
                                       unique_ptr<ExpressionNode>,
                                       unique_ptr<StatementSequenceNode>);
-    unique_ptr<CaseOfNode> onCaseOf(const FilePos &, const FilePos &,
-                                    unique_ptr<ExpressionNode>,
-                                    vector<unique_ptr<CaseNode>>,
-                                    unique_ptr<StatementSequenceNode>);
+    void onCasePfStart(const FilePos &, const FilePos &,
+                       unique_ptr<ExpressionNode> &);
+    unique_ptr<CaseOfNode> onCaseOfEnd(const FilePos &, const FilePos &,
+                                       unique_ptr<ExpressionNode>,
+                                       vector<unique_ptr<CaseNode>>,
+                                       unique_ptr<StatementSequenceNode>);
+    unique_ptr<CaseLabelNode> onCaseLabel(const FilePos &, const FilePos &,
+                                          unique_ptr<ExpressionNode> &,
+                                          vector<unique_ptr<ExpressionNode>>);
     unique_ptr<CaseNode> onCase(const FilePos &, const FilePos &,
-                                vector<unique_ptr<ExpressionNode>>,
+                                unique_ptr<ExpressionNode> &,
+                                unique_ptr<CaseLabelNode>,
                                 unique_ptr<StatementSequenceNode>);
     unique_ptr<ReturnNode> onReturn(const FilePos &, const FilePos &, unique_ptr<ExpressionNode>);
 

@@ -36,6 +36,14 @@ std::ostream &operator<<(std::ostream &stream, const TypeKind &kind) {
     return stream;
 }
 
+void TypeNode::setModule(ModuleNode *module) {
+    module_ = module;
+}
+
+ModuleNode *TypeNode::getModule() const {
+    return module_;
+}
+
 void TypeNode::setDeclaration(TypeDeclarationNode *decl) {
     decl_ = decl;
 }
@@ -131,6 +139,10 @@ bool TypeNode::isVirtual() const {
 
 bool TypeNode::isBasic() const {
     return isBoolean() || isNumeric() || isSet();
+}
+
+bool TypeNode::extends(TypeNode *) const {
+    return false;
 }
 
 void TypeNode::setRef(int ref) {

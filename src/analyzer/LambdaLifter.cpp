@@ -38,7 +38,7 @@ void LambdaLifter::visit(ModuleNode &node) {
 
 void LambdaLifter::visit(ProcedureNode &node) {
     env_ = nullptr;
-    level_ = node.getLevel();
+    scope_ = node.getScope();
     path_.push_back(node.getIdentifier()->name());
     bool is_super = node.getProcedureCount();
     if (is_super) /* super procedure */ {
@@ -55,20 +55,20 @@ void LambdaLifter::visit(ProcedureNode &node) {
                 auto ident = make_unique<IdentDef>(var->getIdentifier()->name());
                 fields.push_back(make_unique<FieldNode>(EMPTY_POS, std::move(ident), var->getType()));
             }
-            auto type = context_->getOrInsertRecordType(EMPTY_POS, EMPTY_POS, std::move(fields));
+            auto type = context_->getOrInsertRecordType(EMPTY_POS, EMPTY_POS, nullptr, std::move(fields));
             auto decl = make_unique<TypeDeclarationNode>(EMPTY_POS, std::move(identifier), type);
             decl->setModule(module_);
-            decl->setLevel(module_->getLevel() + 1);
+            decl->setScope(module_->getScope() + 1);
             module_->types().push_back(std::move(decl));
             // insert an additional formal parameter to the sub-procedures of the procedure to pass its environment
             for (auto &proc : node.procedures()) {
                 auto param = make_unique<ParameterNode>(EMPTY_POS, make_unique<Ident>(SUPER_), type, true);
-                param->setLevel(proc->getLevel() + 1);
+                param->setScope(proc->getScope() + 1);
                 proc->getType()->parameters().push_back(std::move(param));
             }
             // create local variable to manage for the procedure's environment (this)
             auto var = make_unique<VariableDeclarationNode>(EMPTY_POS, make_unique<IdentDef>(THIS_), type);
-            var->setLevel(level_ + 1);
+            var->setScope(scope_ + 1);
             env_ = var.get();
             // initialize the procedure's environment (this)
             for (size_t i = 0; i < node.getType()->parameters().size(); i++) {
@@ -97,7 +97,7 @@ void LambdaLifter::visit(ProcedureNode &node) {
                 }
             }
             // write updates back to super-procedure's environment (super := this.super)
-            if (level_ > SymbolTable::MODULE_LEVEL) /* neither root, nor leaf procedure */ {
+            if (scope_ > SymbolTable::MODULE_SCOPE) /* neither root, nor leaf procedure */ {
                 auto param = findParameter(SUPER_, node.getType()->parameters());
                 if (param) {
                     auto lhs = make_unique<QualifiedExpression>(param);
@@ -122,17 +122,17 @@ void LambdaLifter::visit(ProcedureNode &node) {
         }
         // TODO remove unnecessary local variables
         // node.removeVariables(1, node.getVariableCount());
-    } else if (level_ > SymbolTable::MODULE_LEVEL) /* leaf procedure */ {
+    } else if (scope_ > SymbolTable::MODULE_SCOPE) /* leaf procedure */ {
         if ((env_ = findParameter(SUPER_, node.getType()->parameters()))) {
             for (size_t i = 0; i < node.statements()->getStatementCount(); i++) {
                 node.statements()->getStatement(i)->accept(*this);
             }
         }
     }
-    if (level_ > SymbolTable::MODULE_LEVEL) {
-        level_ = module_->getLevel() + 1;
-        node.setLevel(level_);
-        level_++;
+    if (scope_ > SymbolTable::MODULE_SCOPE) {
+        scope_ = module_->getScope() + 1;
+        node.setScope(scope_);
+        scope_++;
         for (auto &param : node.getType()->parameters()) {
             param->accept(*this);
         }
@@ -161,17 +161,17 @@ ParameterNode *LambdaLifter::findParameter(string name, vector<unique_ptr<Parame
 void LambdaLifter::visit(ImportNode &) {}
 
 void LambdaLifter::visit(ConstantDeclarationNode &node) {
-    node.setLevel(level_);
+    node.setScope(scope_);
 }
 
 void LambdaLifter::visit(FieldNode &) {}
 
 void LambdaLifter::visit(ParameterNode &node) {
-    node.setLevel(level_);
+    node.setScope(scope_);
 }
 
 void LambdaLifter::visit(VariableDeclarationNode &node) {
-    node.setLevel(level_);
+    node.setScope(scope_);
 }
 
 // TODO copy-paste from visit(ProcedureNodeReference &)
@@ -183,8 +183,8 @@ void LambdaLifter::visit(QualifiedStatement &node) {
 void LambdaLifter::visit(QualifiedExpression &node) {
     auto decl = node.dereference();
     selectors(decl->getType(), node.selectors());
-    if (decl->getLevel() == SymbolTable::MODULE_LEVEL ||
-        (env_->getIdentifier()->name() == SUPER_ && env_->getLevel() == decl->getLevel())) {
+    if (decl->getScope() == SymbolTable::MODULE_SCOPE ||
+        (env_->getIdentifier()->name() == SUPER_ && env_->getScope() == decl->getScope())) {
         // global variable or local variable in leaf procedure
         return;
     }
@@ -269,7 +269,7 @@ void LambdaLifter::visit(SetExpressionNode &node) {
 }
 
 void LambdaLifter::visit(TypeDeclarationNode &node) {
-    node.setLevel(level_);
+    node.setScope(scope_);
 }
 
 void LambdaLifter::visit(ArrayTypeNode &) {}
@@ -303,10 +303,14 @@ void LambdaLifter::visit(CaseOfNode &node) {
     }
 }
 
-void LambdaLifter::visit(CaseNode &node) {
-    for (size_t i = 0; i < node.getLabelCount(); ++i) {
-        node.getLabel(i)->accept(*this);
+void LambdaLifter::visit(CaseLabelNode &node) {
+    for (size_t i = 0; i < node.getValueCount(); ++i) {
+        node.getValue(i)->accept(*this);
     }
+}
+
+void LambdaLifter::visit(CaseNode &node) {
+    node.getLabel()->accept(*this);
     node.getStatements()->accept(*this);
 }
 

@@ -1,3 +1,7 @@
+(*
+  RUN: %oberon --run %s
+  XFAIL: *
+*)
 MODULE TrapFDivZ;
 
 VAR i: INTEGER;

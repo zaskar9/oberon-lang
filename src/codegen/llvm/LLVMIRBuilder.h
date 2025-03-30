@@ -44,23 +44,35 @@ private:
     Value *value_;
     map<DeclarationNode*, Value*> values_;
     map<TypeNode*, Type*> types_;
-    unordered_set<TypeNode *> hasArray_;
+    map<ArrayTypeNode*, Value*> typeDopes_;
+    map<DeclarationNode*, Value*> valueDopes_;
+    map<PointerTypeNode*, StructType*> ptrTypes_;
+    map<RecordTypeNode*, GlobalValue*> recTypeIds_;
+    map<RecordTypeNode*, GlobalValue*> recTypeTds_;
+    map<DeclarationNode *, Value *> valueTds_;
     map<ProcedureNode*, Function*> functions_;
     map<string, Constant*> strings_;
     stack<bool> deref_ctx;
-    unsigned int level_;
+    unsigned int scope_;
+    vector<string> scopes_;
     Function *function_;
     AttrBuilder attrs_;
     ASTContext *ast_;
+    StructType *recordTdTy_;
 
     Type *getLLVMType(TypeNode *type);
     MaybeAlign getLLVMAlign(TypeNode *type);
 
-    Value *processGEP(TypeNode *, Value *, vector<Value *> &);
-    void arrayInitializers(TypeNode *);
-    void arrayInitializers(TypeNode *, TypeNode *, vector<Value *> &);
+    Value *processGEP(Type *, Value *, vector<Value *> &);
+
+    Value *getArrayLength(ExpressionNode *, uint32_t);
+    Value *getOpenArrayLength(Value *, ArrayTypeNode *, uint32_t);
+    Value *getDopeVector(ExpressionNode *);
+
+    Value *getTypeDescriptor(Value *, QualifiedExpression *, TypeNode *);
 
     string qualifiedName(DeclarationNode *) const;
+    string createScopedName(TypeNode *) const;
 
     void setRefMode(bool deref);
     void restoreRefMode();
@@ -72,17 +84,24 @@ private:
 
     using Selectors = vector<unique_ptr<Selector>>;
     using SelectorIterator = Selectors::iterator;
-    TypeNode *selectors(TypeNode *, SelectorIterator, SelectorIterator);
+    TypeNode *selectors(QualifiedExpression *, TypeNode *, SelectorIterator, SelectorIterator);
     void parameters(ProcedureTypeNode *, ActualParameters *, vector<Value *> &, bool = false);
 
     void installTrap(Value *, uint8_t);
-    void trapAssert(Value *);
-    void trapFltDivByZero(Value *);
-    void trapIntDivByZero(Value *);
-    void trapCopyOverflow(Value *, Value *);
-    Value *trapIntOverflow(Intrinsic::IndependentIntrinsics, Value*, Value*);
     void trapOutOfBounds(Value *, Value *, Value *);
+    void trapTypeGuard(Value *);
+    void trapCopyOverflow(Value *, Value *);
     void trapNILPtr(Value *);
+    void trapIntDivByZero(Value *);
+    void trapAssert(Value *);
+    Value *trapIntOverflow(Intrinsic::IndependentIntrinsics, Value*, Value*);
+    void trapFltDivByZero(Value *);
+
+    Value *createTypeTest(Value *, TypeNode *);
+    Value *createTypeTest(Value *, QualifiedExpression *, TypeNode *, TypeNode *);
+
+    void createNumericTestCase(CaseOfNode &, BasicBlock *, BasicBlock *);
+    void createTypeTestCase(CaseOfNode &, BasicBlock *, BasicBlock *);
 
     Value *createNeg(Value *);
     Value *createAdd(Value *, Value *);
@@ -164,6 +183,7 @@ private:
     void visit(StatementSequenceNode &) override;
     void visit(AssignmentNode &) override;
     void visit(CaseOfNode &) override;
+    void visit(CaseLabelNode &) override;
     void visit(CaseNode &) override;
     void visit(IfThenElseNode &) override;
     void visit(ElseIfNode &) override;

@@ -213,6 +213,7 @@ void Parser::declarations(vector<unique_ptr<ConstantDeclarationNode>> & consts,
         procedure_declaration(procs);
     }
     expect({ TokenType::kw_begin, TokenType::kw_end });
+    sema_.onDeclarations();
 }
 
 // TODO const_declaration = identdef "=" const_expression .
@@ -303,23 +304,32 @@ ArrayTypeNode* Parser::array_type() {
     return nullptr;
 }
 
-// TODO record_type = "RECORD" [ "(" qualident ")" ] [ field_list { ";" field_list } ] END.
-// record_type = "RECORD" field_list { ";" field_list } "END" .
+// record_type = "RECORD" [ "(" qualident ")" ] [ field_list { ";" field_list } ] END.
 RecordTypeNode* Parser::record_type() {
     logger_.debug("record_type");
-    FilePos pos = scanner_.next()->start();  // skip RECORD keyword and get its position
+    FilePos pos = scanner_.next()->start(); // skip RECORD keyword and get its position
+    unique_ptr<QualIdent> base;
+    if (scanner_.peek()->type() == TokenType::lparen) {
+        scanner_.next(); // skip left parenthesis
+        base = qualident();
+        if (assertToken(scanner_.peek(), TokenType::rparen)) {
+            scanner_.next(); // skip right parenthesis
+        }
+    }
     vector<unique_ptr<FieldNode>> fields;
-    field_list(fields);
-    while (scanner_.peek()->type() == TokenType::semicolon) {
-        token_ = scanner_.next();  // skip semicolon but keep token for error reporting in `Parser::field_list`
+    if (scanner_.peek()->type() == TokenType::const_ident) {
         field_list(fields);
+        while (scanner_.peek()->type() == TokenType::semicolon) {
+            scanner_.next(); // skip semicolon
+            field_list(fields);
+        }
     }
     if (assertToken(scanner_.peek(), TokenType::kw_end)) {
         scanner_.next();  // skip END keyword
     }
     // [<)>, <;>, <END>]
     // resync({ TokenType::semicolon, TokenType::rparen, TokenType::kw_end });
-    return sema_.onRecordType(pos, EMPTY_POS, std::move(fields));
+    return sema_.onRecordType(pos, EMPTY_POS, std::move(base), std::move(fields));
 }
 
 // field_list = ident_list ":" type .
@@ -835,6 +845,7 @@ unique_ptr<StatementNode> Parser::case_statement() {
     token_ = scanner_.next();  // skip CASE keyword
     const FilePos start = token_->start();
     auto expr = expression();
+    sema_.onCasePfStart(start, EMPTY_POS, expr);
     vector<unique_ptr<CaseNode>> cases;
     auto elseStmts = make_unique<StatementSequenceNode>(EMPTY_POS);
     if (assertToken(scanner_.peek(), TokenType::kw_of)) {
@@ -855,9 +866,10 @@ unique_ptr<StatementNode> Parser::case_statement() {
                 if (assertToken(scanner_.peek(), TokenType::colon)) {
                     scanner_.next();  // skip colon
                 }
+                auto label = sema_.onCaseLabel(caseStart, EMPTY_POS, expr, std::move(labels));
                 auto stmts = make_unique<StatementSequenceNode>(EMPTY_POS);
                 statement_sequence(stmts.get());
-                cases.push_back(sema_.onCase(caseStart, EMPTY_POS, std::move(labels), std::move(stmts)));
+                cases.push_back(sema_.onCase(caseStart, EMPTY_POS, expr, std::move(label), std::move(stmts)));
             } while (scanner_.peek()->type() == TokenType::pipe);
         }
         if (scanner_.peek()->type() == TokenType::kw_else) {
@@ -868,7 +880,7 @@ unique_ptr<StatementNode> Parser::case_statement() {
             scanner_.next();  // skip END keyword
         }
     }
-    return sema_.onCaseOf(start, token_->end(), std::move(expr), std::move(cases), std::move(elseStmts));
+    return sema_.onCaseOfEnd(start, token_->end(), std::move(expr), std::move(cases), std::move(elseStmts));
 }
 
 // expression_list = expression { "," expression } .

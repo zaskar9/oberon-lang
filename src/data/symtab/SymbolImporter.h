@@ -31,9 +31,10 @@ private:
     Logger &logger_;
     vector<TypeNode *> types_;
     SymbolTable *symbols_;
+    ModuleNode *module_;
     map<unsigned, PointerTypeNode *> forwards_;
 
-    void readDeclaration(SymbolFile *, NodeType, ModuleNode *);
+    void readDeclaration(SymbolFile *, NodeType);
     TypeNode *readType(SymbolFile *, PointerTypeNode * = nullptr);
     TypeNode *readArrayType(SymbolFile *);
     TypeNode *readPointerType(SymbolFile *);
@@ -44,7 +45,7 @@ private:
 
 public:
     explicit SymbolImporter(CompilerConfig &config, ASTContext *context, SymbolTable *symbols) :
-            config_(config), context_(context), logger_(config.logger()), types_(), symbols_(symbols), forwards_() {};
+            config_(config), context_(context), logger_(config.logger()), types_(), symbols_(symbols), module_(), forwards_() {};
     ~SymbolImporter() = default;
 
     ModuleNode *read(const string &module);

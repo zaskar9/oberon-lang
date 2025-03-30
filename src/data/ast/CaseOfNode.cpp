@@ -11,20 +11,37 @@
 using std::ostream;
 using std::string;
 
-const set<int64_t> &CaseNode::getCases() const {
-    return cases_;
+TypeNode *CaseLabelNode::getType() const {
+    return labels_.empty() ? nullptr : labels_[0]->getType();
 }
 
-ExpressionNode *CaseNode::getLabel(size_t num) const {
+ExpressionNode *CaseLabelNode::getValue(size_t num) const {
     return labels_.at(num).get();
 }
 
-size_t CaseNode::getLabelCount() const {
+size_t CaseLabelNode::getValueCount() const {
     return labels_.size();
 }
 
-TypeNode *CaseNode::getLabelType() const {
-    return labels_.empty() ? nullptr : labels_[0]->getType();
+const set<int64_t> &CaseLabelNode::getValues() const {
+    return values_;
+}
+
+void CaseLabelNode::accept(NodeVisitor &visitor) {
+    visitor.visit(*this);
+}
+
+void CaseLabelNode::print(std::ostream &stream) const {
+    string sep;
+    for (auto& label : labels_) {
+        stream << sep << *label;
+        sep = ", ";
+    }
+}
+
+
+CaseLabelNode *CaseNode::getLabel() const {
+    return label_.get();
 }
 
 StatementSequenceNode* CaseNode::getStatements() const {
@@ -36,14 +53,8 @@ void CaseNode::accept(NodeVisitor &visitor) {
 }
 
 void CaseNode::print(ostream &stream) const {
-    string sep;
-    for (auto& label : labels_) {
-        stream << sep << *label;
-        sep = ", ";
-    }
-    stream << " : " << *statements_;
+    stream << *label_ << " : " << *statements_;
 }
-
 
 
 ExpressionNode* CaseOfNode::getExpression() const {
@@ -61,7 +72,8 @@ size_t CaseOfNode::getCaseCount() const {
 size_t CaseOfNode::getLabelCount() const {
     if (labels_ == 0) {
         for (auto &c : cases_) {
-            labels_ += c->getCases().size();
+            size_t values = c->getLabel()->getValues().size();
+            labels_ += values > 0 ? values : 1;
         }
     }
     return labels_;

@@ -7,6 +7,16 @@
 #include "RecordTypeNode.h"
 #include "NodeVisitor.h"
 
+RecordTypeNode::RecordTypeNode(const FilePos &pos, RecordTypeNode *base, vector<unique_ptr<FieldNode>> fields) :
+        TypeNode(NodeType::record_type, pos, TypeKind::RECORD, 0),
+        fields_(std::move(fields)), base_(base), level_(base ? base->getLevel() + 1 : 0) {
+    unsigned index = 0;
+    for (auto& field : fields_) {
+        field->setRecordType(this);
+        field->setIndex(index++);
+    }
+}
+
 unsigned int RecordTypeNode::getSize() const {
     unsigned int size = 0;
     for (auto &&itr : fields_) {
@@ -21,6 +31,9 @@ FieldNode *RecordTypeNode::getField(const std::string &name) const {
             return itr.get();
         }
     }
+    if (base_) {
+        return base_->getField(name);
+    }
     return nullptr;
 }
 
@@ -32,12 +45,23 @@ size_t RecordTypeNode::getFieldCount() {
     return fields_.size();
 }
 
-void RecordTypeNode::setBaseType(RecordTypeNode *base) {
-    base_ = base;
-}
-
 RecordTypeNode *RecordTypeNode::getBaseType() const {
     return base_;
+}
+
+bool RecordTypeNode::isExtended() const {
+    return base_ != nullptr;
+}
+
+bool RecordTypeNode::extends(TypeNode *base) const {
+    if (this != base && base_) {
+        return base_->extends(base);
+    }
+    return this == base;
+}
+
+unsigned short RecordTypeNode::getLevel() const {
+    return level_;
 }
 
 void RecordTypeNode::accept(NodeVisitor &visitor) {
@@ -48,6 +72,6 @@ void RecordTypeNode::print(std::ostream &out) const {
     if (this->isAnonymous()) {
         out << "record type";
     } else {
-        out << *this->getIdentifier();
+        out << this->getIdentifier()->name();
     }
 }

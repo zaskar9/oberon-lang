@@ -48,11 +48,11 @@ ModuleNode *SymbolImporter::read(const string &name) {
     std::cout << std::endl;
 #endif
     // get or create module
-    auto module = getOrCreateModule(name);
+    module_ = getOrCreateModule(name);
     auto ch = file->readChar();
     while (ch != 0 && !file->eof()) {
         auto nodeType = (NodeType) ch;
-        readDeclaration(file.get(), nodeType, module);
+        readDeclaration(file.get(), nodeType);
 #ifdef _DEBUG
         std::cout << std::endl;
 #endif
@@ -66,12 +66,12 @@ ModuleNode *SymbolImporter::read(const string &name) {
     file->close();
 #ifdef _DEBUG
     auto printer = make_unique<NodePrettyPrinter>(std::cout);
-    printer->print(module);
+    printer->print(module_);
 #endif
-    return module;
+    return module_;
 }
 
-void SymbolImporter::readDeclaration(SymbolFile *file, NodeType nodeType, ModuleNode *module) {
+void SymbolImporter::readDeclaration(SymbolFile *file, NodeType nodeType) {
     auto name = file->readString();
     auto ident = make_unique<IdentDef>(name);
     auto type = readType(file);
@@ -115,28 +115,28 @@ void SymbolImporter::readDeclaration(SymbolFile *file, NodeType nodeType, Module
             }
             if (expr) {
                 auto decl = make_unique<ConstantDeclarationNode>(std::move(ident), std::move(expr));
-                symbols_->import(module->getIdentifier()->name(), name, decl.get());
-                decl->setModule(module);
-                module->constants().push_back(std::move(decl));
+                symbols_->import(module_->getIdentifier()->name(), name, decl.get());
+                decl->setModule(module_);
+                module_->constants().push_back(std::move(decl));
             }
         }
-    } else if (nodeType == NodeType::type && !symbols_->lookup(module->getIdentifier()->name(), name)) {
+    } else if (nodeType == NodeType::type && !symbols_->lookup(module_->getIdentifier()->name(), name)) {
         auto decl = make_unique<TypeDeclarationNode>(EMPTY_POS, std::move(ident), type);
-        symbols_->import(module->getIdentifier()->name(), name, decl.get());
-        decl->setModule(module);
-        module->types().push_back(std::move(decl));
+        symbols_->import(module_->getIdentifier()->name(), name, decl.get());
+        decl->setModule(module_);
+        module_->types().push_back(std::move(decl));
     } else if (nodeType == NodeType::variable) {
         // read in export number
         [[maybe_unused]] auto exno = file->readInt();
         auto decl = make_unique<VariableDeclarationNode>(EMPTY_POS, std::move(ident), type);
-        symbols_->import(module->getIdentifier()->name(), name, decl.get());
-        decl->setModule(module);
-        module->variables().push_back(std::move(decl));
+        symbols_->import(module_->getIdentifier()->name(), name, decl.get());
+        decl->setModule(module_);
+        module_->variables().push_back(std::move(decl));
     } else if (nodeType == NodeType::procedure) {
         auto decl = make_unique<ProcedureNode>(std::move(ident), dynamic_cast<ProcedureTypeNode *>(type));
-        symbols_->import(module->getIdentifier()->name(), name, decl.get());
-        decl->setModule(module);
-        module->procedures().push_back(std::move(decl));
+        symbols_->import(module_->getIdentifier()->name(), name, decl.get());
+        decl->setModule(module_);
+        module_->procedures().push_back(std::move(decl));
     }
 }
 
@@ -225,7 +225,7 @@ TypeNode *SymbolImporter::readArrayType(SymbolFile *file) {
         lengths.insert(lengths.end(), array->lengths().begin(), array->lengths().end());
         types.insert(types.end(), array->types().begin(), array->types().end());
     }
-    auto res = context_->getOrInsertArrayType(EMPTY_POS, EMPTY_POS, dim, lengths, types);
+    auto res = context_->getOrInsertArrayType(EMPTY_POS, EMPTY_POS, dim, lengths, types, module_);
     // read in size
     res->setSize((unsigned) file->readInt());
     return res;
@@ -233,7 +233,7 @@ TypeNode *SymbolImporter::readArrayType(SymbolFile *file) {
 
 TypeNode *SymbolImporter::readPointerType(SymbolFile *file) {
     // create a pointer type with null base type
-    auto ptr = context_->getOrInsertPointerType(EMPTY_POS, EMPTY_POS, nullptr);
+    auto ptr = context_->getOrInsertPointerType(EMPTY_POS, EMPTY_POS, nullptr, module_);
     // try to read the base type
     auto base = readType(file, ptr);
     // base type successfully imported
@@ -261,12 +261,12 @@ TypeNode *SymbolImporter::readProcedureType(SymbolFile *file) {
             index++;
         }
         auto param = make_unique<ParameterNode>(EMPTY_POS, make_unique<Ident>("_"), type, (var == 0), index);
-        param->setLevel(SymbolTable::MODULE_LEVEL);
+        param->setScope(SymbolTable::MODULE_SCOPE);
         params.push_back(std::move(param));
         // check for terminator
         ch = file->readChar();
     }
-    return context_->getOrInsertProcedureType(EMPTY_POS, EMPTY_POS, std::move(params), false, ret);
+    return context_->getOrInsertProcedureType(EMPTY_POS, EMPTY_POS, std::move(params), false, ret, module_);
 }
 
 TypeNode *SymbolImporter::readRecordType(SymbolFile *file) {
@@ -303,8 +303,7 @@ TypeNode *SymbolImporter::readRecordType(SymbolFile *file) {
         // check for terminator
         ch = file->readChar();
     }
-    auto res = context_->getOrInsertRecordType(EMPTY_POS, EMPTY_POS, std::move(fields));
-    res->setBaseType(base_t);
+    auto res = context_->getOrInsertRecordType(EMPTY_POS, EMPTY_POS, base_t, std::move(fields), module_);
     res->setSize(size);
     return res;
 }

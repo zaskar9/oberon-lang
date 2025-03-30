@@ -26,6 +26,19 @@ TypeNode *ArrayTypeNode::getMemberType() const {
     return nullptr;
 }
 
+void ArrayTypeNode::setBase(ArrayTypeNode *base) {
+    base_ = base;
+    for (auto& type : types_) {
+        if (auto array_t = dynamic_cast<ArrayTypeNode *>(type)) {
+            array_t->setBase(base);
+        }
+    }
+}
+
+ArrayTypeNode *ArrayTypeNode::getBase() const {
+    return base_;
+}
+
 bool ArrayTypeNode::isOpen() const {
     return lengths_[0] == 0;
 }
@@ -38,6 +51,6 @@ void ArrayTypeNode::print(std::ostream &out) const {
     if (this->isAnonymous()) {
         out << "array type";
     } else {
-        out << *this->getIdentifier();
+        out << this->getIdentifier()->name();
     }
 }

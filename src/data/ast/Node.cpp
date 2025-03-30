@@ -8,10 +8,6 @@
 
 Node::~Node() = default;
 
-void Node::setNodeType(const NodeType nodeType) {
-    nodeType_ = nodeType;
-}
-
 NodeType Node::getNodeType() const {
     return nodeType_;
 }

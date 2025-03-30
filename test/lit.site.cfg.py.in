@@ -1,7 +1,7 @@
 import lit.formats
 config.name = "Oberon"
 config.test_format = lit.formats.ShTest(True)
-config.suffixes = ['.mod']
+config.suffixes = ['.mod', '.Mod']
 config.excludes = ['tmp', 'lib', 'include']
 
 config.test_source_root = os.path.join(r"@CMAKE_CURRENT_SOURCE_DIR@", "unittests")
