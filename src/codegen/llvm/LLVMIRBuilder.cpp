@@ -343,7 +343,7 @@ TypeNode *LLVMIRBuilder::selectors(QualifiedExpression *expr, TypeNode *base, Se
                     Value *upper;
                     if (array_t->isOpen()) {
                         dopeV = dopeV ? dopeV : getDopeVector(expr);
-                        upper = getOpenArrayLength(dopeV, array_t, i);
+                        upper = getOpenArrayLength(dopeV, array_t, static_cast<uint32_t>(i));
                     } else {
                         upper = builder_.getInt64(array_t->lengths()[i]);
                     }
@@ -674,7 +674,7 @@ Value *LLVMIRBuilder::createTypeTest(Value *value, QualifiedExpression *expr, Ty
 
 void LLVMIRBuilder::createNumericTestCase(CaseOfNode &node, BasicBlock *dflt, BasicBlock *tail) {
     auto *type = dyn_cast<IntegerType>(getLLVMType(node.getExpression()->getType()));
-    SwitchInst *inst = builder_.CreateSwitch(value_, dflt, node.getLabelCount());
+    SwitchInst *inst = builder_.CreateSwitch(value_, dflt, static_cast<unsigned int>(node.getLabelCount()));
     for (size_t i = 0; i < node.getCaseCount(); ++i) {
         auto block = BasicBlock::Create(builder_.getContext(), "case." + to_string(i), function_);
         auto c = node.getCase(i);
@@ -1699,7 +1699,7 @@ LLVMIRBuilder::createLenCall(vector<unique_ptr<ExpressionNode>> &actuals, std::v
                 logger_.error(param1->pos(), "array dimension cannot be a negative value.");
                 return value_;
             }
-            if (static_cast<uint64_t>(dim) >= array_t->dimensions()) {
+            if (static_cast<uint32_t>(dim) >= array_t->dimensions()) {
                 logger_.error(param1->pos(), "value exceeds number of array dimensions.");
                 return value_;
             }
@@ -1712,7 +1712,7 @@ LLVMIRBuilder::createLenCall(vector<unique_ptr<ExpressionNode>> &actuals, std::v
         value_ = builder_.getInt64(array_t->lengths()[(size_t) dim]);
         return value_;
     }
-    return getOpenArrayLength(params[1], array_t, dim);
+    return getOpenArrayLength(params[1], array_t, static_cast<uint32_t>(dim));
 }
 
 Value *
