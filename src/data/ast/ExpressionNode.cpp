@@ -205,27 +205,6 @@ void SetExpressionNode::print(std::ostream &stream) const {
     stream << " }";
 }
 
-template<typename T>
-bool LiteralNode<T>::isConstant() const {
-    return true;
-}
-
-template<typename T>
-bool LiteralNode<T>::isLiteral() const {
-    return true;
-}
-
-template<typename T>
-TypeKind LiteralNode<T>::kind() const {
-    return kind_;
-}
-
-template<typename T>
-int LiteralNode<T>::getPrecedence() const {
-    return 4;
-}
-
-
 void BooleanLiteralNode::accept(NodeVisitor& visitor) {
     visitor.visit(*this);
 }

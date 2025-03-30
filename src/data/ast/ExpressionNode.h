@@ -170,7 +170,9 @@ public:
             ExpressionNode(nodeType, pos, type, cast), kind_(kind), value_(value) {};
     ~LiteralNode() override = default;
 
-    [[nodiscard]] TypeKind kind() const;
+    [[nodiscard]] TypeKind kind() const {
+        return kind_;
+    }
 
     [[nodiscard]] T value() const {
         return value_;
@@ -178,12 +180,19 @@ public:
 
     void accept(NodeVisitor &visitor) override = 0;
 
-    [[nodiscard]] bool isConstant() const final;
-    [[nodiscard]] bool isLiteral() const final;
-    [[nodiscard]] int getPrecedence() const final;
+    [[nodiscard]] bool isConstant() const final {
+        return true;
+    }
+
+    [[nodiscard]] bool isLiteral() const final {
+        return true;
+    }
+
+    [[nodiscard]] int getPrecedence() const final {
+        return 4;
+    }
 
 };
-
 
 template<typename T>
 optional<T> literal_cast(const ExpressionNode &expr) {

@@ -7,15 +7,19 @@
 #include "LLVMIRBuilder.h"
 
 #include <limits>
+#include <csignal>
 #include <sstream>
 #include <vector>
 #include <llvm/IR/Verifier.h>
+#include "system/PredefinedProcedure.h"
 
 using std::ostringstream;
 using std::vector;
 
 LLVMIRBuilder::LLVMIRBuilder(CompilerConfig &config, LLVMContext &builder, Module *module) :
-        NodeVisitor(), config_(config), logger_(config_.logger()), builder_(builder), module_(module), value_(), values_(),
+        NodeVisitor(), config_(config), logger_(config_.logger()), builder_(builder), module_(module),
+		triple_(module->getTargetTriple()),
+        value_(), values_(),
         types_(), typeDopes_(), valueDopes_(), ptrTypes_(), recTypeIds_(), recTypeTds_(), valueTds_(),
         functions_(), strings_(), deref_ctx(), scope_(0), scopes_(), function_(), attrs_(AttrBuilder(builder)) {
     attrs_
@@ -56,7 +60,7 @@ void LLVMIRBuilder::visit(ModuleNode &node) {
                                         expo ? GlobalValue::ExternalLinkage : GlobalValue::InternalLinkage,
                                         Constant::getNullValue(type),
                                         expo ? prefix + variable->getIdentifier()->name() : variable->getIdentifier()->name());
-        value->setAlignment(getLLVMAlign(variable->getType()));
+        value->setAlignment(module_->getDataLayout().getPreferredAlign(value));
         values_[variable] = value;
     }
     // Generate external procedure signatures
@@ -73,7 +77,10 @@ void LLVMIRBuilder::visit(ModuleNode &node) {
     }
     // Generate code for body
     auto body = module_->getOrInsertFunction(node.getIdentifier()->name(), builder_.getInt32Ty());
-    function_ = ::cast<Function>(body.getCallee());
+    function_ = dyn_cast<Function>(body.getCallee());
+    if (triple_.isOSWindows() && !config_.hasFlag(Flag::ENABLE_MAIN)) {
+        function_->setDLLStorageClass(llvm::GlobalValue::DLLStorageClassTypes::DLLExportStorageClass);
+    }
     auto entry = BasicBlock::Create(builder_.getContext(), "entry", function_);
     builder_.SetInsertPoint(entry);
     scope_ = node.getScope() + 1;
@@ -179,8 +186,7 @@ void LLVMIRBuilder::visit(ProcedureNode &node) {
 void LLVMIRBuilder::visit(ImportNode &node) {
     std::string name = node.getModule()->name();
     if (name == "SYSTEM") {
-        // No initialization for pseudo modules
-        return;
+        return; // No initialization for pseudo modules
     }
     auto type = FunctionType::get(builder_.getInt32Ty(), {});
     auto fun = module_->getOrInsertFunction(name, type);
@@ -222,7 +228,7 @@ void LLVMIRBuilder::visit(QualifiedExpression &node) {
         auto variable = dynamic_cast<VariableDeclarationNode *>(decl);
         auto value = new GlobalVariable(*module_, getLLVMType(variable->getType()), false,
                                         GlobalValue::ExternalLinkage, nullptr, qualifiedName(decl));
-        value->setAlignment(getLLVMAlign(variable->getType()));
+        value->setAlignment(module_->getDataLayout().getPreferredAlign(value));
         values_[decl] = value;
         value_ = value;
     }
@@ -304,7 +310,7 @@ TypeNode *LLVMIRBuilder::selectors(QualifiedExpression *expr, TypeNode *base, Se
     if (!base || base->isVirtual()) {
         return nullptr;
     }
-    auto baseTy = getLLVMType(base);
+    auto selector_t = base;
     auto value = value_;
     vector<Value *> indices;
     indices.push_back(builder_.getInt32(0));
@@ -312,29 +318,28 @@ TypeNode *LLVMIRBuilder::selectors(QualifiedExpression *expr, TypeNode *base, Se
         auto sel = (*it).get();
         if (sel->getNodeType() == NodeType::parameter) {
             auto params = dynamic_cast<ActualParameters *>(sel);
-            auto procedure_t = dynamic_cast<ProcedureTypeNode *>(base);
+            auto type = dynamic_cast<ProcedureTypeNode *>(selector_t);
             vector<Value*> values;
             parameters(procedure_t, params, values);
-            auto funTy = getLLVMType(procedure_t);
+            auto funTy = getLLVMType(type);
             // Output the GEP up to the procedure call
             value = processGEP(baseTy, value, indices);
             // Create a load to dereference the function pointer
             value = builder_.CreateLoad(funTy, value);
             value_ = builder_.CreateCall(dyn_cast<FunctionType>(funTy), value, values);
-            base = procedure_t->getReturnType();
-            baseTy = getLLVMType(base);
+            selector_t = procedure_t->getReturnType();
         } else if (sel->getNodeType() == NodeType::array_type) {
             auto array = dynamic_cast<ArrayIndex *>(sel);
-            auto array_t = dynamic_cast<ArrayTypeNode *>(base);
+            auto type = dynamic_cast<ArrayTypeNode *>(selector_t);
             setRefMode(true);
             Value *dopeV = nullptr;
             for (size_t i = 0; i < array->indices().size(); ++i) {
                 auto index = array->indices()[i].get();
                 index->accept(*this);
-                if (config_.isSanitized(Trap::OUT_OF_BOUNDS) && (array_t->isOpen() || !index->isLiteral())) {
+                if (config_.isSanitized(Trap::OUT_OF_BOUNDS) && (type->isOpen() || !index->isLiteral())) {
                     Value *lower = builder_.getInt64(0);
                     Value *upper;
-                    if (array_t->isOpen()) {
+                    if (type->isOpen()) {
                         dopeV = dopeV ? dopeV : getDopeVector(expr);
                         upper = getOpenArrayLength(dopeV, array_t, i);
                     } else {
@@ -346,27 +351,28 @@ TypeNode *LLVMIRBuilder::selectors(QualifiedExpression *expr, TypeNode *base, Se
             }
             restoreRefMode();
             value = processGEP(baseTy, value, indices);
-            base = array_t->types()[array->indices().size() - 1];
-            baseTy = getLLVMType(base);  // TODO switch to LLVM types
+            selector_t = type->types()[array->indices().size() - 1];
+            base = selector_t;
         } else if (sel->getNodeType() == NodeType::pointer_type) {
             // Output the GEP up to the pointer
-            value = processGEP(baseTy, value, indices);
+            value = processGEP(base, value, indices);
             // Create a load to dereference the pointer
-            value = builder_.CreateLoad(baseTy, value);
+            value = builder_.CreateLoad(base, value);
             // Trap NIL pointer access
             if (config_.isSanitized(Trap::NIL_POINTER)) {
                 trapNILPtr(value);
             }
-            auto pointer_t = dynamic_cast<PointerTypeNode *>(base);
-            base = pointer_t->getBase();
+            auto type = dynamic_cast<PointerTypeNode *>(base);
+            base = type->getBase();
             // Handle values of record base type
-            if (pointer_t->getBase()->isRecord()) {
+            if (base->isRecord()) {
                 // Skip the first field (type descriptor tag) of a leaf record type
                 indices.push_back(builder_.getInt32(1));
-                baseTy = ptrTypes_[pointer_t];
+                baseTy = ptrTypes_[type];
             } else {
                 baseTy = getLLVMType(base);  // TODO switch to LLVM types
             }
+            selector_t = base;
         } else if (sel->getNodeType() == NodeType::record_type) {
             // Handle record field access
             auto field = dynamic_cast<RecordField *>(sel)->getField();
@@ -379,9 +385,9 @@ TypeNode *LLVMIRBuilder::selectors(QualifiedExpression *expr, TypeNode *base, Se
             // Access the field by its index (increase index at levels > 0)
             indices.push_back(builder_.getInt32(current == 0 ? field->getIndex() : field->getIndex() + 1));
             // Output GEP up to the record field
-            value = processGEP(baseTy, value, indices);
-            base = field->getType();
-            baseTy = getLLVMType(base);
+            value = processGEP(base, value, indices);
+            selector_t = field->getType();
+            base = selector_t;
         } else if (sel->getNodeType() == NodeType::type) {
             auto guard = dynamic_cast<Typeguard *>(sel);
             if (config_.isSanitized(Trap::TYPE_GUARD)) {
@@ -394,19 +400,19 @@ TypeNode *LLVMIRBuilder::selectors(QualifiedExpression *expr, TypeNode *base, Se
                 auto cond = createTypeTest(tmp, expr, base, guard_t);
                 trapTypeGuard(cond);
             }
-            base = guard->getType();
-            baseTy = getLLVMType(base);
+            selector_t = guard->getType();
+            base = selector_t;
         } else {
             logger_.error(sel->pos(), "unsupported selector.");
         }
     }
     // Clean up: emit any remaining indices
     if (indices.size() > 1) {
-        value_ = processGEP(baseTy, value, indices);
+        value_ = processGEP(base, value, indices);
     } else {
         value_ = value;
     }
-    return base;
+    return selector_t;
 }
 
 void
@@ -540,12 +546,16 @@ void LLVMIRBuilder::visit(RangeLiteralNode &node) {
     value_ = ConstantInt::get(builder_.getInt32Ty(), static_cast<uint32_t>(node.value().to_ulong()));
 }
 
-void LLVMIRBuilder::installTrap(Value *cond, unsigned code) {
+void LLVMIRBuilder::installTrap(Value *condition, uint8_t code) {
     auto tail = BasicBlock::Create(builder_.getContext(), "tail", function_);
     auto trap = BasicBlock::Create(builder_.getContext(), "trap", function_);
     builder_.CreateCondBr(cond, tail, trap);
     builder_.SetInsertPoint(trap);
-    Function *fun = Intrinsic::getDeclaration(module_, Intrinsic::ubsantrap);
+#ifndef _LLVM_20
+    Function* fun = Intrinsic::getDeclaration(module_, Intrinsic::ubsantrap);
+#else
+    Function* fun = Intrinsic::getOrInsertDeclaration(module_, Intrinsic::ubsantrap);
+#endif
     builder_.CreateCall(fun, {builder_.getInt8(code)});
     builder_.CreateUnreachable();
     builder_.SetInsertPoint(tail);
@@ -585,7 +595,11 @@ void LLVMIRBuilder::trapAssert(llvm::Value *cond) {
 
 Value *LLVMIRBuilder::trapIntOverflow(Intrinsic::IndependentIntrinsics intrinsic, Value *lhs, Value *rhs) {
     auto type = dyn_cast<IntegerType>(rhs->getType());
-    Function *fun = Intrinsic::getDeclaration(module_, intrinsic, {type});
+#ifndef _LLVM_20
+    Function* fun = Intrinsic::getDeclaration(module_, intrinsic, { type });
+#else
+    Function* fun = Intrinsic::getOrInsertDeclaration(module_, intrinsic, { type });
+#endif
     auto call = builder_.CreateCall(fun, {lhs, rhs});
     auto result = builder_.CreateExtractValue(call, {0});
     auto status = builder_.CreateExtractValue(call, {1});
@@ -2057,9 +2071,13 @@ void LLVMIRBuilder::procedure(ProcedureNode &node) {
             params.push_back(builder_.getPtrTy());
         }
     }
-    auto fun = FunctionType::get(getLLVMType(node.getType()->getReturnType()), params, node.getType()->hasVarArgs());
-    auto callee = module_->getOrInsertFunction(name, fun);
-    functions_[&node] = dyn_cast<Function>(callee.getCallee());
+    auto type = FunctionType::get(getLLVMType(node.getType()->getReturnType()), params, node.getType()->hasVarArgs());
+    auto callee = module_->getOrInsertFunction(name, type);
+    auto function = dyn_cast<Function>(callee.getCallee());
+    if (triple_.isOSWindows() && node.getIdentifier()->isExported() && !config_.hasFlag(Flag::ENABLE_MAIN)) {
+        function->setDLLStorageClass(llvm::GlobalValue::DLLStorageClassTypes::DLLExportStorageClass);
+    }
+    functions_[&node] = function;
 }
 
 string LLVMIRBuilder::qualifiedName(DeclarationNode *node) const {

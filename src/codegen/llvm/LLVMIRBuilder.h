@@ -17,6 +17,7 @@
 #include <llvm/IR/DataLayout.h>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
+#include <llvm/TargetParser/Triple.h>
 
 #include "compiler/CompilerConfig.h"
 #include "data/ast/ASTContext.h"
@@ -39,6 +40,7 @@ private:
     Logger &logger_;
     IRBuilder<> builder_;
     Module *module_;
+    Triple triple_;
     Value *value_;
     map<DeclarationNode*, Value*> values_;
     map<TypeNode*, Type*> types_;
@@ -85,7 +87,12 @@ private:
     TypeNode *selectors(QualifiedExpression *, TypeNode *, SelectorIterator, SelectorIterator);
     void parameters(ProcedureTypeNode *, ActualParameters *, vector<Value *> &, bool = false);
 
-    void installTrap(Value *, unsigned);
+    void installTrap(Value *, uint8_t);
+    void trapAssert(Value *);
+    void trapFltDivByZero(Value *);
+    void trapIntDivByZero(Value *);
+    void trapCopyOverflow(Value *, Value *);
+    Value *trapIntOverflow(Intrinsic::IndependentIntrinsics, Value*, Value*);
     void trapOutOfBounds(Value *, Value *, Value *);
     void trapTypeGuard(Value *);
     void trapCopyOverflow(Value *, Value *);

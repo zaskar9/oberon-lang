@@ -367,7 +367,7 @@ unique_ptr<const Token> Scanner::scanNumber() {
                 isInt = res > std::numeric_limits<int16_t>::max();
                 value = static_cast<int64_t>(res);
             }
-        } catch (boost::bad_optional_access const &e) {
+        } catch (boost::bad_optional_access const &) {
             logger_.error(pos, "invalid integer literal: " + num + ".");
             value = 0;
         }

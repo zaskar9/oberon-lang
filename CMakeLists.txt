@@ -3,9 +3,14 @@ cmake_minimum_required(VERSION 3.30)
 project(oberon-lang VERSION 0.1.0)
 set(SMB_FILE_VERSION 4)
 
+if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+    message(WARNING "No build type set, defaulting to \"Release\".")
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build." FORCE)
+endif()
+
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     # warning level 4
-    add_compile_options(/Wall /W4 /external:anglebrackets /external:W0)
+    add_compile_options(/Wall /W4 /external:anglebrackets /external:W0 /utf-8)
 else ()
     # lots of warnings and all warnings as errors -Wglobal-constructors -Wexit-time-destructors
     add_compile_options(-W -Wall -Wextra -Werror -Wpedantic -Wno-error=deprecated -Wunreachable-code -Winvalid-pch -Wcast-align -Wformat=2 -Wformat-nonliteral -Wmissing-declarations -Wmissing-noreturn -Wmissing-format-attribute -Wmissing-include-dirs -Wredundant-decls -Wswitch-default -Wsign-conversion -Wfloat-conversion)
