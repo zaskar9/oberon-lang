@@ -845,6 +845,7 @@ unique_ptr<StatementNode> Parser::case_statement() {
     token_ = scanner_.next();  // skip CASE keyword
     const FilePos start = token_->start();
     auto expr = expression();
+    sema_.onCasePfStart(start, EMPTY_POS, expr);
     vector<unique_ptr<CaseNode>> cases;
     auto elseStmts = make_unique<StatementSequenceNode>(EMPTY_POS);
     if (assertToken(scanner_.peek(), TokenType::kw_of)) {
@@ -868,7 +869,7 @@ unique_ptr<StatementNode> Parser::case_statement() {
                 auto label = sema_.onCaseLabel(caseStart, EMPTY_POS, expr, std::move(labels));
                 auto stmts = make_unique<StatementSequenceNode>(EMPTY_POS);
                 statement_sequence(stmts.get());
-                cases.push_back(sema_.onCase(caseStart, EMPTY_POS, std::move(label), std::move(stmts)));
+                cases.push_back(sema_.onCase(caseStart, EMPTY_POS, expr, std::move(label), std::move(stmts)));
             } while (scanner_.peek()->type() == TokenType::pipe);
         }
         if (scanner_.peek()->type() == TokenType::kw_else) {
@@ -879,7 +880,7 @@ unique_ptr<StatementNode> Parser::case_statement() {
             scanner_.next();  // skip END keyword
         }
     }
-    return sema_.onCaseOf(start, token_->end(), std::move(expr), std::move(cases), std::move(elseStmts));
+    return sema_.onCaseOfEnd(start, token_->end(), std::move(expr), std::move(cases), std::move(elseStmts));
 }
 
 // expression_list = expression { "," expression } .

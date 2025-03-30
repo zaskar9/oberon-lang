@@ -36,6 +36,14 @@ std::ostream &operator<<(std::ostream &stream, const TypeKind &kind) {
     return stream;
 }
 
+void TypeNode::setModule(ModuleNode *module) {
+    module_ = module;
+}
+
+ModuleNode *TypeNode::getModule() const {
+    return module_;
+}
+
 void TypeNode::setDeclaration(TypeDeclarationNode *decl) {
     decl_ = decl;
 }

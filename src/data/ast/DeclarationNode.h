@@ -37,6 +37,7 @@ public:
             Node(nodeType, pos), module_(), ident_(std::move(ident)), type_(type), seqId_(seqId), scope_() {};
     ~DeclarationNode() override = default;
 
+    // TODO Maybe move the module information to super class `Node`?
     void setModule(ModuleNode *);
     [[nodiscard]] ModuleNode *getModule() const;
 

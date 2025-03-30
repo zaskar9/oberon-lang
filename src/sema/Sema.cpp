@@ -18,7 +18,7 @@ using std::set;
 using std::string;
 
 Sema::Sema(CompilerConfig &config, ASTContext *context, OberonSystem *system) :
-        config_(config), context_(context), system_(system), logger_(config_.logger()), forwards_(), procs_(),
+        config_(config), context_(context), system_(system), logger_(config_.logger()), forwards_(), procs_(), caseTys_(),
         symbols_(system_->getSymbolTable()), importer_(config_, context, symbols_), exporter_(config_, context) {
     boolTy_ = system_->getBasicType(TypeKind::BOOLEAN);
     byteTy_ = system_->getBasicType(TypeKind::BYTE);
@@ -30,7 +30,7 @@ Sema::Sema(CompilerConfig &config, ASTContext *context, OberonSystem *system) :
     longRealTy_ = system_->getBasicType(TypeKind::LONGREAL);
     stringTy_ = system_->getBasicType(TypeKind::STRING);
     setTy_ = system_->getBasicType(TypeKind::SET);
-    nullTy_ = system_->getBasicType(TypeKind::NOTYPE);
+    noTy_ = system_->getBasicType(TypeKind::NOTYPE);
     typeTy_ = system_->getBasicType(TypeKind::TYPE);
 }
 
@@ -68,7 +68,7 @@ void Sema::onDeclarations() {
         auto end = pair.first->end();
         auto pointer_t = pair.second;
         auto type = onTypeReference(start, end, std::move(pair.first));
-        if (type != nullTy_) {
+        if (type->kind() != TypeKind::NOTYPE) {
             logger_.debug("Resolving forward reference: " + to_string(*type->getIdentifier()));
             if (!type->isRecord()) {
                 // O07.6.4: Pointer base type must be a record type.
@@ -140,7 +140,7 @@ Sema::onConstant(const FilePos &start, [[maybe_unused]] const FilePos &end,
     } else {
         logger_.error(start, "undefined constant.");
     }
-    auto node = make_unique<ConstantDeclarationNode>(start, std::move(ident), std::move(expr), expr ? expr->getType() : nullTy_);
+    auto node = make_unique<ConstantDeclarationNode>(start, std::move(ident), std::move(expr), expr ? expr->getType() : noTy_);
     assertUnique(node->getIdentifier(), node.get());
     node->setScope(symbols_->getLevel());
     node->setModule(context_->getTranslationUnit());
@@ -151,13 +151,13 @@ Sema::onConstant(const FilePos &start, [[maybe_unused]] const FilePos &end,
 unique_ptr<TypeDeclarationNode>
 Sema::onType(const FilePos &start, [[maybe_unused]] const FilePos &end,
              unique_ptr<IdentDef> ident, TypeNode *type) {
-    auto node = make_unique<TypeDeclarationNode>(start, std::move(ident), type ? type : nullTy_);
+    auto node = make_unique<TypeDeclarationNode>(start, std::move(ident), type ? type : noTy_);
     assertUnique(node->getIdentifier(), node.get());
     node->setScope(symbols_->getLevel());
     node->setModule(context_->getTranslationUnit());
     checkExport(node.get());
     if (!type) {
-        node->setType(nullTy_);
+        node->setType(noTy_);
     }
     return node;
 }
@@ -194,7 +194,7 @@ Sema::onArrayType(const FilePos &start, const FilePos &end, vector<unique_ptr<Ex
     }
     if (!type) {
         logger_.error(start, "undefined member type.");
-        type = nullTy_;
+        type = noTy_;
     }
     vector<unsigned> lengths;
     vector<TypeNode *> types;
@@ -242,7 +242,7 @@ Sema::onParameter(const FilePos &start, [[maybe_unused]] const FilePos &end,
                   unique_ptr<Ident> ident, TypeNode *type, bool is_var, unsigned index) {
     if (!type) {
         logger_.error(start, "undefined parameter type.");
-        type = nullTy_;
+        type = noTy_;
     }
     auto node = make_unique<ParameterNode>(start, std::move(ident), type, is_var, index);
     assertUnique(node->getIdentifier(), node.get());
@@ -291,7 +291,7 @@ Sema::onField(const FilePos &start, [[maybe_unused]] const FilePos &end,
               unique_ptr<IdentDef> ident, TypeNode *type, unsigned index) {
     if (!type) {
         logger_.error(start, "undefined record field type.");
-        type = nullTy_;
+        type = noTy_;
     }
     return make_unique<FieldNode>(start, std::move(ident), type, index);
 }
@@ -302,12 +302,12 @@ Sema::onTypeReference(const FilePos &start, const FilePos &end,
     auto sym = symbols_->lookup(ident.get());
     if (!sym) {
         logger_.error(start, "undefined type: " + to_string(*ident) + ".");
-        return nullTy_;
+        return noTy_;
     }
     auto decl = dynamic_cast<TypeDeclarationNode * >(sym);
     if (!decl) {
         logger_.error(start, to_string(*ident) + " is not a type.");
-        return nullTy_;
+        return noTy_;
     }
     auto type = decl->getType();
     if (type && type->kind() != TypeKind::NOTYPE) {
@@ -335,7 +335,7 @@ Sema::onVariable(const FilePos &start, [[maybe_unused]] const FilePos &end,
                  unique_ptr<IdentDef> ident, TypeNode *type, int index) {
     if (!type) {
         logger_.error(start, "undefined variable type.");
-        type = nullTy_;
+        type = noTy_;
     }
     auto node = make_unique<VariableDeclarationNode>(start, std::move(ident), type, index);
     assertUnique(node->getIdentifier(), node.get());
@@ -476,17 +476,39 @@ Sema::onWhileLoop(const FilePos &start, [[maybe_unused]] const FilePos &end,
     return make_unique<WhileLoopNode>(start, std::move(condition), std::move(stmts));
 }
 
-
-unique_ptr<CaseOfNode>
-Sema::onCaseOf(const FilePos &start, const FilePos &,
-               unique_ptr<ExpressionNode> expr,
-               vector<unique_ptr<CaseNode>> cases,
-               unique_ptr<StatementSequenceNode> elseStmts) {
+void Sema::onCasePfStart(const FilePos &start, const FilePos &, unique_ptr<ExpressionNode> &expr) {
     if (!expr) {
         logger_.error(start, "undefined expression in case statement.");
     }
     auto eType = expr->getType();
+    if (eType->isPointer() || eType->isRecord()) {
+        if (auto qExpr = dynamic_cast<QualifiedExpression *>(expr.get())) {
+            if (!qExpr->selectors().empty()) {
+                // O07.9.5: The type T of the case expression (case variable) may also be a record or pointer type.
+                logger_.error(expr->pos(), "non-integer case expression must be a variable or variable parameter.");
+            }
+            auto decl = qExpr->dereference();
+            // If the case variable is a record it must be a variable parameter
+            if (eType->isRecord() && (decl->getNodeType() != NodeType::parameter ||
+                                      !dynamic_cast<ParameterNode *>(decl)->isVar())) {
+                logger_.error(expr->pos(), "record must be a variable parameter.");
+            }
+            // Save the formal type of the case variable
+            caseTys_[qExpr] = eType;
+        } else {
+            logger_.error(start, "non-integer case expression must be a variable or variable parameter.");
+        }
+    }
+}
+
+unique_ptr<CaseOfNode>
+Sema::onCaseOfEnd(const FilePos &start, const FilePos &,
+               unique_ptr<ExpressionNode> expr,
+               vector<unique_ptr<CaseNode>> cases,
+               unique_ptr<StatementSequenceNode> elseStmts) {
+    auto eType = expr->getType();
     if (eType->isInteger() || eType->isChar()) {
+        // For integer-based case statements, check whether the labels of the cases overlap.
         unordered_set<int64_t> labels;
         for (auto &c: cases) {
             auto label = c->getLabel();
@@ -500,19 +522,8 @@ Sema::onCaseOf(const FilePos &start, const FilePos &,
             }
         }
     } else if (eType->isPointer() || eType->isRecord()) {
-        if (auto qExpr = dynamic_cast<QualifiedExpression *>(expr.get())) {
-            if (!qExpr->selectors().empty()) {
-                logger_.error(expr->pos(), "non-integer case expression must be a variable or variable parameter.");
-            }
-            auto decl = qExpr->dereference();
-            if (eType->isRecord() && (decl->getNodeType() != NodeType::parameter ||
-                                      !dynamic_cast<ParameterNode *>(decl)->isVar())) {
-                logger_.error(expr->pos(), "record must be a variable parameter.");
-            }
-        } else {
-            logger_.error(start, "non-integer case expression must be a variable or variable parameter.");
-        }
         vector<TypeNode *> labels;
+        // Check if the types specified by the cases are unique or whether a case subsumes a later case
         for (auto &c: cases) {
             auto label = c->getLabel()->getValue(0);
             if (auto lExpr = dynamic_cast<QualifiedExpression *>(label)) {
@@ -531,6 +542,12 @@ Sema::onCaseOf(const FilePos &start, const FilePos &,
                 logger_.error(label->pos(), "type mismatch: case label type must be pointer or record.");
             }
         }
+        // Clean up at the end of the case statement by deleting the saved formal type of the case expression
+        if (auto qExpr = dynamic_cast<QualifiedExpression *>(expr.get())) {
+            if (caseTys_[qExpr]) {
+                caseTys_.erase(qExpr);
+            }
+        }
     } else {
         logger_.error(expr->pos(), "type mismatch: case expression type must be integer, character, pointer, or record.");
     }
@@ -539,16 +556,20 @@ Sema::onCaseOf(const FilePos &start, const FilePos &,
 
 unique_ptr<CaseLabelNode>
 Sema::onCaseLabel(const FilePos &start, const FilePos &,
-                  unique_ptr<ExpressionNode> &expr, vector<unique_ptr<ExpressionNode>> labels) {
-    symbols_->openScope();
+                  unique_ptr<ExpressionNode> &expr,
+                  vector<unique_ptr<ExpressionNode>> labels) {
     set<int64_t> cases;
-    const auto type = expr->getType();
+    TypeNode *common = nullptr;
     for (const auto &label : labels) {
         const auto lType = label->getType();
         if (lType->isInteger() || lType->isChar()) {
-            if ((type->isInteger() && !lType->isInteger()) || (type->isChar() && !lType->isChar())) {
-                logger_.error(label->pos(), "type mismatch: case label type is different from case expression type.");
-                continue;
+            if (common) {
+                if ((common->isInteger() && !lType->isInteger()) || (common->isChar() && !lType->isChar())) {
+                    logger_.error(label->pos(), "type mismatch: case labels must all have the same type.");
+                    continue;
+                }
+            } else {
+                common = lType;
             }
             if (label->getNodeType() == NodeType::range_expression) {
                 const auto lExpr = dynamic_cast<RangeExpressionNode *>(label.get());
@@ -595,23 +616,26 @@ Sema::onCaseLabel(const FilePos &start, const FilePos &,
                 }
             }
         } else if (lType->kind() == TypeKind::TYPE) {
-            if (label->getNodeType() == NodeType::qualified_expression) {
-                if (labels.size() > 1) {
-                    logger_.error(labels[1]->pos(), "non-integer case must have a single type as label.");
-                    break;
-                }
-                const auto lExpr = dynamic_cast<QualifiedExpression *>(label.get());
+            if (labels.size() > 1) {
+                logger_.error(labels[1]->pos(), "non-integer case must have a single type as label.");
+                break;
+            }
+            if (auto lExpr = dynamic_cast<QualifiedExpression *>(label.get())) {
                 const auto decl = dynamic_cast<TypeDeclarationNode *>(lExpr->dereference());
                 const auto pType = decl->getType();
-                if ((type->isPointer() && pType->isPointer()) || (type->isRecord() && pType->isRecord())) {
-                    if (!pType->extends(type)) {
-                        logger_.error(label->pos(), "type mismatch: " + format(pType) + " is not an extension of " +
-                                                    format(type) + ".");
+                const auto eType = expr->getType();
+                if ((eType->isPointer() && pType->isPointer()) || (eType->isRecord() && pType->isRecord())) {
+                    if (!pType->extends(eType)) {
+                        logger_.error(label->pos(), "type mismatch: " + format(pType) +
+                                                    " is not an extension of " + format(eType) + ".");
                     } else if (auto qExpr = dynamic_cast<QualifiedExpression *>(expr.get())) {
+                        // Change the declaration of the case expression to reflect its dynamic type
                         qExpr->dereference()->setType(pType);
                     }
+
                 } else {
-                    logger_.error(label->pos(), "type mismatch: case label type is different from case expression type.");
+                    logger_.error(label->pos(), "type mismatch: case label type " + format(pType) +
+                                                " is incompatible with case expression type "+ format(eType) + ".");
                 }
             }
         } else {
@@ -623,8 +647,20 @@ Sema::onCaseLabel(const FilePos &start, const FilePos &,
 
 unique_ptr<CaseNode>
 Sema::onCase(const FilePos &start, const FilePos &,
-             unique_ptr<CaseLabelNode> label, unique_ptr<StatementSequenceNode> stmts) {
-    symbols_->closeScope();
+             unique_ptr<ExpressionNode> &expr, unique_ptr<CaseLabelNode> label, unique_ptr<StatementSequenceNode> stmts) {
+    const auto lType = label->getType();
+    if (lType->isInteger() || lType->isChar()) {
+        const auto eType = expr->getType();
+        if ((eType->isInteger() && !lType->isInteger()) || (eType->isChar() && !lType->isChar())) {
+            logger_.error(label->pos(), "type mismatch: case label type is different from case expression type.");
+        }
+    } else if (lType->kind() == TypeKind::TYPE) {
+        // Restore the type of the case expression to its previously saved formal type
+        if (auto qExpr = dynamic_cast<QualifiedExpression *>(expr.get())) {
+            auto eType = caseTys_[qExpr];
+            qExpr->dereference()->setType(eType);
+        }
+    }
     return make_unique<CaseNode>(start, std::move(label), std::move(stmts));
 }
 
@@ -728,7 +764,7 @@ Sema::onQualifiedStatement(const FilePos &start, [[maybe_unused]] const FilePos 
             context_->addExternalProcedure(proc);
         }
         auto type = onSelectors(ident->start(), ident->end(), sym, sym->getType(), selectors);
-        if (type) {
+        if (type && type->kind() != TypeKind::NOTYPE) {
             logger_.warning(ident->start(), "discarded expression value.");
         }
         return make_unique<QualifiedStatement>(start, std::move(ident), std::move(selectors), sym);
@@ -743,7 +779,7 @@ Sema::onQualifiedExpression(const FilePos &start, [[maybe_unused]] const FilePos
     DeclarationNode* sym = symbols_->lookup(ident.get());
     if (!sym) {
         logger_.error(ident->start(), "undefined identifier: " + to_string(*ident) + ".");
-        return make_unique<QualifiedExpression>(start, std::move(ident), std::move(selectors), sym, nullTy_);
+        return make_unique<QualifiedExpression>(start, std::move(ident), std::move(selectors), sym, noTy_);
     }
     // Check variable or parameter reference
     if (sym->getNodeType() == NodeType::variable || sym->getNodeType() == NodeType::parameter) {
@@ -768,7 +804,7 @@ Sema::onQualifiedExpression(const FilePos &start, [[maybe_unused]] const FilePos
         return make_unique<QualifiedExpression>(start, std::move(ident), std::move(selectors), sym, type);
     }
     logger_.error(ident->start(), "variable, parameter, type, or function call expected.");
-    return make_unique<QualifiedExpression>(start, std::move(ident), std::move(selectors), sym, nullTy_);;
+    return make_unique<QualifiedExpression>(start, std::move(ident), std::move(selectors), sym, noTy_);;
 }
 
 unique_ptr<ExpressionNode>
@@ -848,14 +884,17 @@ Sema::onSelectors(const FilePos &start, const FilePos &end,
                 break;
             case NodeType::record_type:
                 context = onRecordField(base, dynamic_cast<RecordField *>(sel));
-                base = context ? context->getType() : nullTy_;
+                base = context ? context->getType() : noTy_;
                 break;
             case NodeType::type:
                 base = onTypeguard(context, base, dynamic_cast<Typeguard *>(sel));
                 break;
             default:
                 logger_.error(sel->pos(), "unexpected selector.");
-                return nullptr;
+                base = noTy_;
+        }
+        if (!base || base == noTy_) {
+            return noTy_;
         }
         it = handleMissingParameters(start, end, base, selectors, it);
         ++it;
@@ -953,14 +992,14 @@ TypeNode *
 Sema::onActualParameters(DeclarationNode *context, TypeNode *base, ActualParameters *sel) {
     if (!base->isProcedure()) {
         logger_.error(sel->pos(), "type " + to_string(base) + " is not a procedure type.");
-        return nullptr;
+        return noTy_;
     }
     auto proc = dynamic_cast<ProcedureTypeNode *>(base);
     if (sel->parameters().size() < proc->parameters().size()) {
         logger_.error(sel->pos(), "fewer actual than formal parameters.");
     }
     vector<TypeNode *> types;
-    TypeNode *typeType = nullptr;
+    TypeNode *typeType = noTy_;
     for (size_t cnt = 0; cnt < sel->parameters().size(); cnt++) {
         auto expr = sel->parameters()[cnt].get();
         if (!expr) {
@@ -1003,7 +1042,7 @@ Sema::onActualParameters(DeclarationNode *context, TypeNode *base, ActualParamet
                     }
                 }
             } else {
-                types.push_back(nullTy_);
+                types.push_back(noTy_);
             }
         } else if (!proc->hasVarArgs()) {
             logger_.error(sel->pos(), "more actual than formal parameters.");
@@ -1036,7 +1075,7 @@ Sema::onActualParameters(DeclarationNode *context, TypeNode *base, ActualParamet
 TypeNode *Sema::onArrayIndex(TypeNode *base, ArrayIndex *sel) {
     if (!base->isArray()) {
         logger_.error(sel->pos(), format(base) + " is not an array.");
-        return nullptr;
+        return noTy_;
     }
     auto array = dynamic_cast<ArrayTypeNode *>(base);
     if (sel->indices().size() > array->lengths().size()) {
@@ -1070,7 +1109,7 @@ TypeNode *Sema::onArrayIndex(TypeNode *base, ArrayIndex *sel) {
 TypeNode *Sema::onDereference(TypeNode *base, Dereference *sel) {
     if (!base->isPointer()) {
         logger_.error(sel->pos(), "pointer " + to_string(base) + " is not a pointer pointer.");
-        return nullptr;
+        return noTy_;
     }
     auto pointer = dynamic_cast<PointerTypeNode *>(base);
     return pointer->getBase();
@@ -1084,7 +1123,7 @@ FieldNode *Sema::onRecordField(TypeNode *base, RecordField *sel) {
     auto record = dynamic_cast<RecordTypeNode *>(base);
     auto field = record->getField(sel->ident()->name());
     if (!field) {
-        logger_.error(sel->pos(), "undefined record field: " + to_string(*sel->ident()) + ".");
+        logger_.error(sel->pos(), "undefined record field for type " + to_string(base) + ": " + to_string(*sel->ident()) + ".");
         return nullptr;
     } else {
         sel->setField(field);
@@ -1108,7 +1147,7 @@ TypeNode *Sema::onTypeguard(DeclarationNode *sym, TypeNode *base, Typeguard *sel
                         logger_.error(start, "type mismatch: " + format(guard) + " is not an extension of "
                                              + format(actual) + ".");
                     } else if (actual->extends(guard)) {
-                        logger_.warning(start, "type guard is always true.");
+                        logger_.warning(start, "type check is always true.");
                     }
                 } else {
                     logger_.error(start, "type mismatch: record type or pointer to record type expected.");
@@ -1124,7 +1163,7 @@ TypeNode *Sema::onTypeguard(DeclarationNode *sym, TypeNode *base, Typeguard *sel
     } else {
         logger_.error(start, "undefined identifier: " + to_string(*sel->ident()) + ".");
     }
-    return nullTy_;
+    return noTy_;
 }
 
 unique_ptr<ExpressionNode>
@@ -1137,7 +1176,7 @@ Sema::onUnaryExpression(const FilePos &start, [[maybe_unused]] const FilePos &en
     auto type = expr->getType();
     if (!type) {
         logger_.error(start, "undefined type in unary expression.");
-        type = nullTy_;
+        type = noTy_;
     }
     if (auto opt = fold(start, end, op, expr)) {
         return std::move(opt.value());
@@ -1257,7 +1296,7 @@ Sema::onBinaryExpression(const FilePos &start, const FilePos &end,
                                              dynamic_cast<ParameterNode *>(lhsDecl)->isVar())) {
                     if (type->isPointer() || type->isRecord()) {
                         if (lhsType->extends(type)) {
-                            logger_.warning(start, "condition is always true.");
+                            logger_.warning(start, "type check is always true.");
                         } else if (!type->extends(lhsType)) {
                             logger_.error(rhs->pos(), "type mismatch: " + format(type) + " is not an extension of " +
                                                       format(lhsType) + ".");
@@ -1278,10 +1317,10 @@ Sema::onBinaryExpression(const FilePos &start, const FilePos &end,
     }
     if (!result) {
         logger_.error(start, "could not infer result type of expression.");
-        result = nullTy_;
+        result = noTy_;
     }
     // Folding
-    if (result != nullTy_) {
+    if (result != noTy_) {
         if (auto opt = fold(start, end, op, lhs, rhs, result)) {
             return std::move(opt.value());
         }
@@ -1418,7 +1457,7 @@ Sema::onIntegerLiteral(const FilePos &start, [[maybe_unused]] const FilePos &end
         case TypeKind::INTEGER: type = integerTy_; break;
         case TypeKind::LONGINT: type = longIntTy_; break;
         default:
-            type = nullTy_;
+            type = noTy_;
     }
     return make_unique<IntegerLiteralNode>(start, value, type);
 }
@@ -1430,7 +1469,7 @@ Sema::onRealLiteral(const FilePos &start, [[maybe_unused]] const FilePos &end, d
         case TypeKind::REAL: type = realTy_; break;
         case TypeKind::LONGREAL: type = longRealTy_; break;
         default:
-            type = nullTy_;
+            type = noTy_;
     }
     return make_unique<RealLiteralNode>(start, value, type);
 }

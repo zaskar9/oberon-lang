@@ -8,7 +8,7 @@
 
 #include <bitset>
 #include <functional>
-#include <map>
+#include <unordered_map>
 #include <memory>
 #include <optional>
 #include <stack>
@@ -28,7 +28,7 @@
 
 using std::function;
 using std::bitset;
-using std::map;
+using std::unordered_map;
 using std::optional;
 using std::stack;
 using std::string;
@@ -45,11 +45,12 @@ private:
     Logger &logger_;
     vector<pair<unique_ptr<QualIdent>, PointerTypeNode *>> forwards_;
     stack<unique_ptr<ProcedureNode>> procs_;
+    unordered_map<QualifiedExpression *, TypeNode *> caseTys_;
     SymbolTable *symbols_;
     SymbolImporter importer_;
     SymbolExporter exporter_;
     TypeNode *boolTy_, *byteTy_, *charTy_, *shortIntTy_, *integerTy_, *longIntTy_, *realTy_, *longRealTy_,
-             *stringTy_, *setTy_, *nullTy_, *typeTy_;
+             *stringTy_, *setTy_, *noTy_, *typeTy_;
 
     bool assertEqual(Ident *, Ident *) const;
     void assertUnique(IdentDef *, DeclarationNode *);
@@ -181,14 +182,17 @@ public:
                                       unique_ptr<ExpressionNode>,
                                       unique_ptr<ExpressionNode>,
                                       unique_ptr<StatementSequenceNode>);
-    unique_ptr<CaseOfNode> onCaseOf(const FilePos &, const FilePos &,
-                                    unique_ptr<ExpressionNode>,
-                                    vector<unique_ptr<CaseNode>>,
-                                    unique_ptr<StatementSequenceNode>);
+    void onCasePfStart(const FilePos &, const FilePos &,
+                       unique_ptr<ExpressionNode> &);
+    unique_ptr<CaseOfNode> onCaseOfEnd(const FilePos &, const FilePos &,
+                                       unique_ptr<ExpressionNode>,
+                                       vector<unique_ptr<CaseNode>>,
+                                       unique_ptr<StatementSequenceNode>);
     unique_ptr<CaseLabelNode> onCaseLabel(const FilePos &, const FilePos &,
                                           unique_ptr<ExpressionNode> &,
                                           vector<unique_ptr<ExpressionNode>>);
     unique_ptr<CaseNode> onCase(const FilePos &, const FilePos &,
+                                unique_ptr<ExpressionNode> &,
                                 unique_ptr<CaseLabelNode>,
                                 unique_ptr<StatementSequenceNode>);
     unique_ptr<ReturnNode> onReturn(const FilePos &, const FilePos &, unique_ptr<ExpressionNode>);

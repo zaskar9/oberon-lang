@@ -96,7 +96,7 @@ private:
     void trapFltDivByZero(Value *);
 
     Value *createTypeTest(Value *, TypeNode *);
-    Value *createTypeTest(Value *, QualifiedExpression *, TypeNode *);
+    Value *createTypeTest(Value *, QualifiedExpression *, TypeNode *, TypeNode *);
 
     Value *createNeg(Value *);
     Value *createAdd(Value *, Value *);

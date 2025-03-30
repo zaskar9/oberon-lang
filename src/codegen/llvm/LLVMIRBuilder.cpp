@@ -391,8 +391,7 @@ TypeNode *LLVMIRBuilder::selectors(QualifiedExpression *expr, TypeNode *base, Se
                     value = processGEP(baseTy, value, indices);
                     tmp = builder_.CreateLoad(builder_.getPtrTy(), value);
                 }
-                // auto td = getTypeDescriptor(tmp, expr, guard->getType());
-                auto cond = createTypeTest(tmp, expr, guard_t);
+                auto cond = createTypeTest(tmp, expr, base, guard_t);
                 trapTypeGuard(cond);
             }
             base = guard->getType();
@@ -629,18 +628,23 @@ Value *LLVMIRBuilder::createTypeTest(Value *td, TypeNode *type) {
     return phi;
 }
 
-Value *LLVMIRBuilder::createTypeTest(Value *value, QualifiedExpression *expr, TypeNode *type) {
+Value *LLVMIRBuilder::createTypeTest(Value *value, QualifiedExpression *expr, TypeNode *lType, TypeNode *rType) {
     auto prv = builder_.GetInsertBlock();
     BasicBlock *test, *skip = nullptr;
-    if (type->isPointer()) {
+    if (rType->isPointer()) {
         auto nil = builder_.CreateIsNotNull(value);
         test = BasicBlock::Create(builder_.getContext(), "test", function_);
         skip = BasicBlock::Create(builder_.getContext(), "skip", function_);
         builder_.CreateCondBr(nil, test, skip);
         builder_.SetInsertPoint(test);
     }
-    auto td = getTypeDescriptor(value, expr, type);
-    auto res = createTypeTest(td, type);
+    Value *res;
+    if (lType->extends(rType)) {
+        res = builder_.getTrue();
+    } else {
+        auto td = getTypeDescriptor(value, expr, rType);
+        res = createTypeTest(td, rType);
+    }
     if (skip) {
         auto cur= builder_.GetInsertBlock();
         builder_.CreateBr(skip);
@@ -782,9 +786,10 @@ void LLVMIRBuilder::visit(BinaryExpressionNode &node) {
         value_ = phi;
     } else if (node.getOperator() == OperatorType::IS) {
         auto lExpr = dynamic_cast<QualifiedExpression *>(node.getLeftExpression());
+        auto lType = lExpr->getType();
         auto rExpr = dynamic_cast<QualifiedExpression *>(node.getRightExpression());
-        auto type = rExpr->dereference()->getType();
-        value_ = createTypeTest(lhs, lExpr, type);
+        auto rType = rExpr->dereference()->getType();
+        value_ = createTypeTest(lhs, lExpr, lType, rType);
     } else if (node.getLeftExpression()->getType()->isSet() || node.getRightExpression()->getType()->isSet()) {
         node.getRightExpression()->accept(*this);
         cast(*node.getRightExpression());
@@ -1006,30 +1011,46 @@ void LLVMIRBuilder::visit(RecordTypeNode &node) {
         elemTys.push_back(getLLVMType(fieldTy));
     }
     structTy->setBody(elemTys);
-    name = module_->getModuleIdentifier() + "__" + name;
-    // Create an id for the record type by defining a global int32 variable and using its address
-    auto id = new GlobalVariable(*module_, builder_.getInt32Ty(), true, GlobalValue::ExternalLinkage,
-                                 Constant::getNullValue(builder_.getInt32Ty()), name + "_id");
-    id->setAlignment(module_->getDataLayout().getPreferredAlign(id));
-    recTypeIds_[&node] = id;
-    // Collect the ids of the record types from which this type is extended
-    vector<Constant *> typeIds;
-    auto cur = &node;
-    while (cur->isExtended()) {
-        typeIds.insert(typeIds.begin(), recTypeIds_[cur]);
-        cur = cur->getBaseType();
+    if (node.getModule() == ast_->getTranslationUnit()) {
+        name = module_->getModuleIdentifier() + "__" + name;
+        // Create an id for the record type by defining a global int32 variable and using its address
+        auto id = new GlobalVariable(*module_, builder_.getInt32Ty(), true, GlobalValue::ExternalLinkage,
+                                     Constant::getNullValue(builder_.getInt32Ty()), name + "_id");
+        id->setAlignment(module_->getDataLayout().getPreferredAlign(id));
+        recTypeIds_[&node] = id;
+        // Collect the ids of the record types from which this type is extended
+        vector<Constant *> typeIds;
+        auto cur = &node;
+        Constant *nil = dyn_cast<Constant>(ConstantPointerNull::get(builder_.getPtrTy()));
+        while (cur->isExtended()) {
+            typeIds.insert(typeIds.begin(), recTypeIds_[cur] ? recTypeIds_[cur] : nil);
+            cur = cur->getBaseType();
+        }
+        typeIds.insert(typeIds.begin(), recTypeIds_[cur] ? recTypeIds_[cur] : nil);
+        auto idsType = ArrayType::get(builder_.getPtrTy(), typeIds.size());
+        auto ids = new GlobalVariable(*module_, idsType, true, GlobalValue::ExternalLinkage,
+                                      ConstantArray::get(idsType, typeIds), name + "_ids");
+        ids->setAlignment(module_->getDataLayout().getPreferredAlign(ids));
+        // Create the type descriptor
+        auto td = new GlobalVariable(*module_, recordTdTy_, true, GlobalValue::ExternalLinkage,
+                                     ConstantStruct::get(recordTdTy_, {ids, ConstantInt::get(builder_.getInt32Ty(),
+                                                                                             node.getLevel())}),
+                                     name + "_td");
+        td->setAlignment(module_->getDataLayout().getPreferredAlign(td));
+        recTypeTds_[&node] = td;
+    } else if (!node.isAnonymous()){
+        name = node.getModule()->getIdentifier()->name() + "__" + name;
+        // Create an external constant to be used as the id of the imported record type
+        auto id = new GlobalVariable(*module_, builder_.getInt32Ty(), true, GlobalValue::ExternalLinkage, nullptr,
+                                     name + "_id");
+        id->setAlignment(module_->getDataLayout().getPreferredAlign(id));
+        recTypeIds_[&node] = id;
+        // Create an external constant to be used as the type descriptor of the imported record type
+        auto td = new GlobalVariable(*module_, recordTdTy_, true, GlobalValue::ExternalLinkage, nullptr,
+                                     name + "_td");
+        td->setAlignment(module_->getDataLayout().getPreferredAlign(td));
+        recTypeTds_[&node] = td;
     }
-    typeIds.insert(typeIds.begin(), recTypeIds_[cur]);
-    auto idsType = ArrayType::get(builder_.getPtrTy(), typeIds.size());
-    auto ids = new GlobalVariable(*module_, idsType, true, GlobalValue::ExternalLinkage,
-                                  ConstantArray::get(idsType, typeIds), name + "_ids");
-    ids->setAlignment(module_->getDataLayout().getPreferredAlign(ids));
-    // Create the type descriptor
-    auto td = new GlobalVariable(*module_, recordTdTy_, true, GlobalValue::ExternalLinkage,
-                                 ConstantStruct::get(recordTdTy_, {ids, ConstantInt::get(builder_.getInt32Ty(), node.getLevel())}),
-                                 name + "_td");
-    td->setAlignment(module_->getDataLayout().getPreferredAlign(td));
-    recTypeTds_[&node] = td;
 }
 
 void LLVMIRBuilder::visit(PointerTypeNode &node) {
@@ -1735,7 +1756,6 @@ LLVMIRBuilder::createNewCall(TypeNode *type, llvm::Value *param) {
     Value *value = builder_.CreateBitCast(value_, getLLVMType(ptr));
     builder_.CreateStore(value, param);
     if (base->isRecord()) {
-        // Value *id = builder_.CreateLoad(builder_.getPtrTy(), recTypeTds_[dynamic_cast<RecordTypeNode *>(base)]);
         Value *id = recTypeTds_[dynamic_cast<RecordTypeNode *>(base)];
         value = builder_.CreateLoad(builder_.getPtrTy(), param);
         value = builder_.CreateInBoundsGEP(ptrTypes_[ptr], value, {builder_.getInt32(0), builder_.getInt32(0)});
@@ -2012,17 +2032,19 @@ string LLVMIRBuilder::qualifiedName(DeclarationNode *node) const {
 }
 
 string LLVMIRBuilder::createScopedName(TypeNode *type) const {
-    if (scopes_.size() == 1 && !type->isAnonymous()) {
+    if (!type->isAnonymous() && scopes_.size() <= 1) {
         return type->getIdentifier()->name();
     }
-    size_t end = type->isAnonymous() ? scopes_.size() : scopes_.size() - 1;
     ostringstream oss;
     string sep = "";
-    for (size_t i = 0; i < end; ++i) {
-        oss << sep << scopes_[i];
-        sep = "_";
+    size_t i = 0;
+    while (i < scopes_.size()) {
+        oss << sep << scopes_[i++];
+        if (!type->isAnonymous() && (i == scopes_.size() - 1)) {
+            return oss.str() + "_" + type->getIdentifier()->name();
+        }
     }
-    return type->isAnonymous() ? oss.str() : oss.str() + "_" + type->getIdentifier()->name();
+    return oss.str();
 }
 
 Value *LLVMIRBuilder::processGEP(Type *base, Value *value, vector<Value *> &indices) {

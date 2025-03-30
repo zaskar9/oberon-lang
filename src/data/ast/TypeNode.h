@@ -27,25 +27,33 @@ enum class TypeKind : char {
 
 std::ostream &operator<<(std::ostream &stream, const TypeKind &kind);
 
+class ASTContext;
 class ModuleNode;
 class TypeDeclarationNode;
 
 class TypeNode : public Node {
 
 private:
+    ModuleNode *module_;
     TypeDeclarationNode *decl_;
     TypeKind kind_;
     unsigned int size_;
     int ref_; // used for import and export
 
     void setDeclaration(TypeDeclarationNode *);
+    // TODO Maybe move the module information to super class `Node`?
+    void setModule(ModuleNode *);
 
+    friend class ASTContext;
     friend class TypeDeclarationNode;
 
 public:
     explicit TypeNode(NodeType nodeType, const FilePos &pos, TypeKind kind, unsigned int size, int ref = 0) :
-            Node(nodeType, pos), decl_(), kind_(kind), size_(size), ref_(ref) {};
+            Node(nodeType, pos), module_(), decl_(), kind_(kind), size_(size), ref_(ref) {};
     ~TypeNode() override = default;
+
+    // TODO Maybe move the module information to super class `Node`?
+    [[nodiscard]] ModuleNode *getModule() const;
 
     [[nodiscard]] virtual Ident *getIdentifier() const;
     [[nodiscard]] TypeDeclarationNode *getDeclaration() const;
