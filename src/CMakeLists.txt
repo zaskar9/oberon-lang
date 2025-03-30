@@ -129,7 +129,7 @@ if (LLVM_FOUND)
     target_link_libraries(${OBERON_LANG} PRIVATE ${llvm_libs})
 endif ()
 
-find_package(BDWgc REQUIRED)
+find_package(BDWgc QUIET)
 if (BDWgc_FOUND)
     message(STATUS "Found BDWgc: ${BDWgc_VERSION}")
     target_link_libraries(${OBERON_LANG} PRIVATE BDWgc::gc)
