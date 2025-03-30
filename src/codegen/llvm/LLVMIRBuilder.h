@@ -98,6 +98,9 @@ private:
     Value *createTypeTest(Value *, TypeNode *);
     Value *createTypeTest(Value *, QualifiedExpression *, TypeNode *, TypeNode *);
 
+    void createNumericTestCase(CaseOfNode &, BasicBlock *, BasicBlock *);
+    void createTypeTestCase(CaseOfNode &, BasicBlock *, BasicBlock *);
+
     Value *createNeg(Value *);
     Value *createAdd(Value *, Value *);
     Value *createSub(Value *, Value *);

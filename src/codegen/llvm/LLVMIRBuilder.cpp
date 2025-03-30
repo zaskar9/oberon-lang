@@ -657,6 +657,49 @@ Value *LLVMIRBuilder::createTypeTest(Value *value, QualifiedExpression *expr, Ty
     return res;
 }
 
+void LLVMIRBuilder::createNumericTestCase(CaseOfNode &node, BasicBlock *dflt, BasicBlock *tail) {
+    auto *type = dyn_cast<IntegerType>(getLLVMType(node.getExpression()->getType()));
+    SwitchInst *inst = builder_.CreateSwitch(value_, dflt, node.getLabelCount());
+    for (size_t i = 0; i < node.getCaseCount(); ++i) {
+        auto block = BasicBlock::Create(builder_.getContext(), "case." + to_string(i), function_);
+        auto c = node.getCase(i);
+        builder_.SetInsertPoint(block);
+        c->getStatements()->accept(*this);
+        builder_.CreateBr(tail);
+        for (int64_t label : c->getLabel()->getValues()) {
+            ConstantInt* value = node.getExpression()->getType()->isChar() ?
+                                 ConstantInt::get(type, static_cast<uint64_t>(label)) : ConstantInt::getSigned(type, label);
+            inst->addCase(value, block);
+        }
+    }
+}
+
+void LLVMIRBuilder::createTypeTestCase(CaseOfNode &node, BasicBlock *dflt, BasicBlock *tail) {
+    auto lhs = value_;
+    auto lExpr = dynamic_cast<QualifiedExpression *>(node.getExpression());
+    auto lType = lExpr->dereference()->getType();
+    for (size_t i = 0; i < node.getLabelCount(); ++i) {
+        auto c = node.getCase(i);
+        auto label = c->getLabel()->getValue(0);
+        auto rExpr = dynamic_cast<QualifiedExpression *>(label);
+        auto rType = rExpr->dereference()->getType();
+        auto name = rType->getIdentifier()->name();
+        auto is_true = BasicBlock::Create(builder_.getContext(), "is" + name + "_true", function_);
+        auto is_false = BasicBlock::Create(builder_.getContext(), "is" + name + "_false", function_);
+        auto cond = createTypeTest(lhs, lExpr, lType, rType);
+        builder_.CreateCondBr(cond, is_true, is_false);
+        builder_.SetInsertPoint(is_true);
+        lExpr->dereference()->setType(rType);   // Set the formal type to the actual type
+        c->getStatements()->accept(*this);
+        lExpr->dereference()->setType(lType);   // Reset the formal type of the case expression
+        if (builder_.GetInsertBlock()->getTerminator() == nullptr) {
+            builder_.CreateBr(tail);
+        }
+        builder_.SetInsertPoint(is_false);
+    }
+    builder_.CreateBr(dflt);
+}
+
 Value *LLVMIRBuilder::createNeg(Value *value) {
     if (config_.isSanitized(Trap::INT_OVERFLOW)) {
         auto type = dyn_cast<IntegerType>(value->getType());
@@ -1127,27 +1170,25 @@ void LLVMIRBuilder::visit(AssignmentNode &node) {
 
 void LLVMIRBuilder::visit(CaseOfNode& node) {
     auto tail = BasicBlock::Create(builder_.getContext(), "tail", function_);
-    auto dflt = BasicBlock::Create(builder_.getContext(), "default", function_);
+    auto dflt = tail;
+    if (node.hasElse()) {
+        dflt = BasicBlock::Create(builder_.getContext(), "default", function_);
+    }
     setRefMode(true);
     node.getExpression()->accept(*this);
     restoreRefMode();
-    auto *type = dyn_cast<IntegerType>(getLLVMType(node.getExpression()->getType()));
-    SwitchInst *inst = builder_.CreateSwitch(value_, dflt, node.getLabelCount());
-    for (size_t i = 0; i < node.getCaseCount(); ++i) {
-        auto block = BasicBlock::Create(builder_.getContext(), "case" + to_string(i), function_);
-        auto c = node.getCase(i);
-        builder_.SetInsertPoint(block);
-        c->getStatements()->accept(*this);
-        builder_.CreateBr(tail);
-        for (int64_t label : c->getLabel()->getValues()) {
-            ConstantInt* value = node.getExpression()->getType()->isChar() ?
-                    ConstantInt::get(type, static_cast<uint64_t>(label)) : ConstantInt::getSigned(type, label);
-            inst->addCase(value, block);
-        }
+    // Check whether the case statement is a numeric or a type test
+    auto type = node.getExpression()->getType();
+    if (type->isInteger() || type->isChar()) {
+        createNumericTestCase(node, dflt, tail);
+    } else {
+        createTypeTestCase(node, dflt, tail);
     }
-    builder_.SetInsertPoint(dflt);
-    node.getElseStatements()->accept(*this);
-    builder_.CreateBr(tail);
+    if (node.hasElse()) {
+        builder_.SetInsertPoint(dflt);
+        node.getElseStatements()->accept(*this);
+        builder_.CreateBr(tail);
+    }
     builder_.SetInsertPoint(tail);
 }
 

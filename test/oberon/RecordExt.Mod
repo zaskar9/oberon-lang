@@ -19,7 +19,6 @@ TYPE
         centre: Point2D;
         radius: REAL
     END;
-    (* Sphere = POINTER TO RECORD (ShapeDesc) *)
     Sphere = POINTER TO SphereDesc;
     SphereDesc = RECORD (ShapeDesc)
         centre: Point3D;
@@ -170,17 +169,19 @@ BEGIN
     DISPOSE(anon);
     NEW(s);
     PrintShape(s); Out.Ln;
+    PrintShapeCase(s); Out.Ln;
     DISPOSE(s);
     NEW(wtr);
     ASSERT(wtr IS MyWriter);
     TestExt(wtr^); Out.Ln;
     TestExt(w); Out.Ln;
     DISPOSE(wtr);
-    (* cd.centre.x := 1;
+    cd.centre.x := 1;
     cd.centre.y := 1;
     cd.radius := 10.0;
     cd.area := CircleArea(cd.radius);
-    PrintCircle(cd); Out.Ln; *)
+    OutCircleDesc(cd); Out.Ln;
+    PrintShapeDescCase(cd); Out.Ln;
 
     NEW(c);
     c.centre.x := -1;
@@ -188,35 +189,35 @@ BEGIN
     c.radius := 1.0;
     c.area := CircleArea(c.radius);
 
-    (* PrintCircle(c^); Out.Ln;
+    OutCircleDesc(c^); Out.Ln;
     c^ := cd;
     c.radius := 5.0;
     c.area := CircleArea(c.radius);
-    PrintCircle(c^); Out.Ln; *)
+    OutCircleDesc(c^); Out.Ln;
 
-    (* o := c;
+    o := c;
     ASSERT(o IS Circle);
     o(Circle).area := 0.1;
-    PrintShape(o(Circle)); Out.Ln; *)
+    PrintShape(o(Circle)); Out.Ln;
 
-    (* PrintShapeDesc(c^); Out.Ln;
+    PrintShapeDesc(c^); Out.Ln;
     ASSERT(o IS Shape);
     ASSERT(o IS Circle);
     ASSERT(~(o IS Sphere));
     sl[5] := c;
     ASSERT(sl[5] IS Circle);
-    IF sl[5] IS Circle THEN PrintCircle(sl[5](Circle)^); Out.Ln END;
+    IF sl[5] IS Circle THEN OutCircleDesc(sl[5](Circle)^); Out.Ln END;
     sr.s := c;
     ASSERT(sr.s IS Circle);
-    IF sr.s IS Circle THEN PrintCircle(sr.s(Circle)^); Out.Ln END; *)
+    IF sr.s IS Circle THEN OutCircleDesc(sr.s(Circle)^); Out.Ln END;
 
     PrintShapeCase(c); Out.Ln;
+    PrintShapeDescCase(c^); Out.Ln;
     DISPOSE(c);
 
-    (* Test();
     NEW(o);
     ASSERT(o IS Object);
     DISPOSE(o);
-    ASSERT(~(o IS Object)); *)
+    ASSERT(~(o IS Object));
     Out.String("All assertions passed."); Out.Ln
 END RecordExt.
