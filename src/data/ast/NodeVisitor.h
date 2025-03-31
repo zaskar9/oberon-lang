@@ -68,6 +68,7 @@ public:
     virtual void visit(RepeatLoopNode &) = 0;
     virtual void visit(ForLoopNode &) = 0;
     virtual void visit(ReturnNode &) = 0;
+    virtual void visit(ExitNode &) = 0;
 
     virtual ~NodeVisitor() noexcept;
 

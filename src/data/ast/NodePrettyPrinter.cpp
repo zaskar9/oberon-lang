@@ -452,10 +452,13 @@ void NodePrettyPrinter::visit(IfThenElseNode &node) {
     indent_ += TAB_WIDTH;
     node.getThenStatements()->accept(*this);
     indent_ -= TAB_WIDTH;
+    auto parent = parent_;
+    parent_ = &node;
     for (size_t i = 0; i < node.getElseIfCount(); i++) {
         indent();
         node.getElseIf(i)->accept(*this);
     }
+    parent_ = parent;
     if (node.hasElse()) {
         indent();
         stream_ << "ELSE" << std::endl;
@@ -470,7 +473,7 @@ void NodePrettyPrinter::visit(IfThenElseNode &node) {
 void NodePrettyPrinter::visit(ElseIfNode& node) {
     stream_ << "ELSIF ";
     node.getCondition()->accept(*this);
-    stream_ << " THEN" << std::endl;
+    stream_ << (parent_->getNodeType() == NodeType::if_then_else ? " THEN" : " DO") << std::endl;
     indent_ += TAB_WIDTH;
     node.getStatements()->accept(*this);
     indent_ -= TAB_WIDTH;
@@ -492,6 +495,13 @@ void NodePrettyPrinter::visit(WhileLoopNode &node) {
     indent_ += TAB_WIDTH;
     node.getStatements()->accept(*this);
     indent_ -= TAB_WIDTH;
+    auto parent = parent_;
+    parent_ = &node;
+    for (size_t i = 0; i < node.getElseIfCount(); i++) {
+        indent();
+        node.getElseIf(i)->accept(*this);
+    }
+    parent_ = parent;
     indent();
     stream_ << "END";
 }
@@ -529,4 +539,8 @@ void NodePrettyPrinter::visit(ReturnNode &node) {
         stream_ << " ";
         node.getValue()->accept(*this);
     }
+}
+
+void NodePrettyPrinter::visit(ExitNode &) {
+    stream_ << "EXIT";
 }

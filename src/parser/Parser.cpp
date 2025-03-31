@@ -646,7 +646,7 @@ void Parser::statement_sequence(StatementSequenceNode *statements) {
 }
 
 // statement = ( assignment | procedure_call | if_statement | case_statement
-//               while_statement | repeat_statement | for_statement | loop_statement
+//               loop_statement | while_statement | repeat_statement | for_statement
 //               with_statement | "EXIT" | "RETURN" [ expression ] ) .
 unique_ptr<StatementNode> Parser::statement() {
     logger_.debug("statement");
@@ -667,13 +667,16 @@ unique_ptr<StatementNode> Parser::statement() {
             return sema_.onQualifiedStatement(pos, EMPTY_POS, std::move(ident), std::move(selectors));
         }
         case TokenType::kw_if: return if_statement();
+        case TokenType::kw_case: return case_statement();
         case TokenType::kw_loop: return loop_statement();
         case TokenType::kw_while: return while_statement();
         case TokenType::kw_repeat: return repeat_statement();
         case TokenType::kw_for: return for_statement();
-        case TokenType::kw_case: return case_statement();
+        case TokenType::kw_exit:
+            token_ = scanner_.next();  // skip EXIT keyword
+            return sema_.onExit(token_->start(), token_->end());
         case TokenType::kw_return: {
-            token_ = scanner_.next();
+            token_ = scanner_.next();  // skip RETURN keyword
             std::set follows{ TokenType::semicolon, TokenType::kw_end, TokenType::kw_elsif, TokenType::kw_else, TokenType::kw_until };
             if (follows.contains(scanner_.peek()->type())) {
                 return sema_.onReturn(token_->start(), token_->end(), nullptr);
@@ -726,16 +729,7 @@ unique_ptr<StatementNode> Parser::if_statement() {
         statement_sequence(thenStmts.get());
         token_ = scanner_.next();
         while (token_->type() == TokenType::kw_elsif) {
-            FilePos elseIfStart = token_->start();
-            auto elseIfCond = expression();
-            token_ = scanner_.next();
-            if (assertToken(token_.get(), TokenType::kw_then)) {
-                auto elseIfStmts = make_unique<StatementSequenceNode>(EMPTY_POS);
-                statement_sequence(elseIfStmts.get());
-                elseIfs.push_back(sema_.onElseIf(elseIfStart, token_->end(),
-                    std::move(elseIfCond), std::move(elseIfStmts)));
-            }
-            token_ = scanner_.next();
+            elsif_clause(elseIfs, TokenType::kw_then);
         }
         if (token_->type() == TokenType::kw_else) {
             statement_sequence(elseStmts.get());
@@ -756,6 +750,7 @@ unique_ptr<StatementNode> Parser::loop_statement() {
     logger_.debug("loop_statement");
     token_ = scanner_.next();  // skip LOOP keyword
     FilePos start = token_->start();
+    sema_.onLoopStart(start);
     auto stmts = make_unique<StatementSequenceNode>(EMPTY_POS);
     statement_sequence(stmts.get());
     token_ = scanner_.next();
@@ -767,24 +762,29 @@ unique_ptr<StatementNode> Parser::loop_statement() {
     return sema_.onLoop(start, token_->end(), std::move(stmts));
 }
 
-// while_statement = "WHILE" expression "DO" statement_sequence "END" .
+// while_statement = "WHILE" expression "DO" StatementSequence { "ELSIF" expression "DO" StatementSequence } "END" .
 unique_ptr<StatementNode> Parser::while_statement() {
     logger_.debug("while_statement");
     token_ = scanner_.next();  // skip WHILE keyword
     FilePos start = token_->start();
+    sema_.onLoopStart(start);
     auto cond = expression();
     auto stmts = make_unique<StatementSequenceNode>(EMPTY_POS);
+    vector<unique_ptr<ElseIfNode>> elseIfs;
     token_ = scanner_.next();
     if (assertToken(token_.get(), TokenType::kw_do)) {
         statement_sequence(stmts.get());
         token_ = scanner_.next();
+        while (token_->type() == TokenType::kw_elsif) {
+            elsif_clause(elseIfs, TokenType::kw_do);
+        }
         if (token_->type() != TokenType::kw_end) {
             logger_.error(token_->start(), "END expected, found " + to_string(token_->type()) + ".");
         }
     }
     // [<;>, <END>, <ELSIF>, <ELSE>, <UNTIL>]
     // resync({ TokenType::semicolon, TokenType::kw_end, TokenType::kw_elsif, TokenType::kw_else, TokenType::kw_until });
-    return sema_.onWhileLoop(start, token_->end(), std::move(cond), std::move(stmts));
+    return sema_.onWhileLoop(start, token_->end(), std::move(cond), std::move(stmts), std::move(elseIfs));
 }
 
 // repeat_statement = "REPEAT" statement_sequence "UNTIL" expression .
@@ -792,6 +792,7 @@ unique_ptr<StatementNode> Parser::repeat_statement() {
     logger_.debug("repeat_statement");
     token_ = scanner_.next();  // skip REPEAT keyword
     FilePos start = token_->start();
+    sema_.onLoopStart(start);
     auto stmts = make_unique<StatementSequenceNode>(EMPTY_POS);
     statement_sequence(stmts.get());
     unique_ptr<ExpressionNode> cond;
@@ -809,6 +810,7 @@ unique_ptr<StatementNode> Parser::for_statement() {
     logger_.debug("for_statement");
     token_ = scanner_.next();  // skip FOR keyword
     FilePos start = token_->start();
+    sema_.onLoopStart(start);
     auto var = qualident();
     token_ = scanner_.next();
     unique_ptr<ExpressionNode> low;
@@ -847,7 +849,7 @@ unique_ptr<StatementNode> Parser::case_statement() {
     token_ = scanner_.next();  // skip CASE keyword
     const FilePos start = token_->start();
     auto expr = expression();
-    sema_.onCasePfStart(start, EMPTY_POS, expr);
+    sema_.onCaseOfStart(start, EMPTY_POS, expr);
     vector<unique_ptr<CaseNode>> cases;
     auto elseStmts = make_unique<StatementSequenceNode>(EMPTY_POS);
     if (assertToken(scanner_.peek(), TokenType::kw_of)) {
@@ -883,6 +885,18 @@ unique_ptr<StatementNode> Parser::case_statement() {
         }
     }
     return sema_.onCaseOfEnd(start, token_->end(), std::move(expr), std::move(cases), std::move(elseStmts));
+}
+
+void Parser::elsif_clause(vector<unique_ptr<ElseIfNode>> &elseIfs, TokenType type) {
+    FilePos elseIfStart = token_->start();
+    auto elseIfCond = expression();
+    token_ = scanner_.next();
+    if (assertToken(token_.get(), type)) {
+        auto elseIfStmts = make_unique<StatementSequenceNode>(EMPTY_POS);
+        statement_sequence(elseIfStmts.get());
+        elseIfs.push_back(sema_.onElseIf(elseIfStart, token_->end(), std::move(elseIfCond), std::move(elseIfStmts)));
+    }
+    token_ = scanner_.next();
 }
 
 // expression_list = expression { "," expression } .

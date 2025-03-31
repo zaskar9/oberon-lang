@@ -85,6 +85,7 @@ private:
     void visit(RepeatLoopNode &) override;
     void visit(ForLoopNode &) override;
     void visit(ReturnNode &) override;
+    void visit(ExitNode &) override;
 
     static bool envFieldResolver(QualifiedExpression *, const string &, TypeNode *);
 

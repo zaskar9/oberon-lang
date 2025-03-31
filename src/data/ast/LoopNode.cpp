@@ -28,6 +28,18 @@ ExpressionNode* ConditionalLoopNode::getCondition() const {
 }
 
 
+ElseIfNode* WhileLoopNode::getElseIf(const size_t num) const {
+    return elseIfs_.at(num).get();
+}
+
+size_t WhileLoopNode::getElseIfCount() const {
+    return elseIfs_.size();
+}
+
+bool WhileLoopNode::hasElseIf() const {
+    return !elseIfs_.empty();
+}
+
 void WhileLoopNode::accept(NodeVisitor& visitor) {
     visitor.visit(*this);
 }

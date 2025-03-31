@@ -192,6 +192,7 @@ private:
     void visit(RepeatLoopNode &) override;
     void visit(ForLoopNode &) override;
     void visit(ReturnNode &) override;
+    void visit(ExitNode &) override;
 
 public:
     LLVMIRBuilder(CompilerConfig &config, LLVMContext &builder, Module *module);

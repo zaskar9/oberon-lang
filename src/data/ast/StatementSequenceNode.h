@@ -13,20 +13,30 @@
 #include <memory>
 #include <vector>
 
+using std::unique_ptr;
+using std::vector;
+
 class StatementSequenceNode final : public Node {
 
 private:
-    std::vector<std::unique_ptr<StatementNode>> statements_;
+    vector<unique_ptr<StatementNode>> statements_;
+    bool exit_;
+    bool return_;
+    size_t retIdx_;
 
 public:
     explicit StatementSequenceNode(const FilePos &pos) :
-            Node(NodeType::statement_sequence, pos), statements_() { };
-    ~StatementSequenceNode() override = default;
+            Node(NodeType::statement_sequence, pos), statements_(), exit_(false), return_(false), retIdx_(0) { };
+    ~StatementSequenceNode() final = default;
 
-    void addStatement(std::unique_ptr<StatementNode> statement);
-    void insertStatement(size_t pos, std::unique_ptr<StatementNode> statement);
+    void addStatement(unique_ptr<StatementNode> statement);
+    void insertStatement(size_t pos, unique_ptr<StatementNode> statement);
     [[nodiscard]] StatementNode* getStatement(size_t num) const;
     [[nodiscard]] size_t getStatementCount() const;
+
+    [[nodiscard]] bool hasExit();
+    [[nodiscard]] bool isReturn();
+    [[nodiscard]] size_t getReturnIndex();
 
     void accept(NodeVisitor& visitor) final;
 

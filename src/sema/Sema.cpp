@@ -18,8 +18,9 @@ using std::set;
 using std::string;
 
 Sema::Sema(CompilerConfig &config, ASTContext *context, OberonSystem *system) :
-        config_(config), context_(context), system_(system), logger_(config_.logger()), forwards_(), procs_(), caseTys_(),
-        symbols_(system_->getSymbolTable()), importer_(config_, context, symbols_), exporter_(config_, context) {
+        config_(config), context_(context), system_(system), logger_(config_.logger()),
+        forwards_(), procs_(), caseTys_(), loops_(), symbols_(system_->getSymbolTable()),
+        importer_(config_, context, symbols_), exporter_(config_, context) {
     boolTy_ = system_->getBasicType(TypeKind::BOOLEAN);
     byteTy_ = system_->getBasicType(TypeKind::BYTE);
     charTy_ = system_->getBasicType(TypeKind::CHAR);
@@ -443,10 +444,32 @@ Sema::onElseIf(const FilePos &start, [[maybe_unused]] const FilePos &end,
     return make_unique<ElseIfNode>(start, std::move(condition), std::move(stmts));
 }
 
+void Sema::onLoopStart(const FilePos &start) {
+    loops_.push(start);
+}
+
 unique_ptr<LoopNode>
-Sema::onLoop(const FilePos &start, [[maybe_unused]] const FilePos &end,
-             unique_ptr<StatementSequenceNode> stmts) {
+Sema::onLoop(const FilePos &start, const FilePos &, unique_ptr<StatementSequenceNode> stmts) {
+    if (!stmts->hasExit()) {
+        logger_.warning(start, "LOOP statement without EXIT found.");
+    }
+    loops_.pop();
     return make_unique<LoopNode>(start, std::move(stmts));
+}
+
+unique_ptr<WhileLoopNode>
+Sema::onWhileLoop(const FilePos &start, [[maybe_unused]] const FilePos &end,
+                  unique_ptr<ExpressionNode> condition, unique_ptr<StatementSequenceNode> stmts,
+                  vector<unique_ptr<ElseIfNode>> elseIfs) {
+    if (!condition) {
+        logger_.error(start, "undefined condition in while-loop.");
+    }
+    auto type = condition->getType();
+    if (type && type->kind() != TypeKind::BOOLEAN) {
+        logger_.error(condition->pos(), "Boolean expression expected.");
+    }
+    loops_.pop();
+    return make_unique<WhileLoopNode>(start, std::move(condition), std::move(stmts), std::move(elseIfs));
 }
 
 unique_ptr<RepeatLoopNode>
@@ -459,23 +482,72 @@ Sema::onRepeatLoop(const FilePos &start, [[maybe_unused]] const FilePos &end,
     if (type && type->kind() != TypeKind::BOOLEAN) {
         logger_.error(condition->pos(), "Boolean expression expected.");
     }
+    loops_.pop();
     return make_unique<RepeatLoopNode>(start, std::move(condition), std::move(stmts));
 }
 
-unique_ptr<WhileLoopNode>
-Sema::onWhileLoop(const FilePos &start, [[maybe_unused]] const FilePos &end,
-                  unique_ptr<ExpressionNode> condition, unique_ptr<StatementSequenceNode> stmts) {
-    if (!condition) {
-        logger_.error(start, "undefined condition in while-loop.");
+unique_ptr<ForLoopNode>
+Sema::onForLoop(const FilePos &start, [[maybe_unused]] const FilePos &end,
+                unique_ptr<QualIdent> var,
+                unique_ptr<ExpressionNode> low, unique_ptr<ExpressionNode> high, unique_ptr<ExpressionNode> step,
+                unique_ptr<StatementSequenceNode> stmts) {
+    vector<unique_ptr<Selector>> selectors;
+    FilePos v_start = var->start();
+    FilePos v_end = var->end();
+    auto counter = onQualifiedExpression(v_start, v_end, std::move(var), std::move(selectors));
+    if (!counter) {
+        logger_.error(start, "undefined counter variable in for-loop.");
     }
-    auto type = condition->getType();
-    if (type && type->kind() != TypeKind::BOOLEAN) {
-        logger_.error(condition->pos(), "Boolean expression expected.");
+    auto ident = counter->ident();
+    if (ident->isQualified()) {
+        logger_.error(ident->start(), to_string(*ident) + " cannot be used as a loop counter.");
     }
-    return make_unique<WhileLoopNode>(start, std::move(condition), std::move(stmts));
+    if (counter->getNodeType() == NodeType::qualified_expression) {
+        auto decl = dynamic_cast<QualifiedExpression *>(counter.get())->dereference();
+        if (decl->getNodeType() != NodeType::variable) {
+            logger_.error(ident->start(), "variable expected.");
+        }
+        auto type = decl->getType();
+        if (type && type->kind() != TypeKind::INTEGER) {
+            logger_.error(ident->start(), "type mismatch: expected INTEGER, found " + format(type) + ".");
+        }
+    } else {
+        logger_.error(ident->start(), to_string(*ident) + " cannot be used as a loop counter.");
+    }
+    if (!low) {
+        logger_.error(start, "undefined low value in for-loop.");
+    }
+    if (assertCompatible(low->pos(), integerTy_, low->getType())) {
+        cast(low.get(), integerTy_);
+    }
+    if (!high) {
+        logger_.error(start, "undefined high value in for-loop.");
+    }
+    if (assertCompatible(high->pos(), integerTy_, high->getType())) {
+        cast(high.get(), integerTy_);
+    }
+    if (step) {
+        if (step->isLiteral()) {
+            if (assertCompatible(step->pos(), integerTy_, step->getType())) {
+                auto val = dynamic_cast<IntegerLiteralNode *>(step.get())->value();
+                if (val == 0) {
+                    logger_.error(step->pos(), "step value cannot be zero.");
+                } else {
+                    cast(step.get(), integerTy_);
+                }
+            }
+        } else  {
+            logger_.error(step->pos(), "constant expression expected.");
+        }
+    } else {
+        step = onIntegerLiteral(EMPTY_POS, EMPTY_POS, 1, TypeKind::INTEGER);
+    }
+    loops_.pop();
+    return make_unique<ForLoopNode>(start, std::move(counter), std::move(low), std::move(high), std::move(step),
+                                    std::move(stmts));
 }
 
-void Sema::onCasePfStart(const FilePos &start, const FilePos &, unique_ptr<ExpressionNode> &expr) {
+void Sema::onCaseOfStart(const FilePos &start, const FilePos &, unique_ptr<ExpressionNode> &expr) {
     if (!expr) {
         logger_.error(start, "undefined expression in case statement.");
     }
@@ -631,7 +703,6 @@ Sema::onCaseLabel(const FilePos &start, const FilePos &,
                         // Change the declaration of the case expression to reflect its dynamic type
                         qExpr->dereference()->setType(pType);
                     }
-
                 } else {
                     logger_.error(label->pos(), "type mismatch: case label type " + format(pType) +
                                                 " is incompatible with case expression type "+ format(eType) + ".");
@@ -663,66 +734,6 @@ Sema::onCase(const FilePos &start, const FilePos &,
     return make_unique<CaseNode>(start, std::move(label), std::move(stmts));
 }
 
-unique_ptr<ForLoopNode>
-Sema::onForLoop(const FilePos &start, [[maybe_unused]] const FilePos &end,
-                unique_ptr<QualIdent> var,
-                unique_ptr<ExpressionNode> low, unique_ptr<ExpressionNode> high, unique_ptr<ExpressionNode> step,
-                unique_ptr<StatementSequenceNode> stmts) {
-    vector<unique_ptr<Selector>> selectors;
-    FilePos v_start = var->start();
-    FilePos v_end = var->end();
-    auto counter = onQualifiedExpression(v_start, v_end, std::move(var), std::move(selectors));
-    if (!counter) {
-        logger_.error(start, "undefined counter variable in for-loop.");
-    }
-    auto ident = counter->ident();
-    if (ident->isQualified()) {
-        logger_.error(ident->start(), to_string(*ident) + " cannot be used as a loop counter.");
-    }
-    if (counter->getNodeType() == NodeType::qualified_expression) {
-        auto decl = dynamic_cast<QualifiedExpression *>(counter.get())->dereference();
-        if (decl->getNodeType() != NodeType::variable) {
-            logger_.error(ident->start(), "variable expected.");
-        }
-        auto type = decl->getType();
-        if (type && type->kind() != TypeKind::INTEGER) {
-            logger_.error(ident->start(), "type mismatch: expected INTEGER, found " + format(type) + ".");
-        }
-    } else {
-        logger_.error(ident->start(), to_string(*ident) + " cannot be used as a loop counter.");
-    }
-    if (!low) {
-        logger_.error(start, "undefined low value in for-loop.");
-    }
-    if (assertCompatible(low->pos(), integerTy_, low->getType())) {
-        cast(low.get(), integerTy_);
-    }
-    if (!high) {
-        logger_.error(start, "undefined high value in for-loop.");
-    }
-    if (assertCompatible(high->pos(), integerTy_, high->getType())) {
-        cast(high.get(), integerTy_);
-    }
-    if (step) {
-        if (step->isLiteral()) {
-            if (assertCompatible(step->pos(), integerTy_, step->getType())) {
-                auto val = dynamic_cast<IntegerLiteralNode *>(step.get())->value();
-                if (val == 0) {
-                    logger_.error(step->pos(), "step value cannot be zero.");
-                } else {
-                    cast(step.get(), integerTy_);
-                }
-            }
-        } else  {
-            logger_.error(step->pos(), "constant expression expected.");
-        }
-   } else {
-        step = onIntegerLiteral(EMPTY_POS, EMPTY_POS, 1, TypeKind::INTEGER);
-    }
-    return make_unique<ForLoopNode>(start, std::move(counter), std::move(low), std::move(high), std::move(step),
-                                    std::move(stmts));
-}
-
 unique_ptr<ReturnNode>
 Sema::onReturn(const FilePos &start, [[maybe_unused]] const FilePos &end, unique_ptr<ExpressionNode> expr) {
     if (procs_.empty()) {
@@ -745,6 +756,13 @@ Sema::onReturn(const FilePos &start, [[maybe_unused]] const FilePos &end, unique
         }
     }
     return make_unique<ReturnNode>(start, std::move(expr));
+}
+
+unique_ptr<ExitNode> Sema::onExit(const FilePos &start, const FilePos &) {
+    if (loops_.empty()) {
+        logger_.error(start, "EXIT statement outside of loop.");
+    }
+    return make_unique<ExitNode>(start);
 }
 
 unique_ptr<StatementNode>

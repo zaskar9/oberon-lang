@@ -23,7 +23,7 @@ enum class NodeType : char {
     field, parameter, variable, constant, type,
     integer, real, boolean, string, character, pointer, range, set,
     assignment, loop, while_loop, repeat_loop, for_loop, if_then_else, else_if,
-    case_of, case_label, case_case, ret,
+    case_of, case_label, case_case, ret, exit,
     qualified_statement
 };
 

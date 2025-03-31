@@ -25,6 +25,18 @@ size_t StatementSequenceNode::getStatementCount() const {
     return statements_.size();
 }
 
+bool StatementSequenceNode::hasExit() {
+    return exit_;
+}
+
+bool StatementSequenceNode::isReturn() {
+    return return_;
+}
+
+size_t StatementSequenceNode::getReturnIndex() {
+    return retIdx_;
+}
+
 void StatementSequenceNode::accept(NodeVisitor& visitor) {
     visitor.visit(*this);
 }

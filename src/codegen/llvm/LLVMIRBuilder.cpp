@@ -1355,6 +1355,8 @@ void LLVMIRBuilder::visit(ReturnNode &node) {
     }
 }
 
+void LLVMIRBuilder::visit(ExitNode &) {}
+
 void LLVMIRBuilder::cast(ExpressionNode &node) {
     auto target = node.getCast();
     auto source = node.getType();

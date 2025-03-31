@@ -12,9 +12,11 @@
 
 #include "AssignmentNode.h"
 #include "ExpressionNode.h"
+#include "IfThenElseNode.h"
 #include "StatementSequenceNode.h"
 
 using std::make_unique;
+using std::ostream;
 using std::unique_ptr;
 
 class LoopNode : public StatementNode {
@@ -24,7 +26,7 @@ private:
 
 protected:
     LoopNode(NodeType nodeType, const FilePos &pos, unique_ptr<StatementSequenceNode> stmts) :
-            StatementNode(nodeType, pos), statements_(std::move(stmts)) { };
+            StatementNode(nodeType, pos), statements_(std::move(stmts)) {};
 
 public:
     LoopNode(const FilePos &pos, unique_ptr<StatementSequenceNode> stmts) :
@@ -35,7 +37,7 @@ public:
 
     void accept(NodeVisitor& visitor) override;
 
-    void print(std::ostream &stream) const override;
+    void print(ostream &stream) const override;
 
 };
 
@@ -47,7 +49,7 @@ private:
 protected:
     ConditionalLoopNode(NodeType nodeType, const FilePos &pos, unique_ptr<ExpressionNode> condition,
                         unique_ptr<StatementSequenceNode> stmts) :
-            LoopNode(nodeType, pos, std::move(stmts)), condition_(std::move(condition)) { };
+            LoopNode(nodeType, pos, std::move(stmts)), condition_(std::move(condition)) {};
 
 public:
     ~ConditionalLoopNode() override;
@@ -56,16 +58,25 @@ public:
 
 };
 
-class WhileLoopNode final: public ConditionalLoopNode {
+class WhileLoopNode final : public ConditionalLoopNode {
+
+private:
+    vector<unique_ptr<ElseIfNode>> elseIfs_;
 
 public:
-    WhileLoopNode(const FilePos &pos, unique_ptr<ExpressionNode> condition, unique_ptr<StatementSequenceNode> stmts) :
-            ConditionalLoopNode(NodeType::while_loop, pos, std::move(condition), std::move(stmts)) { };
-    ~WhileLoopNode() override = default;
+    WhileLoopNode(const FilePos &pos, unique_ptr<ExpressionNode> condition, unique_ptr<StatementSequenceNode> stmts,
+                  vector<unique_ptr<ElseIfNode>> elseIfs) :
+            ConditionalLoopNode(NodeType::while_loop, pos,std::move(condition), std::move(stmts)),
+            elseIfs_(std::move(elseIfs)) {};
+    ~WhileLoopNode() final = default;
 
-    void accept(NodeVisitor& visitor) final;
+    [[nodiscard]] ElseIfNode *getElseIf(size_t) const;
+    [[nodiscard]] size_t getElseIfCount() const;
+    [[nodiscard]] bool hasElseIf() const;
 
-    void print(std::ostream &stream) const final;
+    void accept(NodeVisitor &visitor) final;
+
+    void print(ostream &stream) const final;
 
 };
 
@@ -73,12 +84,12 @@ class RepeatLoopNode final : public ConditionalLoopNode {
 
 public:
     RepeatLoopNode(const FilePos &pos, unique_ptr<ExpressionNode> condition, unique_ptr<StatementSequenceNode> stmts) :
-            ConditionalLoopNode(NodeType::repeat_loop, pos, std::move(condition), std::move(stmts)) { };
-    ~RepeatLoopNode() override = default;
+            ConditionalLoopNode(NodeType::repeat_loop, pos, std::move(condition), std::move(stmts)) {};
+    ~RepeatLoopNode() final = default;
 
     void accept(NodeVisitor& visitor) final;
 
-    void print(std::ostream &stream) const final;
+    void print(ostream &stream) const final;
 
 };
 
@@ -92,9 +103,9 @@ public:
     ForLoopNode(const FilePos &pos, unique_ptr<QualifiedExpression> counter,
                 unique_ptr<ExpressionNode> low, unique_ptr<ExpressionNode> high, unique_ptr<ExpressionNode> step,
                 unique_ptr<StatementSequenceNode> stmts) :
-            LoopNode(NodeType::for_loop, pos, std::move(stmts)), counter_(std::move(counter)), low_(std::move(low)),
-            high_(std::move(high)), step_(std::move(step)) { };
-    ~ForLoopNode() override = default;
+            LoopNode(NodeType::for_loop, pos, std::move(stmts)),
+            counter_(std::move(counter)), low_(std::move(low)), high_(std::move(high)), step_(std::move(step)) { };
+    ~ForLoopNode() final = default;
 
     [[nodiscard]] QualifiedExpression *getCounter() const;
     [[nodiscard]] ExpressionNode *getLow() const;
@@ -103,7 +114,7 @@ public:
 
     void accept(NodeVisitor& visitor) final;
 
-    void print(std::ostream &stream) const final;
+    void print(ostream &stream) const final;
 
 };
 

@@ -52,7 +52,7 @@ void Scanner::init() {
                   { "BY", TokenType::kw_by },
                   { "IF", TokenType::kw_if }, { "THEN", TokenType::kw_then },
                   { "ELSE", TokenType::kw_else }, { "ELSIF", TokenType::kw_elsif },
-                  { "CASE", TokenType::kw_case },
+                  { "CASE", TokenType::kw_case }, { "WITH", TokenType::kw_with },
                   { "VAR", TokenType::kw_var }, { "CONST", TokenType::kw_const },
                   { "TYPE", TokenType::kw_type }, { "ARRAY", TokenType::kw_array },
                   { "RECORD", TokenType::kw_record }, { "OF", TokenType::kw_of },
@@ -95,7 +95,7 @@ void Scanner::seek(const FilePos &pos) {
 
 unique_ptr<const Token> Scanner::scanToken() {
     // skip whitespace
-    while (!eof_ && ch_ <= ' ') {
+    while (!eof_ && std::isspace(ch_)) {
         read();
     }
     FilePos pos = current();
