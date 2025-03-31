@@ -1,4 +1,9 @@
-(**DynamicStringsTest.Mod provides an implementation of dynamic 
+(* @Author R. S. Doiel, <rsdoiel@gmail.com>
+ * Copyright (c) 2020, All Rights Reserved, https://rsdoiel.github.io/blog/2020/04/11/Mostly-Oberon.html
+ * Released under the BSD 2-clause license: https://opensource.org/licenses/BSD-2-Clause
+ *)
+
+(**DynamicStringsTest.Mod provides an implementation of dynamic
 strings using a linked list of records holding ARRAY OF CHAR. *)
 MODULE DynamicStringsTest;
   IMPORT DynamicStrings, Strings, Out, Convert := extConvert;
