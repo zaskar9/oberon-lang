@@ -2,7 +2,7 @@
   RUN: %oberon -I "%S%{pathsep}%inc" -L "%S%{pathsep}%lib" -l oberon --run %s | filecheck %s
   Prints "NOPASS" first, which should not be reached
 *)
-MODULE Loop1;
+MODULE Loop2;
 
 IMPORT Out;
 
@@ -17,7 +17,7 @@ END Test;
 BEGIN
     Test;
     Out.String("PASS")
-END Loop1.
+END Loop2.
 (*
     CHECK-NOT: NOPASS
 *)

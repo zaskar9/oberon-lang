@@ -692,7 +692,9 @@ unique_ptr<StatementNode> Parser::statement() {
         case TokenType::pipe:
             logger_.warning(token_->start(), "redundant semicolon.");
             break;
-        default: logger_.error(token->start(), "unknown or empty statement.");
+        default:
+            logger_.error(token->start(), "unknown or empty statement.");
+            scanner_.next();  // skip unrecognized token
     }
     // [<;>, <END>, <ELSIF>, <ELSE>, <UNTIL>]
     // resync({ TokenType::semicolon, TokenType::kw_end, TokenType::kw_elsif, TokenType::kw_else, TokenType::kw_until });
