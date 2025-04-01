@@ -2107,7 +2107,7 @@ void LLVMIRBuilder::procedure(ProcedureNode &node) {
     for (auto &param : node.getType()->parameters()) {
         auto type = param->getType();
         auto param_t = getLLVMType(type);
-        params.push_back(param->isVar() || type->isStructured() ? param_t->getPointerTo() : param_t);
+        params.push_back(param->isVar() || type->isStructured() ? PointerType::get(param_t, 0) : param_t);
         // Add a parameter for the "dope vector" in case of an open array parameter
         // or for the type descriptor in case of a variable record parameter
         if ((type->isArray() && dynamic_cast<ArrayTypeNode*>(type)->isOpen()) || (type->isRecord() && param->isVar())) {
