@@ -46,7 +46,7 @@ private:
     vector<pair<unique_ptr<QualIdent>, PointerTypeNode *>> forwards_;
     stack<unique_ptr<ProcedureNode>> procs_;
     unordered_map<QualifiedExpression *, TypeNode *> caseTys_;
-    stack<const FilePos> loops_;
+    stack<FilePos> loops_;
     SymbolTable *symbols_;
     SymbolImporter importer_;
     SymbolExporter exporter_;
