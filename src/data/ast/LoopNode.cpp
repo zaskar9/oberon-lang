@@ -19,6 +19,14 @@ void LoopNode::print(std::ostream& stream) const {
     stream << "LOOP" << *statements_ << "END";
 }
 
+bool LoopNode::hasExit() {
+    return statements_->hasExit();
+}
+
+bool LoopNode::isReturn() {
+    return statements_->isReturn();
+}
+
 
 ConditionalLoopNode::~ConditionalLoopNode() = default;
 
@@ -28,12 +36,40 @@ ExpressionNode* ConditionalLoopNode::getCondition() const {
 }
 
 
+ElseIfNode* WhileLoopNode::getElseIf(const size_t num) const {
+    return elseIfs_.at(num).get();
+}
+
+size_t WhileLoopNode::getElseIfCount() const {
+    return elseIfs_.size();
+}
+
+bool WhileLoopNode::hasElseIf() const {
+    return !elseIfs_.empty();
+}
+
 void WhileLoopNode::accept(NodeVisitor& visitor) {
     visitor.visit(*this);
 }
 
 void WhileLoopNode::print(std::ostream& stream) const {
     stream << "WHILE" << this->getCondition() << "DO" << this->getStatements() << "END";
+}
+
+bool WhileLoopNode::hasExit() {
+    bool res = LoopNode::hasExit();
+    for (size_t i = 0; i < elseIfs_.size(); ++i) {
+        res = res || elseIfs_.at(i)->getStatements()->hasExit();
+    }
+    return res;
+}
+
+bool WhileLoopNode::isReturn() {
+    bool res = LoopNode::isReturn();
+    for (size_t i = 0; i < elseIfs_.size(); ++i) {
+        res = res && elseIfs_.at(i)->getStatements()->isReturn();
+    }
+    return res;
 }
 
 

@@ -90,6 +90,8 @@ std::ostream& operator<<(std::ostream &stream, const TokenType &type) {
         case TokenType::kw_for: result = "FOR"; break;
         case TokenType::kw_to: result = "TO"; break;
         case TokenType::kw_by: result = "BY"; break;
+        case TokenType::kw_case: result = "CASE"; break;
+        case TokenType::kw_with: result = "WITH"; break;
         case TokenType::kw_array: result = "ARRAY"; break;
         case TokenType::kw_record: result = "RECORD"; break;
         case TokenType::kw_const: result = "CONST"; break;

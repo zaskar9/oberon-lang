@@ -52,7 +52,7 @@ public:
                    vector<unique_ptr<ElseIfNode>> elseIfs, unique_ptr<StatementSequenceNode> elseStmts) :
             StatementNode(NodeType::if_then_else, pos), condition_(std::move(condition)),
             thenStatements_(std::move(thenStmts)), elseIfs_(std::move(elseIfs)), elseStatements_(std::move(elseStmts)) {};
-    ~IfThenElseNode() override = default;
+    ~IfThenElseNode() final = default;
 
     [[nodiscard]] ExpressionNode* getCondition() const;
     [[nodiscard]] StatementSequenceNode* getThenStatements() const;
@@ -63,6 +63,10 @@ public:
 
     [[nodiscard]] StatementSequenceNode* getElseStatements() const;
     [[nodiscard]] bool hasElse() const;
+
+    [[nodiscard]] virtual bool hasExit();
+    [[nodiscard]] virtual bool isReturn();
+    [[nodiscard]] bool isTerminator() final;
 
     void accept(NodeVisitor&) final;
 

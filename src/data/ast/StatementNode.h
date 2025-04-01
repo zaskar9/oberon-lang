@@ -14,24 +14,46 @@
 class StatementNode : public Node {
 
 public:
-    explicit StatementNode(NodeType nodeType, const FilePos &pos) : Node(nodeType, pos) { };
+    explicit StatementNode(NodeType nodeType, const FilePos &pos) : Node(nodeType, pos) {}
     ~StatementNode() override;
+
+    [[nodiscard]] virtual bool hasExit();
+    [[nodiscard]] virtual bool isReturn();
+    [[nodiscard]] virtual bool isTerminator();
 
     void accept(NodeVisitor &visitor) override = 0;
 
 };
 
-class ReturnNode : public StatementNode {
+class ReturnNode final : public StatementNode {
 
 private:
     std::unique_ptr<ExpressionNode> value_;
 
 public:
     ReturnNode(const FilePos &pos, std::unique_ptr<ExpressionNode> value) :
-            StatementNode(NodeType::ret, pos), value_(std::move(value)) { };
-    ~ReturnNode() override = default;
+            StatementNode(NodeType::ret, pos), value_(std::move(value)) {}
+    ~ReturnNode() final = default;
 
     [[nodiscard]] ExpressionNode * getValue() const;
+
+    [[nodiscard]] bool isReturn() final;
+
+    void accept(NodeVisitor &visitor) final;
+
+    void print(std::ostream &stream) const final;
+
+};
+
+
+class ExitNode final : public StatementNode {
+
+public:
+    explicit ExitNode(const FilePos &pos) : StatementNode(NodeType::exit, pos) {}
+    ~ExitNode() final = default;
+
+    [[nodiscard]] bool hasExit() final;
+    [[nodiscard]] bool isTerminator() final;
 
     void accept(NodeVisitor &visitor) final;
 

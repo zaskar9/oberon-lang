@@ -357,6 +357,8 @@ void LambdaLifter::visit(ReturnNode &node) {
     node.getValue()->accept(*this);
 }
 
+void LambdaLifter::visit(ExitNode &) {}
+
 bool LambdaLifter::envFieldResolver(QualifiedExpression *var, const std::string &field_name, TypeNode *field_type) {
     auto type = dynamic_cast<RecordTypeNode*>(var->getType());
     auto &selectors = var->selectors();

@@ -9,8 +9,24 @@
 
 StatementNode::~StatementNode() = default;
 
-ExpressionNode * ReturnNode::getValue() const {
+bool StatementNode::hasExit() {
+    return false;
+}
+
+bool StatementNode::isReturn() {
+    return false;
+}
+
+bool StatementNode::isTerminator() {
+    return isReturn();
+}
+
+ExpressionNode *ReturnNode::getValue() const {
     return value_.get();
+}
+
+bool ReturnNode::isReturn() {
+    return true;
 }
 
 void ReturnNode::accept(NodeVisitor &visitor) {
@@ -21,3 +37,18 @@ void ReturnNode::print(std::ostream &stream) const {
     stream << "RETURN " << *value_;
 }
 
+bool ExitNode::hasExit() {
+    return true;
+}
+
+bool ExitNode::isTerminator() {
+    return true;
+}
+
+void ExitNode::accept(NodeVisitor &visitor) {
+    visitor.visit(*this);
+}
+
+void ExitNode::print(std::ostream &stream) const {
+    stream << "EXIT";
+}

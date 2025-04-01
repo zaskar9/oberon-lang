@@ -26,6 +26,7 @@ private:
     std::ostream &stream_;
     bool isDecl_;
     ModuleNode *module_;
+    Node *parent_;
 
     void indent();
     void block(BlockNode &, bool isGlobal);
@@ -78,10 +79,11 @@ private:
     void visit(RepeatLoopNode &) override;
     void visit(ForLoopNode &) override;
     void visit(ReturnNode &) override;
+    void visit(ExitNode &) override;
 
 public:
     explicit NodePrettyPrinter(std::ostream &stream) :
-            indent_(0), stream_(stream), isDecl_(false), module_() { };
+            indent_(0), stream_(stream), isDecl_(false), module_(), parent_() { };
     ~NodePrettyPrinter() override = default;
 
     void print(Node *node);

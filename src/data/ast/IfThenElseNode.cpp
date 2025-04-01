@@ -52,6 +52,36 @@ bool IfThenElseNode::hasElse() const {
     return elseStatements_->getStatementCount() > 0;
 }
 
+bool IfThenElseNode::hasExit() {
+    bool res = thenStatements_->hasExit();
+    for (size_t i = 0; i < elseIfs_.size(); ++i) {
+        res = res || elseIfs_.at(i)->getStatements()->hasExit();
+    }
+    res = res || elseStatements_->hasExit();
+    return res;
+}
+
+bool IfThenElseNode::isReturn() {
+    bool res = thenStatements_->isReturn();
+    for (size_t i = 0; i < elseIfs_.size(); ++i) {
+        res = res && elseIfs_.at(i)->getStatements()->isReturn();
+    }
+    res = res && elseStatements_->isReturn();
+    return res;
+}
+
+bool IfThenElseNode::isTerminator() {
+    if (isReturn()) {
+        return true;
+    }
+    bool res = thenStatements_->hasTerminator();
+    for (size_t i = 0; i < elseIfs_.size(); ++i) {
+        res = res && elseIfs_.at(i)->getStatements()->hasTerminator();
+    }
+    res = res && elseStatements_->hasTerminator();
+    return res;
+}
+
 void IfThenElseNode::accept(NodeVisitor& visitor) {
     visitor.visit(*this);
 }

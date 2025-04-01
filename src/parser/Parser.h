@@ -97,6 +97,7 @@ private:
     unique_ptr<StatementNode> repeat_statement();
     unique_ptr<StatementNode> for_statement();
     unique_ptr<StatementNode> case_statement();
+    void elsif_clause(vector<unique_ptr<ElseIfNode>> &, TokenType = TokenType::kw_then);
 
     bool assertToken(const Token *token, TokenType expected);
     bool assertOberonIdent(const Ident *ident);
