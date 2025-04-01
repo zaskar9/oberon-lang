@@ -21,8 +21,7 @@ BEGIN
     ELSE
       RETURN
     END;
-    EXIT;
-    x := 5
+    EXIT
   END;
   Out.String("PASS"); Out.Ln
 END Test;

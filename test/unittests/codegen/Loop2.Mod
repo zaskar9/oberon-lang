@@ -7,16 +7,18 @@ MODULE Loop2;
 IMPORT Out;
 
 PROCEDURE Test;
+VAR x: INTEGER;
 BEGIN
+  x := 0;
   LOOP
-    RETURN
-  END;
-  Out.String("NOPASS")
+    IF x = 0 THEN EXIT END;
+    Out.String("NOPASS"); Out.Ln
+  END
 END Test;
 
 BEGIN
     Test;
-    Out.String("PASS")
+    Out.String("PASS"); Out.Ln
 END Loop2.
 (*
     CHECK-NOT: NOPASS

@@ -75,7 +75,7 @@ public:
     CaseOfNode(const FilePos &pos, unique_ptr<ExpressionNode> expr, vector<unique_ptr<CaseNode>> &&cases,
         unique_ptr<StatementSequenceNode> elseStmts) : StatementNode(NodeType::case_of, pos),
         expression_(std::move(expr)), cases_(std::move(cases)), elseStatements_(std::move(elseStmts)), labels_() {}
-    ~CaseOfNode() override = default;
+    ~CaseOfNode() final = default;
 
     [[nodiscard]] ExpressionNode* getExpression() const;
 
@@ -86,6 +86,10 @@ public:
 
     [[nodiscard]] StatementSequenceNode* getElseStatements() const;
     [[nodiscard]] bool hasElse() const;
+
+    [[nodiscard]] bool hasExit() final;
+    [[nodiscard]] bool isReturn() final;
+    [[nodiscard]] bool isTerminator() final;
 
     void accept(NodeVisitor&) override;
 

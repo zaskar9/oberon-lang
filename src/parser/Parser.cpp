@@ -619,6 +619,7 @@ void Parser::statement_sequence(StatementSequenceNode *statements) {
     } else {
         while (true) {
             statements->addStatement(statement());
+            auto last = token_->end();
             token = scanner_.peek();
             if (token->type() == TokenType::semicolon) {
                 token_ = scanner_.next();  // skip semicolon but keep token for error reporting in `Parser::statement`
@@ -630,7 +631,7 @@ void Parser::statement_sequence(StatementSequenceNode *statements) {
                        token->type() == TokenType::kw_loop || token->type() == TokenType::kw_repeat ||
                        token->type() == TokenType::kw_for || token->type() == TokenType::kw_while ||
                        token->type() == TokenType::kw_exit || token->type() == TokenType::kw_return) {
-                logger_.error(token->start(), "semicolon missing.");
+                logger_.error(last, "semicolon missing.");
             } else if (token->type() == TokenType::kw_end || token->type() == TokenType::kw_elsif ||
                        token->type() == TokenType::kw_else || token->type() == TokenType::kw_until ||
                        token->type() == TokenType::pipe) {
@@ -643,6 +644,7 @@ void Parser::statement_sequence(StatementSequenceNode *statements) {
             }
         }
     }
+    sema_.onStatementSequence(statements);
 }
 
 // statement = ( assignment | procedure_call | if_statement | case_statement
@@ -677,7 +679,8 @@ unique_ptr<StatementNode> Parser::statement() {
             return sema_.onExit(token_->start(), token_->end());
         case TokenType::kw_return: {
             token_ = scanner_.next();  // skip RETURN keyword
-            std::set follows{ TokenType::semicolon, TokenType::kw_end, TokenType::kw_elsif, TokenType::kw_else, TokenType::kw_until };
+            std::set follows{ TokenType::semicolon, TokenType::pipe, TokenType::kw_end,
+                              TokenType::kw_elsif, TokenType::kw_else, TokenType::kw_until };
             if (follows.contains(scanner_.peek()->type())) {
                 return sema_.onReturn(token_->start(), token_->end(), nullptr);
             }

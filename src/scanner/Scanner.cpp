@@ -295,9 +295,14 @@ unique_ptr<const Token> Scanner::scanNumber() {
         ss << ch_;
         read();
         if (ch_ == '.') {
-            ss << ch_;
-            isFloat = true;
+            auto offset = file_.tellg();
             read();
+            if (ch_ == '.') {
+                file_.seekg(offset);
+                break;
+            }
+            ss << '.';
+            isFloat = true;
         }
         if (isFloat && (ch_ == '+' || ch_ == '-')) {
             ss << ch_;

@@ -87,6 +87,46 @@ bool CaseOfNode::hasElse() const {
     return elseStatements_->getStatementCount() > 0;
 }
 
+bool CaseOfNode::hasExit() {
+    bool res = false;
+    for (size_t i = 0; i < cases_.size(); ++i) {
+        res = res || cases_[i]->getStatements()->hasExit();
+    }
+    res = res || elseStatements_->hasExit();
+    return res;
+}
+
+bool CaseOfNode::isReturn() {
+    bool res = true;
+    for (size_t i = 0; i < cases_.size(); ++i) {
+        res = res && cases_[i]->getStatements()->isReturn();
+    }
+    if (elseStatements_->getStatementCount() > 0) {
+        res = res && elseStatements_->isReturn();
+    } else {
+        // A case statement without an else can always fail to return
+        return false;
+    }
+    return res;
+}
+
+bool CaseOfNode::isTerminator() {
+    if (isReturn()) {
+        return true;
+    }
+    bool res = true;
+    for (size_t i = 0; i < cases_.size(); ++i) {
+        res = res && cases_[i]->getStatements()->hasTerminator();
+    }
+    if (elseStatements_->getStatementCount() > 0) {
+        res = res && elseStatements_->hasTerminator();
+    } else {
+        // A case statement without an else can always fail to return
+        return false;
+    }
+    return res;
+}
+
 void CaseOfNode::accept(NodeVisitor &visitor) {
     visitor.visit(*this);
 }

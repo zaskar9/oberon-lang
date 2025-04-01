@@ -20,27 +20,30 @@ class StatementSequenceNode final : public Node {
 
 private:
     vector<unique_ptr<StatementNode>> statements_;
-    bool exit_;
-    bool return_;
-    size_t retIdx_;
+    bool exit_, return_, term_;
+    size_t termIdx_;
+
+    void updateState(size_t, StatementNode *);
 
 public:
     explicit StatementSequenceNode(const FilePos &pos) :
-            Node(NodeType::statement_sequence, pos), statements_(), exit_(false), return_(false), retIdx_(0) { };
+            Node(NodeType::statement_sequence, pos),
+            statements_(), exit_(false), return_(false), term_(false), termIdx_(0) {}
     ~StatementSequenceNode() final = default;
 
-    void addStatement(unique_ptr<StatementNode> statement);
-    void insertStatement(size_t pos, unique_ptr<StatementNode> statement);
-    [[nodiscard]] StatementNode* getStatement(size_t num) const;
+    void addStatement(unique_ptr<StatementNode>);
+    void insertStatement(size_t, unique_ptr<StatementNode>);
+    [[nodiscard]] StatementNode* getStatement(size_t) const;
     [[nodiscard]] size_t getStatementCount() const;
 
-    [[nodiscard]] bool hasExit();
-    [[nodiscard]] bool isReturn();
-    [[nodiscard]] size_t getReturnIndex();
+    [[nodiscard]] bool hasExit() const;
+    [[nodiscard]] bool isReturn() const;
+    [[nodiscard]] bool hasTerminator() const;
+    [[nodiscard]] size_t getTerminatorIndex() const;
 
-    void accept(NodeVisitor& visitor) final;
+    void accept(NodeVisitor &) final;
 
-    void print(std::ostream &stream) const final;
+    void print(std::ostream &) const final;
 
 };
 

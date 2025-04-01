@@ -19,6 +19,14 @@ void LoopNode::print(std::ostream& stream) const {
     stream << "LOOP" << *statements_ << "END";
 }
 
+bool LoopNode::hasExit() {
+    return statements_->hasExit();
+}
+
+bool LoopNode::isReturn() {
+    return statements_->isReturn();
+}
+
 
 ConditionalLoopNode::~ConditionalLoopNode() = default;
 
@@ -46,6 +54,22 @@ void WhileLoopNode::accept(NodeVisitor& visitor) {
 
 void WhileLoopNode::print(std::ostream& stream) const {
     stream << "WHILE" << this->getCondition() << "DO" << this->getStatements() << "END";
+}
+
+bool WhileLoopNode::hasExit() {
+    bool res = LoopNode::hasExit();
+    for (size_t i = 0; i < elseIfs_.size(); ++i) {
+        res = res || elseIfs_.at(i)->getStatements()->hasExit();
+    }
+    return res;
+}
+
+bool WhileLoopNode::isReturn() {
+    bool res = LoopNode::isReturn();
+    for (size_t i = 0; i < elseIfs_.size(); ++i) {
+        res = res && elseIfs_.at(i)->getStatements()->isReturn();
+    }
+    return res;
 }
 
 

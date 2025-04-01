@@ -358,14 +358,19 @@ Sema::onProcedureStart(const FilePos &start, unique_ptr<IdentDef> ident) {
 }
 
 unique_ptr<ProcedureNode>
-Sema::onProcedureEnd([[maybe_unused]] const FilePos &end, unique_ptr<Ident> ident) {
+Sema::onProcedureEnd(const FilePos &, unique_ptr<Ident> ident) {
     onBlockEnd();
     auto proc = std::move(procs_.top());
     procs_.pop();
     auto ret = proc->getType()->getReturnType();
-    if (ret && (ret->isArray() || ret->isRecord())) {
-        // O07.10.1: The result type of a procedure can be neither a record nor an array.
-        logger_.error(proc->pos(), "result type of a procedure can neither be a record nor an array.");
+    if (ret) {
+        if (ret->isArray() || ret->isRecord()) {
+            // O07.10.1: The result type of a procedure can be neither a record nor an array.
+            logger_.error(proc->pos(), "result type of a procedure can neither be a record nor an array.");
+        }
+        if (!proc->statements()->isReturn() && !proc->isExtern()) {
+            logger_.error(proc->pos(), "not all control flow paths of the procedure return a result.");
+        }
     }
     if (proc->isExtern()) {
         if (proc->getScope() != SymbolTable::MODULE_SCOPE) {
@@ -378,6 +383,15 @@ Sema::onProcedureEnd([[maybe_unused]] const FilePos &end, unique_ptr<Ident> iden
         }
     }
     return proc;
+}
+
+void Sema::onStatementSequence(StatementSequenceNode *stmts) {
+    size_t length = stmts->getStatementCount() - 1;
+    size_t termIdx = stmts->getTerminatorIndex();
+    if (stmts->hasTerminator() && termIdx < length) {
+        auto stmt = stmts->getStatement(termIdx + 1);
+        logger_.error(stmt->pos(), "unreachable code.");
+    }
 }
 
 unique_ptr<AssignmentNode>
@@ -413,7 +427,7 @@ Sema::onAssignment(const FilePos &start, [[maybe_unused]] const FilePos &end,
 }
 
 unique_ptr<IfThenElseNode>
-Sema::onIf(const FilePos &start, [[maybe_unused]] const FilePos &end,
+Sema::onIf(const FilePos &start, const FilePos &,
                     unique_ptr<ExpressionNode> condition,
                     unique_ptr<StatementSequenceNode> thenStmts,
                     vector<unique_ptr<ElseIfNode>> elseIfs,
@@ -735,7 +749,7 @@ Sema::onCase(const FilePos &start, const FilePos &,
 }
 
 unique_ptr<ReturnNode>
-Sema::onReturn(const FilePos &start, [[maybe_unused]] const FilePos &end, unique_ptr<ExpressionNode> expr) {
+Sema::onReturn(const FilePos &start, const FilePos &, unique_ptr<ExpressionNode> expr) {
     if (procs_.empty()) {
         if (expr) {
             logger_.error(expr->pos(), "module cannot return a value.");
@@ -766,7 +780,7 @@ unique_ptr<ExitNode> Sema::onExit(const FilePos &start, const FilePos &) {
 }
 
 unique_ptr<StatementNode>
-Sema::onQualifiedStatement(const FilePos &start, [[maybe_unused]] const FilePos &end,
+Sema::onQualifiedStatement(const FilePos &start, const FilePos &,
                            unique_ptr<QualIdent> ident, vector<unique_ptr<Selector>> selectors) {
     DeclarationNode* sym = symbols_->lookup(ident.get());
     if (!sym) {

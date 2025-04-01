@@ -50,6 +50,7 @@ private:
     map<RecordTypeNode*, GlobalValue*> recTypeIds_;
     map<RecordTypeNode*, GlobalValue*> recTypeTds_;
     map<DeclarationNode *, Value *> valueTds_;
+    stack<BasicBlock *> loopTails_;
     map<ProcedureNode*, Function*> functions_;
     map<string, Constant*> strings_;
     stack<bool> deref_ctx;
@@ -77,6 +78,8 @@ private:
     void setRefMode(bool deref);
     void restoreRefMode();
     bool deref() const;
+
+    void ensureTerminator(BasicBlock *);
 
     void cast(ExpressionNode &);
 

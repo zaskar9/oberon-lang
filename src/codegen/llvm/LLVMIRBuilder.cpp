@@ -20,7 +20,7 @@ LLVMIRBuilder::LLVMIRBuilder(CompilerConfig &config, LLVMContext &builder, Modul
         NodeVisitor(), config_(config), logger_(config_.logger()), builder_(builder), module_(module),
 		triple_(module->getTargetTriple()),
         value_(), values_(),
-        types_(), typeDopes_(), valueDopes_(), ptrTypes_(), recTypeIds_(), recTypeTds_(), valueTds_(),
+        types_(), typeDopes_(), valueDopes_(), ptrTypes_(), recTypeIds_(), recTypeTds_(), valueTds_(), loopTails_(),
         functions_(), strings_(), deref_ctx(), scope_(0), scopes_(), function_(), attrs_(AttrBuilder(builder)) {
     attrs_
             .addAttribute(Attribute::NoInline)
@@ -680,7 +680,7 @@ void LLVMIRBuilder::createNumericTestCase(CaseOfNode &node, BasicBlock *dflt, Ba
         auto c = node.getCase(i);
         builder_.SetInsertPoint(block);
         c->getStatements()->accept(*this);
-        builder_.CreateBr(tail);
+        ensureTerminator(tail);
         for (int64_t label : c->getLabel()->getValues()) {
             ConstantInt* value = node.getExpression()->getType()->isChar() ?
                                  ConstantInt::get(type, static_cast<uint64_t>(label)) : ConstantInt::getSigned(type, label);
@@ -706,10 +706,8 @@ void LLVMIRBuilder::createTypeTestCase(CaseOfNode &node, BasicBlock *dflt, Basic
         builder_.SetInsertPoint(is_true);
         lExpr->dereference()->setType(rType);   // Set the formal type to the actual type
         c->getStatements()->accept(*this);
+        ensureTerminator(tail);
         lExpr->dereference()->setType(lType);   // Reset the formal type of the case expression
-        if (builder_.GetInsertBlock()->getTerminator() == nullptr) {
-            builder_.CreateBr(tail);
-        }
         builder_.SetInsertPoint(is_false);
     }
     builder_.CreateBr(dflt);
@@ -1202,7 +1200,7 @@ void LLVMIRBuilder::visit(CaseOfNode& node) {
     if (node.hasElse()) {
         builder_.SetInsertPoint(dflt);
         node.getElseStatements()->accept(*this);
-        builder_.CreateBr(tail);
+        ensureTerminator(tail);
     }
     builder_.SetInsertPoint(tail);
 }
@@ -1212,7 +1210,7 @@ void LLVMIRBuilder::visit(CaseLabelNode&) {}
 void LLVMIRBuilder::visit(CaseNode&) {}
 
 void LLVMIRBuilder::visit(IfThenElseNode &node) {
-    auto tail = BasicBlock::Create(builder_.getContext(), "tail", function_);
+    auto tail = BasicBlock::Create(builder_.getContext(), "if_tail", function_);
     auto if_true = BasicBlock::Create(builder_.getContext(), "if_true", function_);
     auto if_false = tail;
     if (node.hasElse() || node.hasElseIf()) {
@@ -1224,9 +1222,7 @@ void LLVMIRBuilder::visit(IfThenElseNode &node) {
     builder_.CreateCondBr(value_, if_true, if_false);
     builder_.SetInsertPoint(if_true);
     node.getThenStatements()->accept(*this);
-    if (builder_.GetInsertBlock()->getTerminator() == nullptr) {
-        builder_.CreateBr(tail);
-    }
+    ensureTerminator(tail);
     builder_.SetInsertPoint(if_false);
     for (size_t i = 0; i < node.getElseIfCount(); i++) {
         auto elsif = node.getElseIf(i);
@@ -1241,52 +1237,90 @@ void LLVMIRBuilder::visit(IfThenElseNode &node) {
         builder_.CreateCondBr(value_, elsif_true, elsif_false);
         builder_.SetInsertPoint(elsif_true);
         elsif->getStatements()->accept(*this);
-        if (builder_.GetInsertBlock()->getTerminator() == nullptr) {
-            builder_.CreateBr(tail);
-        }
+        ensureTerminator(tail);
         builder_.SetInsertPoint(elsif_false);
     }
     if (node.hasElse()) {
         node.getElseStatements()->accept(*this);
-        if (builder_.GetInsertBlock()->getTerminator() == nullptr) {
-            builder_.CreateBr(tail);
-        }
+        ensureTerminator(tail);
     }
     builder_.SetInsertPoint(tail);
 }
 
 void LLVMIRBuilder::visit(ElseIfNode &) {}
 
-void LLVMIRBuilder::visit([[maybe_unused]] LoopNode &node) {
-    // TODO code generation for general loop
+void LLVMIRBuilder::visit(LoopNode &node) {
+    auto body = BasicBlock::Create(builder_.getContext(), "loop_body", function_);
+    auto tail = BasicBlock::Create(builder_.getContext(), "loop_tail", function_);
+    builder_.CreateBr(body);
+    // Loop body
+    builder_.SetInsertPoint(body);
+    loopTails_.push(tail);
+    node.getStatements()->accept(*this);
+    loopTails_.pop();
+    // Unconditional branch back to loop body
+    ensureTerminator(body);
+    builder_.SetInsertPoint(tail);
 }
 
 void LLVMIRBuilder::visit(WhileLoopNode &node) {
-    auto body = BasicBlock::Create(builder_.getContext(), "loop_body", function_);
-    auto tail = BasicBlock::Create(builder_.getContext(), "tail", function_);
-    setRefMode(true);
-    node.getCondition()->accept(*this);
-    restoreRefMode();
-    builder_.CreateCondBr(value_, body, tail);
+    auto tail = BasicBlock::Create(builder_.getContext(), "while_tail", function_);
+    auto body = BasicBlock::Create(builder_.getContext(), "while_body", function_);
+    auto while_true = BasicBlock::Create(builder_.getContext(), "while_true", function_);
+    auto while_false = tail;
+    if (node.hasElseIf()) {
+        while_false = BasicBlock::Create(builder_.getContext(), "while_false", function_);
+    }
+    builder_.CreateBr(body);
     builder_.SetInsertPoint(body);
-    node.getStatements()->accept(*this);
+    // Check whether while loop is skipped
     setRefMode(true);
     node.getCondition()->accept(*this);
     restoreRefMode();
-    builder_.CreateCondBr(value_, body, tail);
+    builder_.CreateCondBr(value_, while_true, while_false);
+    // While loop body
+    builder_.SetInsertPoint(while_true);
+    loopTails_.push(tail);
+    node.getStatements()->accept(*this);
+    loopTails_.pop();
+    // Unconditional branch back to loop body
+    ensureTerminator(body);
+    builder_.SetInsertPoint(while_false);
+    for (size_t i = 0; i < node.getElseIfCount(); i++) {
+        auto elsif = node.getElseIf(i);
+        auto elsif_true = BasicBlock::Create(builder_.getContext(), "elsif_true", function_);
+        auto elsif_false = tail;
+        if (i + 1 < node.getElseIfCount()) {
+            elsif_false = BasicBlock::Create(builder_.getContext(), "elsif_false", function_);
+        }
+        setRefMode(true);
+        elsif->getCondition()->accept(*this);
+        restoreRefMode();
+        builder_.CreateCondBr(value_, elsif_true, elsif_false);
+        builder_.SetInsertPoint(elsif_true);
+        elsif->getStatements()->accept(*this);
+        ensureTerminator(body);
+        builder_.SetInsertPoint(elsif_false);
+    }
     builder_.SetInsertPoint(tail);
 }
 
 void LLVMIRBuilder::visit(RepeatLoopNode &node) {
-    auto body = BasicBlock::Create(builder_.getContext(), "loop_body", function_);
-    auto tail = BasicBlock::Create(builder_.getContext(), "tail", function_);
+    auto body = BasicBlock::Create(builder_.getContext(), "repeat_body", function_);
+    auto tail = BasicBlock::Create(builder_.getContext(), "repeat_tail", function_);
     builder_.CreateBr(body);
+    // Repeat loop body
     builder_.SetInsertPoint(body);
+    loopTails_.push(tail);
     node.getStatements()->accept(*this);
-    setRefMode(true);
-    node.getCondition()->accept(*this);
-    restoreRefMode();
-    builder_.CreateCondBr(value_, tail, body);
+    loopTails_.pop();
+    // Check whether repeat loop is continued
+    if (builder_.GetInsertBlock()->getTerminator() == nullptr) {
+        setRefMode(true);
+        node.getCondition()->accept(*this);
+        restoreRefMode();
+        builder_.CreateCondBr(value_, tail, body);
+    }
     builder_.SetInsertPoint(tail);
 }
 
@@ -1306,8 +1340,8 @@ void LLVMIRBuilder::visit(ForLoopNode &node) {
     node.getCounter()->accept(*this);
     counter = value_;
     restoreRefMode();
-    auto body = BasicBlock::Create(builder_.getContext(), "loop_body", function_);
-    auto tail = BasicBlock::Create(builder_.getContext(), "tail", function_);
+    auto body = BasicBlock::Create(builder_.getContext(), "for_body", function_);
+    auto tail = BasicBlock::Create(builder_.getContext(), "for_tail", function_);
     auto step = dynamic_cast<IntegerLiteralNode*>(node.getStep())->value();
     if (step > 0) {
         value_ = builder_.CreateICmpSLE(counter, end);
@@ -1317,28 +1351,32 @@ void LLVMIRBuilder::visit(ForLoopNode &node) {
     builder_.CreateCondBr(value_, body, tail);
     // Loop body
     builder_.SetInsertPoint(body);
+    loopTails_.push(tail);
     node.getStatements()->accept(*this);
+    loopTails_.pop();
     // Update loop counter
-    setRefMode(true);
-    node.getCounter()->accept(*this);
-    restoreRefMode();
-    counter = builder_.CreateAdd(value_, ConstantInt::getSigned(builder_.getInt32Ty(), step));
-    node.getCounter()->accept(*this);
-    auto lValue = value_;
-    builder_.CreateStore(counter, lValue);
-    // Check whether to exit loop body
-    setRefMode(true);
-    node.getHigh()->accept(*this);
-    end = value_;
-    node.getCounter()->accept(*this);
-    counter = value_;
-    restoreRefMode();
-    if (step > 0) {
-        value_ = builder_.CreateICmpSGT(counter, end);
-    } else {
-        value_ = builder_.CreateICmpSLT(counter, end);
+    if (builder_.GetInsertBlock()->getTerminator() == nullptr) {
+        setRefMode(true);
+        node.getCounter()->accept(*this);
+        restoreRefMode();
+        counter = builder_.CreateAdd(value_, ConstantInt::getSigned(builder_.getInt32Ty(), step));
+        node.getCounter()->accept(*this);
+        auto lValue = value_;
+        builder_.CreateStore(counter, lValue);
+        // Check whether to exit loop body
+        setRefMode(true);
+        node.getHigh()->accept(*this);
+        end = value_;
+        node.getCounter()->accept(*this);
+        counter = value_;
+        restoreRefMode();
+        if (step > 0) {
+            value_ = builder_.CreateICmpSGT(counter, end);
+        } else {
+            value_ = builder_.CreateICmpSLT(counter, end);
+        }
+        builder_.CreateCondBr(value_, tail, body);
     }
-    builder_.CreateCondBr(value_, tail, body);
     // After loop
     builder_.SetInsertPoint(tail);
 }
@@ -1355,7 +1393,9 @@ void LLVMIRBuilder::visit(ReturnNode &node) {
     }
 }
 
-void LLVMIRBuilder::visit(ExitNode &) {}
+void LLVMIRBuilder::visit(ExitNode &) {
+    builder_.CreateBr(loopTails_.top());
+}
 
 void LLVMIRBuilder::cast(ExpressionNode &node) {
     auto target = node.getCast();
@@ -2167,4 +2207,10 @@ bool LLVMIRBuilder::deref() const {
         return false;
     }
     return deref_ctx.top();
+}
+
+void LLVMIRBuilder::ensureTerminator(BasicBlock *block) {
+    if (builder_.GetInsertBlock()->getTerminator() == nullptr) {
+        builder_.CreateBr(block);
+    }
 }

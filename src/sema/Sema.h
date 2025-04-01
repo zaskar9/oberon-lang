@@ -159,6 +159,8 @@ public:
     ProcedureNode *onProcedureStart(const FilePos &, unique_ptr<IdentDef>);
     unique_ptr<ProcedureNode> onProcedureEnd(const FilePos &, unique_ptr<Ident>);
 
+    void onStatementSequence(StatementSequenceNode *);
+
     unique_ptr<AssignmentNode> onAssignment(const FilePos &, const FilePos &,
                                             unique_ptr<QualifiedExpression>, unique_ptr<ExpressionNode>);
     unique_ptr<IfThenElseNode> onIf(const FilePos &, const FilePos &,

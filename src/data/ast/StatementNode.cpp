@@ -17,6 +17,10 @@ bool StatementNode::isReturn() {
     return false;
 }
 
+bool StatementNode::isTerminator() {
+    return isReturn();
+}
+
 ExpressionNode *ReturnNode::getValue() const {
     return value_.get();
 }
@@ -34,6 +38,10 @@ void ReturnNode::print(std::ostream &stream) const {
 }
 
 bool ExitNode::hasExit() {
+    return true;
+}
+
+bool ExitNode::isTerminator() {
     return true;
 }
 

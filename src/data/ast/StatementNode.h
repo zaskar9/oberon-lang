@@ -19,6 +19,7 @@ public:
 
     [[nodiscard]] virtual bool hasExit();
     [[nodiscard]] virtual bool isReturn();
+    [[nodiscard]] virtual bool isTerminator();
 
     void accept(NodeVisitor &visitor) override = 0;
 
@@ -48,10 +49,11 @@ public:
 class ExitNode final : public StatementNode {
 
 public:
-    ExitNode(const FilePos &pos) : StatementNode(NodeType::exit, pos) {}
+    explicit ExitNode(const FilePos &pos) : StatementNode(NodeType::exit, pos) {}
     ~ExitNode() final = default;
 
     [[nodiscard]] bool hasExit() final;
+    [[nodiscard]] bool isTerminator() final;
 
     void accept(NodeVisitor &visitor) final;
 

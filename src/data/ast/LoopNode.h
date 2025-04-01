@@ -35,6 +35,9 @@ public:
 
     [[nodiscard]] StatementSequenceNode * getStatements() const;
 
+    [[nodiscard]] bool hasExit() override;
+    [[nodiscard]] bool isReturn() override;
+
     void accept(NodeVisitor& visitor) override;
 
     void print(ostream &stream) const override;
@@ -73,6 +76,9 @@ public:
     [[nodiscard]] ElseIfNode *getElseIf(size_t) const;
     [[nodiscard]] size_t getElseIfCount() const;
     [[nodiscard]] bool hasElseIf() const;
+
+    [[nodiscard]] bool hasExit() final;
+    [[nodiscard]] bool isReturn() final;
 
     void accept(NodeVisitor &visitor) final;
 
