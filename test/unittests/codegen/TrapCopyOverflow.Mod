@@ -1,6 +1,5 @@
 (*
-  RUN: %oberon -I "%S%{pathsep}%inc" -L "%S%{pathsep}%lib" -l oberon --run %s
-  XFAIL: *
+  RUN: not %oberon -I "%S%{pathsep}%inc" -L "%S%{pathsep}%lib" -l oberon --run %s 2>&1 | filecheck %s
 *)
 MODULE TrapCopyOverflow;
 IMPORT Out;
@@ -35,3 +34,6 @@ BEGIN
     END; *)
     Out.Ln
 END TrapCopyOverflow.
+(*
+  CHECK: {{.*}}code 3 (array or string copy overflow)
+*)

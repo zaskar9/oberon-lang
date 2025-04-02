@@ -169,9 +169,10 @@ unique_ptr<const Token> Scanner::scanToken() {
                     }
                     return make_unique<Token>(TokenType::period, pos, current());
                 case '(':
+                    pos = current();
                     read();
                     if (ch_ == '*') {
-                        scanComment();
+                        scanComment(pos);
                         return scanToken();
                     }
                     return make_unique<Token>(TokenType::lparen, pos);
@@ -236,15 +237,15 @@ FilePos Scanner::current() {
     return pos;
 }
 
-void Scanner::scanComment() {
-    FilePos pos = current();
+void Scanner::scanComment(const FilePos &pos) {
     read();
     while (true) {
         while (true) {
             while (ch_ == '(') {
+                auto npos = current();
                 read();
                 if (ch_ == '*') {
-                    scanComment();
+                    scanComment(npos);
                 }
             }
             if (ch_ == '*') {
@@ -252,7 +253,8 @@ void Scanner::scanComment() {
                 break;
             }
             if (eof_) {
-                break;
+                logger_.error(pos, "comment not closed.");
+                exit(1);
             }
             read();
         }
@@ -261,8 +263,8 @@ void Scanner::scanComment() {
             break;
         }
         if (eof_) {
-            logger_.error(pos, "comment not terminated.");
-            break;
+            logger_.error(pos, "comment not closed.");
+            exit(1);
         }
     }
 }

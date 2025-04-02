@@ -1,14 +1,15 @@
 (*
-  RUN: %oberon --run %s | filecheck %s
+  RUN: not %oberon --run %s | filecheck %s
 *)
 MODULE FailOnMissingSemicolon;
 
 PROCEDURE Test;
-BEGIN; END Test;
+END Test;
 
 BEGIN
-    Test;;
+    Test
+    Test
 END FailOnMissingSemicolon.
 (*
-    CHECK: {{.*}}redundant semicolon{{.*}}
+    CHECK: {{.*}}:10:9:{{.*}}error:{{.*}}semicolon missing.
 *)

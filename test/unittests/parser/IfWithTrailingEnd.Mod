@@ -1,7 +1,6 @@
 (*
-  RUN: %oberon --run %s
-  XFAIL: *
-  Note does not complain about end in first IF statment
+  RUN: not %oberon --run %s 2>&1 | filecheck %s
+  Error message could be improved to complain about END in first IF statement
 *)
 MODULE IfWithTrailingEnd;
 
@@ -18,3 +17,6 @@ END Test;
 BEGIN
     ret := Test()
 END IfWithTrailingEnd.
+(*
+  CHECK: {{.*}}:13:3:{{.*}}error:{{.*}}END expected, found ELSIF.
+*)

@@ -1,6 +1,5 @@
 (*
-  RUN: %oberon --run %s
-  XFAIL: *
+  RUN: not %oberon --run %s 2>&1 | filecheck %s
 *)
 MODULE TrapIntOverflow;
 
@@ -10,3 +9,6 @@ BEGIN
     i := MAX(INTEGER);
     INC(i)
 END TrapIntOverflow.
+(*
+  CHECK: {{.*}}code 8 (integer overflow)
+*)

@@ -12,5 +12,5 @@ BEGIN
     Test()
 END ProcedureReturnNotHandled.
 (*
-    CHECK: {{.*}}discarded expression value{{.*}}
+    CHECK: {{.*}}12:5:{{.*}}warning{{.*}}discarded expression value.
 *)

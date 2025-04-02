@@ -1,6 +1,5 @@
 (*
-  RUN: %oberon -I "%S%{pathsep}%inc" -L "%S%{pathsep}%lib" -l oberon --run %s
-  XFAIL: *
+  RUN: not %oberon -I "%S%{pathsep}%inc" -L "%S%{pathsep}%lib" -l oberon --run %s 2>&1 | filecheck %s
 *)
 MODULE TrapNil;
 IMPORT Out;
@@ -19,3 +18,6 @@ BEGIN
     p := NIL;
     Print(p); Out.Ln
 END TrapNil.
+(*
+  CHECK: {{.*}}code 4 (access via NIL pointer)
+*)

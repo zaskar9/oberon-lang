@@ -1,6 +1,5 @@
 (*
   RUN: %oberon -I "%S%{pathsep}%inc" -L "%S%{pathsep}%lib" -l oberon --run %s | filecheck %s
-  REQUIRES: revision
   Goes into a infinite loop on EXIT statment
 *)
 MODULE Loop1;

@@ -13,7 +13,7 @@
 #include <filesystem>
 
 // Signal handling only supported on POSIX platforms
-#if !defined(_WIN32) && defined(_WIN64) || defined(__MINGW32__)
+#if !defined(_WIN32) && !defined(_WIN64) || defined(__MINGW32__)
 #define TRAP_HANDLING
 #include <unistd.h>
 #endif

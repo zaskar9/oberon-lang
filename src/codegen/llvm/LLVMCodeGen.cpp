@@ -89,7 +89,7 @@ void ubsantrap_handler(uint16_t code) {
 #endif
 
 void register_signal_handler() {
-#if defined(TRAP_HANDLER)
+#if defined(TRAP_HANDLING)
     struct sigaction sa{};
     sa.sa_sigaction = trap_handler;
     sa.sa_flags = SA_SIGINFO;

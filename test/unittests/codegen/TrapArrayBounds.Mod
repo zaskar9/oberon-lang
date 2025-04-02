@@ -1,6 +1,5 @@
 (*
-  RUN: %oberon --run %s
-  XFAIL: *
+  RUN: not %oberon --run %s 2>&1 | filecheck %s
 *)
 MODULE TrapArrayBounds;
 
@@ -12,3 +11,6 @@ BEGIN
         a[i] := i
     END
 END TrapArrayBounds.
+(*
+  CHECK: {{.*}}code 1 (array index out of range)
+*)

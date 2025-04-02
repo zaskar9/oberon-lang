@@ -99,8 +99,10 @@ private:
     vector<unique_ptr<ExpressionNode>> parameters_;
 
 public:
-    ActualParameters(const FilePos &pos, vector<unique_ptr<ExpressionNode>> parameters_);
-    ActualParameters();
+    ActualParameters(const FilePos &pos, std::vector<std::unique_ptr<ExpressionNode>> parameters) :
+            Selector(NodeType::parameter, pos), parameters_(std::move(parameters)) {}
+    ActualParameters(const FilePos &pos) :
+            Selector(NodeType::parameter, pos), parameters_() {}
     ~ActualParameters() override;
 
     [[nodiscard]] vector<unique_ptr<ExpressionNode>> &parameters();

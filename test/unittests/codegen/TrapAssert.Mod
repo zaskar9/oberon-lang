@@ -1,6 +1,5 @@
 (*
-  RUN: %oberon --run %s
-  XFAIL: *
+  RUN: not %oberon --run %s 2>&1 | filecheck %s
 *)
 MODULE TrapAssert;
 
@@ -10,3 +9,6 @@ BEGIN
     b := FALSE;
     ASSERT(b)
 END TrapAssert.
+(*
+  CHECK: {{.*}}code 7 (assertion violated)
+*)

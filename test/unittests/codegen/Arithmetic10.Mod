@@ -1,7 +1,5 @@
 (*
-  RUN: %oberon --run %s
-  XFAIL: *
-  Crash, but should trigger UBSAN routine __ubsan_handle_divrem_overflow.
+  RUN: not %oberon --run %s 2>&1 | filecheck %s
 *)
 MODULE Arithmetic10;
 
@@ -15,3 +13,6 @@ END Test;
 BEGIN
     Test
 END Arithmetic10.
+(*
+  CHECK: {{.*}}code 6 (integer division by zero)
+*)

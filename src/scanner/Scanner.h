@@ -49,10 +49,10 @@ private:
     unique_ptr<const Token> scanIdent();
     unique_ptr<const Token> scanNumber();
     unique_ptr<const Token> scanString();
-    void scanComment();
+    void scanComment(const FilePos &);
 
 public:
-    Scanner(CompilerConfig &config, const path &path);
+    Scanner(CompilerConfig &, const path &);
     ~Scanner();
     const Token* peek(bool = false);
     unique_ptr<const Token> next();
