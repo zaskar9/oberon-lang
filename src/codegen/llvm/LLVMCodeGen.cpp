@@ -52,7 +52,7 @@ void ubsantrap_handler(uint16_t code) {
     std::cerr << std::endl;
 }
 
-#if defined(TRAP_HANDLING)
+#if defined(POSIX_TRAPS)
 [[noreturn]] void trap_handler(int, siginfo_t* info, void*) {
 #if BOOST_ARCH_ARM
     // Get the address of the trapped instruction from info->si_addr
@@ -86,16 +86,57 @@ void ubsantrap_handler(uint16_t code) {
 #endif
     _exit(1);
 }
+#elif defined(WINDOWS_TRAPS)
+LONG WINAPI trap_handler(EXCEPTION_POINTERS* info) {
+    if (info->ExceptionRecord->ExceptionCode == EXCEPTION_ILLEGAL_INSTRUCTION ||
+        info->ExceptionRecord->ExceptionCode == EXCEPTION_BREAKPOINT) {
+
+        // Get instruction pointer based on architecture
+#ifdef _M_X64
+        auto pc = (BYTE*)info->ContextRecord->Rip;
+#elif defined(_M_IX86)
+        auto pc = (BYTE*)info->ContextRecord->Eip;
+#elif defined(_M_ARM64)
+        auto pc = (uint32_t*)info->ContextRecord->Pc;
+#else
+#error Unsupported architecture
+#endif
+
+        std::cerr << "Trap or illegal instruction encountered at: "
+            << static_cast<void*>(pc) << std::endl;
+
+        // Safely attempt to read the instruction
+        uint32_t instr = 0;
+        __try {
+            instr = *pc;
+            std::cerr << "Instruction byte: 0x" << std::hex << instr << std::dec << std::endl;
+            // Check if it is a `BRK` instruction (0xD4200000 mask)
+            if ((instr & 0xFFE00000) == 0xD4200000) {
+                // Mask out the opcode and extract the immediate (lower 16 bits)
+                uint16_t code = (instr >> 5) & 0xFF;
+                ubsantrap_handler(code);
+            }
+        }
+        __except (EXCEPTION_EXECUTE_HANDLER) {
+            std::cerr << "Failed to read instruction memory!" << std::endl;
+        }
+
+        return EXCEPTION_EXECUTE_HANDLER;  // Handle and continue execution
+    }
+    return EXCEPTION_CONTINUE_SEARCH;  // Pass to the next handler
+}
 #endif
 
 void register_signal_handler() {
-#if defined(TRAP_HANDLING)
+#if defined(POSIX_TRAPS)
     struct sigaction sa{};
     sa.sa_sigaction = trap_handler;
     sa.sa_flags = SA_SIGINFO;
     sigemptyset(&sa.sa_mask);
     sigaction(SIGTRAP, &sa, nullptr);
     sigaction(SIGILL, &sa, nullptr);
+#elif defined(WINDOWS_TRAPS)
+    AddVectoredExceptionHandler(1, trap_handler);
 #endif
 }
 
