@@ -7,9 +7,16 @@
 #ifndef OBERON_LLVM_GLOBAL_H
 #define OBERON_LLVM_GLOBAL_H
 
-
 #include <sstream>
 #include <string>
+
+#include <boost/predef.h>
+
+#if defined(BOOST_OS_WINDOWS) && !defined(BOOST_PLAT_MINGW)
+#define _WINAPI
+#else
+#undef _WINAPI
+#endif
 
 struct FilePos {
     std::string fileName;

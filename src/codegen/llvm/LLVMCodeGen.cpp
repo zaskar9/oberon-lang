@@ -35,7 +35,7 @@ int mingw_noop_main(void) {
   return 0;
 }
 
-void ubsantrap_handler(uint16_t code) {
+[[noreturn]] void ubsantrap_handler(uint16_t code) {
     std::cerr << std::endl << "Oberon program trapped with code " << code;
     switch (code) {
         case 1: std::cerr << " (array index out of range)"; break;
@@ -50,24 +50,24 @@ void ubsantrap_handler(uint16_t code) {
         default: break;
     }
     std::cerr << std::endl;
+    _exit(1);
 }
 
-#if defined(POSIX_TRAPS)
-[[noreturn]] void trap_handler(int, siginfo_t* info, void*) {
+uint16_t decode_trap(void *addr) {
+    uint16_t code = 0;
 #if BOOST_ARCH_ARM
     // Get the address of the trapped instruction from info->si_addr
-    auto pc = (uint32_t*)info->si_addr;
+    auto pc = (uint32_t*)addr;
     // Read the instruction at the trapped PC
     uint32_t instr = *pc;
     // Check if it is a `BRK` instruction (0xD4200000 mask)
     if ((instr & 0xFFE00000) == 0xD4200000) {
         // Mask out the opcode and extract the immediate (lower 16 bits)
-        uint16_t code = (instr >> 5) & 0xFF;
-        ubsantrap_handler(code);
+        code = (instr >> 5) & 0xFF;
     }
 #elif BOOST_ARCH_X86
     std::unordered_set<uint8_t> prefixes({ 0xF0, 0xF2, 0xF3, 0x2E, 0x36, 0x3E, 0x26, 0x64, 0x65, 0x66, 0x67 });
-    auto instr = static_cast<uint8_t*>(info->si_addr);
+    auto instr = static_cast<uint8_t*>(addr);
     size_t pos = 0;
     // Skip Prefixes
     while (true) {
@@ -81,12 +81,14 @@ void ubsantrap_handler(uint16_t code) {
     if (instr[pos] == 0x0F || instr[pos + 1] == 0xB9) {
         pos += 3;  // Move past the opcode and ModR/M byte
         uint16_t code = static_cast<uint8_t>(instr[pos]);
-        ubsantrap_handler(code);
     }
+#else
+    #error Unsupported Architecture
 #endif
-    _exit(1);
+    return code;
 }
-#elif defined(WINDOWS_TRAPS)
+
+#ifdef _WINAPI
 LONG WINAPI trap_handler(EXCEPTION_POINTERS* info) {
     if (info->ExceptionRecord->ExceptionCode == EXCEPTION_ILLEGAL_INSTRUCTION ||
         info->ExceptionRecord->ExceptionCode == EXCEPTION_BREAKPOINT) {
@@ -99,11 +101,10 @@ LONG WINAPI trap_handler(EXCEPTION_POINTERS* info) {
 #elif defined(_M_ARM64)
         auto pc = (uint32_t*)info->ContextRecord->Pc;
 #else
-#error Unsupported architecture
+    #error Unsupported Architecture
 #endif
 
-        std::cerr << "Trap or illegal instruction encountered at: "
-            << static_cast<void*>(pc) << std::endl;
+        std::cerr << "Trap or illegal instruction encountered at: " << static_cast<void*>(pc) << std::endl;
 
         // Safely attempt to read the instruction
         uint32_t instr = 0;
@@ -120,23 +121,27 @@ LONG WINAPI trap_handler(EXCEPTION_POINTERS* info) {
         __except (EXCEPTION_EXECUTE_HANDLER) {
             std::cerr << "Failed to read instruction memory!" << std::endl;
         }
-
         return EXCEPTION_EXECUTE_HANDLER;  // Handle and continue execution
     }
     return EXCEPTION_CONTINUE_SEARCH;  // Pass to the next handler
 }
+#else
+[[noreturn]] void trap_handler(int, siginfo_t* info, void*) {
+    auto code = decode_trap(info->si_addr);
+    ubsantrap_handler(code);
+}
 #endif
 
 void register_signal_handler() {
-#if defined(POSIX_TRAPS)
+#ifdef _WINAPI
+    AddVectoredExceptionHandler(1, trap_handler);
+#else
     struct sigaction sa{};
     sa.sa_sigaction = trap_handler;
     sa.sa_flags = SA_SIGINFO;
     sigemptyset(&sa.sa_mask);
     sigaction(SIGTRAP, &sa, nullptr);
     sigaction(SIGILL, &sa, nullptr);
-#elif defined(WINDOWS_TRAPS)
-    AddVectoredExceptionHandler(1, trap_handler);
 #endif
 }
 
