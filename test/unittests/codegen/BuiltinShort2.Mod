@@ -1,7 +1,5 @@
 (*
-  RUN: %oberon -I "%S%{pathsep}%inc" -L "%S%{pathsep}%lib" -l oberon --run %s
-  XFAIL: *
-  This should fail. Checked against NativeOberon.
+  RUN: not %oberon -I "%S%{pathsep}%inc" -L "%S%{pathsep}%lib" -l oberon --run %s 2>&1 | filecheck %s
 *)
 MODULE BuiltinShort2;
 
@@ -18,3 +16,6 @@ END Test;
 BEGIN
     Test
 END BuiltinShort2.
+(*
+  CHECK: {{.*}}:12:16:{{.*}}error:{{.*}}constant not valid parameter.
+*)

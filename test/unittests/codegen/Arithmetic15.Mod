@@ -1,7 +1,5 @@
 (*
-  RUN: %oberon --run %s
-  XFAIL: *
-  Return -1.#INF, but should trigger UBSAN routine __ubsan_handle_divrem_overflow.
+  RUN: not %oberon --run %s 2>&1 | filecheck %s
 *)
 MODULE Arithmetic15;
 
@@ -17,3 +15,6 @@ END Test;
 BEGIN
     Test
 END Arithmetic15.
+(*
+  CHECK: {{.*}}code 9 (floating point division by zero)
+*)

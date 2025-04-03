@@ -12,12 +12,6 @@
 #include <string>
 #include <filesystem>
 
-// Signal handling only supported on POSIX platforms
-#if !defined(_WIN32) && defined(_WIN64) || defined(__MINGW32__)
-#define TRAP_HANDLING
-#include <unistd.h>
-#endif
-
 #include <boost/predef.h>
 
 #include <llvm/ExecutionEngine/Orc/LLJIT.h>
@@ -28,10 +22,22 @@
 #include "codegen/CodeGen.h"
 #include "logging/Logger.h"
 
+#ifdef _WINAPI
+#include <windows.h>
+#undef ERROR
+#undef max
+#undef min
+#else
+#include <unistd.h>
+#endif
+
 int mingw_noop_main();
 
-void ubsantrap_handler(uint16_t code);
-#if defined(TRAP_HANDLING)
+[[noreturn]] void ubsantrap_handler(uint16_t code);
+uint16_t decode_trap(void *);
+#ifdef _WINAPI
+LONG WINAPI trap_handler(EXCEPTION_POINTERS* info);
+#else
 [[noreturn]] void trap_handler(int, siginfo_t*, void*);
 #endif
 void register_signal_handler();

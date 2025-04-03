@@ -1185,6 +1185,7 @@ void Parser::expect(std::set<TokenType> exp) {
     if (exp.find(type) == exp.end()) {
         auto token = scanner_.peek();
         logger_.error(token->start(), "unexpected token "+ to_string(token->type()) + ".");
+        resync(exp);
     }
 }
 

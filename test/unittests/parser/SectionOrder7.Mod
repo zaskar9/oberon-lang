@@ -1,6 +1,5 @@
 (*
-  RUN: %oberon --run %s
-  XFAIL: *
+  RUN: not %oberon --run %s 2>&1 | filecheck %s
 *)
 MODULE SectionOrder7;
 
@@ -16,3 +15,6 @@ END Test;
 BEGIN
     Test
 END SectionOrder7.
+(*
+  CHECK: {{.*}}:9:1:{{.*}}error:{{.*}}unexpected token CONST.
+*)

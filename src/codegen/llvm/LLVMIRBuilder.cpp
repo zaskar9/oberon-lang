@@ -30,7 +30,7 @@ LLVMIRBuilder::LLVMIRBuilder(CompilerConfig &config, LLVMContext &builder, Modul
             .addAttribute(Attribute::getWithUWTableKind(builder, UWTableKind::Default))
 #endif
             ;
-#ifndef __MINGW32__
+#if !(defined(__MINGW32__) || defined(__MINGW64__))
     if (!config_.hasFlag(Flag::NO_STACK_PROTECT)) {
         attrs_.addAttribute(Attribute::StackProtect);
     }

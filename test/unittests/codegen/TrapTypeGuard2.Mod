@@ -1,6 +1,5 @@
 (*
-  RUN: %oberon --run %s
-  XFAIL: *
+  RUN: not %oberon --run %s 2>&1 | filecheck %s
 *)
 MODULE TrapTypeGuard2;
 
@@ -21,3 +20,6 @@ BEGIN
     Test(p);
     DISPOSE(p)
 END TrapTypeGuard2.
+(*
+  CHECK: {{.*}}code 2 (type guard failure)
+*)

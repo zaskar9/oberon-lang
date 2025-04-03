@@ -1,6 +1,6 @@
 # Check that lit binary is in path.
 find_program(TEST_SUITE_LIT NAMES "lit" "llvm-lit")
-set(TEST_SUITE_LIT_FLAGS --ignore-fail -s CACHE STRING "Flags used when running lit.")
+set(TEST_SUITE_LIT_FLAGS --ignore-fail --show-unsupported --show-xfail -s CACHE STRING "Flags used when running lit.")
 
 # Check that filecheck binary is in path.
 find_program(TEST_SUITE_FILECHECK NAMES "filecheck")
@@ -13,7 +13,7 @@ else()
     USES_TERMINAL
   )
   # Custom target depends on compiler and library target.
-  add_dependencies(test oberon-lang liboberon-static liboberon-shared)
+  add_dependencies(test oberon-lang liboberon-static liboberon-shared not)
   # Set up the configuration file.
   configure_file(lit.site.cfg.py.in lit.site.cfg.tmp @ONLY)
   file(GENERATE OUTPUT $<CONFIG>.site.cfg.py INPUT ${CMAKE_CURRENT_BINARY_DIR}/lit.site.cfg.tmp)

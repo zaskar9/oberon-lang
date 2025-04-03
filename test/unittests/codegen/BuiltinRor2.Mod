@@ -2,8 +2,7 @@
   RUN: %oberon -I "%S%{pathsep}%inc" -L "%S%{pathsep}%lib" -l oberon --run %s
   XFAIL: *
   This should fail or give a warning as it is not ROR, but ROL.
-  OBNC gives a warning on negative value.
-  Here we currently gives an error for negative literal values.
+  OBNC gives a warning on negative value, while oberon-lang reports an error for negative literal values.
 *)
 MODULE BuiltinRol2;
 

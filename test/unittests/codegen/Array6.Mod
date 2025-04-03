@@ -1,7 +1,5 @@
 (*
-  RUN: %oberon --run %s
-  XFAIL: *
-  Should trigger UBSan routine __ubsan_handle_out_of_bounds
+  RUN: not %oberon --run %s 2>&1 | filecheck %s
 *)
 MODULE Array6;
 
@@ -18,3 +16,6 @@ END Test;
 BEGIN
     Test
 END Array6.
+(*
+  CHECK: {{.*}}code 1 (array index out of range)
+*)

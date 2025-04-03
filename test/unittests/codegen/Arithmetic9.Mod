@@ -1,7 +1,5 @@
 (*
-  RUN: %oberon --run %s
-  XFAIL: *
-  Should trigger overflow as the number is outside positive range of 32bit integer.
+  RUN: not %oberon --run %s 2>&1 | filecheck %s
 *)
 MODULE Arithmetic9;
 
@@ -15,3 +13,6 @@ END Test;
 BEGIN
     Test
 END Arithmetic9.
+(*
+  CHECK: {{.*}}code 8 (integer overflow)
+*)

@@ -970,15 +970,15 @@ Sema::assertAssignable(const ExpressionNode *expr, string &err) const {
 }
 
 Sema::SelectorIterator &
-Sema::handleMissingParameters(const FilePos &start, [[maybe_unused]] const FilePos &,
+Sema::handleMissingParameters(const FilePos &start, const FilePos &end,
                               TypeNode *base, Selectors &selectors, SelectorIterator &it) {
     if (base && base->isProcedure()) {
         bool found = false;
         if (selectors.empty()) {
-            it = selectors.insert(selectors.begin(), make_unique<ActualParameters>());
+            it = selectors.insert(selectors.begin(), make_unique<ActualParameters>(end));
             found = true;
         } else if (it + 1 != selectors.end() && (*(it +1))->getNodeType() != NodeType::parameter) {
-            it = selectors.insert(it, make_unique<ActualParameters>());
+            it = selectors.insert(it, make_unique<ActualParameters>(end));
             found = true;
         }
         auto proc = dynamic_cast<ProcedureTypeNode *>(base);

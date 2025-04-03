@@ -1,6 +1,5 @@
 (*
-  RUN: %oberon --run %s
-  XFAIL: *
+  RUN: not %oberon --run %s
 *)
 MODULE BuiltinHalt2;
 

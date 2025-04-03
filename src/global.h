@@ -7,9 +7,14 @@
 #ifndef OBERON_LLVM_GLOBAL_H
 #define OBERON_LLVM_GLOBAL_H
 
-
 #include <sstream>
 #include <string>
+
+#if (defined(_WIN32) || defined(_WIN64)) && !(defined(__MINGW64__) || defined(__MINGW32__))
+#define _WINAPI
+#else
+#undef _WINAPI
+#endif
 
 struct FilePos {
     std::string fileName;
