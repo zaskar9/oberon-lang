@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <string>
+
 #if (defined(_WIN32) || defined(_WIN64)) && !(defined(__MINGW32__) || defined(__MINGW64__))
 #include <windows.h>
 #define _WINAPI
@@ -14,7 +15,7 @@ using std::cerr;
 using std::string;
 using std::vector;
 
-
+int run(const vector<string>&);
 
 #ifdef _WINAPI
 int run(const vector<string>& args) {
