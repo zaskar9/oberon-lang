@@ -114,7 +114,7 @@ int main(const int argc, const char **argv) {
         if (vm.count("verbose")) {
             logger.setLevel(LogLevel::DEBUG);
         }
-#if (defined(_WIN32) || defined(_WIN64)) && !defined(__MINGW32__)
+#if (defined(_WIN32) || defined(_WIN64)) && !(defined(__MINGW32__) || defined(__MINGW64__))
         // Windows uses a semicolon to separate multiple paths
         std::string separator = ";";
 #else

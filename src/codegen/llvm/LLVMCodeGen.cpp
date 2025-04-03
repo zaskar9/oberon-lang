@@ -57,7 +57,7 @@ uint16_t decode_trap(void *addr) {
     uint16_t code = 0;
 #if BOOST_ARCH_ARM
     // Get the address of the trapped instruction from info->si_addr
-    auto pc = (uint32_t*)addr;
+    auto pc = static_cast<uint32_t*>(addr);
     // Read the instruction at the trapped PC
     uint32_t instr = *pc;
     // Check if it is a `BRK` instruction (0xD4200000 mask)
@@ -80,7 +80,7 @@ uint16_t decode_trap(void *addr) {
     // Check if it is a `UD1` instruction (0F B9 opcode)
     if (instr[pos] == 0x0F || instr[pos + 1] == 0xB9) {
         pos += 3;  // Move past the opcode and ModR/M byte
-        uint16_t code = static_cast<uint8_t>(instr[pos]);
+        code = static_cast<uint8_t>(instr[pos]);
     }
 #else
     #error Unsupported Architecture
@@ -92,38 +92,22 @@ uint16_t decode_trap(void *addr) {
 LONG WINAPI trap_handler(EXCEPTION_POINTERS* info) {
     if (info->ExceptionRecord->ExceptionCode == EXCEPTION_ILLEGAL_INSTRUCTION ||
         info->ExceptionRecord->ExceptionCode == EXCEPTION_BREAKPOINT) {
-
-        // Get instruction pointer based on architecture
-#ifdef _M_X64
-        auto pc = (BYTE*)info->ContextRecord->Rip;
-#elif defined(_M_IX86)
-        auto pc = (BYTE*)info->ContextRecord->Eip;
-#elif defined(_M_ARM64)
-        auto pc = (uint32_t*)info->ContextRecord->Pc;
+#if BOOST_ARCH_ARM
+        auto pc = (void*)info->ContextRecord->Pc;
+#elif BOOST_ARCH_X86_64
+        auto pc = (void*)info->ContextRecord->Rip;
+#elif BOOST_ARCH_X86_32
+        auto pc = (void*)info->ContextRecord->Eip;
 #else
     #error Unsupported Architecture
 #endif
-
-        std::cerr << "Trap or illegal instruction encountered at: " << static_cast<void*>(pc) << std::endl;
-
-        // Safely attempt to read the instruction
-        uint32_t instr = 0;
-        __try {
-            instr = *pc;
-            std::cerr << "Instruction byte: 0x" << std::hex << instr << std::dec << std::endl;
-            // Check if it is a `BRK` instruction (0xD4200000 mask)
-            if ((instr & 0xFFE00000) == 0xD4200000) {
-                // Mask out the opcode and extract the immediate (lower 16 bits)
-                uint16_t code = (instr >> 5) & 0xFF;
-                ubsantrap_handler(code);
-            }
-        }
-        __except (EXCEPTION_EXECUTE_HANDLER) {
-            std::cerr << "Failed to read instruction memory!" << std::endl;
-        }
-        return EXCEPTION_EXECUTE_HANDLER;  // Handle and continue execution
+        uint16_t code = decode_trap(pc);
+        ubsantrap_handler(code);
+        // Handle and continue execution
+        // return EXCEPTION_EXECUTE_HANDLER;  
     }
-    return EXCEPTION_CONTINUE_SEARCH;  // Pass to the next handler
+
+    return EXCEPTION_CONTINUE_SEARCH;  
 }
 #else
 [[noreturn]] void trap_handler(int, siginfo_t* info, void*) {

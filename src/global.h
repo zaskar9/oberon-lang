@@ -10,9 +10,7 @@
 #include <sstream>
 #include <string>
 
-#include <boost/predef.h>
-
-#if defined(BOOST_OS_WINDOWS) && !defined(BOOST_PLAT_MINGW)
+#if (defined(_WIN32) || defined(_WIN64)) && !(defined(__MINGW64__) || defined(__MINGW32__))
 #define _WINAPI
 #else
 #undef _WINAPI
