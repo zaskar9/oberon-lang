@@ -2,7 +2,7 @@
  * Copyright (c) 2020, All Rights Reserved, https://rsdoiel.github.io/blog/2020/04/11/Mostly-Oberon.html
  * Released under the BSD 2-clause license: https://opensource.org/licenses/BSD-2-Clause
  *)
-MODULE Noises;
+ MODULE Noises;
   IMPORT Out;
 
 TYPE
@@ -36,7 +36,7 @@ BEGIN
   NEW(creature);
   creature.name := name;
   creature.noise := noise;
-END MakeCreaturel
+END MakeCreature;
 
 BEGIN
   MakeCreature("Fido", BarkBark, dog);
