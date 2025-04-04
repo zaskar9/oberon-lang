@@ -13,7 +13,7 @@ else()
     USES_TERMINAL
   )
   # Custom target depends on compiler and library target.
-  add_dependencies(test oberon-lang liboberon-static liboberon-shared not)
+  add_dependencies(test olang-frontend liboberon-static liboberon-shared olang-not)
   # Set up the configuration file.
   configure_file(lit.site.cfg.py.in lit.site.cfg.tmp @ONLY)
   file(GENERATE OUTPUT $<CONFIG>.site.cfg.py INPUT ${CMAKE_CURRENT_BINARY_DIR}/lit.site.cfg.tmp)

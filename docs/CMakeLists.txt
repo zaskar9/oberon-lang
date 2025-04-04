@@ -9,17 +9,17 @@ else()
         function(add_oberon_module source dest)
         add_custom_command(
         OUTPUT ${dest}
-        COMMAND python ${CMAKE_CURRENT_SOURCE_DIR}/../tools/docgen.py
+        COMMAND python ../utils/docgen/docgen.py
                 ${source}
                 > ${dest}
         DEPENDS ${source}
         )
         endfunction()
         
-        add_oberon_module("${CMAKE_CURRENT_SOURCE_DIR}/../liboberon/Math.Mod" "${SPHINX_SOURCE}/src/API_Math.rst")
-        add_oberon_module("${CMAKE_CURRENT_SOURCE_DIR}/../liboberon/Oberon.Mod" "${SPHINX_SOURCE}/src/API_Oberon.rst")
-        add_oberon_module("${CMAKE_CURRENT_SOURCE_DIR}/../liboberon/Out.Mod" "${SPHINX_SOURCE}/src/API_Out.rst")
-        add_oberon_module("${CMAKE_CURRENT_SOURCE_DIR}/../liboberon/Random.Mod" "${SPHINX_SOURCE}/src/API_Random.rst")
+        add_oberon_module("${CMAKE_CURRENT_SOURCE_DIR}/../stdlib/Math.Mod" "${SPHINX_SOURCE}/src/API_Math.rst")
+        add_oberon_module("${CMAKE_CURRENT_SOURCE_DIR}/../stdlib/Oberon.Mod" "${SPHINX_SOURCE}/src/API_Oberon.rst")
+        add_oberon_module("${CMAKE_CURRENT_SOURCE_DIR}/../stdlib/Out.Mod" "${SPHINX_SOURCE}/src/API_Out.rst")
+        add_oberon_module("${CMAKE_CURRENT_SOURCE_DIR}/../stdlib/Random.Mod" "${SPHINX_SOURCE}/src/API_Random.rst")
 
         add_custom_target(docs
                 COMMAND ${SPHINX_EXECUTABLE} -b html
