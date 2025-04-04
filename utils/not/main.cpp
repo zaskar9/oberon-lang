@@ -34,7 +34,7 @@ int run(const vector<string>& args) {
     si.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
     si.hStdError = GetStdHandle(STD_ERROR_HANDLE);
 
-    if (!CreateProcessA(nullptr, command.data(), nullptr, nullptr, TRUE, 0, nullptr, nullptr, &si, &pi)) {
+    if (!CreateProcessA(nullptr, command.data(), nullptr, nullptr, TRUE, 0, nullptr, nullptr, (LPSTARTUPINFOA)&si, &pi)) {
         cerr << "Error: failed to execute command.\n";
         return 1;
     }
