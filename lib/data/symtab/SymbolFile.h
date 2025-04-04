@@ -6,6 +6,7 @@
 #define OBERON_LANG_SYMBOLFILE_H
 
 
+#include <cstdint>
 #include <fstream>
 #include <string>
 
