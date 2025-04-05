@@ -89,17 +89,17 @@ int main(const int argc, const char **argv) {
             .run(),
         vm);
     } catch (po::error &e) {
-        logger.error(PROJECT_NAME, e.what());
+        logger.error(PROGRAM_NAME, e.what());
         return EXIT_FAILURE;
     }
     po::notify(vm);
     if (vm.count("help")) {
-        cout << "OVERVIEW: " << PROJECT_NAME << " LLVM compiler\n" << endl;
-        cout << "USAGE: " << PROJECT_NAME << " [options] file...\n" << endl;
+        cout << "OVERVIEW: " << PROGRAM_NAME << " LLVM compiler\n" << endl;
+        cout << "USAGE: " << PROGRAM_NAME << " [options] file...\n" << endl;
         cout << visible << endl;
         return EXIT_SUCCESS;
     } else if (vm.count("version")) {
-        cout << PROJECT_NAME << " version " << PROJECT_VERSION;
+        cout << PROGRAM_NAME << " version " << PROJECT_VERSION;
         cout << " (build " << GIT_COMMIT << "@" << GIT_BRANCH << ")" << endl;
         cout << "Target:   " << codegen->getDescription() << endl;
         cout << "Includes: ";
@@ -197,10 +197,10 @@ int main(const int argc, const char **argv) {
                             config.setSanitizeNone();
                         }
                     } else {
-                        logger.warning(PROJECT_NAME, "ignoring unrecognized option -f" + flag + ".");
+                        logger.warning(PROGRAM_NAME, "ignoring unrecognized option -f" + flag + ".");
                     }
                 } else {
-                    logger.warning(PROJECT_NAME, "ignoring unrecognized option -f" + flag + ".");
+                    logger.warning(PROGRAM_NAME, "ignoring unrecognized option -f" + flag + ".");
                 }
             }
         }
@@ -220,7 +220,7 @@ int main(const int argc, const char **argv) {
                     config.setOptimizationLevel(::OptimizationLevel::O3);
                     break;
                 default:
-                    logger.error(PROJECT_NAME, "unsupported optimization level: " + to_string(level) + ".");
+                    logger.error(PROGRAM_NAME, "unsupported optimization level: " + to_string(level) + ".");
                     return EXIT_FAILURE;
             }
         }
@@ -234,7 +234,7 @@ int main(const int argc, const char **argv) {
                     config.setWarning(Warning::ERROR);
                     logger.setWarnAsError(true);
                 } else {
-                    logger.warning(PROJECT_NAME, "ignoring unrecognized warning -W" + warn + ".");
+                    logger.warning(PROGRAM_NAME, "ignoring unrecognized warning -W" + warn + ".");
                 }
             }
         }
@@ -254,14 +254,14 @@ int main(const int argc, const char **argv) {
             }
         } else {
             if (vm.count("emit-llvm")) {
-                logger.error(PROJECT_NAME, "--emit-llvm cannot be used when linking.");
+                logger.error(PROGRAM_NAME, "--emit-llvm cannot be used when linking.");
             }
-            logger.error(PROJECT_NAME, "linking not yet supported.");
+            logger.error(PROGRAM_NAME, "linking not yet supported.");
             return EXIT_FAILURE;
         }
         if (vm.count("reloc")) {
             if (config.isJit()) {
-                logger.error(PROJECT_NAME, "--reloc not compatible with --run.");
+                logger.error(PROGRAM_NAME, "--reloc not compatible with --run.");
                 return EXIT_FAILURE;
             }
             auto model = vm["reloc"].as<string>();
@@ -277,12 +277,12 @@ int main(const int argc, const char **argv) {
             config.setSymDir(vm["sym-dir"].as<string>());
             auto path = std::filesystem::path(config.getSymDir());
             if (!std::filesystem::is_directory(path)) {
-                logger.error(PROJECT_NAME, "--sym-dir path not valid.");
+                logger.error(PROGRAM_NAME, "--sym-dir path not valid.");
             }
         }
         if (vm.count("target")) {
             if (config.isJit()) {
-                logger.error(PROJECT_NAME, "--target not supported in JIT mode.");
+                logger.error(PROGRAM_NAME, "--target not supported in JIT mode.");
                 return EXIT_FAILURE;
             }
             config.setTargetTriple(vm["target"].as<string>());
@@ -295,13 +295,13 @@ int main(const int argc, const char **argv) {
         if (config.isJit()) {
 #ifndef _LLVM_LEGACY
             if (inputs.size() != 1) {
-                logger.error(PROJECT_NAME, "--run requires exactly one input module.");
+                logger.error(PROGRAM_NAME, "--run requires exactly one input module.");
                 return EXIT_FAILURE;
             }
             auto path = std::filesystem::path(inputs[0]);
             exit(compiler.jit(path));
 #else
-            logger.error(PROJECT_NAME, "linked LLVM version does not support JIT mode.");
+            logger.error(PROGRAM_NAME, "linked LLVM version does not support JIT mode.");
 #endif
         } else {
             for (auto &input : inputs) {
@@ -317,7 +317,7 @@ int main(const int argc, const char **argv) {
                           to_string(logger.getInfoCount()) + " message(s).");
         exit(logger.getErrorCount() != 0);
     } else {
-        logger.error(PROJECT_NAME, "no input files specified.");
+        logger.error(PROGRAM_NAME, "no input files specified.");
         return EXIT_FAILURE;
     }
 }

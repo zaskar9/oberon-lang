@@ -1,6 +1,7 @@
 option(USE_STATIC_LIBS "Link against static libraries" ON)
 
 set(GRAMMAR_UTIL "olang-grammar")
+set(GRAMMAR_UTIL_NAME "grammar-tool")
 set(GRAMMAR_UTIL_SOURCES
         Grammar.cpp Grammar.h
         Validator.cpp Validator.h
@@ -10,6 +11,8 @@ configure_file(config.h.in config.h @ONLY)
 
 add_executable(${GRAMMAR_UTIL} main.cpp ${GRAMMAR_UTIL_SOURCES})
 install(TARGETS ${GRAMMAR_UTIL} RUNTIME DESTINATION bin)
+
+set_target_properties(${GRAMMAR_UTIL} PROPERTIES OUTPUT_NAME ${GRAMMAR_UTIL_NAME})
 
 target_include_directories(${GRAMMAR_UTIL} PUBLIC . ${CMAKE_CURRENT_BINARY_DIR})
 

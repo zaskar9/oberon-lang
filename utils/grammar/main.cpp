@@ -17,10 +17,10 @@ namespace fs = std::filesystem;
 
 int main(const int argc, const char *argv[]) {
     Logger logger;
-    logger.setBanner(PROJECT_NAME);
+    logger.setBanner(PROGRAM_NAME);
     logger.setLevel(LogLevel::INFO);
     if (argc < 2) {
-        logger.error(PROJECT_NAME, "Too few arguments.");
+        logger.error(PROGRAM_NAME, "Too few arguments.");
         exit(1);
     }
     Loader loader(logger, fs::path(argv[1]));

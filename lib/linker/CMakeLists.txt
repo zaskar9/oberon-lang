@@ -5,9 +5,9 @@ set(OLANG_LINK_SOURCES
         LLDWrapper.cpp LLDWrapper.h)
 
 if (BUILD_SHARED_LIBS)
-    add_library(${OLANG_LINK} STATIC ${OLANG_LINK_SOURCES})
-else ()
     add_library(${OLANG_LINK} SHARED ${OLANG_LINK_SOURCES})
+else ()
+    add_library(${OLANG_LINK} STATIC ${OLANG_LINK_SOURCES})
 endif ()
 
 set_target_properties(${OLANG_LINK} PROPERTIES OUTPUT_NAME ${OLANG_LINK_NAME})
