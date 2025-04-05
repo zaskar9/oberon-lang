@@ -7,11 +7,11 @@ config.excludes = ['tmp', 'lib', 'include']
 config.test_source_root = os.path.join(r"@CMAKE_CURRENT_SOURCE_DIR@", "unittests")
 config.test_exec_root = os.path.join(r"@CMAKE_CURRENT_BINARY_DIR@")
 
-config.environment['PATH'] += os.pathsep + os.path.dirname(r"$<TARGET_FILE:not>")
+config.environment['PATH'] += os.pathsep + os.path.dirname(r"$<TARGET_FILE:olang-not>")
 
-inc = os.path.abspath(os.path.join(config.test_exec_root, "..", "liboberon"))
-lib = os.path.dirname(r"$<TARGET_FILE:liboberon-shared>")
-exe = r"$<TARGET_FILE:oberon-lang>"
+inc = os.path.abspath(os.path.join(config.test_exec_root, "..", "stdlib"))
+lib = os.path.dirname(r"$<TARGET_FILE:olang-stdlib-shared>")
+exe = r"$<TARGET_FILE:olang-frontend>"
 
 config.substitutions.append((r"%inc", inc))
 config.substitutions.append((r"%lib", lib))
