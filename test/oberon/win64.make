@@ -1,5 +1,5 @@
 # Compiler and linker settings
-O7C = ..\..\build\src\Release\oberon-lang.exe
+O7C = ..\..\build\olang\Release\oberon-lang.exe
 LD = link.exe
 
 .PRECIOUS: .s .ll

@@ -1,5 +1,5 @@
 # Compiler settings
-O7C = ..\build\src\Release\oberon-lang.exe
+O7C = ..\build\olang\Release\oberon-lang.exe
 CXX = cl.exe
 LIBX = lib.exe
 # LINK = link.exe
