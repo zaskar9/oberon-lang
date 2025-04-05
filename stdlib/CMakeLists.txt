@@ -1,5 +1,5 @@
-set(LIBOBERON_SHARED "liboberon-shared")
-set(LIBOBERON_STATIC "liboberon-static")
+set(LIBOBERON_SHARED "olang-stdlib-shared")
+set(LIBOBERON_STATIC "olang-stdlib-static")
 set(LIBOBERON_NAME "oberon")
 
 set(O_EXT ${CMAKE_C_OUTPUT_EXTENSION})

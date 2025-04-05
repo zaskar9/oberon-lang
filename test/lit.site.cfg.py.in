@@ -9,9 +9,8 @@ config.test_exec_root = os.path.join(r"@CMAKE_CURRENT_BINARY_DIR@")
 
 config.environment['PATH'] += os.pathsep + os.path.dirname(r"$<TARGET_FILE:olang-not>")
 
-dirname = os.path.dirname(r"$<TARGET_FILE:liboberon-shared>")
-inc = dirname
-lib = dirname
+inc = os.path.abspath(os.path.join(config.test_exec_root, "..", "stdlib"))
+lib = os.path.dirname(r"$<TARGET_FILE:olang-stdlib-shared>")
 exe = r"$<TARGET_FILE:olang-frontend>"
 
 config.substitutions.append((r"%inc", inc))

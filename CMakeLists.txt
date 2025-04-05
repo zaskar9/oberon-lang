@@ -30,7 +30,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Introduce an option to toggle between static and shared libraries
-option(BUILD_SHARED_LIBS "Build and Link against shared libraries." ON)
+option(BUILD_SHARED_LIBS "Build and Link against shared libraries." OFF)
 
 # define DEBUG
 if (CMAKE_BUILD_TYPE MATCHES Debug)
