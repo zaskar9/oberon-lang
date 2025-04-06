@@ -944,24 +944,25 @@ unique_ptr<ExpressionNode> Parser::expression() {
 unique_ptr<ExpressionNode> Parser::simple_expression() {
     logger_.debug("simple_expression");
     unique_ptr<ExpressionNode> expr;
-    TokenType token = scanner_.peek()->type();
-    if (token == TokenType::op_plus) {
+    auto token = scanner_.peek();
+    auto start = token->start();
+    if (token->type() == TokenType::op_plus) {
         token_ = scanner_.next();
         expr = term();
-    } else if (token == TokenType::op_minus) {
+    } else if (token->type() == TokenType::op_minus) {
         token_ = scanner_.next();
-        expr = sema_.onUnaryExpression(token_->start(), EMPTY_POS, OperatorType::NEG, term());
+        expr = sema_.onUnaryExpression(start, EMPTY_POS, OperatorType::NEG, term());
     } else {
         expr = term();
     }
-    token = scanner_.peek()->type();
-    while (token == TokenType::op_plus
-           || token == TokenType::op_minus
-           || token == TokenType::op_or) {
+    token = scanner_.peek();
+    while (token->type() == TokenType::op_plus ||
+           token->type() == TokenType::op_minus ||
+           token->type() == TokenType::op_or) {
         token_ = scanner_.next();
         OperatorType op = token_to_operator(token_->type());
-        expr = sema_.onBinaryExpression(token_->start(), EMPTY_POS, op, std::move(expr), term());
-        token = scanner_.peek()->type();
+        expr = sema_.onBinaryExpression(start, EMPTY_POS, op, std::move(expr), term());
+        token = scanner_.peek();
     }
     return expr;
 }

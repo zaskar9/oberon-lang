@@ -84,7 +84,7 @@ BEGIN
     Out.String("s2: "); Out.String(s2); Out.Ln;
     Out.String("s3: "); Out.String(s3); Out.Ln;
 
-    ASSERT(LEN("This is a test.") = 16);
+    ASSERT(LEN("This is a test.") = 15);
 
     s3 := "\n";
     Out.String("["); Out.Char("]"); Out.String(s3);

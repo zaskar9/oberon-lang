@@ -1,6 +1,5 @@
 (*
   RUN: %oberon -I "%S%{pathsep}%inc" -L "%S%{pathsep}%lib" -l oberon --run %s | filecheck %s
-  LEN("") = 2 Should be documented. Maybe unexpected result for some users
 *)
 MODULE BuiltinLen;
 
@@ -24,7 +23,7 @@ BEGIN
     Test
 END BuiltinLen.
 (*
-    CHECK: 2
+    CHECK: 0
     CHECK: 1
     CHECK: 9
     CHECK: 1

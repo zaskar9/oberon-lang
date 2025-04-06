@@ -111,8 +111,8 @@ unique_ptr<const Token> Scanner::scanToken() {
             return scanNumber();
         } else if (ch_ == '"') {
             return scanString();
-        } else if (ch_ == '\'') {
-            return scanCharacter();
+//        } else if (ch_ == '\'') {
+//            return scanCharacter();
         } else {
             switch (ch_) {
                 case '&':
@@ -395,21 +395,21 @@ unique_ptr<const Token> Scanner::scanNumber() {
     }
 }
 
-unique_ptr<const Token> Scanner::scanCharacter() {
-    char ch = '\0';
-    auto pos = current();
-    read();
-    if (ch_ != '\'') {
-        ch = ch_;
-        read();
-    }
-    if (ch_ == '\'') {
-        read();
-        return make_unique<CharLiteralToken>(pos, current(), static_cast<unsigned char>(ch));
-    }
-    logger_.error(pos, "unterminated character literal.");
-    return make_unique<UndefinedToken>(pos, ch_);
-}
+//unique_ptr<const Token> Scanner::scanCharacter() {
+//    char ch = '\0';
+//    auto pos = current();
+//    read();
+//    if (ch_ != '\'') {
+//        ch = ch_;
+//        read();
+//    }
+//    if (ch_ == '\'') {
+//        read();
+//        return make_unique<CharLiteralToken>(pos, current(), static_cast<unsigned char>(ch));
+//    }
+//    logger_.error(pos, "unterminated character literal.");
+//    return make_unique<UndefinedToken>(pos, ch_);
+//}
 
 unique_ptr<const Token> Scanner::scanString() {
     stringstream ss;

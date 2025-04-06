@@ -4,6 +4,8 @@
 MODULE Strings1;
 IMPORT Out;
 
+CONST hello = "Hello World!";
+
 VAR str: ARRAY 30 OF CHAR;
 
 PROCEDURE PrintAnswer(str: ARRAY OF CHAR);

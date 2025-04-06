@@ -1784,7 +1784,12 @@ LLVMIRBuilder::createLenCall(vector<unique_ptr<ExpressionNode>> &actuals, std::v
     auto param0 = actuals[0].get();
     if (param0->getType()->isString() && param0->isLiteral()) {
         auto str = dynamic_cast<StringLiteralNode *>(param0);
-        value_ = builder_.getInt64(str->value().size() + 1);
+        string value = str->value();
+        if (value[0] == '\0') {
+            value_ = builder_.getInt64(0);
+        } else {
+            value_ = builder_.getInt64(str->value().size());
+        }
         return value_;
     }
     auto array_t = dynamic_cast<ArrayTypeNode *>(param0->getType());
