@@ -106,9 +106,6 @@ private:
     optional<unique_ptr<ExpressionNode>> fold(const FilePos &, const FilePos &,
             OperatorType, unique_ptr<ExpressionNode> &, unique_ptr<ExpressionNode> &, TypeNode *);
 
-    void onBlockStart();
-    void onBlockEnd();
-
     using Selectors = vector<unique_ptr<Selector>>;
     using SelectorIterator = Selectors::iterator;
     SelectorIterator &handleMissingParameters(const FilePos &, const FilePos &,
@@ -125,6 +122,9 @@ public:
     Sema(CompilerConfig &, ASTContext *, OberonSystem *);
     Sema(const Sema&) = delete;
     Sema& operator=(const Sema&) = delete;
+
+    void onBlockStart();
+    void onBlockEnd();
 
     void onTranslationUnitStart(const string &);
     void onTranslationUnitEnd(const string &);

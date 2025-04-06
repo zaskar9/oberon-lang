@@ -1105,14 +1105,15 @@ void LLVMIRBuilder::visit(BasicTypeNode &node) {
         case TypeKind::SET:
             types_[&node] = builder_.getInt32Ty(); break;
         default:
-            logger_.error(node.pos(), "cannot map type" + to_string(node.kind()) + " to LLVM intermediate representation.");
+            logger_.error(node.pos(), "cannot map type " + to_string(node.kind()) + " to LLVM intermediate representation.");
             types_[&node] = builder_.getVoidTy();
     }
 }
 
 void LLVMIRBuilder::visit(ProcedureTypeNode &node) {
-    logger_.error(node.pos(), "cannot map type" + to_string(node.kind()) + " to LLVM intermediate representation.");
+    logger_.error(node.pos(), "cannot map type " + to_string(node.kind()) + " to LLVM intermediate representation.");
     types_[&node] = builder_.getVoidTy();
+    exit(1);
 }
 
 void LLVMIRBuilder::visit(RecordTypeNode &node) {

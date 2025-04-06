@@ -82,9 +82,9 @@ private:
 
     PointerTypeNode* pointer_type();
 
-    ProcedureTypeNode* procedure_signature();
+    ProcedureTypeNode *procedure_type();
+    TypeNode *formal_parameters(vector<unique_ptr<ParameterNode>> &, bool &);
     void procedure_body(ProcedureNode *);
-    void formal_parameters(vector<unique_ptr<ParameterNode>> &, bool &);
     void fp_section(vector<unique_ptr<ParameterNode>> &, bool &);
     TypeNode *formal_type();
 

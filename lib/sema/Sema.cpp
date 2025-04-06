@@ -788,14 +788,15 @@ Sema::onQualifiedStatement(const FilePos &start, const FilePos &,
         return nullptr;
     }
     // Check procedure reference
-    if (sym->getNodeType() == NodeType::procedure) {
-        auto proc = dynamic_cast<ProcedureNode *>(sym);
+    if (auto proc = dynamic_cast<ProcedureNode *>(sym)) {
         if (ident->isQualified() && !proc->isPredefined() && (proc->isExtern() || proc->isImported())) {
             // A fully-qualified external reference needs to be added to module for code generation
             context_->addExternalProcedure(proc);
         }
-        auto type = onSelectors(ident->start(), ident->end(), sym, sym->getType(), selectors);
-        if (type && type->kind() != TypeKind::NOTYPE) {
+    }
+    auto type = onSelectors(ident->start(), ident->end(), sym, sym->getType(), selectors);
+    if (auto procTy = dynamic_cast<ProcedureTypeNode *>(type)) {
+        if (procTy->getReturnType() && procTy->getReturnType()->kind() != TypeKind::NOTYPE) {
             logger_.warning(ident->start(), "discarded expression value.");
         }
         return make_unique<QualifiedStatement>(start, std::move(ident), std::move(selectors), sym);
@@ -815,6 +816,10 @@ Sema::onQualifiedExpression(const FilePos &start, const FilePos &,
     // Check variable or parameter reference
     if (sym->getNodeType() == NodeType::variable || sym->getNodeType() == NodeType::parameter) {
         auto type = onSelectors(ident->start(), ident->end(), sym, sym->getType(), selectors);
+        if (type->isProcedure() &&
+            !selectors.empty() && selectors.back()->getNodeType() == NodeType::parameter) {
+            type = dynamic_cast<ProcedureTypeNode *>(type)->getReturnType();
+        }
         return make_unique<QualifiedExpression>(start, std::move(ident), std::move(selectors), sym, type);
     }
     // Check type reference
@@ -825,17 +830,28 @@ Sema::onQualifiedExpression(const FilePos &start, const FilePos &,
         return make_unique<QualifiedExpression>(start, std::move(ident), std::move(selectors), sym, typeTy_);
     }
     // Check procedure reference
-    if (sym->getNodeType() == NodeType::procedure) {
-        auto proc = dynamic_cast<ProcedureNode *>(sym);
+    if (auto proc = dynamic_cast<ProcedureNode *>(sym)) {
         if (ident->isQualified() && !proc->isPredefined() && (proc->isExtern() || proc->isImported())) {
             // A fully-qualified external reference needs to be added to module for code generation
             context_->addExternalProcedure(proc);
         }
-        auto type = onSelectors(ident->start(), ident->end(), sym, sym->getType(), selectors);
+        auto procTy = proc->getType();
+        if (procTy->getReturnType() == nullptr || procTy->getReturnType() == noTy_) {
+            // Proper procedure in qualified expression indicates reference to the procedure.
+            return make_unique<QualifiedExpression>(start, std::move(ident), std::move(selectors), sym, procTy);
+        } else if (selectors.empty()) {
+            // Function procedure with no selectors indicates a reference to the procedure.
+            return make_unique<QualifiedExpression>(start, std::move(ident), std::move(selectors), sym, procTy);
+        }
+    }
+    // This looks like  a call to a function procedure.
+    auto type = onSelectors(ident->start(), ident->end(), sym, sym->getType(), selectors);
+    if (auto procTy = dynamic_cast<ProcedureTypeNode *>(type)) {
+        type = procTy->getReturnType();
         return make_unique<QualifiedExpression>(start, std::move(ident), std::move(selectors), sym, type);
     }
     logger_.error(ident->start(), "variable, parameter, type, or function call expected.");
-    return make_unique<QualifiedExpression>(start, std::move(ident), std::move(selectors), sym, noTy_);;
+    return make_unique<QualifiedExpression>(start, std::move(ident), std::move(selectors), sym, noTy_);
 }
 
 unique_ptr<ExpressionNode>
@@ -868,7 +884,7 @@ Sema::onSelectors(const FilePos &start, const FilePos &end,
         handleRepeatedIndices(start, end, selectors);
     }
     auto it = selectors.begin();
-    it = handleMissingParameters(start, end, base, selectors, it);
+    // it = handleMissingParameters(start, end, base, selectors, it);
     auto context = sym;
     while (it != selectors.end()) {
         auto sel = (*it).get();
@@ -927,7 +943,7 @@ Sema::onSelectors(const FilePos &start, const FilePos &end,
         if (!base || base == noTy_) {
             return noTy_;
         }
-        it = handleMissingParameters(start, end, base, selectors, it);
+        // it = handleMissingParameters(start, end, base, selectors, it);
         ++it;
     }
     return base;
@@ -1100,7 +1116,7 @@ Sema::onActualParameters(DeclarationNode *context, TypeNode *base, ActualParamet
             }
         }
     }
-    return proc->getReturnType();
+    return proc; //->getReturnType();
 }
 
 TypeNode *Sema::onArrayIndex(TypeNode *base, ArrayIndex *sel) {
@@ -2196,6 +2212,31 @@ Sema::assertCompatible(const FilePos &pos, TypeNode *expected, TypeNode *actual,
         } else if (actual->kind() == TypeKind::NILTYPE) {
             return true;
         }
+    }
+    if (expected->isProcedure() && actual->isProcedure()) {
+        auto exp_proc = dynamic_cast<ProcedureTypeNode *>(expected);
+        auto act_proc = dynamic_cast<ProcedureTypeNode *>(actual);
+        if (exp_proc->hasVarArgs() || act_proc->hasVarArgs()) {
+            logger_.error(pos, "procedure types with variadic arguments cannot be used here.");
+            return false;
+        }
+        if (exp_proc->getReturnType() != act_proc->getReturnType()) {
+            logger_.error(pos, "type mismatch: procedure types have different return types.");
+            return false;
+        }
+        if (exp_proc->parameters().size() == act_proc->parameters().size()) {
+            for (size_t i = 0; i < exp_proc->parameters().size(); ++i) {
+                auto exp_param = exp_proc->parameters()[i]->getType();
+                auto act_param = act_proc->parameters()[i]->getType();
+                if (exp_param != act_param) {
+                    logger_.error(pos, "type mismatch: procedure types have different parameter types.");
+                    return false;
+                }
+            }
+            return true;
+        }
+        logger_.error(pos, "type mismatch: procedure types have different number of parameters.");
+        return true;
     }
     logger_.error(pos, "type mismatch: expected " + format(expected, isPtr) + ", found " + format(actual, isPtr) + ".");
     return false;

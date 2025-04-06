@@ -106,24 +106,36 @@ void NodePrettyPrinter::visit(ModuleNode& node) {
     stream_ << "END " << *node.getIdentifier() << '.' << std::endl;
 }
 
+void NodePrettyPrinter::procedure(string ident, ProcedureTypeNode *type) {
+    stream_ << "PROCEDURE";
+    if (!ident.empty()) {
+        stream_ << " " + ident;
+    }
+    if (!type->parameters().empty() ||
+            (type->getReturnType() && type->getReturnType()->kind() != TypeKind::NOTYPE)) {
+        stream_ << "(";
+        string sep;
+        for (auto &param: type->parameters()) {
+            stream_ << sep;
+            param->accept(*this);
+            sep = "; ";
+        }
+        if (type->hasVarArgs()) {
+            stream_ << "; ...";
+        }
+        stream_ << ")";
+        if (type->getReturnType() != nullptr) {
+            stream_ << ": ";
+            type->getReturnType()->accept(*this);
+        }
+    }
+}
+
 void NodePrettyPrinter::visit(ProcedureNode& node) {
     indent();
-    stream_ << "PROCEDURE " << *node.getIdentifier() << "(*Scope:" << node.getScope() << "*)(";
     auto type = dynamic_cast<ProcedureTypeNode *>(node.getType());
-    string sep;
-    for (auto &param : type->parameters()) {
-        stream_ << sep;
-        param->accept(*this);
-        sep = "; ";
-    }
-    if (type->hasVarArgs()) {
-        stream_ << "; ...";
-    }
-    stream_ << ")";
-    if (type->getReturnType() != nullptr) {
-        stream_ << ": ";
-        type->getReturnType()->accept(*this);
-    }
+    string ident = to_string(*node.getIdentifier()) + "(*Scope:" + to_string(node.getScope()) + "*)";
+    procedure(ident, type);
     stream_ << ";";
     if (node.isExtern()) {
         stream_ << " EXTERN;" << std::endl;
@@ -349,8 +361,13 @@ void NodePrettyPrinter::visit(BasicTypeNode &node) {
     stream_ << *node.getIdentifier();
 }
 
-void NodePrettyPrinter::visit([[maybe_unused]] ProcedureTypeNode &node) {
-    // currently handled by visit(ProcedureNode &).
+void NodePrettyPrinter::visit(ProcedureTypeNode &node) {
+    if (node.isAnonymous() || isDecl_) {
+        isDecl_ = false;
+        procedure("", &node);
+    } else {
+        qualident(node.getDeclaration());
+    }
 }
 
 void NodePrettyPrinter::visit(RecordTypeNode &node) {
