@@ -1159,6 +1159,10 @@ void LLVMIRBuilder::visit(RecordTypeNode &node) {
                                      name + "_td");
         td->setAlignment(module_->getDataLayout().getPreferredAlign(td));
         recTypeTds_[&node] = td;
+        if (triple_.isOSWindows() && !node.isAnonymous() && node.getIdentifier()->isExported() && !config_.hasFlag(Flag::ENABLE_MAIN)) {
+            id->setDLLStorageClass(llvm::GlobalValue::DLLStorageClassTypes::DLLExportStorageClass);
+            td->setDLLStorageClass(llvm::GlobalValue::DLLStorageClassTypes::DLLExportStorageClass);
+        }
     } else if (!node.isAnonymous()){
         name = node.getModule()->getIdentifier()->name() + "__" + name;
         // Create an external constant to be used as the id of the imported record type
