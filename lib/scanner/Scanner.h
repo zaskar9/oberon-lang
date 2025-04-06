@@ -10,7 +10,6 @@
 
 #include <filesystem>
 #include <fstream>
-#include <sstream>
 #include <memory>
 #include <queue>
 #include <string>
@@ -47,6 +46,7 @@ private:
     unique_ptr<const Token> scanToken();
     unique_ptr<const Token> scanIdent();
     unique_ptr<const Token> scanNumber();
+    // unique_ptr<const Token> scanCharacter();
     unique_ptr<const Token> scanString();
     void scanComment(const FilePos &);
 

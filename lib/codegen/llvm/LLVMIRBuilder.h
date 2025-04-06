@@ -106,6 +106,8 @@ private:
     void createNumericTestCase(CaseOfNode &, BasicBlock *, BasicBlock *);
     void createTypeTestCase(CaseOfNode &, BasicBlock *, BasicBlock *);
 
+    Value *createStringComparison(BinaryExpressionNode *);
+
     Value *createNeg(Value *);
     Value *createAdd(Value *, Value *);
     Value *createSub(Value *, Value *);

@@ -17,8 +17,8 @@
       "type": "exe",
       "debugType": "native",
       "project": "CMakeLists.txt",
-      "projectTarget": "oberon-lang.exe (src\\oberon-lang.exe)",
-      "name": "oberon-lang.exe (src\\oberon-lang.exe)",
+      "projectTarget": "oberon-lang.exe (olang\\oberon-lang.exe)",
+      "name": "oberon-lang.exe (olang\\oberon-lang.exe)",
       "currentDir": "${workspaceRoot}/test/oberon",
       "args": [
         "-I.;.\\include",
@@ -27,7 +27,7 @@
         //"-S",
         //"--emit-llvm",
         "-r",
-        "../unittests/codegen/TrapTypeGuard2.Mod"
+        "RecordExt.Mod"
       ]
     }
   ]

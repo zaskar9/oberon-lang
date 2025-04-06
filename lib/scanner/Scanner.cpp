@@ -5,20 +5,26 @@
  */
 
 
+#include "Scanner.h"
+
 #include <cctype>
 #include <memory>
+#include <sstream>
+#include <string>
 
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/convert.hpp>
 #include <boost/convert/stream.hpp>
-
 #include <boost/lexical_cast.hpp>
-#include "Scanner.h"
+
 #include "IdentToken.h"
 #include "LiteralToken.h"
 #include "UndefinedToken.h"
 
 using std::make_unique;
+using std::string;
+using std::stringstream;
+using std::unique_ptr;
 
 Scanner::Scanner(Logger &logger, const path &path) : logger_(logger), path_(path),
         tokens_(), lineNo_(1), charNo_(0), ch_{}, eof_(false) {
@@ -73,7 +79,7 @@ const Token* Scanner::peek(bool advance) {
     }
 }
 
-std::unique_ptr<const Token> Scanner::next() {
+unique_ptr<const Token> Scanner::next() {
     if (tokens_.empty()) {
         return scanToken();
     } else {
@@ -105,6 +111,8 @@ unique_ptr<const Token> Scanner::scanToken() {
             return scanNumber();
         } else if (ch_ == '"') {
             return scanString();
+//        } else if (ch_ == '\'') {
+//            return scanCharacter();
         } else {
             switch (ch_) {
                 case '&':
@@ -387,9 +395,25 @@ unique_ptr<const Token> Scanner::scanNumber() {
     }
 }
 
+//unique_ptr<const Token> Scanner::scanCharacter() {
+//    char ch = '\0';
+//    auto pos = current();
+//    read();
+//    if (ch_ != '\'') {
+//        ch = ch_;
+//        read();
+//    }
+//    if (ch_ == '\'') {
+//        read();
+//        return make_unique<CharLiteralToken>(pos, current(), static_cast<unsigned char>(ch));
+//    }
+//    logger_.error(pos, "unterminated character literal.");
+//    return make_unique<UndefinedToken>(pos, ch_);
+//}
+
 unique_ptr<const Token> Scanner::scanString() {
-    std::stringstream ss;
-    auto p = current();
+    stringstream ss;
+    auto pos = current();
     read();
     while (ch_ != '"') {
         ss << ch_;
@@ -400,12 +424,12 @@ unique_ptr<const Token> Scanner::scanString() {
         read();
     }
     read();
-    std::string str = unescape(ss.str());
+    string str = unescape(ss.str());
     if (str.length() <= 1) {
         unsigned char value = str.empty() ? '\0' : static_cast<unsigned char>(str[0]);
-        return make_unique<CharLiteralToken>(p, current(), value);
+        return make_unique<CharLiteralToken>(pos, current(), value);
     }
-    return make_unique<StringLiteralToken>(p, current(), str);
+    return make_unique<StringLiteralToken>(pos, current(), str);
 }
 
 std::string Scanner::escape(std::string str) {
