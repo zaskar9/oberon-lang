@@ -1116,7 +1116,7 @@ Sema::onActualParameters(DeclarationNode *context, TypeNode *base, ActualParamet
             }
         }
     }
-    return proc; //->getReturnType();
+    return proc; // ->getReturnType();
 }
 
 TypeNode *Sema::onArrayIndex(TypeNode *base, ArrayIndex *sel) {

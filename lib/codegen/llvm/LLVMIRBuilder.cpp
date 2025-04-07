@@ -199,6 +199,7 @@ void LLVMIRBuilder::visit(ImportNode &node) {
 
 void LLVMIRBuilder::visit(QualifiedStatement &node) {
     auto proc = dynamic_cast<ProcedureNode *>(node.dereference());
+    // TODO check whether this is a procedure call or a procedure reference
     createStaticCall(proc, node.ident(), node.selectors());
 }
 
@@ -220,6 +221,7 @@ void LLVMIRBuilder::visit(QualifiedExpression &node) {
     }
     auto type = decl->getType();
     if (type->isProcedure()) {
+        // TODO check whether this is a procedure call or a procedure reference
         createStaticCall(dynamic_cast<ProcedureNode *>(decl), node.ident(), node.selectors());
         return;
     }
@@ -465,11 +467,20 @@ LLVMIRBuilder::parameters(ProcedureTypeNode *proc, ActualParameters *actuals, ve
 
 TypeNode *LLVMIRBuilder::createStaticCall(ProcedureNode *proc, QualIdent *ident, Selectors &selectors) {
     auto type = dynamic_cast<ProcedureTypeNode *>(proc->getType());
-    std::vector<Value*> values;
-    auto params = dynamic_cast<ActualParameters *>(selectors[0].get());
-    parameters(type, params, values, proc->isExtern());
+    vector<Value*> values;
+    ActualParameters *sel;
+    vector<unique_ptr<ExpressionNode>> params;
+    bool args;
+    if (selectors.empty() || selectors[0].get()->getNodeType() != NodeType::parameter) {
+        args = false;
+    } else {
+        sel = dynamic_cast<ActualParameters *>(selectors[0].get());
+        parameters(type, sel, values, proc->isExtern());
+        args = true;
+    }
     if (proc->isPredefined()) {
-        value_ = createPredefinedCall(dynamic_cast<PredefinedProcedure *>(proc), ident, params->parameters(), values);
+        auto callee = dynamic_cast<PredefinedProcedure *>(proc);
+        value_ = createPredefinedCall(callee, ident, (args ? sel->parameters() : params), values);
     } else {
         auto fun = module_->getFunction(qualifiedName(proc));
         if (fun) {
@@ -478,7 +489,7 @@ TypeNode *LLVMIRBuilder::createStaticCall(ProcedureNode *proc, QualIdent *ident,
             logger_.error(ident->start(), "undefined procedure: " + to_string(*ident) + ".");
         }
     }
-    return this->selectors(nullptr, proc->getType()->getReturnType(), selectors.begin() + 1, selectors.end());
+    return this->selectors(nullptr, proc->getType()->getReturnType(), selectors.begin() + (args ? 1 : 0), selectors.end());
 }
 
 void LLVMIRBuilder::visit(ConstantDeclarationNode &) {}
@@ -1111,8 +1122,7 @@ void LLVMIRBuilder::visit(BasicTypeNode &node) {
 }
 
 void LLVMIRBuilder::visit(ProcedureTypeNode &node) {
-    logger_.error(node.pos(), "cannot map type " + to_string(node.kind()) + " to LLVM intermediate representation.");
-    types_[&node] = builder_.getVoidTy();
+    types_[&node] = builder_.getPtrTy();
     exit(1);
 }
 
