@@ -51,7 +51,7 @@ private:
     SymbolImporter importer_;
     SymbolExporter exporter_;
     TypeNode *boolTy_, *byteTy_, *charTy_, *shortIntTy_, *integerTy_, *longIntTy_, *realTy_, *longRealTy_,
-             *stringTy_, *setTy_, *noTy_, *typeTy_;
+             *stringTy_, *setTy_, *anyTy_, *noTy_, *typeTy_;
 
     bool assertEqual(Ident *, Ident *) const;
     void assertUnique(IdentDef *, DeclarationNode *);

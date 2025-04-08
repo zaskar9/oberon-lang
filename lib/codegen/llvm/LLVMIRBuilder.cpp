@@ -20,8 +20,8 @@ LLVMIRBuilder::LLVMIRBuilder(CompilerConfig &config, LLVMContext &builder, Modul
         NodeVisitor(), config_(config), logger_(config_.logger()), builder_(builder), module_(module),
 		triple_(module->getTargetTriple()),
         value_(), values_(),
-        types_(), typeDopes_(), valueDopes_(), ptrTypes_(), recTypeIds_(), recTypeTds_(), valueTds_(), loopTails_(),
-        functions_(), strings_(), deref_ctx(), scope_(0), scopes_(), function_(), attrs_(AttrBuilder(builder)) {
+        types_(), typeDopes_(), valueDopes_(), funTypes_(), ptrTypes_(), recTypeIds_(), recTypeTds_(), valueTds_(),
+        loopTails_(), functions_(), strings_(), deref_ctx(), scope_(0), scopes_(), function_(), attrs_(AttrBuilder(builder)) {
     attrs_
             .addAttribute(Attribute::NoInline)
             .addAttribute(Attribute::NoUnwind)
@@ -184,7 +184,7 @@ void LLVMIRBuilder::visit(ProcedureNode &node) {
 }
 
 void LLVMIRBuilder::visit(ImportNode &node) {
-    std::string name = node.getModule()->name();
+    string name = node.getModule()->name();
     if (name == "SYSTEM") {
         return; // No initialization for pseudo modules
     }
@@ -198,9 +198,14 @@ void LLVMIRBuilder::visit(ImportNode &node) {
 }
 
 void LLVMIRBuilder::visit(QualifiedStatement &node) {
-    auto proc = dynamic_cast<ProcedureNode *>(node.dereference());
-    // TODO check whether this is a procedure call or a procedure reference
-    createStaticCall(proc, node.ident(), node.selectors());
+    if (auto proc = dynamic_cast<ProcedureNode *>(node.dereference())) {
+        createStaticCall(proc, node.ident(), node.selectors());
+    } else {
+        auto decl = node.dereference();
+        value_ = values_[decl];
+        selectors(&node, decl->getType(), node.selectors().begin(), node.selectors().end());
+        return;
+    }
 }
 
 void LLVMIRBuilder::visit(QualifiedExpression &node) {
@@ -220,9 +225,14 @@ void LLVMIRBuilder::visit(QualifiedExpression &node) {
         logger_.error(node.pos(), "cannot reference variable of child procedure.");
     }
     auto type = decl->getType();
-    if (type->isProcedure()) {
-        // TODO check whether this is a procedure call or a procedure reference
-        createStaticCall(dynamic_cast<ProcedureNode *>(decl), node.ident(), node.selectors());
+    if (auto procTy = dynamic_cast<ProcedureTypeNode *>(type)) {
+        auto proc = dynamic_cast<ProcedureNode *>(decl);
+        if (procTy->getReturnType() == nullptr || node.selectors().empty()) {
+            // Looks like a reference to a procedure (no return type) or to a function procedure (no selectors).
+            value_ =  module_->getFunction(qualifiedName(proc));
+        } else {
+            createStaticCall(proc, node.ident(), node.selectors());
+        }
         return;
     }
     if (!value_ && decl->getNodeType() == NodeType::variable) {
@@ -266,36 +276,43 @@ Value *LLVMIRBuilder::getOpenArrayLength(llvm::Value *dopeV, ArrayTypeNode *type
 }
 
 Value *LLVMIRBuilder::getDopeVector(ExpressionNode *expr) {
+    if (auto qual = dynamic_cast<QualifiedExpression *>(expr)) {
+        return getDopeVector(qual, qual->getType());
+    }
+    logger_.error(expr->pos(), "cannot determine array telemetry of expression.");
+    return nullptr;
+}
+
+Value *LLVMIRBuilder::getDopeVector(NodeReference *ref, TypeNode *type) {
     Value *dopeV = nullptr;
-    if (auto decl = dynamic_cast<QualifiedExpression *>(expr)->dereference()) {
-        if (auto type = dynamic_cast<ArrayTypeNode *>(expr->getType())) {
-            // Find the base array type of the parameter expression
-            auto base = type->getBase();
-            if (type->isOpen()) {
-                dopeV = valueDopes_[decl];
-            } else {
-                dopeV = typeDopes_[base];
-            }
-            // Check whether the actual array has less dimensions than the base array due to applied array indices
-            if (type->dimensions() < base->dimensions()) {
-                auto delta = base->dimensions() - type->dimensions();
-                auto dopeTy = ArrayType::get(builder_.getInt64Ty(), base->dimensions());
-                dopeV = deref() ? builder_.CreateLoad(builder_.getPtrTy(), dopeV) : dopeV;
-                dopeV = builder_.CreateInBoundsGEP(dopeTy, dopeV, {builder_.getInt32(0), builder_.getInt32(delta)});
-            }
-        } else if (decl->getType()->isArray()) {
+    auto decl = ref->dereference();
+    if (auto array_t = dynamic_cast<ArrayTypeNode *>(type)) {
+        // Find the base array type of the parameter expression
+        auto base = array_t->getBase();
+        if (array_t->isOpen()) {
             dopeV = valueDopes_[decl];
+        } else {
+            dopeV = typeDopes_[base];
         }
+        // Check whether the actual array has less dimensions than the base array due to applied array indices
+        if (array_t->dimensions() < base->dimensions()) {
+            auto delta = base->dimensions() - array_t->dimensions();
+            auto dopeTy = ArrayType::get(builder_.getInt64Ty(), base->dimensions());
+            dopeV = deref() ? builder_.CreateLoad(builder_.getPtrTy(), dopeV) : dopeV;
+            dopeV = builder_.CreateInBoundsGEP(dopeTy, dopeV, {builder_.getInt32(0), builder_.getInt32(delta)});
+        }
+    } else if (decl->getType()->isArray()) {
+        dopeV = valueDopes_[decl];
     }
     if (!dopeV) {
-        logger_.error(expr->pos(), "cannot determine array telemetry of expression.");
+        logger_.error(ref->pos(), "cannot determine array telemetry of expression.");
     }
     return dopeV;
 }
 
-Value *LLVMIRBuilder::getTypeDescriptor(Value *value, QualifiedExpression *expr, TypeNode *type) {
+Value *LLVMIRBuilder::getTypeDescriptor(Value *value, NodeReference *ref, TypeNode *type) {
     Value *typeD = nullptr;
-    auto decl = expr->dereference();
+    auto decl = ref->dereference();
     if (type->isPointer()) {
         auto pointer_t = dynamic_cast<PointerTypeNode *>(type);
         typeD = builder_.CreateInBoundsGEP(ptrTypes_[pointer_t], value, {builder_.getInt32(0), builder_.getInt32(0)});
@@ -303,12 +320,12 @@ Value *LLVMIRBuilder::getTypeDescriptor(Value *value, QualifiedExpression *expr,
         typeD = valueTds_[decl];
     }
     if (!typeD) {
-        logger_.error(expr->pos(), "cannot determine type description of expression.");
+        logger_.error(ref->pos(), "cannot determine type description of expression.");
     }
     return typeD;
 }
 
-TypeNode *LLVMIRBuilder::selectors(QualifiedExpression *expr, TypeNode *base, SelectorIterator start, SelectorIterator end) {
+TypeNode *LLVMIRBuilder::selectors(NodeReference *ref, TypeNode *base, SelectorIterator start, SelectorIterator end) {
     if (!base || base->isVirtual()) {
         return nullptr;
     }
@@ -324,11 +341,11 @@ TypeNode *LLVMIRBuilder::selectors(QualifiedExpression *expr, TypeNode *base, Se
             auto procedure_t = dynamic_cast<ProcedureTypeNode *>(selector_t);
             vector<Value*> values;
             parameters(procedure_t, params, values);
-            auto funTy = getLLVMType(procedure_t);
+            auto funTy = funTypes_[procedure_t];
             // Output the GEP up to the procedure call
             value = processGEP(baseTy, value, indices);
             // Create a load to dereference the function pointer
-            value = builder_.CreateLoad(funTy, value);
+            value = builder_.CreateLoad(builder_.getPtrTy(), value);
             value_ = builder_.CreateCall(dyn_cast<FunctionType>(funTy), value, values);
             selector_t = procedure_t->getReturnType();
             baseTy = getLLVMType(selector_t);
@@ -344,7 +361,13 @@ TypeNode *LLVMIRBuilder::selectors(QualifiedExpression *expr, TypeNode *base, Se
                     Value *lower = builder_.getInt64(0);
                     Value *upper;
                     if (array_t->isOpen()) {
-                        dopeV = dopeV ? dopeV : getDopeVector(expr);
+                        if (!dopeV) {
+                            if (auto expr = dynamic_cast<QualifiedExpression *>(ref)) {
+                                dopeV = getDopeVector(expr);
+                            } else {
+                                dopeV = getDopeVector(ref, array_t);
+                            }
+                        }
                         upper = getOpenArrayLength(dopeV, array_t, static_cast<uint32_t>(i));
                     } else {
                         upper = builder_.getInt64(array_t->lengths()[i]);
@@ -400,7 +423,7 @@ TypeNode *LLVMIRBuilder::selectors(QualifiedExpression *expr, TypeNode *base, Se
                     value = processGEP(baseTy, value, indices);
                     tmp = builder_.CreateLoad(builder_.getPtrTy(), value);
                 }
-                auto cond = createTypeTest(tmp, expr, selector_t, guard_t);
+                auto cond = createTypeTest(tmp, ref, selector_t, guard_t);
                 trapTypeGuard(cond);
             }
             selector_t = guard->getType();
@@ -450,7 +473,8 @@ LLVMIRBuilder::parameters(ProcedureTypeNode *proc, ActualParameters *actuals, ve
                     // Create a "dope vector" on-the-fly for string literals
                     auto str = dynamic_cast<StringLiteralNode *>(actualParam);
                     Value *dopeV = builder_.CreateAlloca(ArrayType::get(builder_.getInt64Ty(), 1));
-                    builder_.CreateStore(builder_.getInt64(str->value().size() + 1), dopeV);
+                    string value = str->value();
+                    builder_.CreateStore(builder_.getInt64(value[0] == '\0' ? 0 : value.size()), dopeV);
                     values.push_back(dopeV);
                 } else {
                     // Lookup the "dope vector" of explicitly defined array types
@@ -654,7 +678,7 @@ Value *LLVMIRBuilder::createTypeTest(Value *td, TypeNode *type) {
     return phi;
 }
 
-Value *LLVMIRBuilder::createTypeTest(Value *value, QualifiedExpression *expr, TypeNode *lType, TypeNode *rType) {
+Value *LLVMIRBuilder::createTypeTest(Value *value, NodeReference *ref, TypeNode *lType, TypeNode *rType) {
     auto prv = builder_.GetInsertBlock();
     BasicBlock *test, *skip = nullptr;
     if (rType->isPointer()) {
@@ -668,7 +692,7 @@ Value *LLVMIRBuilder::createTypeTest(Value *value, QualifiedExpression *expr, Ty
     if (lType->extends(rType)) {
         res = builder_.getTrue();
     } else {
-        auto td = getTypeDescriptor(value, expr, rType);
+        auto td = getTypeDescriptor(value, ref, rType);
         res = createTypeTest(td, rType);
     }
     if (skip) {
@@ -725,7 +749,6 @@ void LLVMIRBuilder::createTypeTestCase(CaseOfNode &node, BasicBlock *dflt, Basic
 }
 
 Value *LLVMIRBuilder::createStringComparison(BinaryExpressionNode *node) {
-
     if (node->getOperator() == OperatorType::EQ || node->getOperator() == OperatorType::NEQ) {
         auto lhs = node->getLeftExpression();
         auto rhs = node->getRightExpression();
@@ -1122,8 +1145,20 @@ void LLVMIRBuilder::visit(BasicTypeNode &node) {
 }
 
 void LLVMIRBuilder::visit(ProcedureTypeNode &node) {
+    vector<Type*> params;
+    for (auto &param : node.parameters()) {
+        auto type = param->getType();
+        auto param_t = getLLVMType(type);
+        params.push_back(param->isVar() || type->isStructured() ? PointerType::get(param_t, 0) : param_t);
+        // Add a parameter for the "dope vector" in case of an open array parameter
+        // or for the type descriptor in case of a variable record parameter
+        if ((type->isArray() && dynamic_cast<ArrayTypeNode*>(type)->isOpen()) || (type->isRecord() && param->isVar())) {
+            params.push_back(builder_.getPtrTy());
+        }
+    }
+    auto type = FunctionType::get(getLLVMType(node.getReturnType()), params, node.hasVarArgs());
+    funTypes_[&node] = type;
     types_[&node] = builder_.getPtrTy();
-    exit(1);
 }
 
 void LLVMIRBuilder::visit(RecordTypeNode &node) {
@@ -2188,19 +2223,8 @@ void LLVMIRBuilder::procedure(ProcedureNode &node) {
         logger_.error(node.pos(), "Function " + name + " already defined.");
         return;
     }
-    std::vector<Type*> params;
-    for (auto &param : node.getType()->parameters()) {
-        auto type = param->getType();
-        auto param_t = getLLVMType(type);
-        params.push_back(param->isVar() || type->isStructured() ? PointerType::get(param_t, 0) : param_t);
-        // Add a parameter for the "dope vector" in case of an open array parameter
-        // or for the type descriptor in case of a variable record parameter
-        if ((type->isArray() && dynamic_cast<ArrayTypeNode*>(type)->isOpen()) || (type->isRecord() && param->isVar())) {
-            params.push_back(builder_.getPtrTy());
-        }
-    }
-    auto type = FunctionType::get(getLLVMType(node.getType()->getReturnType()), params, node.getType()->hasVarArgs());
-    auto callee = module_->getOrInsertFunction(name, type);
+    node.getType()->accept(*this);
+    auto callee = module_->getOrInsertFunction(name, funTypes_[node.getType()]);
     auto function = dyn_cast<Function>(callee.getCallee());
     if (triple_.isOSWindows() && node.getIdentifier()->isExported() && !config_.hasFlag(Flag::ENABLE_MAIN)) {
         function->setDLLStorageClass(llvm::GlobalValue::DLLStorageClassTypes::DLLExportStorageClass);

@@ -31,6 +31,7 @@ Sema::Sema(CompilerConfig &config, ASTContext *context, OberonSystem *system) :
     longRealTy_ = system_->getBasicType(TypeKind::LONGREAL);
     stringTy_ = system_->getBasicType(TypeKind::STRING);
     setTy_ = system_->getBasicType(TypeKind::SET);
+    anyTy_ = system->getBasicType(TypeKind::ANYTYPE);
     noTy_ = system_->getBasicType(TypeKind::NOTYPE);
     typeTy_ = system_->getBasicType(TypeKind::TYPE);
 }
@@ -224,7 +225,7 @@ Sema::onPointerType(const FilePos &start, const FilePos &end, unique_ptr<QualIde
 }
 
 PointerTypeNode *
-Sema::onPointerType([[maybe_unused]] const FilePos &start, const FilePos &end, TypeNode *base) {
+Sema::onPointerType(const FilePos &start, const FilePos &end, TypeNode *base) {
     if (!base->isRecord()) {
         // O07.6.4: Pointer base type must be a record type.
         logger_.error(start, "pointer base type must be a record type.");
@@ -836,15 +837,12 @@ Sema::onQualifiedExpression(const FilePos &start, const FilePos &,
             context_->addExternalProcedure(proc);
         }
         auto procTy = proc->getType();
-        if (procTy->getReturnType() == nullptr || procTy->getReturnType() == noTy_) {
-            // Proper procedure in qualified expression indicates reference to the procedure.
-            return make_unique<QualifiedExpression>(start, std::move(ident), std::move(selectors), sym, procTy);
-        } else if (selectors.empty()) {
-            // Function procedure with no selectors indicates a reference to the procedure.
+        if (procTy->getReturnType() == nullptr || selectors.empty()) {
+            // Looks like a reference to a procedure (no return type) or to a function procedure (no selectors)
             return make_unique<QualifiedExpression>(start, std::move(ident), std::move(selectors), sym, procTy);
         }
     }
-    // This looks like  a call to a function procedure.
+    // Looks like a call to a function procedure
     auto type = onSelectors(ident->start(), ident->end(), sym, sym->getType(), selectors);
     if (auto procTy = dynamic_cast<ProcedureTypeNode *>(type)) {
         type = procTy->getReturnType();
@@ -1111,7 +1109,7 @@ Sema::onActualParameters(DeclarationNode *context, TypeNode *base, ActualParamet
                             cast(param, signature->parameters()[cnt]->getType());
                         }
                     }
-                    return signature->getReturnType();
+                    return signature; // ->getReturnType();
                 }
             }
         }
@@ -2301,6 +2299,9 @@ void Sema::cast(ExpressionNode *expr, TypeNode *expected) {
 }
 
 void Sema::castLiteral(unique_ptr<ExpressionNode> &literal, TypeNode *expected) {
+    if (expected->isVirtual()) {
+        return;
+    }
     auto actual = literal->getType();
     if (expected->isArray()) {
         if (actual->isChar()) {

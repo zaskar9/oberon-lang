@@ -2,6 +2,7 @@ MODULE ArrayLen;
 IMPORT Out;
 
 CONST Dim = 10;
+      Len = 12;
       Msg = "Hello World!";
 
 TYPE Vector = ARRAY Dim OF INTEGER;
@@ -49,8 +50,8 @@ END TestLen;
 
 PROCEDURE TestStrLen(str: ARRAY OF CHAR);
 BEGIN
-    ASSERT(LEN(Msg) = 13);
-    ASSERT(LEN(str) = 13)
+    ASSERT(LEN(Msg) = Len);
+    ASSERT(LEN(str) = Len)
 END TestStrLen;
 
 PROCEDURE TestMixing();
@@ -64,7 +65,7 @@ BEGIN
     ASSERT(LEN(v) = Dim);
     Assert1(v, Dim);
     TestLen;
-    ASSERT(LEN(Msg) = 13);
+    ASSERT(LEN(Msg) = Len);
     TestStrLen(Msg);
     Out.String("All assertions passed."); Out.Ln
 END ArrayLen.
