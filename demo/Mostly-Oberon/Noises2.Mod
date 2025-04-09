@@ -2,38 +2,38 @@
  * Copyright (c) 2020, All Rights Reserved, https://rsdoiel.github.io/blog/2020/04/11/Mostly-Oberon.html
  * Released under the BSD 2-clause license: https://opensource.org/licenses/BSD-2-Clause
  *)
- MODULE Noises;
-  IMPORT Out;
+MODULE Noises;
+IMPORT Out;
 
 TYPE
-  Noise = PROCEDURE(who : ARRAY OF CHAR);
+  Noise = PROCEDURE(who: ARRAY OF CHAR);
   Creature = RECORD
-               name : ARRAY 32 OF CHAR;
-               noises : Noises;
+               name: ARRAY 32 OF CHAR;
+               noise: Noise;
              END;
 
-VAR
-  dog, bird : Creature;
-PROCEDURE BarkBark(who : ARRAY OF CHAR);
+VAR dog, bird: Creature;
+
+PROCEDURE BarkBark(who: ARRAY OF CHAR);
 BEGIN
   Out.String(who);
-  Out.String(": Bark, bark");Out.Ln();
+  Out.String(": Bark, bark"); Out.Ln;
 END BarkBark;
 
-PROCEDURE ChirpChirp(who : ARRAY OF CHAR);
+PROCEDURE ChirpChirp(who: ARRAY OF CHAR);
 BEGIN
   Out.String(who);
-  Out.String(": Chirp, chirp");Out.Ln();
+  Out.String(": Chirp, chirp"); Out.Ln;
 END ChirpChirp;
 
-PROCEDURE MakeNoise(creature : Creature);
+PROCEDURE MakeNoise(creature: Creature);
 BEGIN
   (* Call noise with the animal name *)
   creature.noise(creature.name);
 END MakeNoise;
-PROCEDURE MakeCreature(name : ARRAY OF CHAR; noise : Noise; VAR creature : Creature);
+
+PROCEDURE MakeCreature(name: ARRAY OF CHAR; noise: Noise; VAR creature: Creature);
 BEGIN
-  NEW(creature);
   creature.name := name;
   creature.noise := noise;
 END MakeCreature;

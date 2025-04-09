@@ -118,7 +118,7 @@ private:
     Value *createMod(Value *, Value *);
     Value *createFDiv(Value *, Value *);
 
-    TypeNode *createStaticCall(ProcedureNode *, QualIdent *, Selectors &);
+    TypeNode *createStaticCall(NodeReference &,  QualIdent *, Selectors &);
     Value *createPredefinedCall(PredefinedProcedure *, QualIdent *,
                                 vector<unique_ptr<ExpressionNode>> &, vector<Value *> &);
     Value *createAbortCall();

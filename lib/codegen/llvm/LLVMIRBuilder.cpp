@@ -198,11 +198,14 @@ void LLVMIRBuilder::visit(ImportNode &node) {
 }
 
 void LLVMIRBuilder::visit(QualifiedStatement &node) {
-    if (auto proc = dynamic_cast<ProcedureNode *>(node.dereference())) {
-        createStaticCall(proc, node.ident(), node.selectors());
+    auto decl = node.dereference();
+    if (decl->getNodeType() == NodeType::procedure) {
+        createStaticCall(node, node.ident(), node.selectors());
     } else {
-        auto decl = node.dereference();
         value_ = values_[decl];
+        if (decl->getNodeType() == NodeType::parameter) {
+            value_ = builder_.CreateLoad(builder_.getPtrTy(), value_);
+        }
         selectors(&node, decl->getType(), node.selectors().begin(), node.selectors().end());
         return;
     }
@@ -226,14 +229,16 @@ void LLVMIRBuilder::visit(QualifiedExpression &node) {
     }
     auto type = decl->getType();
     if (auto procTy = dynamic_cast<ProcedureTypeNode *>(type)) {
-        auto proc = dynamic_cast<ProcedureNode *>(decl);
-        if (procTy->getReturnType() == nullptr || node.selectors().empty()) {
-            // Looks like a reference to a procedure (no return type) or to a function procedure (no selectors).
-            value_ =  module_->getFunction(qualifiedName(proc));
-        } else {
-            createStaticCall(proc, node.ident(), node.selectors());
+        // Check whether this is a procedure call or a procedure variable.
+        if (decl->getNodeType() == NodeType::procedure) {
+            if (procTy->getReturnType() == nullptr || node.selectors().empty()) {
+                // Looks like a reference to a procedure (no return type) or to a function procedure (no selectors).
+                value_ = module_->getFunction(qualifiedName(decl));
+            } else {
+                createStaticCall(node, node.ident(), node.selectors());
+            }
+            return;
         }
-        return;
     }
     if (!value_ && decl->getNodeType() == NodeType::variable) {
         // Looks like we came across a reference to an imported variable.
@@ -254,7 +259,10 @@ void LLVMIRBuilder::visit(QualifiedExpression &node) {
     }
     type = selectors(&node, type, node.selectors().begin(), node.selectors().end());
     if (deref()) {
-        value_ = builder_.CreateLoad(type->isStructured() ? builder_.getPtrTy() : getLLVMType(type), value_);
+        // Check whether the qualified expression is somthing other than a function procedure call.
+        if (node.selectors().empty() || node.selectors().back()->getNodeType() != NodeType::parameter) {
+            value_ = builder_.CreateLoad(type->isStructured() ? builder_.getPtrTy() : getLLVMType(type), value_);
+        }
     }
 }
 
@@ -329,6 +337,7 @@ TypeNode *LLVMIRBuilder::selectors(NodeReference *ref, TypeNode *base, SelectorI
     if (!base || base->isVirtual()) {
         return nullptr;
     }
+    auto decl = ref->dereference();
     auto selector_t = base;
     auto baseTy = getLLVMType(selector_t);
     auto value = value_;
@@ -339,14 +348,22 @@ TypeNode *LLVMIRBuilder::selectors(NodeReference *ref, TypeNode *base, SelectorI
         if (sel->getNodeType() == NodeType::parameter) {
             auto params = dynamic_cast<ActualParameters *>(sel);
             auto procedure_t = dynamic_cast<ProcedureTypeNode *>(selector_t);
-            vector<Value*> values;
+            vector<Value *> values;
             parameters(procedure_t, params, values);
             auto funTy = funTypes_[procedure_t];
             // Output the GEP up to the procedure call
-            value = processGEP(baseTy, value, indices);
+            value = processGEP(baseTy, value, indices);  // TODO Not sure if this call is ever necessary
             // Create a load to dereference the function pointer
-            value = builder_.CreateLoad(builder_.getPtrTy(), value);
-            value_ = builder_.CreateCall(dyn_cast<FunctionType>(funTy), value, values);
+            if (decl && (decl->getNodeType() == NodeType::variable ||
+                         decl->getNodeType() == NodeType::parameter ||
+                         decl->getNodeType() == NodeType::field)) {
+                value = builder_.CreateLoad(builder_.getPtrTy(), value);
+            }
+            if (config_.isSanitized(Trap::NIL_POINTER)) {
+                trapNILPtr(value);
+            }
+            value = builder_.CreateCall(dyn_cast<FunctionType>(funTy), value, values);
+            decl = nullptr;
             selector_t = procedure_t->getReturnType();
             baseTy = getLLVMType(selector_t);
         } else if (sel->getNodeType() == NodeType::array_type) {
@@ -412,6 +429,7 @@ TypeNode *LLVMIRBuilder::selectors(NodeReference *ref, TypeNode *base, SelectorI
             indices.push_back(builder_.getInt32(current == 0 ? field->getIndex() : field->getIndex() + 1));
             // Output GEP up to the record field
             value = processGEP(baseTy, value, indices);
+            decl = field;
             selector_t = field->getType();
             baseTy = getLLVMType(selector_t);
         } else if (sel->getNodeType() == NodeType::type) {
@@ -489,8 +507,9 @@ LLVMIRBuilder::parameters(ProcedureTypeNode *proc, ActualParameters *actuals, ve
     }
 }
 
-TypeNode *LLVMIRBuilder::createStaticCall(ProcedureNode *proc, QualIdent *ident, Selectors &selectors) {
-    auto type = dynamic_cast<ProcedureTypeNode *>(proc->getType());
+TypeNode *LLVMIRBuilder::createStaticCall(NodeReference &node, QualIdent *ident, Selectors &selectors) {
+    auto proc = dynamic_cast<ProcedureNode *>(node.dereference());
+    auto type = proc->getType();
     vector<Value*> values;
     ActualParameters *sel;
     vector<unique_ptr<ExpressionNode>> params;
@@ -513,7 +532,7 @@ TypeNode *LLVMIRBuilder::createStaticCall(ProcedureNode *proc, QualIdent *ident,
             logger_.error(ident->start(), "undefined procedure: " + to_string(*ident) + ".");
         }
     }
-    return this->selectors(nullptr, proc->getType()->getReturnType(), selectors.begin() + (args ? 1 : 0), selectors.end());
+    return this->selectors(&node, proc->getType()->getReturnType(), selectors.begin() + (args ? 1 : 0), selectors.end());
 }
 
 void LLVMIRBuilder::visit(ConstantDeclarationNode &) {}
