@@ -50,10 +50,20 @@ BEGIN
     Assert3(c, Dim, 2 * Dim, 3 * Dim)
 END TestLen;
 
+PROCEDURE StrLen(str: ARRAY OF CHAR): INTEGER;
+VAR i: INTEGER;
+BEGIN
+    i := 0;
+    WHILE (i < LEN(str)) & (str[i] # 0X) DO
+        INC(i)
+    END;
+    RETURN i
+END StrLen;
+
 PROCEDURE TestStrLen(str: ARRAY OF CHAR);
 BEGIN
-    ASSERT(LEN(Msg) = Len);
-    ASSERT(LEN(str) = Len)
+    ASSERT(LEN(Msg) = StrLen(Msg));
+    ASSERT(LEN(str) = StrLen(Msg) + 1)
 END TestStrLen;
 
 PROCEDURE TestMixing();
@@ -80,5 +90,5 @@ BEGIN
     TestLen;
     ASSERT(LEN(Msg) = Len);
     TestStrLen(Msg);
-    TestPassingOn;
+    TestPassingOn
 END ArrayLen1.

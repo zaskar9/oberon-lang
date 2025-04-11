@@ -494,7 +494,7 @@ LLVMIRBuilder::parameters(ProcedureTypeNode *proc, ActualParameters *actuals, ve
                     auto str = dynamic_cast<StringLiteralNode *>(actualParam);
                     Value *dopeV = builder_.CreateAlloca(ArrayType::get(builder_.getInt64Ty(), 1));
                     string value = str->value();
-                    builder_.CreateStore(builder_.getInt64(value[0] == '\0' ? 0 : value.size()), dopeV);
+                    builder_.CreateStore(builder_.getInt64(value[0] == '\0' ? 1 : value.size() + 1), dopeV);
                     values.push_back(dopeV);
                 } else {
                     // Lookup the "dope vector" of explicitly defined array types
@@ -1314,7 +1314,8 @@ void LLVMIRBuilder::visit(AssignmentNode &node) {
         value_ = builder_.CreateMemCpy(lValue, {}, rValue, {}, builder_.getInt64(size));
     } else if (rType->isString()) {
         auto str = dynamic_cast<StringLiteralNode *>(node.getRvalue());
-        Value *len = builder_.getInt64(str->value().size() + 1);
+        auto value = str->value();
+        Value *len = builder_.getInt64(value[0] == '\0' ? 1 : value.size() + 1);
         value_ = builder_.CreateMemCpy(lValue, {}, rValue, {}, len);
     } else {
         value_ = builder_.CreateStore(rValue, lValue);
