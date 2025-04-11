@@ -29,6 +29,8 @@ public:
     explicit NodeReference(DeclarationNode *node) : node_(node) {};
     virtual ~NodeReference();
 
+    [[nodiscard]] virtual FilePos pos() const = 0;
+
     virtual void resolve(DeclarationNode *node);
     [[nodiscard]] virtual DeclarationNode *dereference() const;
 
@@ -48,6 +50,8 @@ public:
             Designator(make_unique<QualIdent>(decl->getIdentifier())),
             NodeReference(decl) {};
     ~QualifiedExpression() override;
+
+    [[nodiscard]] FilePos pos() const override;
 
     [[nodiscard]] bool isConstant() const override;
     [[nodiscard]] int getPrecedence() const override;
@@ -70,6 +74,8 @@ public:
             Designator(std::move(ident), std::move(selectors)),
             NodeReference(decl) {};
     ~QualifiedStatement() override;
+
+    [[nodiscard]] FilePos pos() const override;
 
     void accept(NodeVisitor &visitor) override;
     void print(std::ostream &stream) const override;

@@ -128,7 +128,7 @@ void Oberon07::initSymbolTable(SymbolTable *symbols) {
     // - `ANYTYPE`: matches a value of any type, used to simulate polymorphism for (built-in) procedures
     // - `NOTYPE`: matches no value of any type, used to indicate a failure state in type inference
     auto anyType = this->getBasicType(TypeKind::ANYTYPE);
-    auto nullType = this->getBasicType(TypeKind::NOTYPE);
+    // auto noType = this->getBasicType(TypeKind::NOTYPE);
 
     // Virtual compound types to narrow the scope of possibilities during type inference
     // - `TYPE`: matches a value of that is a type
@@ -189,12 +189,12 @@ void Oberon07::initSymbolTable(SymbolTable *symbols) {
     // SIZE
     this->createProcedure(ProcKind::SIZE, "SIZE", {{typeType, false}}, longIntType, false, true);
     // SHORT
-    proc = this->createProcedure(ProcKind::SHORT, "SHORT", {{numType, false}}, nullType, false, true);
+    proc = this->createProcedure(ProcKind::SHORT, "SHORT", {{numType, false}}, anyType, false, true);
     proc->overload({{longIntType, false}}, false, intType);
     proc->overload({{intType, false}}, false, shortIntType);
     proc->overload({{longRealType, false}}, false, realType);
     // LONG
-    proc = this->createProcedure(ProcKind::LONG, "LONG", {{numType, false}}, nullType, false, true);
+    proc = this->createProcedure(ProcKind::LONG, "LONG", {{numType, false}}, anyType, false, true);
     proc->overload({{shortIntType, false}}, false, intType);
     proc->overload({{intType, false}}, false, longIntType);
     proc->overload({{realType, false}}, false, longRealType);
@@ -205,15 +205,16 @@ void Oberon07::initSymbolTable(SymbolTable *symbols) {
     // FLT
     this->createProcedure(ProcKind::FLT, "FLT", {{longIntType, false}}, longRealType, false, true);
     // PACK
-    proc = this->createProcedure(ProcKind::PACK, "PACK", {{floatType, false}, {entireType, false}}, nullType, false, true);
+    // TODO The implementation of `PACK` from the language specification uses a VAR-parameter instead of a return value
+    proc = this->createProcedure(ProcKind::PACK, "PACK", {{floatType, false}, {entireType, false}}, floatType, false, true);
     proc->overload({{realType, false}, {entireType, false}}, false, realType);
     proc->overload({{longRealType, false}, {entireType, false}}, false, longRealType);
     // UNPK
-    proc = this->createProcedure(ProcKind::UNPK, "UNPK", {{floatType, true}, {intType, true}}, nullType, false, true);
-    proc->overload({{realType, true}, {intType, true}}, false, nullType);
-    proc->overload({{longRealType, true}, {intType, true}}, false, nullType);
+    proc = this->createProcedure(ProcKind::UNPK, "UNPK", {{floatType, true}, {intType, true}}, nullptr, false, true);
+    proc->overload({{realType, true}, {entireType, true}}, false, nullptr);
+    proc->overload({{longRealType, true}, {entireType, true}}, false, nullptr);
     // ABS
-    proc = this->createProcedure(ProcKind::ABS, "ABS", {{numType, false}}, nullType, false, true);
+    proc = this->createProcedure(ProcKind::ABS, "ABS", {{numType, false}}, anyType, false, true);
     proc->overload({{shortIntType, false}}, false, shortIntType);
     proc->overload({{intType, false}}, false, intType);
     proc->overload({{longIntType, false}}, false, longIntType);

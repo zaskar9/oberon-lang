@@ -262,8 +262,7 @@ void Parser::type_declarations(vector<unique_ptr<TypeDeclarationNode>> & types) 
     }
 }
 
-// TODO type = qualident | array_type | record_type | pointer_type | procedure_type.
-// type = qualident | array_type | record_type | pointer_type .
+// type = qualident | array_type | record_type | pointer_type | procedure_type .
 TypeNode* Parser::type() {
     logger_.debug("type");
     auto token = scanner_.peek();
@@ -277,6 +276,8 @@ TypeNode* Parser::type() {
         return record_type();
     } else if (token->type() == TokenType::kw_pointer) {
         return pointer_type();
+    } else if (token->type() == TokenType::kw_procedure) {
+        return procedure_type();
     } else {
         logger_.error(token->start(), "unexpected token: " + to_string(token->type()) + ".");
     }
@@ -320,7 +321,7 @@ RecordTypeNode* Parser::record_type() {
     if (scanner_.peek()->type() == TokenType::const_ident) {
         field_list(fields);
         while (scanner_.peek()->type() == TokenType::semicolon) {
-            scanner_.next(); // skip semicolon
+            scanner_.next();  // skip semicolon
             field_list(fields);
         }
     }
@@ -377,160 +378,62 @@ PointerTypeNode* Parser::pointer_type() {
     return nullptr;
 }
 
-// var_declarations = "VAR" { ident_list ":" type ";" } .
-void Parser::var_declarations(vector<unique_ptr<VariableDeclarationNode>> &vars) {
-    logger_.debug("var_declarations");
-    FilePos pos = scanner_.next()->start();  // skip VAR keyword and get its position
-    while (scanner_.peek()->type() == TokenType::const_ident) {
-        vector<unique_ptr<IdentDef>> idents;
-        ident_list(idents);
-        if (assertToken(scanner_.peek(), TokenType::colon)) {
-            scanner_.next();  // skip colon
-            auto node = type();
-            int index = 0;
-            for (auto &&ident : idents) {
-                FilePos start = ident->start();
-                FilePos end = ident->end();
-                auto decl = sema_.onVariable(start, end, std::move(ident), node, index++);
-                vars.push_back(std::move(decl));
-            }
-            if (assertToken(scanner_.peek(), TokenType::semicolon)) {
-                scanner_.next();  // skip semicolon
-            }
-        }
-    }
-    if (vars.size() == 0) {
-        logger_.error(pos, "empty VAR declaration");
-    }
-}
-
-// procedure_declaration = "PROCEDURE" identdef [ procedure_signature ] ";" ( procedure_body ident | "EXTERN" ) ";" .
-void Parser::procedure_declaration(vector<unique_ptr<ProcedureNode>> &procs) {
-    logger_.debug("procedure_declaration");
-    token_ = scanner_.next(); // skip PROCEDURE keyword
-    const FilePos start = token_->start();
-    const auto proc = sema_.onProcedureStart(start, identdef(false));
-    auto token = scanner_.peek();
-    if (token->type() == TokenType::lparen) {
-        // parse formal parameters
-        proc->setType(procedure_signature());
-    } else if (token->type() == TokenType::colon) {
-        // parse return type
-        logger_.error(token->start(), "function procedures without parameters must have an empty parameter list.");
-        scanner_.next(); // skip ":"
-        token = scanner_.peek();
-        if (assertToken(token, TokenType::const_ident)) {
-            vector<unique_ptr<ParameterNode>> params;
-            auto ident = qualident();
-            const auto type = sema_.onTypeReference(token->start(), token->end(), std::move(ident));
-            proc->setType(sema_.onProcedureType(token->start(), token->end(), std::move(params), false, type));
-        }
-    } else {
-        // handle missing formal parameters
-        vector<unique_ptr<ParameterNode>> params;
-        proc->setType(sema_.onProcedureType(token->start(), token->end(), std::move(params), false, nullptr));
-    }
-    token = scanner_.peek();
-    if (assertToken(token, TokenType::semicolon)) {
-        scanner_.next();
-    }
-    unique_ptr<Ident> name;
-    if (scanner_.peek()->type() == TokenType::kw_extern) {
-        const auto ext = scanner_.next(); // skip EXTERN keyword
-        proc->setExtern(true);
-        if (!config_.hasFlag(Flag::ENABLE_EXTERN)) {
-            logger_.error(ext->start(), "external procedure support disabled [-fenable-extern].");
-        }
-    } else {
-        assertOberonIdent(proc->getIdentifier());
-        procedure_body(proc);
-        name = ident();
-    }
-    token = scanner_.peek();
-    if (assertToken(token, TokenType::semicolon)) {
-        token_ = scanner_.next();
-    }
-    auto node = sema_.onProcedureEnd(token->end(), std::move(name));
-    procs.push_back(std::move(node));
-    // [<PROCEDURE>, <END>, <BEGIN>]
-    //resync({ TokenType::kw_procedure, TokenType::kw_begin, TokenType::kw_end });
-}
-
-// procedure_heading = formal_parameters [ ":" type ] .
-ProcedureTypeNode* Parser::procedure_signature() {
-    logger_.debug("procedure_signature");
-    // token_ = scanner_.next(); // skip "(" token
+// procedure_type = "PROCEDURE" [ formal_parameters ] .
+ProcedureTypeNode *Parser::procedure_type() {
+    logger_.debug("procedure_type");
     FilePos start = token_->start();
+    token_ = scanner_.next();  // skip PROCEDURE keyword
     vector<unique_ptr<ParameterNode>> params;
     bool varargs = false;
-    formal_parameters(params, varargs);
-    TypeNode *ret = nullptr;
-    if (scanner_.peek()->type() == TokenType::colon) {
-        scanner_.next(); // skip colon
-        ret = type();
-    }
-    auto peek = scanner_.peek();
-    if (peek->type() != TokenType::semicolon) {
-        logger_.error(peek->start(), "unexpected token.");
-        // [<;>]
-        resync({TokenType::semicolon});
-    }
-    return sema_.onProcedureType(start, peek->end(), std::move(params), varargs, ret);;
+    sema_.onBlockStart();
+    auto ret = formal_parameters(params, varargs);
+    sema_.onBlockEnd();
+    return sema_.onProcedureType(start, token_->end(), std::move(params), varargs, ret);
 }
 
-// TODO procedure_body = declarations [ "BEGIN" statement_sequence ] [ "RETURN" expression] "END" .
-// procedure_body = declarations [ "BEGIN" statement_sequence ] "END" .
-void Parser::procedure_body(ProcedureNode *proc) {
-    logger_.debug("procedure_body");
-    declarations(proc->constants(), proc->types(), proc->variables(), proc->procedures());
-    auto token = scanner_.peek();
-    if (token->type() == TokenType::kw_end) {
-        scanner_.next(); // skip END keyword
-    } else if (assertToken(token, TokenType::kw_begin)) {
-        scanner_.next(); // skip BEGIN keyword
-        statement_sequence(proc->statements());
-        if (assertToken(scanner_.peek(), TokenType::kw_end)) {
-            token_ = scanner_.next(); // skip END keyword
-        } else {
-            resync({TokenType::kw_end});
-        }
-    }
-    // [<ident>]
-    resync({ TokenType::const_ident });
-}
-
-// formal_parameters = "(" [ fp_section { ";" fp_section } ] ")" .
-void Parser::formal_parameters(vector<unique_ptr<ParameterNode>> &params, bool &varargs) {
+// formal_parameters = "(" [ fp_section { ";" fp_section } ] ")" [":" qualident] .
+TypeNode *Parser::formal_parameters(vector<unique_ptr<ParameterNode>> &params, bool &varargs) {
     logger_.debug("formal_parameters");
-    auto token = scanner_.next(); // skip left parenthesis
+    TypeNode *ret = nullptr;
+    auto token = scanner_.peek();
     if (token->type() == TokenType::lparen) {
-        TokenType type = scanner_.peek()->type();
-        while (type == TokenType::kw_var || type == TokenType::const_ident || type == TokenType::varargs) {
+        scanner_.next();  // skip left parenthesis
+        token = scanner_.peek();
+        while (token->type() == TokenType::kw_var ||
+               token->type() == TokenType::const_ident ||
+               token->type() == TokenType::varargs) {
             fp_section(params, varargs);
-            if (scanner_.peek()->type() == TokenType::rparen) {
-                token = scanner_.next();
+            token = scanner_.peek();
+            if (token->type() == TokenType::rparen) {
                 break;
-            }
-            if (scanner_.peek()->type() == TokenType::semicolon) {
-                token = scanner_.next();  // skip semicolon
+            } else if (token->type() == TokenType::semicolon) {
+                scanner_.next();  // skip semicolon
                 if (varargs) {
                     logger_.error(token->start(), "variadic arguments must be last formal parameter.");
                 }
-                type = scanner_.peek()->type();
+                token = scanner_.peek();
                 continue;
             }
-            token = scanner_.next();
-            logger_.error(token->start(), "; or ) expected, found " + to_string(token->type()) + ".");
+            token_ = scanner_.next();
+            logger_.error(token_->start(), "; or ) expected, found " + to_string(token_->type()) + ".");
         }
-        if (type == TokenType::rparen) {
-            token = scanner_.next();
+        if (assertToken(token, TokenType::rparen)) {
+            scanner_.next();  // skip right parenthesis
         }
-        if (token->type() != TokenType::rparen) {
-            logger_.error(token->start(), ") expected, found " + to_string(token->type()) + ".");
+        token = scanner_.peek();
+        if (token->type() == TokenType::colon) {
+            scanner_.next();  // skip colon
+            ret = type();
         }
+    } else if (token->type() == TokenType::colon) {
+        // parse return type
+        logger_.warning(token->start(), "function procedures without parameters must specify an empty parameter list.");
+        scanner_.next();  // skip colon
+        ret = type();
     }
     // [<:>, <;>]
-    resync({ TokenType::colon, TokenType::semicolon });
+    // resync({ TokenType::colon, TokenType::semicolon });
+    return ret;
 }
 
 // fp_section = ( [ "VAR" ] ident { "," ident } ":" formal_type | "..." ) .
@@ -605,6 +508,98 @@ TypeNode *Parser::formal_type() {
     }
     resync({ TokenType::semicolon, TokenType::rparen });
     return nullptr;
+}
+
+// var_declarations = "VAR" { ident_list ":" type ";" } .
+void Parser::var_declarations(vector<unique_ptr<VariableDeclarationNode>> &vars) {
+    logger_.debug("var_declarations");
+    FilePos pos = scanner_.next()->start();  // skip VAR keyword and get its position
+    while (scanner_.peek()->type() == TokenType::const_ident) {
+        vector<unique_ptr<IdentDef>> idents;
+        ident_list(idents);
+        if (assertToken(scanner_.peek(), TokenType::colon)) {
+            scanner_.next();  // skip colon
+            auto node = type();
+            int index = 0;
+            for (auto &&ident : idents) {
+                FilePos start = ident->start();
+                FilePos end = ident->end();
+                auto decl = sema_.onVariable(start, end, std::move(ident), node, index++);
+                vars.push_back(std::move(decl));
+            }
+            if (assertToken(scanner_.peek(), TokenType::semicolon)) {
+                scanner_.next();  // skip semicolon
+            }
+        }
+    }
+    if (vars.size() == 0) {
+        logger_.error(pos, "empty VAR declaration");
+    }
+}
+
+// procedure_declaration = "PROCEDURE" identdef [ formal_parameters ] ";" ( procedure_body ident | "EXTERN" ) ";" .
+void Parser::procedure_declaration(vector<unique_ptr<ProcedureNode>> &procs) {
+    logger_.debug("procedure_declaration");
+    token_ = scanner_.next(); // skip PROCEDURE keyword
+    const FilePos start = token_->start();
+    const auto proc = sema_.onProcedureStart(start, identdef(false));
+    auto token = scanner_.peek();
+    if (token->type() == TokenType::lparen) {
+        // parse formal parameters
+        vector<unique_ptr<ParameterNode>> params;
+        bool varargs = false;
+        auto ret = formal_parameters(params, varargs);
+        proc->setType(sema_.onProcedureType(start, token_->end(), std::move(params), varargs, ret));
+    } else {
+        // handle missing formal parameters
+        vector<unique_ptr<ParameterNode>> params;
+        proc->setType(sema_.onProcedureType(token->start(), token->end(), std::move(params), false, nullptr));
+    }
+    token = scanner_.peek();
+    if (assertToken(token, TokenType::semicolon)) {
+        scanner_.next();
+    }
+    unique_ptr<Ident> name;
+    if (scanner_.peek()->type() == TokenType::kw_extern) {
+        const auto ext = scanner_.next(); // skip EXTERN keyword
+        proc->setExtern(true);
+        if (!config_.hasFlag(Flag::ENABLE_EXTERN)) {
+            logger_.error(ext->start(), "external procedure support disabled [-fenable-extern].");
+        }
+    } else {
+        assertOberonIdent(proc->getIdentifier());
+        procedure_body(proc);
+        name = ident();
+    }
+    token = scanner_.peek();
+    if (assertToken(token, TokenType::semicolon)) {
+        token_ = scanner_.next();
+    }
+    auto node = sema_.onProcedureEnd(token->end(), std::move(name));
+    procs.push_back(std::move(node));
+    // [<PROCEDURE>, <END>, <BEGIN>]
+    // resync({ TokenType::kw_procedure, TokenType::kw_begin, TokenType::kw_end });
+}
+
+// TODO procedure_body = declarations [ "BEGIN" statement_sequence ] [ "RETURN" expression] "END" .
+// procedure_body = declarations [ "BEGIN" statement_sequence ] "END" .
+void Parser::procedure_body(ProcedureNode *proc) {
+    logger_.debug("procedure_body");
+    declarations(proc->constants(), proc->types(), proc->variables(), proc->procedures());
+    auto token = scanner_.peek();
+    if (token->type() == TokenType::kw_end) {
+        scanner_.next(); // skip END keyword
+    } else if (assertToken(token, TokenType::kw_begin)) {
+        scanner_.next(); // skip BEGIN keyword
+        statement_sequence(proc->statements());
+        if (assertToken(scanner_.peek(), TokenType::kw_end)) {
+            token_ = scanner_.next(); // skip END keyword
+        } else {
+            resync({TokenType::kw_end});
+        }
+    }
+    // [<ident>]
+    resync({ TokenType::const_ident });
 }
 
 // statement_sequence = statement { ";" statement } .

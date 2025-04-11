@@ -46,6 +46,7 @@ private:
     map<TypeNode*, Type*> types_;
     map<ArrayTypeNode*, Value*> typeDopes_;
     map<DeclarationNode*, Value*> valueDopes_;
+    map<ProcedureTypeNode *, FunctionType *> funTypes_;
     map<PointerTypeNode*, StructType*> ptrTypes_;
     map<RecordTypeNode*, GlobalValue*> recTypeIds_;
     map<RecordTypeNode*, GlobalValue*> recTypeTds_;
@@ -67,10 +68,11 @@ private:
     Value *processGEP(Type *, Value *, vector<Value *> &);
 
     Value *getArrayLength(ExpressionNode *, uint32_t);
-    Value *getOpenArrayLength(Value *, ArrayTypeNode *, uint32_t);
+    Value *getOpenArrayLength(Value *, ArrayTypeNode *, uint32_t, bool = true);
     Value *getDopeVector(ExpressionNode *);
+    Value *getDopeVector(NodeReference *, TypeNode *);
 
-    Value *getTypeDescriptor(Value *, QualifiedExpression *, TypeNode *);
+    Value *getTypeDescriptor(Value *, NodeReference *, TypeNode *);
 
     string qualifiedName(DeclarationNode *) const;
     string createScopedName(TypeNode *) const;
@@ -87,7 +89,7 @@ private:
 
     using Selectors = vector<unique_ptr<Selector>>;
     using SelectorIterator = Selectors::iterator;
-    TypeNode *selectors(QualifiedExpression *, TypeNode *, SelectorIterator, SelectorIterator);
+    TypeNode *selectors(NodeReference *, TypeNode *, SelectorIterator, SelectorIterator);
     void parameters(ProcedureTypeNode *, ActualParameters *, vector<Value *> &, bool = false);
 
     void installTrap(Value *, uint8_t);
@@ -101,7 +103,7 @@ private:
     void trapFltDivByZero(Value *);
 
     Value *createTypeTest(Value *, TypeNode *);
-    Value *createTypeTest(Value *, QualifiedExpression *, TypeNode *, TypeNode *);
+    Value *createTypeTest(Value *, NodeReference *, TypeNode *, TypeNode *);
 
     void createNumericTestCase(CaseOfNode &, BasicBlock *, BasicBlock *);
     void createTypeTestCase(CaseOfNode &, BasicBlock *, BasicBlock *);
@@ -116,7 +118,7 @@ private:
     Value *createMod(Value *, Value *);
     Value *createFDiv(Value *, Value *);
 
-    TypeNode *createStaticCall(ProcedureNode *, QualIdent *, Selectors &);
+    TypeNode *createStaticCall(NodeReference &,  QualIdent *, Selectors &);
     Value *createPredefinedCall(PredefinedProcedure *, QualIdent *,
                                 vector<unique_ptr<ExpressionNode>> &, vector<Value *> &);
     Value *createAbortCall();

@@ -21,6 +21,10 @@ DeclarationNode *NodeReference::dereference() const {
 
 QualifiedExpression::~QualifiedExpression() = default;
 
+FilePos QualifiedExpression::pos() const {
+    return ExpressionNode::pos();
+}
+
 bool QualifiedExpression::isConstant() const {
     return dereference()->getNodeType() == NodeType::constant;
 }
@@ -32,10 +36,10 @@ int QualifiedExpression::getPrecedence() const {
 
 TypeNode *QualifiedExpression::getType() const {
     auto type = ExpressionNode::getType();
-    if (type && type->kind() == TypeKind::PROCEDURE) {
-        auto proc = dynamic_cast<ProcedureTypeNode *>(type);
-        return proc->getReturnType();
-    }
+//    if (type && type->kind() == TypeKind::PROCEDURE) {
+//        auto proc = dynamic_cast<ProcedureTypeNode *>(type);
+//        return proc->getReturnType();
+//    }
     return type;
 }
 
@@ -55,6 +59,10 @@ void QualifiedExpression::print(std::ostream &stream) const {
 
 
 QualifiedStatement::~QualifiedStatement() = default;
+
+FilePos QualifiedStatement::pos() const {
+    return StatementNode::pos();
+}
 
 void QualifiedStatement::accept(NodeVisitor &visitor) {
     visitor.visit(*this);
