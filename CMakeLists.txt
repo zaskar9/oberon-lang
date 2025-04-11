@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.30)
 
-project(oberon-lang VERSION 0.1.0)
+project(oberon-lang VERSION 0.2.0)
 
 if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     message(WARNING "No build type set, defaulting to \"Release\".")
