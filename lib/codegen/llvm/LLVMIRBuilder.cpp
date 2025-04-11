@@ -275,10 +275,12 @@ Value *LLVMIRBuilder::getArrayLength(ExpressionNode *expr, uint32_t dim) {
     return builder_.getInt64(type->lengths()[dim]);
 }
 
-Value *LLVMIRBuilder::getOpenArrayLength(llvm::Value *dopeV, ArrayTypeNode *type, uint32_t dim) {
+Value *LLVMIRBuilder::getOpenArrayLength(llvm::Value *dopeV, ArrayTypeNode *type, uint32_t dim, bool ref) {
     auto dopeTy = ArrayType::get(builder_.getInt64Ty(), type->dimensions());
-    // dereference the pointer to the dope vector
-    dopeV = builder_.CreateLoad(builder_.getPtrTy(), dopeV);
+    if (ref) {
+        // dereference the pointer to the dope vector
+        dopeV = builder_.CreateLoad(builder_.getPtrTy(), dopeV);
+    }
     Value *value = builder_.CreateInBoundsGEP(dopeTy, dopeV, {builder_.getInt32(0), builder_.getInt32(dim) });
     return builder_.CreateLoad(builder_.getInt64Ty(), value);
 }
@@ -497,6 +499,10 @@ LLVMIRBuilder::parameters(ProcedureTypeNode *proc, ActualParameters *actuals, ve
                 } else {
                     // Lookup the "dope vector" of explicitly defined array types
                     Value *dopeV = getDopeVector(actualParam);
+                    if (actualType->isArray() && dynamic_cast<ArrayTypeNode *>(actualType)->isOpen()) {
+                        // Looks like an open array is passed from one procedure to the next
+                        dopeV = builder_.CreateLoad(builder_.getPtrTy(), dopeV);
+                    }
                     values.push_back(dopeV);
                 }
             } else if (formalType->isRecord() && formalParam->isVar()) {
@@ -1893,7 +1899,7 @@ LLVMIRBuilder::createLenCall(vector<unique_ptr<ExpressionNode>> &actuals, std::v
         value_ = builder_.getInt64(array_t->lengths()[(size_t) dim]);
         return value_;
     }
-    return getOpenArrayLength(params[1], array_t, static_cast<uint32_t>(dim));
+    return getOpenArrayLength(params[1], array_t, static_cast<uint32_t>(dim), false);
 }
 
 Value *

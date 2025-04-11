@@ -1,5 +1,7 @@
-MODULE ArrayLen;
-IMPORT Out;
+(*
+  RUN: %oberon --run %s
+*)
+MODULE ArrayLen1;
 
 CONST Dim = 10;
       Len = 12;
@@ -61,11 +63,22 @@ BEGIN
     Call(a)
 END TestMixing;
 
+PROCEDURE ForwardAssert1(a: ARRAY OF INTEGER; i: INTEGER);
+BEGIN
+    Assert1(a, i)
+END ForwardAssert1;
+
+PROCEDURE TestPassingOn;
+VAR a: ARRAY Dim OF INTEGER;
+BEGIN
+    ForwardAssert1(a, Dim)
+END TestPassingOn;
+
 BEGIN
     ASSERT(LEN(v) = Dim);
     Assert1(v, Dim);
     TestLen;
     ASSERT(LEN(Msg) = Len);
     TestStrLen(Msg);
-    Out.String("All assertions passed."); Out.Ln
-END ArrayLen.
+    TestPassingOn;
+END ArrayLen1.

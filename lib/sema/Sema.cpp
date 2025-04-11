@@ -2231,8 +2231,14 @@ Sema::assertCompatible(const FilePos &pos, TypeNode *expected, TypeNode *actual,
             if (exp_proc->parameters().size() == act_proc->parameters().size()) {
                 bool match = true;
                 for (size_t i = 0; i < exp_proc->parameters().size(); ++i) {
-                    auto exp_param = exp_proc->parameters()[i]->getType();
-                    auto act_param = act_proc->parameters()[i]->getType();
+                    auto exp = exp_proc->parameters()[i].get();
+                    auto act = act_proc->parameters()[i].get();
+                    if (exp->isVar() != act->isVar()) {
+                        match = false;
+                        break;
+                    }
+                    auto exp_param = exp->getType();
+                    auto act_param = act->getType();
                     if (exp_param->isArray() && act_param->isArray()) {
                         auto exp_array = dynamic_cast<ArrayTypeNode *>(exp_param);
                         auto act_array = dynamic_cast<ArrayTypeNode *>(act_param);
@@ -2246,11 +2252,12 @@ Sema::assertCompatible(const FilePos &pos, TypeNode *expected, TypeNode *actual,
                     }
                 }
                 if (!match) {
-                    logger_.error(pos, "type mismatch: procedure types have different number of parameters.");
+                    logger_.error(pos, "type mismatch: procedure types have different parameters.");
                     return false;
                 }
                 return true;
             }
+            logger_.error(pos, "type mismatch: procedure types have different number of parameters.");
             return false;
         } else if (actual->kind() == TypeKind::NILTYPE) {
             return true;
