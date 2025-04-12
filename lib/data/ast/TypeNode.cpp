@@ -113,6 +113,7 @@ bool TypeNode::isReal() const {
 bool TypeNode::isNumeric() const {
     return isInteger() ||
            isReal() ||
+           isByte() ||
            kind_ == TypeKind::NUMERIC;
 }
 
@@ -126,6 +127,10 @@ bool TypeNode::isSet() const {
 
 bool TypeNode::isChar() const {
     return kind_ == TypeKind::CHAR;
+}
+
+bool TypeNode::isByte() const {
+    return kind_ == TypeKind::BYTE;
 }
 
 bool TypeNode::isVirtual() const {
