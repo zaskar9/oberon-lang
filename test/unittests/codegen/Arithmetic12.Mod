@@ -1,7 +1,6 @@
 (*
   RUN: %oberon -I "%S%{pathsep}%inc" -L "%S%{pathsep}%lib" -l oberon --run %s | filecheck %s
-  Oberon-07 support mixing BYTE with INTEGER type.
-  It seems BYTE type is not yet supported.
+  Oberon-07 supports mixing types BYTE and INTEGER without explicit casting.
 *)
 MODULE Arithmetic12;
 

@@ -75,6 +75,7 @@ public:
     [[nodiscard]] bool isString() const;
     [[nodiscard]] bool isSet() const;
     [[nodiscard]] bool isChar() const;
+    [[nodiscard]] bool isByte() const;
 
     [[nodiscard]] bool isBasic() const;
     [[nodiscard]] bool isNumeric() const;

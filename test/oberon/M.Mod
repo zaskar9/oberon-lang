@@ -2,6 +2,7 @@ MODULE M;
 
 CONST
     CCHAR* = 041X;
+    CBYTE* = 255;
     CINT* = 100;
     CLINT* = 0FFFFFFFFFFFFFFFFH;
     CREAL* = 1.1;
@@ -12,7 +13,7 @@ CONST
 
 VAR
     C* : CHAR;
-    (* X* : BYTE; Not supported *)
+    X* : BYTE;
     I* : INTEGER;
     LI* : LONGINT;
     R* : REAL;
@@ -23,6 +24,7 @@ VAR
 
 BEGIN
     C := CCHAR;
+    X := CBYTE;
     I := CINT;
     LI := CLINT;
     R := CREAL;

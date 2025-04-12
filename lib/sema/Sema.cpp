@@ -2155,6 +2155,10 @@ Sema::assertCompatible(const FilePos &pos, TypeNode *expected, TypeNode *actual,
         if (expected->isReal() && actual->isInteger()) {
             return true;
         }
+        if ((expected->isByte() && actual->isInteger()) ||
+            (expected->isInteger() && actual->isByte())) {
+            return true;
+        }
     }
     // Check array type
     if (expected->isArray()) {
@@ -2346,7 +2350,7 @@ void Sema::castLiteral(unique_ptr<ExpressionNode> &literal, TypeNode *expected) 
         auto value = dynamic_cast<IntegerLiteralNode *>(literal.get());
         literal = onRealLiteral(literal->pos(), EMPTY_POS, real_cast(value).value());
         cast(literal.get(), expected);
-    } else if ((expected->isInteger() && actual->isInteger())
+    } else if (((expected->isInteger() || expected->isByte()) && actual->isInteger())
             || (expected->isReal() && actual->isReal())
             || ((expected->isPointer() || expected->isProcedure()) && actual->kind() == TypeKind::NILTYPE)
             || (expected->kind() == TypeKind::ANYTYPE)) {

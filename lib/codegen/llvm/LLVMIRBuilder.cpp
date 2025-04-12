@@ -1542,8 +1542,8 @@ void LLVMIRBuilder::cast(ExpressionNode &node) {
     auto target = node.getCast();
     auto source = node.getType();
     if (target && target != source) {
-        if (source->isInteger()) {
-            if (target->isInteger()) {
+        if (source->isInteger() || source->isByte()) {
+            if (target->isInteger() || target->isByte()) {
                 if (target->getSize() > source->getSize()) {
                     value_ = builder_.CreateSExt(value_, getLLVMType(target));
                 } else {

@@ -17,7 +17,7 @@ endif
 # TGT = x86_64-linux-gnu
 LIB = ./lib
 INC = .:./include
-O7C = ../../build/src/oberon-lang
+O7C = ./oberon-lang
 O7CFLAGS = -c -O3 -I$(INC) -L$(LIB) -loberon -fenable-main # --target $(TGT)
 LDFLAGS = -loberon
 PFX =
