@@ -15,6 +15,8 @@
 #include <llvm/MC/TargetRegistry.h>
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/TargetParser/Host.h>
+#include <llvm/Support/ErrorOr.h>
+#include <llvm/Support/MemoryBuffer.h>
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Support/raw_ostream.h>
 
@@ -311,6 +313,17 @@ int LLVMCodeGen::jit(ASTContext *ast, std::filesystem::path path) {
         exitOnErr_(jit_->addIRModule(orc::ThreadSafeModule(std::move(module), std::move(context))));
 
         // TODO link with other imported modules (*.o and *.obj files)
+        // Load the object file from a file
+        // string file = "test.o";
+        // auto buffer = MemoryBuffer::getFile(file);
+        // if (auto ec = buffer.getError()) {
+        //     logger_.error("", buffer.getError().message());
+        // }
+        // Add the object file to the JIT
+        // auto error = jit_->addObjectFile(std::move(buffer.get()));
+        // if (error) {
+        //     logger_.error("", toString(std::move(error)));
+        // }
 
         register_signal_handler();
 
