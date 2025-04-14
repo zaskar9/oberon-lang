@@ -258,6 +258,40 @@ std::string LLVMCodeGen::getLibName(const std::string &name, bool dylib, const l
     return ss.str();
 }
 
+std::string LLVMCodeGen::getObjName(const std::string &name, const llvm::Triple &triple) {
+    std::stringstream ss;
+    ss << name;
+    if (triple.isOSWindows() && !triple.isOSCygMing()) {
+        ss << ".obj";
+    } else {
+        ss << ".o";
+    }
+    return ss.str();
+}
+
+void LLVMCodeGen::loadObjects(ASTContext *ast) {
+    auto module = ast->getTranslationUnit();
+    for (auto& imp: module->imports()) {
+        auto name = imp->getModule()->name();
+        logger_.debug("Searching object file for module: '" + name + "'.");
+        if (auto obj = config_.findLibrary(getObjName(name, jit_->getTargetTriple()))) {
+            // Load the object file from a file
+            string file = obj->string();
+            logger_.debug("Object file found: '" + file + "'.");
+            auto buffer = MemoryBuffer::getFile(file);
+            if (auto ec = buffer.getError()) {
+                logger_.error(file, buffer.getError().message());
+            }
+            // Add the object file to the JIT
+            auto error = jit_->addObjectFile(std::move(buffer.get()));
+            if (error) {
+                logger_.error(file, toString(std::move(error)));
+            }
+            logger_.debug("Object file loaded: '" + file + "'.");
+        }
+    }
+}
+
 void LLVMCodeGen::generate(ASTContext *ast, std::filesystem::path path) {
     // Set up the LLVM module
     logger_.debug("Generating LLVM code...");
@@ -311,22 +345,11 @@ int LLVMCodeGen::jit(ASTContext *ast, std::filesystem::path path) {
     if (module && logger_.getErrorCount() == 0) {
         logger_.debug("Running JIT...");
         exitOnErr_(jit_->addIRModule(orc::ThreadSafeModule(std::move(module), std::move(context))));
-
-        // TODO link with other imported modules (*.o and *.obj files)
-        // Load the object file from a file
-        // string file = "test.o";
-        // auto buffer = MemoryBuffer::getFile(file);
-        // if (auto ec = buffer.getError()) {
-        //     logger_.error("", buffer.getError().message());
-        // }
-        // Add the object file to the JIT
-        // auto error = jit_->addObjectFile(std::move(buffer.get()));
-        // if (error) {
-        //     logger_.error("", toString(std::move(error)));
-        // }
-
+        // Link with other imported modules (*.o and *.obj files)
+        loadObjects(ast);
+        // Register signal handler for Oberon traps
         register_signal_handler();
-
+        // Execute Oberon program using ORC JIT
         std:: string entry = ast->getTranslationUnit()->getIdentifier()->name();
         auto mainAddr = exitOnErr_(jit_->lookup(entry));
         auto mainFn = mainAddr.toPtr<int(void)>();

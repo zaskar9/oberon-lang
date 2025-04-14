@@ -1,4 +1,7 @@
-MODULE M;
+(*
+  RUN: %oberon -I "%S%{pathsep}%inc" -L "%S%{pathsep}%lib" -l oberon -r %s
+*)
+MODULE TestExport;
 
 CONST
     CCHAR* = 041X;
@@ -32,4 +35,4 @@ BEGIN
     B := CBOOL;
     S := CSET;
     STR := CSTR
-END M.
+END TestExport.

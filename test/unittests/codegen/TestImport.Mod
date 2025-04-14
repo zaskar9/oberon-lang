@@ -1,5 +1,9 @@
+(*
+  RUN: %oberon -I "%S%{pathsep}%inc" -L "%S%{pathsep}%lib" -l oberon -c %S%{fs-sep}TestExport.Mod
+  RUN: %oberon -I "%S%{pathsep}%inc" -L "%S%{pathsep}%lib" -l oberon --run %s | filecheck %s
+*)
 MODULE TestImport;
-IMPORT M, Out;
+IMPORT M := TestExport, Out;
 
 VAR
     c : CHAR;
@@ -34,6 +38,19 @@ BEGIN
     str := M.CSTR;
     Out.String(str); Out.Ln;
     (* Test VAR *)
-    c := M.C; (* This gives segmentation fault *)
+    c := M.C;
     Out.Char(c); Out.Ln
 END TestImport.
+(*
+  CHECK: A
+  CHECK: 100
+  CHECK: -1
+  CHECK:  1.10E+00
+  CHECK:  1.100000024E+000
+  CHECK:       INF
+  CHECK:  1.797693135E+308
+  CHECK: 1
+  CHECK: { 0 31 }
+  CHECK: testing123
+  CHECK: A
+*)

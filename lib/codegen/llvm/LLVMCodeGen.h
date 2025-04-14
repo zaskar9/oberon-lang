@@ -60,6 +60,9 @@ private:
 
     void emit(llvm::Module *, path, OutputFileType);
     static std::string getLibName(const string &, bool, const llvm::Triple &);
+    static std::string getObjName(const string &, const llvm::Triple &);
+
+    void loadObjects(ASTContext *);
 
 public:
     LLVMCodeGen(CompilerConfig &);
