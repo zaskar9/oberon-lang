@@ -1,5 +1,5 @@
 (*
-  RUN: %oberon -I "%S%{pathsep}%inc" -L "%S%{pathsep}%lib" -l oberon -c %S%{fs-sep}TestExport.Mod
+  RUN: %oberon -I "%S%{pathsep}%inc" -L "%S%{pathsep}%lib" -l oberon -c %S/TestExport.Mod
   RUN: %oberon -I "%S%{pathsep}%inc" -L "%S%{pathsep}%lib" -l oberon --run %s | filecheck %s
 *)
 MODULE TestImport;
