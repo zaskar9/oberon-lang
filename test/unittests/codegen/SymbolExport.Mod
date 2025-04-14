@@ -1,3 +1,6 @@
+(*
+  RUN: %oberon -I "%S%{pathsep}%inc" -L "%S%{pathsep}%lib" -l oberon -r %s
+*)
 MODULE SymbolExport;
 IMPORT Oberon;
 
