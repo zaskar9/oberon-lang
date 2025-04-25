@@ -1,3 +1,9 @@
+(* The Oberon modules of the standard library contained in this directory are based on ETH Oberon.
+ * The original source code is used and distributed under the ETH Oberon License, see LICENSE file
+ * for details. The modules have been adapted from the original source code to work with the LLVM
+ * Oberon compiler and leverage its capabilities in interfacing with the host operating system.
+ *)
+
 (** Module with various system functions *)
 MODULE Oberon;
 
@@ -11,11 +17,13 @@ TYPE TTime* = LONGINT;
 
 VAR ts*: TimeSpec;
 
-(* Import `time` function from C <time.h> library. *)
+
+(* Declare `long time(long)` from C <time.h> library. *)
 PROCEDURE time(t: LONGINT): LONGINT; EXTERN;
 
-(* Import `timespec_get` function from C <time.h> library. *)
-PROCEDURE rt_timespec_get(VAR ts: TimeSpec; base: INTEGER); EXTERN;
+(* Declare `void olang_oberon_timespec_get(struct timespec *, void *, int32_t * )` from Oberon runtime library. *)
+PROCEDURE olang_oberon_timespec_get(VAR ts: TimeSpec; base: INTEGER); EXTERN;
+
 
 (** Return elapsed clock ticks since program start *)
 PROCEDURE Time*(): LONGINT;
@@ -28,7 +36,7 @@ END Time;
 PROCEDURE TimeMillis*(): LONGINT;
 VAR ts: TimeSpec;
 BEGIN
-    rt_timespec_get(ts, TIMEUTC);
+    olang_oberon_timespec_get(ts, TIMEUTC);
     RETURN ts.secs * 1000 + ts.nsecs DIV 1000000
 END TimeMillis;
 
@@ -36,7 +44,7 @@ END TimeMillis;
 PROCEDURE TimeMicros*(): LONGINT;
 VAR ts: TimeSpec;
 BEGIN
-    rt_timespec_get(ts, TIMEUTC);
+    olang_oberon_timespec_get(ts, TIMEUTC);
     RETURN ts.secs * 1000000 + ts.nsecs DIV 1000
 END TimeMicros;
 
@@ -44,7 +52,7 @@ END TimeMicros;
 PROCEDURE TimeNanos*(): LONGINT;
 VAR ts: TimeSpec;
 BEGIN
-    rt_timespec_get(ts, TIMEUTC);
+    olang_oberon_timespec_get(ts, TIMEUTC);
     RETURN ts.secs * 1000000000 + ts.nsecs
 END TimeNanos;
 

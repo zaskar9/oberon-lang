@@ -6,26 +6,30 @@
 
 #define _STDLIB_RUNTIME_H 1
 
-#include <stdint.h>
+// #include <stdint.h>
+#include <stdio.h>
 #include <time.h>
 
-float rt_realf(int32_t x);
-int32_t rt_entierf(float x);
+// Module `Oberon`
+int32_t olang_oberon_timespec_get(struct timespec *, const void *, int32_t);
 
-int32_t rt_timespec_get(struct timespec *time_spec, const void *time_spec_td, int32_t base);
+// Module `Files`
+int32_t olang_files_file_exists(const char *, const void *);
+FILE *onlang_files_file_open(const char *, const void *);
 
-int32_t rt_reals_expo(float x);
-int32_t rt_reals_expoL(double x);
+// Module `Math`
+float olang_math_realf(int32_t);
+int32_t olang_math_entierf(float);
 
-float rt_reals_ten(int32_t e);
-double rt_reals_tenL(int32_t e);
+// Module `Reals`
+int32_t olang_reals_expo(float);
+int32_t olang_reals_expoL(double);
+float olang_reals_ten(int32_t);
+double olang_reals_tenL(int32_t);
+int32_t olang_reals_nan_code(float);
+void olang_reals_nan_codeL(double, int32_t *, int32_t *);
+float olang_reals_nan(void);
+double olang_reals_nanL(void);
 
-void rt_reals_convert(float x, int32_t n, char* d);
-
-int32_t rt_reals_nan_code(float x);
-void rt_reals_nan_codeL(double x, int32_t *l, int32_t *h);
-
-float rt_reals_nan(void);
-double rt_reals_nanL(void);
 
 #endif //_STDLIB_RUNTIME_H

@@ -1,12 +1,20 @@
-(** Module with apseudo-random number generator *)
+(* The Oberon modules of the standard library contained in this directory are based on ETH Oberon.
+ * The original source code is used and distributed under the ETH Oberon License, see LICENSE file
+ * for details. The modules have been adapted from the original source code to work with the LLVM
+ * Oberon compiler and leverage its capabilities in interfacing with the host operating system.
+ *)
+
+(** Module implementing a pseudo-random number generator *)
 MODULE Random;
 IMPORT Oberon;
 
-(* Import `rand` function from C <stdlib.h> library. *)
+
+(* Declare `int rand()` function from C <stdlib.h> library. *)
 PROCEDURE rand(): INTEGER; EXTERN;
 
-(* Import `srand` function from C <stdlib.h> library. *)
+(* Declare `void srand(long)` function from C <stdlib.h> library. *)
 PROCEDURE srand(seed: LONGINT); EXTERN;
+
 
 (** Returns next random integer number from 0 to max *)
 PROCEDURE Int*(max: INTEGER): INTEGER;

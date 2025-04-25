@@ -26,7 +26,7 @@ endif
 ifeq ($(OS), windows)
 	O7CFLAGS = -q -c -O3 -fenable-extern -fenable-varargs # --target $(TGT)
 else
-	O7CFLAGS = -q -c -O3 --reloc=pic -fenable-extern -fenable-varargs # --target $(TGT)
+	O7CFLAGS = -c -O3 --reloc=pic -fenable-extern -fenable-varargs # --target $(TGT)
 	ifeq ($(PLATFORM), aarch64)
       O7CFLAGS += -fno-stack-protector
     endif
@@ -73,7 +73,7 @@ dist : runtime.o Oberon.o Files.o Math.o Reals.o Texts.o Random.o Out.o
 	@ar rcs $(LIBNAME).a runtime.o Oberon.o Files.o Math.o Reals.o Texts.o Random.o Out.o
 	@echo ' done.'
 
-install : dist Oberon.smb Files.smb Out.smb Random.smb Math.smb Reals.smb Texts.smb
+install : dist Files.smb Oberon.smb Out.smb Random.smb Math.smb Reals.smb Texts.smb
 	@echo -n Installing library...
 	@mkdir -p $(LIB)
 	@mv $(LIBNAME).$(EXT) $(LIB)
