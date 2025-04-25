@@ -59,7 +59,7 @@ private:
     vector<string> scopes_;
     Function *function_;
     AttrBuilder attrs_;
-    ASTContext *ast_;
+    ASTContext *ast_{};
     StructType *recordTdTy_;
 
     Type *getLLVMType(TypeNode *type);
@@ -68,14 +68,14 @@ private:
     Value *processGEP(Type *, Value *, vector<Value *> &);
 
     Value *getArrayLength(ExpressionNode *, uint32_t);
-    Value *getOpenArrayLength(Value *, ArrayTypeNode *, uint32_t, bool = true);
+    Value *getOpenArrayLength(Value *, const ArrayTypeNode *, uint32_t, bool = true);
     Value *getDopeVector(ExpressionNode *);
-    Value *getDopeVector(NodeReference *, TypeNode *);
+    Value *getDopeVector(const NodeReference *, TypeNode *);
 
-    Value *getTypeDescriptor(Value *, NodeReference *, TypeNode *);
+    Value *getTypeDescriptor(Value *, const NodeReference *, TypeNode *);
 
     string qualifiedName(DeclarationNode *) const;
-    string createScopedName(TypeNode *) const;
+    string createScopedName(const TypeNode *) const;
 
     void setRefMode(bool deref);
     void restoreRefMode();
@@ -83,7 +83,7 @@ private:
 
     void ensureTerminator(BasicBlock *);
 
-    void cast(ExpressionNode &);
+    void cast(const ExpressionNode &);
 
     void procedure(ProcedureNode &);
 
@@ -103,12 +103,12 @@ private:
     void trapFltDivByZero(Value *);
 
     Value *createTypeTest(Value *, TypeNode *);
-    Value *createTypeTest(Value *, NodeReference *, TypeNode *, TypeNode *);
+    Value *createTypeTest(Value *, const NodeReference *, const TypeNode *, TypeNode *);
 
-    void createNumericTestCase(CaseOfNode &, BasicBlock *, BasicBlock *);
-    void createTypeTestCase(CaseOfNode &, BasicBlock *, BasicBlock *);
+    void createNumericTestCase(const CaseOfNode &, BasicBlock *, BasicBlock *);
+    void createTypeTestCase(const CaseOfNode &, BasicBlock *, BasicBlock *);
 
-    Value *createStringComparison(BinaryExpressionNode *);
+    Value *createStringComparison(const BinaryExpressionNode *);
 
     Value *createNeg(Value *);
     Value *createAdd(Value *, Value *);
@@ -118,40 +118,40 @@ private:
     Value *createMod(Value *, Value *);
     Value *createFDiv(Value *, Value *);
 
-    TypeNode *createStaticCall(NodeReference &,  QualIdent *, Selectors &);
-    Value *createPredefinedCall(PredefinedProcedure *, QualIdent *,
-                                vector<unique_ptr<ExpressionNode>> &, vector<Value *> &);
+    TypeNode *createStaticCall(NodeReference &, const QualIdent *, Selectors &);
+    Value *createPredefinedCall(const PredefinedProcedure *, const QualIdent *,
+                                const vector<unique_ptr<ExpressionNode>> &, const vector<Value *> &);
     Value *createAbortCall();
-    Value *createAbsCall(TypeNode *, Value *);
-    Value *createAsrCall(vector<unique_ptr<ExpressionNode>> &, std::vector<Value *> &);
+    Value *createAbsCall(const TypeNode *, Value *);
+    Value *createAsrCall(const vector<unique_ptr<ExpressionNode>> &, const std::vector<Value *> &);
     Value *createAssertCall(Value *);
     Value *createChrCall(Value *);
     Value *createEntireCall(Value *);
     Value *createFltCall(Value *);
     Value *createPackCall(Value *, Value *);
-    Value *createUnpkCall(vector<unique_ptr<ExpressionNode>> &, std::vector<Value *> &);
+    Value *createUnpkCall(const vector<unique_ptr<ExpressionNode>> &, const std::vector<Value *> &);
     Value *createExitCall(Value *);
     Value *createExclCall(Value *, Value *);
     Value *createDisposeCall(TypeNode *, Value *);
-    Value *createIncDecCall(ProcKind, vector<unique_ptr<ExpressionNode>> &, std::vector<Value *> &);
+    Value *createIncDecCall(ProcKind, const vector<unique_ptr<ExpressionNode>> &, const std::vector<Value *> &);
     Value *createInclCall(Value *, Value *);
-    Value *createLenCall(vector<unique_ptr<ExpressionNode>> &, std::vector<Value *> &);
-    Value *createLongCall(ExpressionNode *, Value *);
-    Value *createLslCall(vector<unique_ptr<ExpressionNode>> &, std::vector<Value *> &);
+    Value *createLenCall(const vector<unique_ptr<ExpressionNode>> &, const std::vector<Value *> &);
+    Value *createLongCall(const ExpressionNode *, Value *);
+    Value *createLslCall(const vector<unique_ptr<ExpressionNode>> &, const std::vector<Value *> &);
     Value *createMaxMinCall(ExpressionNode *, bool);
     Value *createNewCall(TypeNode *, Value *);
     Value *createOddCall(Value *);
-    Value *createOrdCall(ExpressionNode *, Value *);
-    Value *createRorCall(vector<unique_ptr<ExpressionNode>> &, std::vector<Value *> &);
-    Value *createShortCall(ExpressionNode *, Value *);
+    Value *createOrdCall(const ExpressionNode *, Value *);
+    Value *createRorCall(const vector<unique_ptr<ExpressionNode>> &, const std::vector<Value *> &);
+    Value *createShortCall(const ExpressionNode *, Value *);
     Value *createSizeCall(ExpressionNode *);
     
-    Value *createSystemAdrCall(vector<unique_ptr<ExpressionNode>> &, std::vector<Value *> &);
-    Value *createSystemGetCall(vector<unique_ptr<ExpressionNode>> &, std::vector<Value *> &);
-    Value *createSystemPutCall(vector<unique_ptr<ExpressionNode>> &, std::vector<Value *> &);
-    Value *createSystemBitCall(vector<unique_ptr<ExpressionNode>> &, std::vector<Value *> &);
+    Value *createSystemAdrCall(const vector<unique_ptr<ExpressionNode>> &, const std::vector<Value *> &);
+    Value *createSystemGetCall(const vector<unique_ptr<ExpressionNode>> &, const std::vector<Value *> &);
+    Value *createSystemPutCall(const vector<unique_ptr<ExpressionNode>> &, const std::vector<Value *> &);
+    Value *createSystemBitCall(const vector<unique_ptr<ExpressionNode>> &, const std::vector<Value *> &);
     Value *createSystemCopyCall(Value *, Value *, Value *);
-    Value *createSystemValCall(vector<unique_ptr<ExpressionNode>> &, std::vector<Value *> &);
+    Value *createSystemValCall(const vector<unique_ptr<ExpressionNode>> &, const std::vector<Value *> &);
     
     void visit(ModuleNode &) override;
     void visit(ProcedureNode &) override;

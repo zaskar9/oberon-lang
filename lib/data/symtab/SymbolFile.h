@@ -20,7 +20,7 @@ private:
     string path_;
 
 public:
-    explicit SymbolFile(): file_(), path_() {};
+    explicit SymbolFile() {}
     ~SymbolFile() = default;
 
     void open(const string &path, std::ios::openmode mode);
@@ -42,11 +42,11 @@ public:
     void writeDouble(double val);
     void writeString(const std::string &val);
 
-    [[nodiscard]] bool eof();
+    [[nodiscard]] bool eof() const;
     void flush();
     void close();
 
-    static const uint32_t VERSION = 4;
+    static constexpr uint32_t VERSION = 5;
 
 };
 
