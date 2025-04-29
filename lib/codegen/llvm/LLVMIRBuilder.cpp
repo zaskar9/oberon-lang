@@ -781,11 +781,11 @@ Value *LLVMIRBuilder::createStringComparison(const BinaryExpressionNode *node) {
         auto rhsValue = value_;
         Value *value = nullptr;
         Value *test = builder_.getInt32(0);
-        if (lhsType->isString() || rhsType->isString()) {
+        if ((lhsType->isArray() && rhsType->isArray()) || lhsType->isString() || rhsType->isString()) {
             // TODO This introduces a dependency to `strcmp` that might not be ideal.
             auto fun = module_->getFunction("strcmp");
             if (!fun) {
-                auto type = FunctionType::get(builder_.getInt32Ty(), {builder_.getPtrTy(), builder_.getPtrTy()}, false);
+                const auto type = FunctionType::get(builder_.getInt32Ty(), {builder_.getPtrTy(), builder_.getPtrTy()}, false);
                 fun = Function::Create(type, GlobalValue::ExternalLinkage, "strcmp", module_);
                 // fun->addFnAttr(Attribute::getWithAllocSizeArgs(builder_.getContext(), 0, {}));
                 fun->addParamAttr(0, Attribute::NoUndef);
@@ -904,7 +904,8 @@ void LLVMIRBuilder::visit(UnaryExpressionNode &node) {
 void LLVMIRBuilder::visit(BinaryExpressionNode &node) {
     const auto lhsType = node.getLeftExpression()->getType();
     const auto rhsType = node.getRightExpression()->getType();
-    if ((lhsType->isArray() && (rhsType->isString() || rhsType->isChar())) ||
+    if ((lhsType->isArray() && rhsType->isArray()) ||
+        (lhsType->isArray() && (rhsType->isString() || rhsType->isChar())) ||
         (rhsType->isArray() && (lhsType->isString() || lhsType->isChar()))) {
         value_ = createStringComparison(&node);
         return;
@@ -915,8 +916,8 @@ void LLVMIRBuilder::visit(BinaryExpressionNode &node) {
     // Logical operators `&` and `OR` are treated explicitly to enable short-circuiting.
     if (node.getOperator() == OperatorType::AND || node.getOperator() == OperatorType::OR) {
         // Create one block to evaluate the right-hand side and one to skip it.
-        auto eval = BasicBlock::Create(builder_.getContext(), "eval", function_);
-        auto skip = BasicBlock::Create(builder_.getContext(), "skip", function_);
+        const auto eval = BasicBlock::Create(builder_.getContext(), "eval", function_);
+        const auto skip = BasicBlock::Create(builder_.getContext(), "skip", function_);
         // Insert branch to decide whether to skip `&` or `OR`
         if (node.getOperator() == OperatorType::AND) {
             builder_.CreateCondBr(value_, eval, skip);
@@ -928,7 +929,7 @@ void LLVMIRBuilder::visit(BinaryExpressionNode &node) {
         // Create and populate the basic block to evaluate the right-hand side, if required.
         builder_.SetInsertPoint(eval);
         node.getRightExpression()->accept(*this);
-        auto rhs = value_;
+        const auto rhs = value_;
         if (node.getOperator() == OperatorType::AND) {
             value_ = builder_.CreateAnd(lhs, rhs);
         } else if (node.getOperator() == OperatorType::OR) {
@@ -945,15 +946,15 @@ void LLVMIRBuilder::visit(BinaryExpressionNode &node) {
         phi->addIncoming(value_, rhsBB);
         value_ = phi;
     } else if (node.getOperator() == OperatorType::IS) {
-        auto lExpr = dynamic_cast<QualifiedExpression *>(node.getLeftExpression());
-        auto lType = lExpr->getType();
-        auto rExpr = dynamic_cast<QualifiedExpression *>(node.getRightExpression());
-        auto rType = rExpr->dereference()->getType();
+        const auto lExpr = dynamic_cast<QualifiedExpression *>(node.getLeftExpression());
+        const auto lType = lExpr->getType();
+        const auto rExpr = dynamic_cast<QualifiedExpression *>(node.getRightExpression());
+        const auto rType = rExpr->dereference()->getType();
         value_ = createTypeTest(lhs, lExpr, lType, rType);
     } else if (node.getLeftExpression()->getType()->isSet() || node.getRightExpression()->getType()->isSet()) {
         node.getRightExpression()->accept(*this);
         cast(*node.getRightExpression());
-        auto rhs = value_;
+        const auto rhs = value_;
         switch (node.getOperator()) {
             case OperatorType::PLUS:
                 value_ = builder_.CreateOr(lhs, rhs);

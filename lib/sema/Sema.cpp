@@ -1245,12 +1245,12 @@ Sema::onBinaryExpression(const FilePos &start, const FilePos &end,
         logger_.error(start, "undefined right-hand side in binary expression.");
         return nullptr;
     }
-    auto lhsType = lhs->getType();
+    const auto lhsType = lhs->getType();
     if (!lhsType) {
         logger_.error(lhs->pos(), "undefined left-hand side type in binary expression.");
         return nullptr;
     }
-    auto rhsType = rhs->getType();
+    const auto rhsType = rhs->getType();
     if (!rhsType) {
         logger_.error(rhs->pos(), "undefined right-hand side type in binary expression.");
         return nullptr;
@@ -1263,12 +1263,12 @@ Sema::onBinaryExpression(const FilePos &start, const FilePos &end,
             if ((lhs->isLiteral() && (lhsType->isString() || lhsType->isChar())) ||
                 (rhs->isLiteral() && (rhsType->isString() || rhsType->isChar()))) {
                 if ((lhs->isLiteral() && rhsType->isArray()) || (lhsType->isArray() && rhs->isLiteral())) {
-                    auto type = lhsType->isArray() ? lhsType : rhsType;
-                    auto &literal = lhs->isLiteral() ? lhs : rhs;
-                    if (auto array = dynamic_cast<ArrayTypeNode *>(type)) {
+                    const auto type = lhsType->isArray() ? lhsType : rhsType;
+                    const auto &literal = lhs->isLiteral() ? lhs : rhs;
+                    if (const auto array = dynamic_cast<ArrayTypeNode *>(type)) {
                         if (array->dimensions() == 1 && array->getMemberType()->isChar()) {
                             if (!array->isOpen() && literal->getType()->isString()) {
-                                auto str = dynamic_cast<StringLiteralNode *>(literal.get());
+                                const auto str = dynamic_cast<StringLiteralNode *>(literal.get());
                                 if (str->value().size() + 1 > array->lengths()[0]) {
                                     logger_.warning(literal->pos(), "string literal is longer than length of character array.");
                                 }
@@ -1282,6 +1282,16 @@ Sema::onBinaryExpression(const FilePos &start, const FilePos &end,
                     result = boolTy_;
                     break;
                 }
+            } else if (lhsType->isArray() && rhsType->isArray()) {
+                const auto lhsArray = dynamic_cast<ArrayTypeNode *>(lhsType);
+                const auto rhsArray = dynamic_cast<ArrayTypeNode *>(rhsType);
+                if (lhsArray->dimensions() == 1 && rhsArray->dimensions() == 1 &&
+                    lhsArray->getMemberType()->isChar() && rhsArray->getMemberType()->isChar()) {
+                    result = boolTy_;
+                } else {
+                    logger_.error(lhs->pos(), "comparison operator requires one-dimensional character array arguments.");
+                }
+                break;
             } else if ((lhsType->isPointer() && rhsType->isPointer()) ||
                        (lhsType->isPointer() && rhsType->kind() == TypeKind::NILTYPE) ||
                        (lhsType->kind() == TypeKind::NILTYPE && rhsType->isPointer()) ||
@@ -1386,9 +1396,9 @@ Sema::onBinaryExpression(const FilePos &start, const FilePos &end,
                 break;
             }
             if (rhsType->kind() == TypeKind::TYPE) {
-                auto lhsDecl = dynamic_cast<QualifiedExpression *>(lhs.get())->dereference();
-                auto rhsDecl = dynamic_cast<QualifiedExpression *>(rhs.get())->dereference();
-                auto type = rhsDecl->getType();
+                const auto lhsDecl = dynamic_cast<QualifiedExpression *>(lhs.get())->dereference();
+                const auto rhsDecl = dynamic_cast<QualifiedExpression *>(rhs.get())->dereference();
+                const auto type = rhsDecl->getType();
                 if (lhsType->isPointer() || (lhsType->isRecord() &&
                                              lhsDecl->getNodeType() == NodeType::parameter &&
                                              dynamic_cast<ParameterNode *>(lhsDecl)->isVar())) {
@@ -1421,8 +1431,8 @@ Sema::onBinaryExpression(const FilePos &start, const FilePos &end,
     if (result != noTy_) {
         if (auto opt = fold(start, end, op, lhs, rhs, result)) {
             if (opt.value()->getType()->isBoolean()) {
-                bool value = dynamic_cast<BooleanLiteralNode *>(opt.value().get())->value();
-                string msg = value ? "true." : "false.";
+                const bool value = dynamic_cast<BooleanLiteralNode *>(opt.value().get())->value();
+                const string msg = value ? "true." : "false.";
                 logger_.warning(start, "condition is always " + msg);
             }
             return std::move(opt.value());
@@ -1439,7 +1449,7 @@ Sema::onBinaryExpression(const FilePos &start, const FilePos &end,
 
 unique_ptr<ExpressionNode>
 Sema::onRangeExpression(const FilePos &start, const FilePos &,
-                        unique_ptr<ExpressionNode> lower, unique_ptr<ExpressionNode> upper) {
+                        unique_ptr<ExpressionNode> lower, unique_ptr<ExpressionNode> upper) const {
     if (!lower) {
         logger_.error(start, "undefined lower bound in range expression.");
         return nullptr;
@@ -1525,9 +1535,8 @@ Sema::onSetExpression(const FilePos &start, const FilePos &,
                 const auto range = dynamic_cast<const RangeLiteralNode *>(elem.get());
                 result |= range->value();
             } else if (elem->getType()->isInteger()) {
-                auto pos = integer_cast(elem.get());
-                if (pos) {
-                    result.set(static_cast<std::size_t>(pos.value()));
+                if (auto pos = integer_cast(elem.get())) {
+                    result.set(static_cast<size_t>(pos.value()));
                 }
             }
         }
@@ -1537,7 +1546,7 @@ Sema::onSetExpression(const FilePos &start, const FilePos &,
 }
 
 int64_t
-Sema::assertInBounds(const IntegerLiteralNode *literal, const int64_t lower, const int64_t upper) {
+Sema::assertInBounds(const IntegerLiteralNode *literal, const int64_t lower, const int64_t upper) const {
     const int64_t value = literal->value();
     if (value < lower || value > upper) {
         logger_.error(literal->pos(), "value " + to_string(value) + " out of bounds [" +
@@ -1553,7 +1562,7 @@ Sema::onBooleanLiteral(const FilePos &start, const FilePos &, bool value) {
 }
 
 unique_ptr<IntegerLiteralNode>
-Sema::onIntegerLiteral(const FilePos &start, const FilePos &, int64_t value, TypeKind kind) {
+Sema::onIntegerLiteral(const FilePos &start, const FilePos &, int64_t value, TypeKind kind) const {
     TypeNode *type;
     switch (kind) {
         case TypeKind::SHORTINT: type = shortIntTy_; break;

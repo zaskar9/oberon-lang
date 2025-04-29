@@ -55,7 +55,7 @@ private:
 
     bool assertEqual(Ident *, Ident *) const;
     void assertUnique(IdentDef *, DeclarationNode *);
-    int64_t assertInBounds(const IntegerLiteralNode *, int64_t , int64_t);
+    int64_t assertInBounds(const IntegerLiteralNode *, int64_t , int64_t) const;
     bool assertAssignable(const ExpressionNode *, string &) const;
 
     static void cast(ExpressionNode *, TypeNode *);
@@ -221,12 +221,12 @@ public:
                                                   unique_ptr<ExpressionNode>);
     unique_ptr<ExpressionNode> onRangeExpression(const FilePos &, const FilePos &,
                                                  unique_ptr<ExpressionNode>,
-                                                 unique_ptr<ExpressionNode>);
+                                                 unique_ptr<ExpressionNode>) const;
     unique_ptr<ExpressionNode> onSetExpression(const FilePos &, const FilePos &,
                                                vector<unique_ptr<ExpressionNode>>);
 
     unique_ptr<BooleanLiteralNode> onBooleanLiteral(const FilePos &, const FilePos &, bool);
-    unique_ptr<IntegerLiteralNode> onIntegerLiteral(const FilePos &, const FilePos &, int64_t, TypeKind = TypeKind::INTEGER);
+    unique_ptr<IntegerLiteralNode> onIntegerLiteral(const FilePos &, const FilePos &, int64_t, TypeKind = TypeKind::INTEGER) const;
     unique_ptr<RealLiteralNode> onRealLiteral(const FilePos &, const FilePos &, double, TypeKind = TypeKind::REAL);
     unique_ptr<StringLiteralNode> onStringLiteral(const FilePos &, const FilePos &, const string &);
     unique_ptr<CharLiteralNode> onCharLiteral(const FilePos &, const FilePos &, uint8_t);

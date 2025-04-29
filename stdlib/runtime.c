@@ -4,12 +4,9 @@
 
 #include "runtime.h"
 
-#include <inttypes.h>
 #include <math.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
 #include <unistd.h>
 
 #include "ieee754.h"
@@ -21,7 +18,7 @@ int32_t olang_oberon_timespec_get(struct timespec* const time_spec, const void *
     return timespec_get(time_spec, base);
 }
 
-int32_t olang_files_file_exists(const char *name, const void *dv) {
+bool olang_files_file_exists(const char *name, const void *dv) {
     UNUSED(dv);
     return access(name, F_OK) != -1;
 }
@@ -36,6 +33,42 @@ FILE *olang_files_file_open(const char *name, const void *dv) {
         }
     }
     return file;
+}
+
+int32_t olang_files_file_register(FILE *handle, const char *name, const void *dv) {
+    UNUSED(dv);
+    FILE *file = fopen(name, "w+b");
+    rewind(handle);
+    int ch = fgetc(handle);
+    while (ch != EOF) {
+        ch = fputc(ch, file);
+        if (ch != EOF) {
+            ch = fgetc(handle);
+        }
+    }
+    return !ferror(handle) && !ferror(file);
+}
+
+bool olang_files_file_remove(const char *name, const void *dv) {
+    UNUSED(dv);
+    return remove(name) == 0;
+}
+
+bool olang_files_file_rename(const char *old, const void *old_dv, const char *new, const void* new_dv) {
+    UNUSED(old_dv); UNUSED(new_dv);
+    return rename(old, new) == 0;
+}
+
+int64_t olang_files_file_length(FILE *file) {
+    int err = fseek(file, 0, SEEK_END);
+    if (!err) {
+        return ftell(file);
+    }
+    return -1;
+}
+
+bool olang_files_file_seek(FILE* file, const int64_t offset) {
+    return fseek(file, offset, SEEK_SET) == 0;
 }
 
 float olang_math_realf(const int32_t x) {
