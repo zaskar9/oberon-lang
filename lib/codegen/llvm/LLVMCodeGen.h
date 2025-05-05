@@ -38,7 +38,7 @@ uint16_t decode_trap(void *);
 #ifdef _WINAPI
 LONG WINAPI trap_handler(EXCEPTION_POINTERS* info);
 #else
-[[noreturn]] void trap_handler(int, siginfo_t*, void*);
+[[noreturn]] void trap_handler(int, const siginfo_t*, void*);
 #endif
 void register_signal_handler();
 
@@ -58,11 +58,11 @@ private:
     std::unique_ptr<llvm::orc::LLJIT> jit_;
     llvm::ExitOnError exitOnErr_;
 
-    void emit(llvm::Module *, path, OutputFileType);
+    void emit(llvm::Module *, path, OutputFileType) const;
     static std::string getLibName(const string &, bool, const llvm::Triple &);
     static std::string getObjName(const string &, const llvm::Triple &);
 
-    void loadObjects(ASTContext *);
+    void loadObjects(const ASTContext *) const;
 
 public:
     LLVMCodeGen(CompilerConfig &);

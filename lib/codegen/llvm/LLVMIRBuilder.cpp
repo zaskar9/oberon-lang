@@ -912,7 +912,7 @@ void LLVMIRBuilder::visit(BinaryExpressionNode &node) {
     }
     node.getLeftExpression()->accept(*this);
     cast(*node.getLeftExpression());
-    auto lhs = value_;
+    const auto lhs = value_;
     // Logical operators `&` and `OR` are treated explicitly to enable short-circuiting.
     if (node.getOperator() == OperatorType::AND || node.getOperator() == OperatorType::OR) {
         // Create one block to evaluate the right-hand side and one to skip it.
@@ -936,12 +936,12 @@ void LLVMIRBuilder::visit(BinaryExpressionNode &node) {
             value_ = builder_.CreateOr(lhs, rhs);
         }
         // Save the current (right-hand side) block.
-        auto rhsBB = builder_.GetInsertBlock();
+        const auto rhsBB = builder_.GetInsertBlock();
         builder_.CreateBr(skip);
         // Create the basic block after the possible short-circuit,
         // use phi-value to "combine" value of both branches.
         builder_.SetInsertPoint(skip);
-        auto phi = builder_.CreatePHI(value_->getType(), 2, "phi");
+        const auto phi = builder_.CreatePHI(value_->getType(), 2, "phi");
         phi->addIncoming(lhs, lhsBB);
         phi->addIncoming(value_, rhsBB);
         value_ = phi;
@@ -997,17 +997,8 @@ void LLVMIRBuilder::visit(BinaryExpressionNode &node) {
     } else if ((lhsType->isNumeric() || lhsType->isChar()) && (rhsType->isNumeric() || lhsType->isChar())) {
         node.getRightExpression()->accept(*this);
         cast(*node.getRightExpression());
-        auto rhs = value_;
-        // TODO This code assumes that the smallest legal integer is 32 bit.
-        if (node.getLeftExpression()->getType()->isInteger() &&
-            lhs->getType()->isIntegerTy() && lhs->getType()->getIntegerBitWidth() < 32) {
-            lhs = builder_.CreateSExt(lhs, builder_.getInt32Ty());
-        }
-        if (node.getRightExpression()->getType()->isInteger() &&
-            rhs->getType()->isIntegerTy() && rhs->getType()->getIntegerBitWidth() < 32) {
-            rhs = builder_.CreateSExt(rhs, builder_.getInt32Ty());
-        }
-        bool floating = node.getLeftExpression()->getType()->isReal() ||
+        const auto rhs = value_;
+        const bool floating = node.getLeftExpression()->getType()->isReal() ||
                         node.getRightExpression()->getType()->isReal();
         switch (node.getOperator()) {
             case OperatorType::PLUS:
@@ -1537,7 +1528,11 @@ void LLVMIRBuilder::cast(const ExpressionNode &node) {
         if (source->isInteger() || source->isByte()) {
             if (target->isInteger() || target->isByte()) {
                 if (target->getSize() > source->getSize()) {
-                    value_ = builder_.CreateSExt(value_, getLLVMType(target));
+                    if (source->isByte()) {
+                        value_ = builder_.CreateZExt(value_, getLLVMType(target));
+                    } else {
+                        value_ = builder_.CreateSExt(value_, getLLVMType(target));
+                    }
                 } else {
                     value_ = builder_.CreateTrunc(value_, getLLVMType(target));
                 }
@@ -1924,7 +1919,12 @@ LLVMIRBuilder::createLslCall(const vector<unique_ptr<ExpressionNode>> &actuals, 
             return value_;
         }
     }
-    const auto shift = builder_.CreateTrunc(params[1], params[0]->getType());
+    Value *shift = params[1];
+    if (params[0]->getType()->getIntegerBitWidth() > params[1]->getType()->getIntegerBitWidth()) {
+        shift = builder_.CreateZExt(params[1], params[0]->getType());
+    } else if (params[0]->getType()->getIntegerBitWidth() < params[1]->getType()->getIntegerBitWidth()) {
+        shift = builder_.CreateTrunc(params[1], params[0]->getType());
+    }
     return builder_.CreateShl(params[0], shift);
 }
 
@@ -2035,7 +2035,7 @@ LLVMIRBuilder::createRorCall(const vector<unique_ptr<ExpressionNode>> &actuals, 
         // Range check if literal argument
         if (const auto val = dynamic_cast<IntegerLiteralNode *>(param1)->value(); val < 0) {
             logger_.error(param1->pos(), "negative shift value undefined.");
-            return value_;
+            // return value_;
         }
     }
     const auto shift = builder_.CreateTrunc(params[1], params[0]->getType());

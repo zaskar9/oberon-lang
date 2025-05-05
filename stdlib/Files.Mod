@@ -22,8 +22,9 @@ TYPE
 				file: File
 			END;
 
-	Bytes4 = ARRAY 4 OF BYTE;
-	Bytes8 = ARRAY 8 OF BYTE;
+    WORD = ARRAY 2 OF BYTE;
+	DWORD = ARRAY 4 OF BYTE;
+	QWORD = ARRAY 8 OF BYTE;
 
 VAR
     root: File;
@@ -34,6 +35,9 @@ VAR
 
     (* Declare `int fgetc( FILE* )` function from C <stdio.h> library.  *)
     PROCEDURE fgetc(handle: Handle): BYTE; EXTERN;
+
+    (* Declare `int fputc ( int, FILE * )` function from C <stdio.h> library. *)
+    PROCEDURE fputc(x: BYTE; handle: Handle): INTEGER; EXTERN;
 
     (* Declare `int32_t feof( FILE * )` function from C <stdio.h> library. *)
     PROCEDURE feof(handle: Handle): INTEGER; EXTERN;
@@ -216,5 +220,52 @@ VAR
             END
         END
     END Read;
+
+    (** Read a zero-terminated string. *)
+    PROCEDURE ReadString*(VAR R: Rider; VAR x: ARRAY OF CHAR);
+    VAR i: INTEGER; ch: BYTE;
+    BEGIN
+        i := 0;
+        LOOP
+            Read(R, ch); x[i] := CHR(ch); INC(i);
+            IF ch = 0 THEN EXIT END;
+            IF i = LEN(x) THEN
+                x[i-1] := 0X;
+                REPEAT Read(R, ch) UNTIL ch = 0;
+                EXIT
+            END
+        END
+    END ReadString;
+
+    (** Writes a byte into the file at the Rider position, advancing the Rider by one. *)
+    PROCEDURE Write*(VAR r: Rider; x: BYTE);
+    VAR pos: LONGINT;
+    BEGIN
+        IF r.file # NIL THEN
+            IF olang_files_file_seek(r.file.handle, r.pos) THEN
+                r.res := 0; r.eof := FALSE;
+                IF fputc(x, r.file.handle) # 0 THEN
+                    r.file.modified := TRUE;
+                    pos := ftell(r.file.handle);
+                    IF pos = r.pos THEN r.res := r.res + 1 ELSE r.pos := pos END
+                ELSE
+                    r.res := r.res + 1
+                END
+            ELSE
+                r.res := r.res + 1
+            END
+        END
+    END Write;
+
+    (** Writes a zero-terminated string. *)
+    PROCEDURE WriteString*(VAR R: Rider; x: ARRAY OF CHAR);
+    VAR i: INTEGER; ch: BYTE;
+    BEGIN
+        i := 0;
+        LOOP ch := ORD(x[i]); Write(R, ch); INC(i);
+            IF ch = 0 THEN EXIT END;
+            IF i = LEN(x) THEN Write(R, 0); EXIT END
+        END
+    END WriteString;
 
 END Files.
