@@ -101,6 +101,7 @@ private:
     void trapAssert(Value *);
     Value *trapIntOverflow(Intrinsic::IndependentIntrinsics, Value*, Value*);
     void trapFltDivByZero(Value *);
+    void trapSignConversion(ExpressionNode &, Value *);
 
     Value *createTypeTest(Value *, TypeNode *);
     Value *createTypeTest(Value *, const NodeReference *, const TypeNode *, TypeNode *);

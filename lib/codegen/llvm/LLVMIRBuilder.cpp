@@ -600,9 +600,9 @@ void LLVMIRBuilder::visit(RangeLiteralNode &node) {
     value_ = ConstantInt::get(builder_.getInt32Ty(), static_cast<uint32_t>(node.value().to_ulong()));
 }
 
-void LLVMIRBuilder::installTrap(Value *cond, uint8_t code) {
-    auto tail = BasicBlock::Create(builder_.getContext(), "tail", function_);
-    auto trap = BasicBlock::Create(builder_.getContext(), "trap", function_);
+void LLVMIRBuilder::installTrap(Value *cond, const uint8_t code) {
+    const auto tail = BasicBlock::Create(builder_.getContext(), "tail", function_);
+    const auto trap = BasicBlock::Create(builder_.getContext(), "trap", function_);
     builder_.CreateCondBr(cond, tail, trap);
     builder_.SetInsertPoint(trap);
 #ifndef _LLVM_20
@@ -665,6 +665,17 @@ Value *LLVMIRBuilder::trapIntOverflow(Intrinsic::IndependentIntrinsics intrinsic
 void LLVMIRBuilder::trapFltDivByZero(Value *divisor) {
     const auto cond = builder_.CreateFCmpUNE(divisor, ConstantFP::get(divisor->getType(), 0));
     installTrap(cond, static_cast<uint8_t>(Trap::FLT_DIVISION));
+}
+
+void LLVMIRBuilder::trapSignConversion(ExpressionNode &expr, Value *value) {
+    if (config_.isSanitized(Trap::SIGN_CONVERSION)) {
+        Value *cond = builder_.CreateICmpSLT(value, ConstantInt::get(value->getType(), 0));
+        installTrap(cond, static_cast<uint8_t>(Trap::SIGN_CONVERSION));
+    } else if (expr.isLiteral()) {
+        if (const auto val = dynamic_cast<IntegerLiteralNode *>(&expr)->value(); val < 0) {
+            logger_.warning(expr.pos(), "implicit sign conversion can cause undefined behavior.");
+        }
+    }
 }
 
 Value *LLVMIRBuilder::createTypeTest(Value *td, TypeNode *type) {
@@ -1655,17 +1666,13 @@ LLVMIRBuilder::createAbsCall(const TypeNode *type, Value *param) {
 
 Value *
 LLVMIRBuilder::createAsrCall(const vector<unique_ptr<ExpressionNode>> &actuals, const std::vector<Value *> &params) {
-     // TODO : Check for negative shift value with variable argument.
-    auto param1 = actuals[1].get();
-    if (param1->isLiteral()) {
-        // Range check if literal argument
-        auto val = dynamic_cast<IntegerLiteralNode *>(param1)->value();
-        if (val < 0) {
-            logger_.error(param1->pos(), "negative shift value undefined operation.");
-            return value_;
-        }
+    Value *shift = params[1];
+    trapSignConversion(*actuals[1], shift);
+    if (params[0]->getType()->getIntegerBitWidth() > shift->getType()->getIntegerBitWidth()) {
+        shift = builder_.CreateZExt(shift, params[0]->getType());
+    } else if (params[0]->getType()->getIntegerBitWidth() < shift->getType()->getIntegerBitWidth()) {
+        shift = builder_.CreateTrunc(shift, params[0]->getType());
     }
-    auto shift = builder_.CreateTrunc(params[1], params[0]->getType());
     return builder_.CreateAShr(params[0], shift);
 }
 
@@ -1911,19 +1918,12 @@ LLVMIRBuilder::createLongCall(const ExpressionNode *expr, Value *param) {
 
 Value *
 LLVMIRBuilder::createLslCall(const vector<unique_ptr<ExpressionNode>> &actuals, const vector<Value *> &params) {
-    // TODO Check for negative shift value with variable argument.
-    if (const auto param1 = actuals[1].get(); param1->isLiteral()) {
-        // Range check if literal argument
-        if (const auto val = dynamic_cast<IntegerLiteralNode *>(param1)->value(); val < 0) {
-            logger_.error(param1->pos(), "negative shift value undefined.");
-            return value_;
-        }
-    }
     Value *shift = params[1];
-    if (params[0]->getType()->getIntegerBitWidth() > params[1]->getType()->getIntegerBitWidth()) {
-        shift = builder_.CreateZExt(params[1], params[0]->getType());
-    } else if (params[0]->getType()->getIntegerBitWidth() < params[1]->getType()->getIntegerBitWidth()) {
-        shift = builder_.CreateTrunc(params[1], params[0]->getType());
+    trapSignConversion(*actuals[1], shift);
+    if (params[0]->getType()->getIntegerBitWidth() > shift->getType()->getIntegerBitWidth()) {
+        shift = builder_.CreateZExt(shift, params[0]->getType());
+    } else if (params[0]->getType()->getIntegerBitWidth() < shift->getType()->getIntegerBitWidth()) {
+        shift = builder_.CreateTrunc(shift, params[0]->getType());
     }
     return builder_.CreateShl(params[0], shift);
 }
@@ -2030,15 +2030,13 @@ LLVMIRBuilder::createOrdCall(const ExpressionNode *actual, Value *param) {
 
 Value *
 LLVMIRBuilder::createRorCall(const vector<unique_ptr<ExpressionNode>> &actuals, const vector<Value *> &params) {
-    // TODO Check for negative shift value with variable argument.
-    if (const auto param1 = actuals[1].get(); param1->isLiteral()) {
-        // Range check if literal argument
-        if (const auto val = dynamic_cast<IntegerLiteralNode *>(param1)->value(); val < 0) {
-            logger_.error(param1->pos(), "negative shift value undefined.");
-            // return value_;
-        }
+    Value *shift = params[1];
+    trapSignConversion(*actuals[1], shift);
+    if (params[0]->getType()->getIntegerBitWidth() > shift->getType()->getIntegerBitWidth()) {
+        shift = builder_.CreateZExt(shift, params[0]->getType());
+    } else if (params[0]->getType()->getIntegerBitWidth() < shift->getType()->getIntegerBitWidth()) {
+        shift = builder_.CreateTrunc(shift, params[0]->getType());
     }
-    const auto shift = builder_.CreateTrunc(params[1], params[0]->getType());
     Value *lhs = builder_.CreateLShr(params[0], shift);
     Value *value = ConstantInt::get(params[0]->getType(), params[0]->getType()->getIntegerBitWidth());
     Value *delta = builder_.CreateSub(value, shift);
