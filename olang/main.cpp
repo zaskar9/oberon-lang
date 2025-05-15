@@ -8,14 +8,14 @@
 #include <iostream>
 #include <regex>
 
-#include <boost/algorithm/string.hpp>
 #include <boost/program_options.hpp>
+#include <boost/algorithm/string.hpp>
 
 #include "config.h"
 #include "Logger.h"
+#include "codegen/llvm/LLVMCodeGen.h"
 #include "compiler/Compiler.h"
 #include "compiler/CompilerConfig.h"
-#include "codegen/llvm/LLVMCodeGen.h"
 
 // For certain modules, LLVM emits stack protection functionality under Windows that
 // involves calls to the standard runtime of the target platform. Since these libraries 
@@ -93,26 +93,28 @@ int main(const int argc, const char **argv) {
         return EXIT_FAILURE;
     }
     po::notify(vm);
-    if (vm.count("help")) {
+    if (vm.contains("help")) {
         cout << "OVERVIEW: " << PROGRAM_NAME << " LLVM compiler\n" << endl;
         cout << "USAGE: " << PROGRAM_NAME << " [options] file...\n" << endl;
         cout << visible << endl;
         return EXIT_SUCCESS;
-    } else if (vm.count("version")) {
+    }
+    if (vm.contains("version")) {
         cout << PROGRAM_NAME << " version " << PROJECT_VERSION;
         cout << " (build " << GIT_COMMIT << "@" << GIT_BRANCH << ")" << endl;
         cout << "Target:   " << codegen->getDescription() << endl;
         cout << "Includes: ";
         cout << "Boost " << BOOST_VERSION / 100000 << "."
-                              << BOOST_VERSION / 100 % 1000 << "."
-                              << BOOST_VERSION % 100 << ", ";
+                << BOOST_VERSION / 100 % 1000 << "."
+                << BOOST_VERSION % 100 << ", ";
         cout << "LLVM " << LLVM_VERSION << endl;
         return EXIT_SUCCESS;
-    } else if (vm.count("inputs")) {
-        if (vm.count("quiet")) {
+    }
+    if (vm.contains("inputs")) {
+        if (vm.contains("quiet")) {
             logger.setLevel(LogLevel::QUIET);
         }
-        if (vm.count("verbose")) {
+        if (vm.contains("verbose")) {
             logger.setLevel(LogLevel::DEBUG);
         }
 #if (defined(_WIN32) || defined(_WIN64)) && !(defined(__MINGW32__) || defined(__MINGW64__))
@@ -121,7 +123,7 @@ int main(const int argc, const char **argv) {
 #else
         std::string separator = ":";
 #endif
-        if (vm.count("-I")) {
+        if (vm.contains("-I")) {
             auto params = vm["-I"].as<vector<string>>();
             vector<string> includes;
             for (const auto& param : params) {
@@ -132,7 +134,7 @@ int main(const int argc, const char **argv) {
                 }
             }
         }
-        if (vm.count("-L")) {
+        if (vm.contains("-L")) {
             auto params = vm["-L"].as<vector<string>>();
             vector<string> libraries;
             for (const auto& param : params) {
@@ -143,18 +145,17 @@ int main(const int argc, const char **argv) {
                 }
             }
         }
-        if (vm.count("-l")) {
-            auto params = vm["-l"].as<vector<string>>();
+        if (vm.contains("-l")) {
+            const auto params = vm["-l"].as<vector<string>>();
             for (const auto& lib : params) {
                 config.addLibrary(lib);
                 logger.debug("Library: '" + lib + "'.");
             }
         }
-        if (vm.count("-f")) {
+        if (vm.contains("-f")) {
             auto params = vm["-f"].as<vector<string>>();
             regex pattern{"^(no-)?sanitize=(.*)$"};
             for (const auto& flag : params) {
-                smatch matches;
                 if (flag == "enable-extern") {
                     config.setFlag(Flag::ENABLE_EXTERN);
                 } else if (flag == "enable-varargs") {
@@ -163,12 +164,19 @@ int main(const int argc, const char **argv) {
                     config.setFlag(Flag::ENABLE_MAIN);
                 } else if (flag == "no-stack-protector") {
                     config.setFlag(Flag::NO_STACK_PROTECT);
-                } else if (regex_search(flag, matches, pattern)) {
+                } else if (smatch matches; regex_search(flag, matches, pattern)) {
                     bool active = flag[0] != 'n';
-                    string opt = matches.str(2);
+                    const string opt = matches.str(2);
                     if (opt == "array-bounds" || opt == "bounds") {
                         // Out of bounds array indexing.
                         config.toggleSanitize(Trap::OUT_OF_BOUNDS, active);
+                    } else if (opt == "type-guard") {
+                        // Using an invalid type as guard will lead to undefined behaviour.
+                        config.toggleSanitize(Trap::TYPE_GUARD, active);
+                    } else if (opt == "copy-overflow") {
+                        // Assignment of an array or a string to a variable that is not large enough to
+                        // hold the value.
+                        config.toggleSanitize(Trap::COPY_OVERFLOW, active);
                     } else if (opt == "float-divide-by-zero") {
                         // Floating point division by zero.
                         config.toggleSanitize(Trap::FLT_DIVISION, active);
@@ -178,18 +186,28 @@ int main(const int argc, const char **argv) {
                     } else if (opt == "integer-divide-by-zero") {
                         // Integer division by zero.
                         config.toggleSanitize(Trap::INT_DIVISION, active);
-                    } else if (opt == "null") {
+                    } else if (opt == "assert") {
+                        // Toggle whether assert leads to a trap or to a crash.
+                        config.toggleSanitize(Trap::ASSERT, active);
+                    } else if (opt == "null" || opt == "nil") {
                         // Use of a null pointer or creation of a null reference.
                         config.toggleSanitize(Trap::NIL_POINTER, active);
                     } else if (opt == "signed-integer-overflow") {
                         // Signed integer overflow, where the result of a signed integer computation
                         // cannot be represented in its type.
                         config.toggleSanitize(Trap::INT_OVERFLOW, active);
+                    } else if (opt == "sign-conversion") {
+                        // Implicit conversions of signed to unsigned integers can lead to undefined behavior.
+                        config.toggleSanitize(Trap::SIGN_CONVERSION, active);
                     } else if (opt == "undefined") {
-                        config.toggleSanitize(Trap::INT_OVERFLOW, active);
-                        config.toggleSanitize(Trap::INT_DIVISION, active);
-                        config.toggleSanitize(Trap::FLT_DIVISION, active);
                         config.toggleSanitize(Trap::OUT_OF_BOUNDS, active);
+                        config.toggleSanitize(Trap::COPY_OVERFLOW, active);
+                        config.toggleSanitize(Trap::FLT_DIVISION, active);
+                        config.toggleSanitize(Trap::INT_DIVISION, active);
+                        config.toggleSanitize(Trap::INT_OVERFLOW, active);
+                        config.toggleSanitize(Trap::SIGN_CONVERSION, active);
+                        config.toggleSanitize(Trap::TYPE_GUARD, active);
+                        config.toggleSanitize(Trap::PROCEDURE_CALL, active);
                     } else if (opt == "all") {
                         if (active) {
                             config.setSanitizeAll();
@@ -204,31 +222,30 @@ int main(const int argc, const char **argv) {
                 }
             }
         }
-        if (vm.count("-O")) {
-            int level = vm["-O"].as<int>();
-            switch (level) {
+        if (vm.contains("-O")) {
+            switch (int level = vm["-O"].as<int>()) {
                 case 0:
-                    config.setOptimizationLevel(::OptimizationLevel::O0);
+                    config.setOptimizationLevel(OptimizationLevel::O0);
                     break;
                 case 1:
-                    config.setOptimizationLevel(::OptimizationLevel::O1);
+                    config.setOptimizationLevel(OptimizationLevel::O1);
                     break;
                 case 2:
-                    config.setOptimizationLevel(::OptimizationLevel::O2);
+                    config.setOptimizationLevel(OptimizationLevel::O2);
                     break;
                 case 3:
-                    config.setOptimizationLevel(::OptimizationLevel::O3);
+                    config.setOptimizationLevel(OptimizationLevel::O3);
                     break;
                 default:
                     logger.error(PROGRAM_NAME, "unsupported optimization level: " + to_string(level) + ".");
                     return EXIT_FAILURE;
             }
         }
-        if (vm.count("-o")) {
+        if (vm.contains("-o")) {
             config.setOutputFile(vm["-o"].as<string>());
         }
-        if (vm.count("-W")) {
-            auto params = vm["-W"].as<vector<string>>();
+        if (vm.contains("-W")) {
+            const auto params = vm["-W"].as<vector<string>>();
             for (const auto& warn : params) {
                 if (warn == "error") {
                     config.setWarning(Warning::ERROR);
@@ -238,33 +255,33 @@ int main(const int argc, const char **argv) {
                 }
             }
         }
-        if (vm.count("run")) {  // run
+        if (vm.contains("run")) {  // run
             config.setJit(true);
-        } else if (vm.count("-c")) {  // compile and assemble
-            if (vm.count("emit-llvm")) {
+        } else if (vm.contains("-c")) {  // compile and assemble
+            if (vm.contains("emit-llvm")) {
                 config.setFileType(OutputFileType::BitCodeFile);
             } else {
                 config.setFileType(OutputFileType::ObjectFile);
             }
-        } else if (vm.count("-S")) {  // assemble
-            if (vm.count("emit-llvm")) {
+        } else if (vm.contains("-S")) {  // assemble
+            if (vm.contains("emit-llvm")) {
                 config.setFileType(OutputFileType::LLVMIRFile);
             } else {
                 config.setFileType(OutputFileType::AssemblyFile);
             }
         } else {
-            if (vm.count("emit-llvm")) {
+            if (vm.contains("emit-llvm")) {
                 logger.error(PROGRAM_NAME, "--emit-llvm cannot be used when linking.");
             }
             logger.error(PROGRAM_NAME, "linking not yet supported.");
             return EXIT_FAILURE;
         }
-        if (vm.count("reloc")) {
+        if (vm.contains("reloc")) {
             if (config.isJit()) {
                 logger.error(PROGRAM_NAME, "--reloc not compatible with --run.");
                 return EXIT_FAILURE;
             }
-            auto model = vm["reloc"].as<string>();
+            const auto model = vm["reloc"].as<string>();
             if (model == "pic") {
                 config.setRelocationModel(RelocationModel::PIC);
             } else if (model == "static") {
@@ -273,14 +290,14 @@ int main(const int argc, const char **argv) {
                 config.setRelocationModel(RelocationModel::DEFAULT);
             }
         }
-        if (vm.count("sym-dir")) {
+        if (vm.contains("sym-dir")) {
             config.setSymDir(vm["sym-dir"].as<string>());
-            auto path = std::filesystem::path(config.getSymDir());
+            const auto path = std::filesystem::path(config.getSymDir());
             if (!std::filesystem::is_directory(path)) {
                 logger.error(PROGRAM_NAME, "--sym-dir path not valid.");
             }
         }
-        if (vm.count("target")) {
+        if (vm.contains("target")) {
             if (config.isJit()) {
                 logger.error(PROGRAM_NAME, "--target not supported in JIT mode.");
                 return EXIT_FAILURE;
@@ -302,22 +319,21 @@ int main(const int argc, const char **argv) {
             exit(compiler.jit(path));
 #else
             logger.error(PROGRAM_NAME, "linked LLVM version does not support JIT mode.");
+            return EXIT_FAILURE;
 #endif
-        } else {
-            for (auto &input : inputs) {
-                logger.debug("Compiling module " + input + ".");
-                auto path = std::filesystem::path(input);
-                compiler.compile(path);
-            }
         }
-        string status = (logger.getErrorCount() == 0 ? "complete" : "failed");
+        for (auto &input : inputs) {
+            logger.debug("Compiling module " + input + ".");
+            auto path = std::filesystem::path(input);
+            compiler.compile(path);
+        }
+        string status = logger.getErrorCount() == 0 ? "complete" : "failed";
         logger.info("Compilation " + status + ": " +
-                          to_string(logger.getErrorCount()) + " error(s), " +
-                          to_string(logger.getWarningCount()) + " warning(s), " +
-                          to_string(logger.getInfoCount()) + " message(s).");
+                    to_string(logger.getErrorCount()) + " error(s), " +
+                    to_string(logger.getWarningCount()) + " warning(s), " +
+                    to_string(logger.getInfoCount()) + " message(s).");
         exit(logger.getErrorCount() != 0);
-    } else {
-        logger.error(PROGRAM_NAME, "no input files specified.");
-        return EXIT_FAILURE;
     }
+    logger.error(PROGRAM_NAME, "no input files specified.");
+    return EXIT_FAILURE;
 }

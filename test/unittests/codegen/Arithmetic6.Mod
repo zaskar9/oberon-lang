@@ -1,7 +1,5 @@
 (*
-  RUN: %oberon --run %s
-  XFAIL: *
-  Divisor in MOD and DIV cannot be negative (cf. O07.8.2.2: x = q * y + r  and 0 <= r < y)
+  RUN: not %oberon -I "%S%{pathsep}%inc" -L "%S%{pathsep}%lib" -l oberon --run %s 2>&1 | filecheck %s
 *)
 MODULE Arithmetic6;
 
@@ -15,3 +13,6 @@ END Test;
 BEGIN
     Test
 END Arithmetic6.
+(*
+  CHECK: {{.*}}code 10 (implicit sign conversion)
+*)

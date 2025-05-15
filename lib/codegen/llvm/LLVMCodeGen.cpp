@@ -39,15 +39,16 @@ int mingw_noop_main() {
 [[noreturn]] void ubsantrap_handler(const uint16_t code) {
     std::cerr << std::endl << "Oberon program trapped with code " << code;
     switch (code) {
-        case 1: std::cerr << " (array index out of range)"; break;
-        case 2: std::cerr << " (type guard failure)"; break;
-        case 3: std::cerr << " (array or string copy overflow)"; break;
-        case 4: std::cerr << " (access via NIL pointer)"; break;
-        case 5: std::cerr << " (illegal procedure call)"; break;
-        case 6: std::cerr << " (integer division by zero)"; break;
-        case 7: std::cerr << " (assertion violated)"; break;
-        case 8: std::cerr << " (integer overflow)"; break;
-        case 9: std::cerr << " (floating point division by zero)"; break;
+        case  1: std::cerr << " (array index out of range)"; break;
+        case  2: std::cerr << " (type guard failure)"; break;
+        case  3: std::cerr << " (array or string copy overflow)"; break;
+        case  4: std::cerr << " (access via NIL pointer)"; break;
+        case  5: std::cerr << " (illegal procedure call)"; break;
+        case  6: std::cerr << " (integer division by zero)"; break;
+        case  7: std::cerr << " (assertion violated)"; break;
+        case  8: std::cerr << " (integer overflow)"; break;
+        case  9: std::cerr << " (floating point division by zero)"; break;
+        case 10: std::cerr << " (implicit sign conversion)"; break;
         default: break;
     }
     std::cerr << std::endl;

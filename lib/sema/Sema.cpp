@@ -1277,7 +1277,7 @@ Sema::onBinaryExpression(const FilePos &start, const FilePos &end,
                             break;
                         }
                     }
-                } else if (lhs->isLiteral() && rhs->isLiteral()){
+                } else if (lhs->isLiteral() && rhs->isLiteral()) {
                     common = commonType(start, lhsType, rhsType);
                     result = boolTy_;
                     break;
@@ -1359,7 +1359,8 @@ Sema::onBinaryExpression(const FilePos &start, const FilePos &end,
             break;
         case OperatorType::DIV:
         case OperatorType::MOD:
-            if (lhsType->isInteger() && rhsType->isInteger()) {
+            if ((lhsType->isInteger() || lhsType->isByte()) &&
+                (rhsType->isInteger() || rhsType->isByte())) {
                 common = commonType(start, lhsType, rhsType);
                 result = common;
             } else {
@@ -1631,17 +1632,17 @@ bool Sema::isProcedure(QualIdent *ident) {
 }
 
 int64_t
-Sema::euclidean_mod(int64_t x, int64_t y) {
+Sema::euclidean_mod(const int64_t x, const int64_t y) {
     int64_t r = x % y;
-    r += y & (-(r < 0));
+    r += y & -(r < 0);
     return r;
 }
 
 int64_t
-Sema::floor_div(int64_t x, int64_t y) {
-    int64_t d = x / y;
-    int64_t r = x % y;
-    return r ? (d - ((x < 0) ^ (y < 0))) : d;
+Sema::floor_div(const int64_t x, const int64_t y) {
+    const int64_t d = x / y;
+    const int64_t r = x % y;
+    return r ? d - (x < 0 ^ y < 0) : d;
 }
 
 template<typename L, typename T>
@@ -1841,7 +1842,8 @@ Sema::foldBooleanOp(const FilePos &start, const FilePos &end,
 template<typename T>
 optional<unique_ptr<BooleanLiteralNode>>
 Sema::foldRelationOp(const FilePos &start, const FilePos &,
-                     OperatorType op, unique_ptr<ExpressionNode> &lhs, unique_ptr<ExpressionNode> &rhs, TypeNode *common) {
+                     const OperatorType op, unique_ptr<ExpressionNode> &lhs, unique_ptr<ExpressionNode> &rhs,
+                     TypeNode *common) {
     auto lopt = literal_cast<T>(*lhs);
     auto ropt = literal_cast<T>(*rhs);
     if (lopt && ropt) {
@@ -1947,16 +1949,18 @@ Sema::fold(const FilePos &start, const FilePos &end,
     if (common->isBoolean()) {
         if (lhs->getType()->isBoolean() && rhs->getType()->isBoolean()) {
             return foldBooleanOp(start, end, op, lhs, rhs, common);
-        } else if (lhs->getType()->isNumeric() && rhs->getType()->isNumeric()) {
+        }
+        if (lhs->getType()->isNumeric() && rhs->getType()->isNumeric()) {
             if (lhs->getType()->isInteger() && rhs->getType()->isInteger()) {
                 return foldRelationOp<int64_t>(start, end, op, lhs, rhs, common);
-            } else {
-                return foldRelationOp<double>(start, end, op, lhs, rhs, common);
             }
-        } else if (lhs->getType()->isChar() && rhs->getType()->isChar()) {
+            return foldRelationOp<double>(start, end, op, lhs, rhs, common);
+        }
+        if (lhs->getType()->isChar() && rhs->getType()->isChar()) {
             return foldRelationOp<uint8_t>(start, end, op, lhs, rhs, common);
-        } else if ((lhs->getType()->isString() || lhs->getType()->isChar()) &&
-                   (rhs->getType()->isString() || rhs->getType()->isChar())) {
+        }
+        if ((lhs->getType()->isString() || lhs->getType()->isChar()) &&
+            (rhs->getType()->isString() || rhs->getType()->isChar())) {
             auto lopt = string_cast(lhs.get());
             auto ropt = string_cast(rhs.get());
             if (lopt && ropt) {

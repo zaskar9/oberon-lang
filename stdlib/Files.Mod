@@ -6,6 +6,7 @@
 
 (** The Files module implements the Oberon file system. *)
 MODULE Files; (*NW 11.1.86 / 28.8.92 / pjm 17.04.97 / MG 24.04.2025 *)
+IMPORT Out;
 
 TYPE
     Handle = POINTER TO RECORD END;  (* Declare FILE* data type from C <stdio.h> library. *)
@@ -66,7 +67,7 @@ VAR
     (* Declare `bool olang_files_file_rename(const char *, const void *, const char *, const void* )` from Oberon runtime library. *)
     PROCEDURE olang_files_file_rename(old, new: ARRAY OF CHAR): BOOLEAN; EXTERN;
 
-    (* Delcare `int64_t olang_files_file_length(FILE * )` from Oberon runtime library. *)
+    (* Declare `int64_t olang_files_file_length(FILE * )` from Oberon runtime library. *)
     PROCEDURE olang_files_file_length(handle: Handle): LONGINT; EXTERN;
 
     (* Declare `bool olang_files_file_seek(FILE*, int64_t)` from Oberon runtime library. *)
@@ -118,7 +119,7 @@ VAR
         WHILE ff # NIL DO
             IF ff.next = f THEN ff.next := f.next; RETURN END;
             ff := ff.next
-        END;
+        END
     END Close;
 
     (** Register a file created with New in the directory, replacing the previous file in the
@@ -199,7 +200,7 @@ VAR
         RETURN r.file
     END Base;
 
-    (** Read a byte from a file, advancing the Rider one byte further. The value of `r.eof`
+    (** Reads a byte from a file, advancing the Rider one byte further. The value of `r.eof`
         indicates if the end of the file has been passed. *)
 	PROCEDURE Read*(VAR r: Rider; VAR x: BYTE);
 	VAR pos: LONGINT;
@@ -213,29 +214,53 @@ VAR
                 ELSE
                     x := fgetc(r.file.handle);
                     pos := ftell(r.file.handle);
-                    IF pos = r.pos THEN r.res := 1 ELSE r.pos := pos END
+                    IF pos = r.pos THEN x := 0; r.res := 1 ELSE r.pos := pos END
                 END
             ELSE
                 r.res := 1
             END
-        END
+        END;
+        Out.Int(x, 4)
     END Read;
 
-    (** Read a zero-terminated string. *)
-    PROCEDURE ReadString*(VAR R: Rider; VAR x: ARRAY OF CHAR);
+    (** Reads a character. *)
+    PROCEDURE ReadChar*(VAR R: Rider; VAR x: CHAR);
+    VAR b: BYTE;
+    BEGIN
+        Read(R, b); x := CHR(b)
+    END ReadChar;
+
+    (** Reads a zero-terminated string. *)
+    PROCEDURE ReadString*(VAR r: Rider; VAR x: ARRAY OF CHAR);
     VAR i: INTEGER; ch: BYTE;
     BEGIN
         i := 0;
         LOOP
-            Read(R, ch); x[i] := CHR(ch); INC(i);
+            Read(r, ch); x[i] := CHR(ch); INC(i);
             IF ch = 0 THEN EXIT END;
             IF i = LEN(x) THEN
-                x[i-1] := 0X;
-                REPEAT Read(R, ch) UNTIL ch = 0;
+                x[i - 1] := 0X;
+                REPEAT Read(r, ch) UNTIL ch = 0;
                 EXIT
             END
         END
     END ReadString;
+
+    (** Reads a number in compressed variable length notation using the minimum amount of bytes. *)
+    PROCEDURE ReadNum*(VAR r: Rider; VAR x: LONGINT);
+    VAR b: BYTE; ch, s: INTEGER; n, y, z: LONGINT;
+    BEGIN
+      	n := 0; s := 0; Read(r, b); ch := b;
+    	WHILE b >= 128 DO
+      		INC(n, LSL(ch - 128, s));
+      		INC(s, 7);
+      		Read(r, b); ch := b
+      	END;
+      	y := ch MOD 64 - ch DIV 64 * 64;
+      	IF y < 0 THEN z := -LSL(-y, s) ELSE z := LSL(y, s) END;
+      	Out.Long(n, 0); Out.String(", "); Out.Long(z, 0); Out.Ln;
+        x := n + z
+    END ReadNum;
 
     (** Writes a byte into the file at the Rider position, advancing the Rider by one. *)
     PROCEDURE Write*(VAR r: Rider; x: BYTE);
@@ -257,15 +282,31 @@ VAR
         END
     END Write;
 
+    (** Writes a character. *)
+    PROCEDURE WriteChar*(VAR r: Rider; x: CHAR);
+    BEGIN
+      	Write(r, ORD(x))
+    END WriteChar;
+
     (** Writes a zero-terminated string. *)
-    PROCEDURE WriteString*(VAR R: Rider; x: ARRAY OF CHAR);
+    PROCEDURE WriteString*(VAR r: Rider; x: ARRAY OF CHAR);
     VAR i: INTEGER; ch: BYTE;
     BEGIN
         i := 0;
-        LOOP ch := ORD(x[i]); Write(R, ch); INC(i);
+        LOOP ch := ORD(x[i]); Write(r, ch); INC(i);
             IF ch = 0 THEN EXIT END;
-            IF i = LEN(x) THEN Write(R, 0); EXIT END
+            IF i = LEN(x) THEN Write(r, 0); EXIT END
         END
     END WriteString;
+
+    (** Writes a number in a compressed format. *)
+    PROCEDURE WriteNum*(VAR r: Rider; x: LONGINT);
+    BEGIN
+        WHILE (x < -64) OR (x > 63) DO
+            Write(r, x MOD 128 + 128);
+            x := x DIV 128;
+        END;
+        Write(r, x MOD 128)
+    END WriteNum;
 
 END Files.

@@ -7,7 +7,7 @@ IMPORT Files, Out;
 VAR f: Files.File;
     r: Files.Rider;
     res: INTEGER;
-    len, pos: LONGINT;
+    len, pos, num: LONGINT;
     x: BYTE;
     str: ARRAY 256 OF CHAR;
 
@@ -74,11 +74,20 @@ BEGIN
     Files.Set(r, f, pos);
     Files.ReadString(r, str);
     ASSERT(str = "Hello World!");
-    Out.String("Read succeeded: "); Out.String(str); Out.Char("."); Out.Ln;
+    Out.String("Read string succeeded: "); Out.String(str); Out.Char("."); Out.Ln;
 
     len := Files.Length(f);
     ASSERT(len = 14);
     Out.String("File length: "); Out.Long(len, 0); Out.Char("."); Out.Ln;
+
+    pos := Files.Pos(r);
+    num := MAX(INTEGER);
+    Files.WriteNum(r, num);
+
+    Out.String("Write number succeeded: "); Out.Long(num, 0); Out.Char("."); Out.Ln;
+    Files.Set(r, f, pos);
+    Files.ReadNum(r, num);
+    Out.String("Read number succeeded: "); Out.Long(num, 0); Out.Char("."); Out.Ln;
 
     Files.Close(f);
     Out.String("Renamed file closed."); Out.Ln;

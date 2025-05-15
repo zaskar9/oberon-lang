@@ -639,7 +639,7 @@ void LLVMIRBuilder::trapNILPtr(Value *value) {
 
 void LLVMIRBuilder::trapIntDivByZero(Value *divisor) {
     const auto type = dyn_cast<IntegerType>(divisor->getType());
-    const auto cond = builder_.CreateICmpSGT(divisor, ConstantInt::get(type, 0));
+    const auto cond = builder_.CreateICmpNE(divisor, ConstantInt::get(type, 0));
     installTrap(cond, static_cast<uint8_t>(Trap::INT_DIVISION));
 }
 
@@ -667,11 +667,16 @@ void LLVMIRBuilder::trapFltDivByZero(Value *divisor) {
     installTrap(cond, static_cast<uint8_t>(Trap::FLT_DIVISION));
 }
 
-void LLVMIRBuilder::trapSignConversion(ExpressionNode &expr, Value *value) {
+void LLVMIRBuilder::trapSignConversion(Value *value) {
+    Value *cond = builder_.CreateICmpSGE(value, ConstantInt::get(value->getType(), 0));
+    installTrap(cond, static_cast<uint8_t>(Trap::SIGN_CONVERSION));
+}
+
+void LLVMIRBuilder::checkSignConversion(ExpressionNode &expr, Value *value) {
     if (config_.isSanitized(Trap::SIGN_CONVERSION)) {
-        Value *cond = builder_.CreateICmpSLT(value, ConstantInt::get(value->getType(), 0));
-        installTrap(cond, static_cast<uint8_t>(Trap::SIGN_CONVERSION));
+        trapSignConversion(value);
     } else if (expr.isLiteral()) {
+        // TODO This case should be handled by Sema.
         if (const auto val = dynamic_cast<IntegerLiteralNode *>(&expr)->value(); val < 0) {
             logger_.warning(expr.pos(), "implicit sign conversion can cause undefined behavior.");
         }
@@ -848,6 +853,9 @@ Value *LLVMIRBuilder::createDiv(Value *lhs, Value *rhs) {
     if (config_.isSanitized(Trap::INT_DIVISION)) {
         trapIntDivByZero(rhs);
     }
+    if (config_.isSanitized(Trap::SIGN_CONVERSION)) {
+        trapSignConversion(rhs);
+    }
     Value *div = builder_.CreateSDiv(lhs, rhs);
     value_ = builder_.CreateMul(div, rhs);
     value_ = builder_.CreateSub(lhs, value_);
@@ -861,6 +869,9 @@ Value *LLVMIRBuilder::createDiv(Value *lhs, Value *rhs) {
 Value *LLVMIRBuilder::createMod(Value *lhs, Value *rhs) {
     if (config_.isSanitized(Trap::INT_DIVISION)) {
         trapIntDivByZero(rhs);
+    }
+    if (config_.isSanitized(Trap::SIGN_CONVERSION)) {
+        trapSignConversion(rhs);
     }
     Value *rem = builder_.CreateSRem(lhs, rhs);
     value_ = builder_.CreateICmpSLT(rem, ConstantInt::get(lhs->getType(), 0));
@@ -1005,12 +1016,11 @@ void LLVMIRBuilder::visit(BinaryExpressionNode &node) {
                 logger_.error(node.pos(), "operator " + to_string(node.getOperator()) + " not applicable here.");
                 break;
         }
-    } else if ((lhsType->isNumeric() || lhsType->isChar()) && (rhsType->isNumeric() || lhsType->isChar())) {
+    } else if ((lhsType->isNumeric() || lhsType->isChar()) && (rhsType->isNumeric() || rhsType->isChar())) {
         node.getRightExpression()->accept(*this);
         cast(*node.getRightExpression());
         const auto rhs = value_;
-        const bool floating = node.getLeftExpression()->getType()->isReal() ||
-                        node.getRightExpression()->getType()->isReal();
+        const bool floating = lhsType->isReal() || rhsType->isReal();
         switch (node.getOperator()) {
             case OperatorType::PLUS:
                 value_ = floating ? builder_.CreateFAdd(lhs, rhs) : createAdd(lhs, rhs);
@@ -1667,7 +1677,7 @@ LLVMIRBuilder::createAbsCall(const TypeNode *type, Value *param) {
 Value *
 LLVMIRBuilder::createAsrCall(const vector<unique_ptr<ExpressionNode>> &actuals, const std::vector<Value *> &params) {
     Value *shift = params[1];
-    trapSignConversion(*actuals[1], shift);
+    checkSignConversion(*actuals[1], shift);
     if (params[0]->getType()->getIntegerBitWidth() > shift->getType()->getIntegerBitWidth()) {
         shift = builder_.CreateZExt(shift, params[0]->getType());
     } else if (params[0]->getType()->getIntegerBitWidth() < shift->getType()->getIntegerBitWidth()) {
@@ -1919,7 +1929,7 @@ LLVMIRBuilder::createLongCall(const ExpressionNode *expr, Value *param) {
 Value *
 LLVMIRBuilder::createLslCall(const vector<unique_ptr<ExpressionNode>> &actuals, const vector<Value *> &params) {
     Value *shift = params[1];
-    trapSignConversion(*actuals[1], shift);
+    checkSignConversion(*actuals[1], shift);
     if (params[0]->getType()->getIntegerBitWidth() > shift->getType()->getIntegerBitWidth()) {
         shift = builder_.CreateZExt(shift, params[0]->getType());
     } else if (params[0]->getType()->getIntegerBitWidth() < shift->getType()->getIntegerBitWidth()) {
@@ -2031,7 +2041,7 @@ LLVMIRBuilder::createOrdCall(const ExpressionNode *actual, Value *param) {
 Value *
 LLVMIRBuilder::createRorCall(const vector<unique_ptr<ExpressionNode>> &actuals, const vector<Value *> &params) {
     Value *shift = params[1];
-    trapSignConversion(*actuals[1], shift);
+    checkSignConversion(*actuals[1], shift);
     if (params[0]->getType()->getIntegerBitWidth() > shift->getType()->getIntegerBitWidth()) {
         shift = builder_.CreateZExt(shift, params[0]->getType());
     } else if (params[0]->getType()->getIntegerBitWidth() < shift->getType()->getIntegerBitWidth()) {

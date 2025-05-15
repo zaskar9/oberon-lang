@@ -67,9 +67,9 @@ clean :
 %.smb : %.Mod
 	@$(O7C) $(O7CFLAGS) $<
 
-dist : runtime.o Oberon.o Files.o Math.o Reals.o Texts.o Random.o Out.o
+dist : runtime.o Oberon.o  Math.o Reals.o Texts.o Random.o Out.o Files.o
 	@echo -n Building library...
-	@$(CXX) $(LDFLAGS) -o $(LIBNAME).$(EXT) runtime.o Oberon.o Files.o Math.o Reals.o Texts.o Random.o Out.o
+	@$(CXX) $(LDFLAGS) -o $(LIBNAME).$(EXT) runtime.o Oberon.o Math.o Reals.o Texts.o Random.o Out.o Files.o
 	@ar rcs $(LIBNAME).a runtime.o Oberon.o Files.o Math.o Reals.o Texts.o Random.o Out.o
 	@echo ' done.'
 

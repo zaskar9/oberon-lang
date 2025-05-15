@@ -185,7 +185,7 @@ void Oberon07::initSymbolTable(SymbolTable *symbols) {
     // ORD
     this->createProcedure(ProcKind::ORD, "ORD", {{anyType, false}}, intType, false, true);
     // CHR
-    this->createProcedure(ProcKind::CHR, "CHR", {{intType, false}}, charType, false, true);
+    this->createProcedure(ProcKind::CHR, "CHR", {{entireType, false}}, charType, false, true);
     // SIZE
     this->createProcedure(ProcKind::SIZE, "SIZE", {{typeType, false}}, longIntType, false, true);
     // SHORT
