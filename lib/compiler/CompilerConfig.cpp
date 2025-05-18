@@ -33,7 +33,7 @@ string CompilerConfig::getTargetTriple() const {
     return target_;
 }
 
-void CompilerConfig::setFileType(OutputFileType type) {
+void CompilerConfig::setFileType(const OutputFileType type) {
     type_ = type;
 }
 
@@ -41,7 +41,7 @@ OutputFileType CompilerConfig::getFileType() const {
     return type_;
 }
 
-void CompilerConfig::setOptimizationLevel(OptimizationLevel level) {
+void CompilerConfig::setOptimizationLevel(const OptimizationLevel level) {
     level_ = level;
 }
 
@@ -49,7 +49,7 @@ OptimizationLevel CompilerConfig::getOptimizationLevel() const {
     return level_;
 }
 
-void CompilerConfig::setRelocationModel(RelocationModel model) {
+void CompilerConfig::setRelocationModel(const RelocationModel model) {
     model_ = model;
 }
 
@@ -100,7 +100,7 @@ bool CompilerConfig::hasFlag(Flag flag) const {
     return flags_ & static_cast<unsigned>(flag);
 }
 
-void CompilerConfig::toggleSanitize(Trap trap, bool active) {
+void CompilerConfig::toggleSanitize(const Trap trap, const bool active) {
     if (active) {
         traps_.insert(trap);
     } else {
@@ -111,14 +111,14 @@ void CompilerConfig::toggleSanitize(Trap trap, bool active) {
 void CompilerConfig::setSanitizeAll() {
     traps_.insert({Trap::OUT_OF_BOUNDS, Trap::TYPE_GUARD, Trap::COPY_OVERFLOW, Trap::NIL_POINTER,
                    Trap::PROCEDURE_CALL, Trap::INT_DIVISION, Trap::ASSERT, Trap::INT_OVERFLOW,
-                   Trap::FLT_DIVISION});
+                   Trap::FLT_DIVISION, Trap::SIGN_CONVERSION});
 }
 
 void CompilerConfig::setSanitizeNone() {
     traps_.clear();
 }
 
-bool CompilerConfig::isSanitized(Trap trap) const {
+bool CompilerConfig::isSanitized(const Trap trap) const {
     return traps_.contains(trap);
 }
 
@@ -130,10 +130,10 @@ bool CompilerConfig::hasWarning(Warning warn) const {
     return warn_ & static_cast<unsigned>(warn);
 }
 
-void CompilerConfig::setJit(bool jit) {
+void CompilerConfig::setJit(const bool jit) {
     jit_ = jit;
 }
 
-bool CompilerConfig::isJit() {
+bool CompilerConfig::isJit() const {
     return jit_;
 }
