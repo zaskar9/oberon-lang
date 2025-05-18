@@ -360,7 +360,7 @@ int LLVMCodeGen::jit(ASTContext *ast, const path path) {
 }
 #endif
 
-void LLVMCodeGen::emit(Module *module, std::filesystem::path path, OutputFileType type) const {
+void LLVMCodeGen::emit(Module *module, path path, OutputFileType type) const {
     std::string ext;
     switch (type) {
         case OutputFileType::AssemblyFile:

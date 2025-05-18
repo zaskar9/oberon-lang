@@ -81,7 +81,7 @@ BEGIN
     Out.String("File length: "); Out.Long(len, 0); Out.Char("."); Out.Ln;
 
     pos := Files.Pos(r);
-    num := MAX(INTEGER);
+    num := MAX(LONGINT);
     Files.WriteNum(r, num);
 
     Out.String("Write number succeeded: "); Out.Long(num, 0); Out.Char("."); Out.Ln;

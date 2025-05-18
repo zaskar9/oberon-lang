@@ -414,8 +414,8 @@ TypeNode *LLVMIRBuilder::selectors(NodeReference *ref, TypeNode *base, const Sel
             }
         } else if (sel->getNodeType() == NodeType::record_type) {
             // Handle record field access
-            auto field = dynamic_cast<RecordField *>(sel)->getField();
-            auto record_t = dynamic_cast<RecordTypeNode *>(selector_t);
+            const auto field = dynamic_cast<RecordField *>(sel)->getField();
+            const auto record_t = dynamic_cast<RecordTypeNode *>(selector_t);
             // Navigate through the base records
             unsigned current = field->getRecordType()->getLevel();
             for (unsigned level = current; level < record_t->getLevel(); level++) {
@@ -431,13 +431,13 @@ TypeNode *LLVMIRBuilder::selectors(NodeReference *ref, TypeNode *base, const Sel
         } else if (sel->getNodeType() == NodeType::type) {
             auto guard = dynamic_cast<Typeguard *>(sel);
             if (config_.isSanitized(Trap::TYPE_GUARD)) {
-                auto guard_t = guard->getType();
+                const auto guard_t = guard->getType();
                 auto tmp = value;
                 if (guard_t->isPointer()) {
                     value = processGEP(baseTy, value, indices);
                     tmp = builder_.CreateLoad(builder_.getPtrTy(), value);
                 }
-                auto cond = createTypeTest(tmp, ref, selector_t, guard_t);
+                const auto cond = createTypeTest(tmp, ref, selector_t, guard_t);
                 trapTypeGuard(cond);
             }
             selector_t = guard->getType();
@@ -973,7 +973,7 @@ void LLVMIRBuilder::visit(BinaryExpressionNode &node) {
         const auto rExpr = dynamic_cast<QualifiedExpression *>(node.getRightExpression());
         const auto rType = rExpr->dereference()->getType();
         value_ = createTypeTest(lhs, lExpr, lType, rType);
-    } else if (node.getLeftExpression()->getType()->isSet() || node.getRightExpression()->getType()->isSet()) {
+    } else if (lhsType->isSet() || rhsType->isSet()) {
         node.getRightExpression()->accept(*this);
         cast(*node.getRightExpression());
         const auto rhs = value_;

@@ -6,7 +6,7 @@
 
 (** The Files module implements the Oberon file system. *)
 MODULE Files; (*NW 11.1.86 / 28.8.92 / pjm 17.04.97 / MG 24.04.2025 *)
-IMPORT Out;
+(* IMPORT Out; *)
 
 TYPE
     Handle = POINTER TO RECORD END;  (* Declare FILE* data type from C <stdio.h> library. *)
@@ -219,8 +219,7 @@ VAR
             ELSE
                 r.res := 1
             END
-        END;
-        Out.Int(x, 4)
+        END
     END Read;
 
     (** Reads a character. *)
@@ -248,7 +247,7 @@ VAR
 
     (** Reads a number in compressed variable length notation using the minimum amount of bytes. *)
     PROCEDURE ReadNum*(VAR r: Rider; VAR x: LONGINT);
-    VAR b: BYTE; ch, s: INTEGER; n, y, z: LONGINT;
+    VAR b: BYTE; s: INTEGER; ch, n, y, z: LONGINT;
     BEGIN
       	n := 0; s := 0; Read(r, b); ch := b;
     	WHILE b >= 128 DO
@@ -258,7 +257,6 @@ VAR
       	END;
       	y := ch MOD 64 - ch DIV 64 * 64;
       	IF y < 0 THEN z := -LSL(-y, s) ELSE z := LSL(y, s) END;
-      	Out.Long(n, 0); Out.String(", "); Out.Long(z, 0); Out.Ln;
         x := n + z
     END ReadNum;
 
@@ -304,7 +302,7 @@ VAR
     BEGIN
         WHILE (x < -64) OR (x > 63) DO
             Write(r, x MOD 128 + 128);
-            x := x DIV 128;
+            x := x DIV 128
         END;
         Write(r, x MOD 128)
     END WriteNum;
