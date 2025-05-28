@@ -109,14 +109,14 @@ private:
     using Selectors = vector<unique_ptr<Selector>>;
     using SelectorIterator = Selectors::iterator;
     SelectorIterator &handleMissingParameters(const FilePos &, const FilePos &,
-                                              TypeNode*, Selectors &, SelectorIterator &);
-    void handleRepeatedIndices(const FilePos &, const FilePos &, Selectors &);
+                                              TypeNode*, Selectors &, SelectorIterator &) const;
+    void handleRepeatedIndices(const FilePos &, const FilePos &, Selectors &) const;
     TypeNode *onSelectors(const FilePos &, const FilePos &, DeclarationNode *, TypeNode*, Selectors &);
     TypeNode *onActualParameters(DeclarationNode *, TypeNode *, ActualParameters *);
-    TypeNode *onArrayIndex(TypeNode *, ArrayIndex *);
-    TypeNode *onDereference(TypeNode *, Dereference *);
-    FieldNode *onRecordField(TypeNode *, RecordField *);
-    TypeNode *onTypeguard(DeclarationNode *, TypeNode *, Typeguard *);
+    TypeNode *onArrayIndex(TypeNode *, ArrayIndex *) const;
+    TypeNode *onDereference(TypeNode *, const Dereference *) const;
+    FieldNode *onRecordField(TypeNode *, RecordField *) const;
+    TypeNode *onTypeguard(DeclarationNode *, TypeNode *, Typeguard *) const;
 
 public:
     Sema(CompilerConfig &, ASTContext *, OberonSystem *);
@@ -210,7 +210,7 @@ public:
     unique_ptr<QualifiedExpression> onQualifiedExpression(const FilePos &, const FilePos &,
                                                           unique_ptr<QualIdent>, vector<unique_ptr<Selector>>);
     unique_ptr<ExpressionNode> onQualifiedConstant(const FilePos &, const FilePos &,
-                                                   unique_ptr<QualIdent>, vector<unique_ptr<Selector>>);
+                                                   const unique_ptr<QualIdent> &, const vector<unique_ptr<Selector>> &);
 
     unique_ptr<ExpressionNode> onUnaryExpression(const FilePos &, const FilePos &,
                                                  OperatorType,
