@@ -15,8 +15,8 @@ void SymbolExporter::write(const std::string &name, SymbolTable *symbols) {
     } else {
         pth = symdir;
     }
-    auto fp = (pth / name).replace_extension(".smb");
-    auto file = std::make_unique<SymbolFile>();
+    const auto fp = (pth / name).replace_extension(".smb");
+    const auto file = std::make_unique<SymbolFile>();
     file->open(fp.string(), std::ios::out);
     // write symbol file header
     file->writeLong(0); // placeholder, inserted at the end
@@ -61,7 +61,7 @@ void SymbolExporter::writeDeclaration(SymbolFile *file, DeclarationNode *decl) {
         auto kind = decl->getType()->kind();
         if (kind == TypeKind::PROCEDURE) {
             // TODO write out export number ("exno" in Wirth's code)
-            file->writeInt(-1);
+            file->writeChar(-1);
         } else {
             auto con = dynamic_cast<ConstantDeclarationNode*>(decl);
             switch (kind) {
@@ -98,13 +98,13 @@ void SymbolExporter::writeDeclaration(SymbolFile *file, DeclarationNode *decl) {
         }
     } else if (nodeType == NodeType::variable) {
         // TODO write out export number ("exno" in Wirth's code)
-        file->writeInt(-1);
+        file->writeChar(-1);
     }
 }
 
 void SymbolExporter::writeType(SymbolFile *file, TypeNode *type) {
     if (!type) {
-        file->writeChar(-((char) TypeKind::NOTYPE));
+        file->writeChar(-static_cast<char>(TypeKind::NOTYPE));
         return;
     }
     if (type->getRef() > 0) {
@@ -194,7 +194,7 @@ void SymbolExporter::writeRecordType(SymbolFile *file, RecordTypeNode *type) {
         file->writeChar(0);
     } else {
         // TODO write out export number ("exno" in Wirth's code)
-        file->writeInt(-1);
+        file->writeChar(-1);
     }
     // write out the number of fields in this record
     file->writeInt(static_cast<int>(type->getFieldCount()));
@@ -209,7 +209,7 @@ void SymbolExporter::writeRecordType(SymbolFile *file, RecordTypeNode *type) {
         file->writeInt(static_cast<int>(i + 1));
         // write out field name
         if (field->getIdentifier()->isExported() ||
-            type->getDeclaration()->getModule() != context_->getTranslationUnit()) {
+            (!type->isAnonymous() && type->getDeclaration()->getModule() != context_->getTranslationUnit())) {
             file->writeString(field->getIdentifier()->name());
         } else {
             // write a "hidden" field to preserve the correct record layout

@@ -51,7 +51,8 @@ enum class Trap : uint8_t {
     INT_DIVISION = 6,
     ASSERT = 7,
     INT_OVERFLOW = 8,
-    FLT_DIVISION = 9
+    FLT_DIVISION = 9,
+    SIGN_CONVERSION = 10
 };
 
 enum class Warning : unsigned {
@@ -80,9 +81,8 @@ private:
     static std::optional<path> find(const path &name, const vector<path> &directories);
 
 public:
-    CompilerConfig() : logger_(LogLevel::INFO, cout),
-            infiles_(), outfile_(), target_(), symdir_(), type_(OutputFileType::ObjectFile), level_(OptimizationLevel::O0),
-            model_(RelocationModel::DEFAULT), incpaths_(), libpaths_(), libs_(), flags_(0), traps_(), warn_(0), jit_(false) {
+    CompilerConfig() : logger_(LogLevel::INFO, cout), type_(OutputFileType::ObjectFile),
+            level_(OptimizationLevel::O0), model_(RelocationModel::DEFAULT), flags_(0), warn_(0), jit_(false) {
         setSanitizeAll();
 #ifdef _DEBUG
         logger_.setLevel(LogLevel::DEBUG);
@@ -136,7 +136,7 @@ public:
     [[nodiscard]] bool hasWarning(Warning warn) const;
 
     void setJit(bool jit);
-    [[nodiscard]] bool isJit();
+    [[nodiscard]] bool isJit() const;
 
 };
 

@@ -22,12 +22,12 @@
 
 using namespace llvm;
 
-int mingw_noop_main(void) {
+int mingw_noop_main() {
   // Cygwin and MinGW insert calls from the main function to the runtime
   // function __main. The __main function is responsible for setting up main's
   // environment (e.g. running static constructors), however this is not needed
-  // when running under lli: the executor process will have run non-JIT ctors,
-  // and ORC will take care of running JIT'd ctors. To avoid a missing symbol
+  // when running under lli: the executor process will have run non-JIT constructors,
+  // and ORC will take care of running JIT'd constructors. To avoid a missing symbol
   // error we just implement __main as a no-op.
   //
   // FIXME: Move this to ORC-RT (and the ORC-RT substitution library once it
@@ -36,18 +36,19 @@ int mingw_noop_main(void) {
   return 0;
 }
 
-[[noreturn]] void ubsantrap_handler(uint16_t code) {
+[[noreturn]] void ubsantrap_handler(const uint16_t code) {
     std::cerr << std::endl << "Oberon program trapped with code " << code;
     switch (code) {
-        case 1: std::cerr << " (array index out of range)"; break;
-        case 2: std::cerr << " (type guard failure)"; break;
-        case 3: std::cerr << " (array or string copy overflow)"; break;
-        case 4: std::cerr << " (access via NIL pointer)"; break;
-        case 5: std::cerr << " (illegal procedure call)"; break;
-        case 6: std::cerr << " (integer division by zero)"; break;
-        case 7: std::cerr << " (assertion violated)"; break;
-        case 8: std::cerr << " (integer overflow)"; break;
-        case 9: std::cerr << " (floating point division by zero)"; break;
+        case  1: std::cerr << " (array index out of range)"; break;
+        case  2: std::cerr << " (type guard failure)"; break;
+        case  3: std::cerr << " (array or string copy overflow)"; break;
+        case  4: std::cerr << " (access via NIL pointer)"; break;
+        case  5: std::cerr << " (illegal procedure call)"; break;
+        case  6: std::cerr << " (integer division by zero)"; break;
+        case  7: std::cerr << " (assertion violated)"; break;
+        case  8: std::cerr << " (integer overflow)"; break;
+        case  9: std::cerr << " (floating point division by zero)"; break;
+        case 10: std::cerr << " (implicit sign conversion)"; break;
         default: break;
     }
     std::cerr << std::endl;
@@ -58,13 +59,13 @@ uint16_t decode_trap(void *addr) {
     uint16_t code = 0;
 #if BOOST_ARCH_ARM
     // Get the address of the trapped instruction from info->si_addr
-    auto pc = static_cast<uint32_t*>(addr);
+    const auto pc = static_cast<uint32_t*>(addr);
     // Read the instruction at the trapped PC
     uint32_t instr = *pc;
     // Check if it is a `BRK` instruction (0xD4200000 mask)
     if ((instr & 0xFFE00000) == 0xD4200000) {
         // Mask out the opcode and extract the immediate (lower 16 bits)
-        code = (instr >> 5) & 0xFF;
+        code = instr >> 5 & 0xFF;
     }
 #elif BOOST_ARCH_X86
     std::unordered_set<uint8_t> prefixes({ 0xF0, 0xF2, 0xF3, 0x2E, 0x36, 0x3E, 0x26, 0x64, 0x65, 0x66, 0x67 });
@@ -112,7 +113,7 @@ LONG WINAPI trap_handler(EXCEPTION_POINTERS* info) {
 }
 #else
 [[noreturn]] void trap_handler(int, siginfo_t* info, void*) {
-    auto code = decode_trap(info->si_addr);
+    const auto code = decode_trap(info->si_addr);
     ubsantrap_handler(code);
 }
 #endif
@@ -131,8 +132,7 @@ void register_signal_handler() {
 }
 
 LLVMCodeGen::LLVMCodeGen(CompilerConfig &config) :
-        config_(config), logger_(config_.logger()), type_(OutputFileType::ObjectFile), ctx_(), pb_(),
-        lvl_(llvm::OptimizationLevel::O0) {
+        config_(config), logger_(config_.logger()), type_(OutputFileType::ObjectFile), lvl_(llvm::OptimizationLevel::O0) {
     // Initialize LLVM
     // TODO some can be skipped when running JIT
     InitializeAllTargetInfos();
@@ -173,14 +173,14 @@ void LLVMCodeGen::configure() {
     }
     logger_.debug("Using target triple: " + triple + ".");
     // Set up target
-    std::string error;
+    string error;
     auto target = TargetRegistry::lookupTarget(triple, error);
     if (!target) {
         logger_.error(string(), error);
     } else {
         // Set up target machine to match host
-        std::string cpu = "generic";
-        std::string features;
+        string cpu = "generic";
+        string features;
         TargetOptions opt;
 #ifdef _LLVM_LEGACY
         auto model = llvm::Optional<Reloc::Model>();
@@ -212,15 +212,14 @@ void LLVMCodeGen::configure() {
                                             JITSymbolFlags::Exported}}})
             );
         }
-        // Add symbols from current REPL (read-execute-print-loop) process
+        // Add symbols from the current REPL (read-execute-print-loop) process
         auto layout = jit_->getDataLayout();
         jit_->getMainJITDylib().addGenerator(
-                cantFail(llvm::orc::DynamicLibrarySearchGenerator::GetForCurrentProcess(layout.getGlobalPrefix())));
+                cantFail(orc::DynamicLibrarySearchGenerator::GetForCurrentProcess(layout.getGlobalPrefix())));
         // Load libraries
         for (const auto& name : config_.getLibraries()) {
             logger_.debug("Searching for library: '" + name + "'.");
-            auto lib = config_.findLibrary(getLibName(name, true, jit_->getTargetTriple()));
-            if (lib) {
+            if (auto lib = config_.findLibrary(getLibName(name, true, jit_->getTargetTriple()))) {
                 const std::string value(lib.value().string());
                 logger_.debug("Loading dynamic library: '" + value + "'.");
                 sys::DynamicLibrary::LoadLibraryPermanently(value.c_str());
@@ -240,7 +239,7 @@ void LLVMCodeGen::configure() {
     }
 }
 
-std::string LLVMCodeGen::getLibName(const std::string &name, bool dylib, const llvm::Triple &triple) {
+std::string LLVMCodeGen::getLibName(const std::string &name, const bool dylib, const Triple &triple) {
     std::stringstream ss;
     if (triple.isOSCygMing()) {
         ss << "lib" << name;
@@ -258,7 +257,7 @@ std::string LLVMCodeGen::getLibName(const std::string &name, bool dylib, const l
     return ss.str();
 }
 
-std::string LLVMCodeGen::getObjName(const std::string &name, const llvm::Triple &triple) {
+std::string LLVMCodeGen::getObjName(const std::string &name, const Triple &triple) {
     std::stringstream ss;
     ss << name;
     if (triple.isOSWindows() && !triple.isOSCygMing()) {
@@ -269,22 +268,21 @@ std::string LLVMCodeGen::getObjName(const std::string &name, const llvm::Triple 
     return ss.str();
 }
 
-void LLVMCodeGen::loadObjects(ASTContext *ast) {
-    auto module = ast->getTranslationUnit();
-    for (auto& imp: module->imports()) {
+void LLVMCodeGen::loadObjects(const ASTContext *ast) const {
+    const auto module = ast->getTranslationUnit();
+    for (const auto& imp: module->imports()) {
         auto name = imp->getModule()->name();
         logger_.debug("Searching object file for module: '" + name + "'.");
-        if (auto obj = config_.findLibrary(getObjName(name, jit_->getTargetTriple()))) {
+        if (const auto obj = config_.findLibrary(getObjName(name, jit_->getTargetTriple()))) {
             // Load the object file from a file
             string file = obj->string();
             logger_.debug("Object file found: '" + file + "'.");
             auto buffer = MemoryBuffer::getFile(file);
             if (auto ec = buffer.getError()) {
-                logger_.error(file, buffer.getError().message());
+                logger_.error(file, ec.message());
             }
             // Add the object file to the JIT
-            auto error = jit_->addObjectFile(std::move(buffer.get()));
-            if (error) {
+            if (auto error = jit_->addObjectFile(std::move(buffer.get()))) {
                 logger_.error(file, toString(std::move(error)));
             }
             logger_.debug("Object file loaded: '" + file + "'.");
@@ -292,7 +290,7 @@ void LLVMCodeGen::loadObjects(ASTContext *ast) {
     }
 }
 
-void LLVMCodeGen::generate(ASTContext *ast, std::filesystem::path path) {
+void LLVMCodeGen::generate(ASTContext *ast, const path path) {
     // Set up the LLVM module
     logger_.debug("Generating LLVM code...");
     auto name = path.filename().string();
@@ -317,7 +315,7 @@ void LLVMCodeGen::generate(ASTContext *ast, std::filesystem::path path) {
         pb_.registerLoopAnalyses(lam);
         pb_.crossRegisterProxies(lam, fam, cgam, mam);
         auto mpm = pb_.buildPerModuleDefaultPipeline(lvl_);
-        mpm.run(*module.get(), mam);
+        mpm.run(*module, mam);
     }
     if (module && logger_.getErrorCount() == 0) {
         logger_.debug("Emitting code...");
@@ -328,18 +326,18 @@ void LLVMCodeGen::generate(ASTContext *ast, std::filesystem::path path) {
 }
 
 #ifndef _LLVM_LEGACY
-int LLVMCodeGen::jit(ASTContext *ast, std::filesystem::path path) {
+int LLVMCodeGen::jit(ASTContext *ast, const path path) {
     // Set up the LLVM module
     logger_.debug("Generating LLVM code...");
     // TODO second context created as LLVMIRBuilder needs std::make_unique
-    auto context = std::make_unique<llvm::LLVMContext>();
+    auto context = std::make_unique<LLVMContext>();
     auto name = path.filename().string();
-    auto module = std::make_unique<Module>(path.filename().string(), *context.get());
+    auto module = std::make_unique<Module>(path.filename().string(), *context);
     module->setSourceFileName(path.string());
     module->setDataLayout(tm_->createDataLayout());
     module->setTargetTriple(tm_->getTargetTriple().getTriple());
     // Generate LLVM intermediate representation
-    auto builder = std::make_unique<LLVMIRBuilder>(config_, *context.get(), module.get());
+    const auto builder = std::make_unique<LLVMIRBuilder>(config_, *context, module.get());
     builder->build(ast);
     // TODO run optimizer?
     if (module && logger_.getErrorCount() == 0) {
@@ -350,20 +348,19 @@ int LLVMCodeGen::jit(ASTContext *ast, std::filesystem::path path) {
         // Register signal handler for Oberon traps
         register_signal_handler();
         // Execute Oberon program using ORC JIT
-        std:: string entry = ast->getTranslationUnit()->getIdentifier()->name();
-        auto mainAddr = exitOnErr_(jit_->lookup(entry));
-        auto mainFn = mainAddr.toPtr<int(void)>();
-        int result = mainFn();
+        const string entry = ast->getTranslationUnit()->getIdentifier()->name();
+        const auto mainAddr = exitOnErr_(jit_->lookup(entry));
+        const auto mainFn = mainAddr.toPtr<int(void)>();
+        const int result = mainFn();
         logger_.debug("Process finished with exit code " + to_string(result));
         return result;
-    } else {
-        logger_.error(path.filename().string(), "code generation failed.");
     }
+    logger_.error(path.filename().string(), "code generation failed.");
     return EXIT_FAILURE;
 }
 #endif
 
-void LLVMCodeGen::emit(Module *module, std::filesystem::path path, OutputFileType type) {
+void LLVMCodeGen::emit(Module *module, path path, OutputFileType type) const {
     std::string ext;
     switch (type) {
         case OutputFileType::AssemblyFile:

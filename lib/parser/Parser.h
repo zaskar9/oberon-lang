@@ -80,7 +80,7 @@ private:
     RecordTypeNode* record_type();
     void field_list(vector<unique_ptr<FieldNode>> &);
 
-    PointerTypeNode* pointer_type();
+    void pointer_type(PointerTypeNode*);
 
     ProcedureTypeNode *procedure_type();
     TypeNode *formal_parameters(vector<unique_ptr<ParameterNode>> &, bool &);

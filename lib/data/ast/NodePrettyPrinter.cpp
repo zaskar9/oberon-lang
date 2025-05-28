@@ -10,7 +10,8 @@
 #include <string>
 #include <vector>
 
-#include "scanner/Scanner.h"
+// TODO There should be no dependency to Scanner here.
+#include <Scanner.h>
 
 using std::string;
 using std::unique_ptr;
@@ -20,11 +21,11 @@ void NodePrettyPrinter::print(Node *node) {
     node->accept(*this);
 }
 
-void NodePrettyPrinter::indent() {
+void NodePrettyPrinter::indent() const {
     stream_ << string(indent_, ' ');
 }
 
-void NodePrettyPrinter::block(BlockNode& node, bool isGlobal) {
+void NodePrettyPrinter::block(const BlockNode& node, const bool isGlobal) {
     indent_ += TAB_WIDTH;
     if (node.getConstantCount() > 0) {
         if (isGlobal) {
@@ -75,7 +76,7 @@ void NodePrettyPrinter::block(BlockNode& node, bool isGlobal) {
     indent_ -= TAB_WIDTH;
 }
 
-void NodePrettyPrinter::qualident(DeclarationNode *decl) {
+void NodePrettyPrinter::qualident(const DeclarationNode *decl) const {
     if (decl->getModule() && decl->getModule() != module_) {
         stream_ << *decl->getModule()->getIdentifier() << ".";
     }
@@ -88,7 +89,7 @@ void NodePrettyPrinter::visit(ModuleNode& node) {
     stream_ << "MODULE " << *node.getIdentifier() << "(*Scope:" << node.getScope() << "*);" << std::endl;
     if (!node.imports().empty()) {
         stream_ << "IMPORT ";
-        for (auto &import: node.imports()) {
+        for (const auto &import: node.imports()) {
             import->accept(*this);
         }
         stream_ << std::endl;
@@ -106,7 +107,7 @@ void NodePrettyPrinter::visit(ModuleNode& node) {
     stream_ << "END " << *node.getIdentifier() << '.' << std::endl;
 }
 
-void NodePrettyPrinter::procedure(string ident, ProcedureTypeNode *type) {
+void NodePrettyPrinter::procedure(const string& ident, ProcedureTypeNode *type) {
     stream_ << "PROCEDURE";
     if (!ident.empty()) {
         stream_ << " " + ident;
@@ -115,7 +116,7 @@ void NodePrettyPrinter::procedure(string ident, ProcedureTypeNode *type) {
             (type->getReturnType() && type->getReturnType()->kind() != TypeKind::NOTYPE)) {
         stream_ << "(";
         string sep;
-        for (auto &param: type->parameters()) {
+        for (const auto &param: type->parameters()) {
             stream_ << sep;
             param->accept(*this);
             sep = "; ";
@@ -133,8 +134,8 @@ void NodePrettyPrinter::procedure(string ident, ProcedureTypeNode *type) {
 
 void NodePrettyPrinter::visit(ProcedureNode& node) {
     indent();
-    auto type = dynamic_cast<ProcedureTypeNode *>(node.getType());
-    string ident = to_string(*node.getIdentifier()) + "(*Scope:" + to_string(node.getScope()) + "*)";
+    const auto type = node.getType();
+    const string ident = to_string(*node.getIdentifier()) + "(*Scope:" + to_string(node.getScope()) + "*)";
     procedure(ident, type);
     stream_ << ";";
     if (node.isExtern()) {
@@ -173,32 +174,32 @@ void NodePrettyPrinter::visit(QualifiedExpression &node) {
     selectors(node.selectors());
 }
 
-void NodePrettyPrinter::selectors(std::vector<unique_ptr<Selector>> &selectors) {
+void NodePrettyPrinter::selectors(const vector<unique_ptr<Selector>> &selectors) {
     for (auto &sel: selectors) {
-        auto selector = sel.get();
-        auto type = selector->getNodeType();
+        const auto selector = sel.get();
+        const auto type = selector->getNodeType();
         if (type == NodeType::parameter) {
-            auto params = dynamic_cast<ActualParameters *>(selector);
+            const auto params = dynamic_cast<ActualParameters *>(selector);
             stream_ << "(";
             string sep;
-            for (auto &param : params->parameters()) {
+            for (const auto &param : params->parameters()) {
                 stream_ << sep;
                 param->accept(*this);
                 sep = ", ";
             }
             stream_ << ")";
         } else if (type == NodeType::array_type) {
-            auto indices = dynamic_cast<ArrayIndex *>(selector);
+            const auto indices = dynamic_cast<ArrayIndex *>(selector);
             stream_ << "[";
             string sep;
-            for (auto &index : indices->indices()) {
+            for (const auto &index : indices->indices()) {
                 stream_ << sep;
                 index->accept(*this);
                 sep = ", ";
             }
             stream_ << "]";
         } else if (type == NodeType::record_type) {
-            auto field = dynamic_cast<RecordField *>(selector)->getField();
+            const auto field = dynamic_cast<RecordField *>(selector)->getField();
             stream_ << ".";
             stream_ << field->getIdentifier()->name();
         } else if (type == NodeType::pointer_type) {
@@ -246,7 +247,7 @@ void NodePrettyPrinter::visit(BooleanLiteralNode &node) {
 }
 
 void NodePrettyPrinter::visit(IntegerLiteralNode &node) {
-    stream_ << node.value() << (node.isLong() ? "(*L*)" : (node.isShort() ? "(*S*)" : "(*I*)"));
+    stream_ << node.value() << (node.isLong() ? "(*L*)" : node.isShort() ? "(*S*)" : "(*I*)");
 }
 
 void NodePrettyPrinter::visit(RealLiteralNode &node) {
@@ -258,7 +259,7 @@ void NodePrettyPrinter::visit(StringLiteralNode &node) {
 }
 
 void NodePrettyPrinter::visit(CharLiteralNode &node) {
-    string str { static_cast<char>(node.value()) };
+    const string str { static_cast<char>(node.value()) };
     stream_ << "\"" << Scanner::escape(str) << "\"(*C*)";
 }
 
@@ -270,7 +271,7 @@ void NodePrettyPrinter::visit(SetLiteralNode &node) {
     if (node.value().none()) {
         stream_ << "{}";
     } else {
-        auto set = node.value();
+        const auto set = node.value();
         string sep;
         stream_ << "{ ";
         for (std::size_t bit = 0; bit < set.size(); ++bit) {
@@ -284,7 +285,7 @@ void NodePrettyPrinter::visit(SetLiteralNode &node) {
 }
 
 void NodePrettyPrinter::visit(RangeLiteralNode &node) {
-    auto set = node.value();
+    const auto set = node.value();
     string sep;
     for (std::size_t bit = 0; bit < set.size(); ++bit) {
         if (set.test(bit)) {
@@ -296,19 +297,19 @@ void NodePrettyPrinter::visit(RangeLiteralNode &node) {
 
 void NodePrettyPrinter::visit(UnaryExpressionNode &node) {
     stream_ << node.getOperator();
-    auto expr = node.getExpression();
+    const auto expr = node.getExpression();
     stream_ << (expr->getPrecedence() < node.getPrecedence() ? "(" : "");
     node.getExpression()->accept(*this);
     stream_ << (expr->getPrecedence() < node.getPrecedence() ? ")" : "");
 }
 
 void NodePrettyPrinter::visit(BinaryExpressionNode &node) {
-    auto lhs = node.getLeftExpression();
+    const auto lhs = node.getLeftExpression();
     stream_ << (lhs->getPrecedence() < node.getPrecedence() ? "(" : "");
     lhs->accept(*this);
     stream_ << (lhs->getPrecedence() < node.getPrecedence() ? ")" : "");
     stream_ << ' ' << node.getOperator() << ' ';
-    auto rhs = node.getRightExpression();
+    const auto rhs = node.getRightExpression();
     stream_ << (rhs->getPrecedence() < node.getPrecedence() ? "(" : "");
     node.getRightExpression()->accept(*this);
     stream_ << (rhs->getPrecedence() < node.getPrecedence() ? ")" : "");
@@ -345,7 +346,7 @@ void NodePrettyPrinter::visit(ArrayTypeNode &node) {
         } else {
             stream_ << "ARRAY ";
             string sep;
-            for (unsigned len: node.lengths()) {
+            for (const unsigned len: node.lengths()) {
                 stream_ << sep << len;
                 sep = ", ";
             }
@@ -469,7 +470,7 @@ void NodePrettyPrinter::visit(IfThenElseNode &node) {
     indent_ += TAB_WIDTH;
     node.getThenStatements()->accept(*this);
     indent_ -= TAB_WIDTH;
-    auto parent = parent_;
+    const auto parent = parent_;
     parent_ = &node;
     for (size_t i = 0; i < node.getElseIfCount(); i++) {
         indent();
@@ -512,7 +513,7 @@ void NodePrettyPrinter::visit(WhileLoopNode &node) {
     indent_ += TAB_WIDTH;
     node.getStatements()->accept(*this);
     indent_ -= TAB_WIDTH;
-    auto parent = parent_;
+    const auto parent = parent_;
     parent_ = &node;
     for (size_t i = 0; i < node.getElseIfCount(); i++) {
         indent();
