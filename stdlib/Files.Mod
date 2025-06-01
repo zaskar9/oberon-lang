@@ -250,7 +250,7 @@ VAR
     VAR b: BYTE; s: INTEGER; ch, n, y, z: LONGINT;
     BEGIN
       	n := 0; s := 0; Read(r, b); ch := b;
-    	WHILE b >= 128 DO
+    	WHILE ch >= 128 DO
       		INC(n, LSL(ch - 128, s));
       		INC(s, 7);
       		Read(r, b); ch := b
@@ -259,6 +259,13 @@ VAR
       	IF y < 0 THEN z := -LSL(-y, s) ELSE z := LSL(y, s) END;
         x := n + z
     END ReadNum;
+
+    (** Reads a Boolean value. *)
+    PROCEDURE ReadBool*(VAR r: Rider; VAR x: BOOLEAN);
+    VAR b: BYTE;
+    BEGIN
+        Read(r, b); x := b # 0
+    END ReadBool;
 
     (** Writes a byte into the file at the Rider position, advancing the Rider by one. *)
     PROCEDURE Write*(VAR r: Rider; x: BYTE);
@@ -306,5 +313,11 @@ VAR
         END;
         Write(r, x MOD 128)
     END WriteNum;
+
+    (** Writes a Boolean value. *)
+    PROCEDURE WriteBool*(VAR r: Rider; x: BOOLEAN);
+    BEGIN
+    	IF x THEN Write(r, 1) ELSE Write(r, 0) END
+    END WriteBool;
 
 END Files.

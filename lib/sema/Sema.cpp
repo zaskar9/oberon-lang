@@ -1060,7 +1060,7 @@ Sema::onActualParameters(DeclarationNode *context, TypeNode *base, ActualParamet
             const auto paramTy = param->getType();
             if (assertCompatible(expr->pos(), paramTy, exprTy)) {
                 if (param->isVar()) {
-                    const string err;
+                    string err;
                     if (!assertAssignable(expr, err)) {
                         logger_.error(expr->pos(), "illegal actual parameter: cannot pass " + err + " by reference.");
                     } else if (exprTy->isNumeric() && paramTy->isNumeric()) {
@@ -1346,8 +1346,7 @@ Sema::onBinaryExpression(const FilePos &start, const FilePos &end,
         case OperatorType::MINUS:
         case OperatorType::TIMES:
             if ((lhsType->isNumeric() && rhsType->isNumeric())
-                || (lhsType->isSet() && rhsType->isSet())
-                || (lhsType->isChar() && rhsType->isChar())){
+                || (lhsType->isSet() && rhsType->isSet())){
                 common = commonType(start, lhsType, rhsType);
                 result = common;
             } else {
@@ -1366,8 +1365,7 @@ Sema::onBinaryExpression(const FilePos &start, const FilePos &end,
             break;
         case OperatorType::DIVIDE:
             if ((lhsType->isNumeric() && rhsType->isNumeric())
-                || (lhsType->isSet() && rhsType->isSet())
-                || (lhsType->isChar() && rhsType->isChar())) {
+                || (lhsType->isSet() && rhsType->isSet())) {
                 common = commonType(start, lhsType, rhsType);
                 result = common;
                 if (common->isInteger()) {

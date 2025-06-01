@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-int cmp(int x, int y) {
+int cmp(int16_t x, uint8_t y) {
     return x > y;
 }
 
