@@ -12,7 +12,7 @@ BEGIN
     i := 16;
     Out.Int(ASR(i, 1), 0); Out.Ln;
     i := -16;
-    Out.Int(ASR(i, 1), 0); Out.Ln;
+    Out.Int(ASR(i, 1), 0); Out.Ln
 END Test;
 
 BEGIN
