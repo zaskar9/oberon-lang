@@ -6,7 +6,7 @@
 
 (** The Files module implements the Oberon file system. *)
 MODULE Files; (*NW 11.1.86 / 28.8.92 / pjm 17.04.97 / MG 24.04.2025 *)
-(* IMPORT Out; *)
+IMPORT Out, SYSTEM;
 
 TYPE
     Handle = POINTER TO RECORD END;  (* Declare FILE* data type from C <stdio.h> library. *)
@@ -222,11 +222,21 @@ VAR
         END
     END Read;
 
+    PROCEDURE ReadBytes*(VAR r: Rider; VAR data: ARRAY OF BYTE);
+    VAR b: BYTE;
+        i: LONGINT;
+    BEGIN
+        FOR i := 0 TO LEN(data) - 1 DO
+            Read(r, b); data[i] := b; IF r.res # 0 THEN RETURN END;
+            Out.Int(data[i], 4)
+        END
+    END ReadBytes;
+
     (** Reads a character. *)
-    PROCEDURE ReadChar*(VAR R: Rider; VAR x: CHAR);
+    PROCEDURE ReadChar*(VAR r: Rider; VAR x: CHAR);
     VAR b: BYTE;
     BEGIN
-        Read(R, b); x := CHR(b)
+        Read(r, b); x := CHR(b)
     END ReadChar;
 
     (** Reads a zero-terminated string. *)
@@ -260,6 +270,25 @@ VAR
         x := n + z
     END ReadNum;
 
+    PROCEDURE DecodeInt(VAR num: LONGINT; data: ARRAY OF BYTE);
+    VAR i: LONGINT;
+    BEGIN
+        num := 0;
+        FOR i := 0 TO LEN(data) - 1 DO
+            num := num + LSL(data[i], i * 8)
+        END
+    END DecodeInt;
+
+    (** Reads an integer value. *)
+    PROCEDURE ReadInt*(VAR r: Rider; VAR x: INTEGER);
+    VAR data: DWORD;
+        num: LONGINT;
+    BEGIN
+        ReadBytes(r, data);
+        DecodeInt(num, data);
+        x := SYSTEM.VAL(INTEGER, num)
+    END ReadInt;
+
     (** Reads a Boolean value. *)
     PROCEDURE ReadBool*(VAR r: Rider; VAR x: BOOLEAN);
     VAR b: BYTE;
@@ -287,6 +316,12 @@ VAR
         END
     END Write;
 
+    PROCEDURE WriteBytes*(VAR r: Rider; data: ARRAY OF BYTE);
+    VAR i: LONGINT;
+    BEGIN
+        FOR i := 0 TO LEN(data) - 1 DO Write(r, data[i]) END
+    END WriteBytes;
+
     (** Writes a character. *)
     PROCEDURE WriteChar*(VAR r: Rider; x: CHAR);
     BEGIN
@@ -313,6 +348,23 @@ VAR
         END;
         Write(r, x MOD 128)
     END WriteNum;
+
+    PROCEDURE EncodeInt(num: LONGINT; VAR data: ARRAY OF BYTE);
+    VAR i: LONGINT;
+    BEGIN
+        FOR i := 0 TO LEN(data) - 1 DO
+            data[i] := num MOD 100H;
+            num := num DIV 100H
+        END
+    END EncodeInt;
+
+    (** Writes an integer. *)
+    PROCEDURE WriteInt*(VAR r: Rider; x: INTEGER);
+    VAR data: DWORD;
+    BEGIN
+        EncodeInt(x, data);
+        WriteBytes(r, data)
+    END WriteInt;
 
     (** Writes a Boolean value. *)
     PROCEDURE WriteBool*(VAR r: Rider; x: BOOLEAN);

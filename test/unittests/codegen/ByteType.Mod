@@ -2,7 +2,7 @@
   RUN: %oberon -I "%S%{pathsep}%inc" -L "%S%{pathsep}%lib" -l oberon --run %s | filecheck %s
 *)
 MODULE ByteType;
-IMPORT Out;
+IMPORT Out, SYSTEM;
 
 TYPE QWORD = ARRAY 8 OF BYTE;
      DWORD = ARRAY 4 OF BYTE;
@@ -12,8 +12,9 @@ VAR x: BYTE;
     i: INTEGER;
     l: LONGINT;
     q: QWORD;
+    d: DWORD;
 
-PROCEDURE EncInt64(num: LONGINT; VAR qword: QWORD);
+PROCEDURE EncInt64(num: LONGINT; VAR qword: ARRAY OF BYTE);
 VAR i: INTEGER;
 BEGIN
     i := 0;
@@ -24,16 +25,23 @@ BEGIN
     UNTIL i = LEN(qword)
 END EncInt64;
 
-PROCEDURE DecInt64(VAR num: LONGINT; qword: QWORD);
+PROCEDURE DecInt64(VAR num: LONGINT; qword: ARRAY OF BYTE);
 VAR i: INTEGER;
 BEGIN
     i := 0;
     num := 0;
     REPEAT
-        num := num + LSL(qword[i], i * 8);
+        INC(num, LSL(qword[i], i * 8));
         INC(i)
     UNTIL i = LEN(qword)
 END DecInt64;
+
+PROCEDURE PrintBytes(data: ARRAY OF BYTE);
+VAR i: LONGINT;
+BEGIN
+    FOR i := 0 TO LEN(data) - 1 DO Out.Int(data[i], 4) END;
+    Out.Ln;
+END PrintBytes;
 
 BEGIN
     x := 255;
@@ -47,8 +55,10 @@ BEGIN
     DecInt64(l, q);
     Out.Long(l, 20); Out.Ln;
 
-    EncInt64(MIN(LONGINT), q);
-    DecInt64(l, q);
+    EncInt64(MIN(INTEGER), d);
+    PrintBytes(d);
+    DecInt64(l, d);
+    l := SHORT(l);
     Out.Long(l, 20); Out.Ln;
 
     EncInt64(MAX(LONGINT), q);

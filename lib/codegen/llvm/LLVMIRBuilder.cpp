@@ -1497,22 +1497,16 @@ void LLVMIRBuilder::visit(ForLoopNode &node) {
     restoreRefMode();
     node.getCounter()->accept(*this);
     auto counter = value_;
-    value_ = builder_.CreateStore(start, counter);
+    builder_.CreateStore(start, counter);
     // Check whether to skip loop body
     setRefMode(true);
     node.getHigh()->accept(*this);
     auto end = value_;
-    node.getCounter()->accept(*this);
-    counter = value_;
     restoreRefMode();
     const auto body = BasicBlock::Create(builder_.getContext(), "for_body", function_);
     const auto tail = BasicBlock::Create(builder_.getContext(), "for_tail", function_);
     const auto step = dynamic_cast<IntegerLiteralNode*>(node.getStep())->value();
-    if (step > 0) {
-        value_ = builder_.CreateICmpSLE(counter, end);
-    } else {
-        value_ = builder_.CreateICmpSGE(counter, end);
-    }
+    value_ = step > 0 ? builder_.CreateICmpSLE(start, end) : builder_.CreateICmpSGE(start, end);
     builder_.CreateCondBr(value_, body, tail);
     // Loop body
     builder_.SetInsertPoint(body);
@@ -1524,7 +1518,7 @@ void LLVMIRBuilder::visit(ForLoopNode &node) {
         setRefMode(true);
         node.getCounter()->accept(*this);
         restoreRefMode();
-        counter = builder_.CreateAdd(value_, ConstantInt::getSigned(builder_.getInt32Ty(), step));
+        counter = builder_.CreateAdd(value_, ConstantInt::getSigned(value_->getType(), step));
         node.getCounter()->accept(*this);
         const auto lValue = value_;
         builder_.CreateStore(counter, lValue);

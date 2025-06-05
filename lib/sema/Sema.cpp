@@ -507,44 +507,47 @@ Sema::onForLoop(const FilePos &start, const FilePos &,
                 unique_ptr<ExpressionNode> low, unique_ptr<ExpressionNode> high, unique_ptr<ExpressionNode> step,
                 unique_ptr<StatementSequenceNode> stmts) {
     vector<unique_ptr<Selector>> selectors;
-    FilePos v_start = var->start();
-    FilePos v_end = var->end();
+    const FilePos v_start = var->start();
+    const FilePos v_end = var->end();
     auto counter = onQualifiedExpression(v_start, v_end, std::move(var), std::move(selectors));
     if (!counter) {
         logger_.error(start, "undefined counter variable in for-loop.");
     }
-    auto ident = counter->ident();
+    const auto ident = counter->ident();
     if (ident->isQualified()) {
         logger_.error(ident->start(), to_string(*ident) + " cannot be used as a loop counter.");
     }
+    TypeNode *type;
     if (counter->getNodeType() == NodeType::qualified_expression) {
-        auto decl = dynamic_cast<QualifiedExpression *>(counter.get())->dereference();
+        const auto decl = counter->dereference();
         if (decl->getNodeType() != NodeType::variable) {
             logger_.error(ident->start(), "variable expected.");
         }
-        auto type = decl->getType();
-        if (type && type->kind() != TypeKind::INTEGER) {
-            logger_.error(ident->start(), "type mismatch: expected INTEGER, found " + format(type) + ".");
+        type = decl->getType();
+        if (type && !type->isInteger()) {
+            logger_.error(ident->start(), "type mismatch: integer type expected, found " + format(type) + ".");
         }
     } else {
         logger_.error(ident->start(), to_string(*ident) + " cannot be used as a loop counter.");
     }
-    if (!low) {
+    if (low) {
+        if (assertCompatible(low->pos(), type, low->getType())) {
+            cast(low.get(), type);
+        }
+    } else {
         logger_.error(start, "undefined low value in for-loop.");
     }
-    if (assertCompatible(low->pos(), integerTy_, low->getType())) {
-        cast(low.get(), integerTy_);
-    }
-    if (!high) {
+    if (high) {
+        if (assertCompatible(high->pos(), type, high->getType())) {
+            cast(high.get(), type);
+        }
+    } else {
         logger_.error(start, "undefined high value in for-loop.");
-    }
-    if (assertCompatible(high->pos(), integerTy_, high->getType())) {
-        cast(high.get(), integerTy_);
     }
     if (step) {
         if (step->isLiteral()) {
-            if (assertCompatible(step->pos(), integerTy_, step->getType())) {
-                auto val = dynamic_cast<IntegerLiteralNode *>(step.get())->value();
+            if (assertCompatible(step->pos(), type, step->getType())) {
+                const auto val = dynamic_cast<IntegerLiteralNode *>(step.get())->value();
                 if (val == 0) {
                     logger_.error(step->pos(), "step value cannot be zero.");
                 } else {
@@ -566,7 +569,7 @@ void Sema::onCaseOfStart(const FilePos &start, const FilePos &, unique_ptr<Expre
     if (!expr) {
         logger_.error(start, "undefined expression in case statement.");
     }
-    auto eType = expr->getType();
+    const auto eType = expr->getType();
     if (eType->isPointer() || eType->isRecord()) {
         if (auto qExpr = dynamic_cast<QualifiedExpression *>(expr.get())) {
             if (!qExpr->selectors().empty()) {
