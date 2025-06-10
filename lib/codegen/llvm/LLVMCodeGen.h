@@ -38,7 +38,7 @@ uint16_t decode_trap(void *);
 #ifdef _WINAPI
 LONG WINAPI trap_handler(EXCEPTION_POINTERS* info);
 #else
-[[noreturn]] void trap_handler(int, const siginfo_t*, void*);
+[[noreturn]] void trap_handler(int, siginfo_t*, void*);
 #endif
 void register_signal_handler();
 

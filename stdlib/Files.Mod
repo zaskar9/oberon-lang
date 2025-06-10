@@ -6,7 +6,7 @@
 
 (** The Files module implements the Oberon file system. *)
 MODULE Files; (*NW 11.1.86 / 28.8.92 / pjm 17.04.97 / MG 24.04.2025 *)
-IMPORT (* Out, *) SYSTEM;
+IMPORT (*Out,*) SYSTEM;
 
 TYPE
     Handle = POINTER TO RECORD END;  (* Declare FILE* data type from C <stdio.h> library. *)
@@ -79,26 +79,54 @@ VAR
     PROCEDURE olang_files_file_date(name: ARRAY OF CHAR; VAR t, d: LONGINT); EXTERN;
 
 
+    PROCEDURE Insert(f: File);
+    BEGIN
+        IF root = NIL THEN root := f ELSE f.next := root; root := f END
+    END Insert;
+
+    PROCEDURE Remove(f: File);
+    VAR ff: File;
+    BEGIN
+        IF f = root THEN
+            root := f.next
+        ELSE
+            ff := root;
+            WHILE ff # NIL DO
+                IF ff.next = f THEN ff.next := f.next; RETURN END;
+                ff := ff.next
+            END
+        END
+    END Remove;
+
+    PROCEDURE Search(name: ARRAY OF CHAR): File;
+    VAR f: File;
+    BEGIN
+        f := root;
+        WHILE f # NIL DO
+            IF f.name = name THEN EXIT END;
+            f := f.next
+        END;
+        RETURN f
+    END Search;
+
     (** Open an existing file. The same file descriptor is returned if a file is opened multiple times. *)
     PROCEDURE Old*(name: ARRAY OF CHAR): File;
     VAR f: File;
         handle: Handle;
     BEGIN
-        f := root;
-        WHILE f # NIL DO
-          IF f.name = name THEN RETURN f END;
-          f := f.next
+        f := Search(name);
+        IF f = NIL THEN
+            IF ~olang_files_file_exists(name) THEN RETURN NIL END;
+            handle := olang_files_file_open(name);
+            IF handle = NIL THEN RETURN NIL END;
+            NEW(f);
+            f.name := name;
+            f.handle := handle;
+            f.registered := TRUE;
+            f.modified := FALSE;
+            f.next := NIL;
+            Insert(f)
         END;
-        IF ~olang_files_file_exists(name) THEN RETURN NIL END;
-        handle := olang_files_file_open(name);
-        IF handle = NIL THEN RETURN NIL END;
-        NEW(f);
-        f.name := name;
-        f.handle := handle;
-        f.registered := TRUE;
-        f.modified := FALSE;
-        f.next := NIL;
-        IF root = NIL THEN root := f ELSE f.next := root; root := f END;
         RETURN f
     END Old;
 
@@ -127,14 +155,11 @@ VAR
     PROCEDURE Close*(f: File);
     VAR ff: File;
     BEGIN
+        ASSERT(f # NIL);
         IF f.registered & f.modified & (f.name # "") THEN fflush(f.handle) END;
         fclose(f.handle);
         f.handle := NIL;
-        ff := root;
-        WHILE ff # NIL DO
-            IF ff.next = f THEN ff.next := f.next; RETURN END;
-            ff := ff.next
-        END
+        Remove(f)
     END Close;
 
     (** Resets the length of file f to 0. *)
@@ -155,12 +180,12 @@ VAR
     VAR f: File;
     BEGIN
         IF olang_files_file_remove(name) THEN
-            res := 0;
             f := root;
             WHILE f # NIL DO
                 IF f.name = name THEN Close(f); RETURN END;
                 f := f.next
-            END
+            END;
+            res := 0
         ELSE
             res := 1
         END
@@ -488,4 +513,6 @@ VAR
     	IF x THEN Write(r, 1) ELSE Write(r, 0) END
     END WriteBool;
 
+BEGIN
+    root := NIL
 END Files.

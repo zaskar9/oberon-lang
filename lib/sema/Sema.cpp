@@ -517,7 +517,7 @@ Sema::onForLoop(const FilePos &start, const FilePos &,
     if (ident->isQualified()) {
         logger_.error(ident->start(), to_string(*ident) + " cannot be used as a loop counter.");
     }
-    TypeNode *type;
+    TypeNode *type = nullptr;
     if (counter->getNodeType() == NodeType::qualified_expression) {
         const auto decl = counter->dereference();
         if (decl->getNodeType() != NodeType::variable) {
@@ -531,14 +531,14 @@ Sema::onForLoop(const FilePos &start, const FilePos &,
         logger_.error(ident->start(), to_string(*ident) + " cannot be used as a loop counter.");
     }
     if (low) {
-        if (assertCompatible(low->pos(), type, low->getType())) {
+        if (type && assertCompatible(low->pos(), type, low->getType())) {
             cast(low.get(), type);
         }
     } else {
         logger_.error(start, "undefined low value in for-loop.");
     }
     if (high) {
-        if (assertCompatible(high->pos(), type, high->getType())) {
+        if (type && assertCompatible(high->pos(), type, high->getType())) {
             cast(high.get(), type);
         }
     } else {
@@ -546,7 +546,7 @@ Sema::onForLoop(const FilePos &start, const FilePos &,
     }
     if (step) {
         if (step->isLiteral()) {
-            if (assertCompatible(step->pos(), type, step->getType())) {
+            if (type && assertCompatible(step->pos(), type, step->getType())) {
                 const auto val = dynamic_cast<IntegerLiteralNode *>(step.get())->value();
                 if (val == 0) {
                     logger_.error(step->pos(), "step value cannot be zero.");
@@ -1640,7 +1640,7 @@ int64_t
 Sema::floor_div(const int64_t x, const int64_t y) {
     const int64_t d = x / y;
     const int64_t r = x % y;
-    return r ? d - (x < 0 ^ y < 0) : d;
+    return r ? d - ((x < 0) ^ (y < 0)) : d;
 }
 
 template<typename L, typename T>
