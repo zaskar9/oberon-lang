@@ -6,14 +6,13 @@
 
 (** The Files module implements the Oberon file system. *)
 MODULE Files; (*NW 11.1.86 / 28.8.92 / pjm 17.04.97 / MG 24.04.2025 *)
-IMPORT Out, SYSTEM;
+IMPORT (* Out, *) SYSTEM;
 
 TYPE
     Handle = POINTER TO RECORD END;  (* Declare FILE* data type from C <stdio.h> library. *)
     File* = POINTER TO RECORD
                 name: ARRAY 32 OF CHAR;
                 handle: Handle;
-                t, d: LONGINT;
                 registered, modified: BOOLEAN;
                 next: File
             END;
@@ -73,18 +72,12 @@ VAR
     (* Declare `bool olang_files_file_seek(FILE*, int64_t)` from Oberon runtime library. *)
     PROCEDURE olang_files_file_seek(handle: Handle; offset: LONGINT): BOOLEAN; EXTERN;
 
+    (* Declare `void olang_files_file_purge(FILE * )` from Oberon runtime library. *)
+    PROCEDURE olang_files_file_purge(name: ARRAY OF CHAR): Handle; EXTERN;
 
-    (** Creates a new file with the specified name. *)
-    PROCEDURE New*(name: ARRAY OF CHAR): File;
-    VAR f: File;
-    BEGIN
-        NEW(f);
-        f.handle := tmpfile();
-        f.name := name;
-        f.registered := FALSE;
-        f.modified := FALSE;
-        RETURN f
-    END New;
+    (* Declare `void olang_files_file_date(const char *, const void *, int64_t *, int64_t * )` from Oberon runtime library. *)
+    PROCEDURE olang_files_file_date(name: ARRAY OF CHAR; VAR t, d: LONGINT); EXTERN;
+
 
     (** Open an existing file. The same file descriptor is returned if a file is opened multiple times. *)
     PROCEDURE Old*(name: ARRAY OF CHAR): File;
@@ -104,9 +97,31 @@ VAR
         f.handle := handle;
         f.registered := TRUE;
         f.modified := FALSE;
+        f.next := NIL;
         IF root = NIL THEN root := f ELSE f.next := root; root := f END;
         RETURN f
     END Old;
+
+    (** Creates a new file with the specified name. *)
+    PROCEDURE New*(name: ARRAY OF CHAR): File;
+    VAR f: File;
+    BEGIN
+        NEW(f);
+        f.handle := tmpfile();
+        f.name := name;
+        f.registered := FALSE;
+        f.modified := FALSE;
+        f.next := NIL;
+        RETURN f
+    END New;
+
+    (** Enters the file f into the directory together with the name provided in the operation `New` that created f.
+        The file buffers are written back. Any existing mapping of this name to another file is overwritten. *)
+    PROCEDURE Register*(f: File);
+    VAR res: BOOLEAN;
+    BEGIN
+        IF ~f.registered THEN olang_files_file_register(f.handle, f.name) END
+    END Register;
 
     (** Flushes the changes made to a file to disk. Register will automatically Close a file. *)
     PROCEDURE Close*(f: File);
@@ -122,14 +137,18 @@ VAR
         END
     END Close;
 
-    (** Register a file created with New in the directory, replacing the previous file in the
-        directory with the same name. The file is automatically closed. *)
-    PROCEDURE Register*(f: File);
-    VAR res: BOOLEAN;
+    (** Resets the length of file f to 0. *)
+    PROCEDURE Purge*(f: File);
     BEGIN
-        IF ~f.registered THEN olang_files_file_register(f.handle, f.name) END;
-        Close(f)
-    END Register;
+        ASSERT(f # NIL);
+        Close(f);
+        IF f.registered THEN
+            f.handle := olang_files_file_purge(f.name)
+        ELSE
+            f.handle := tmpfile()
+        END;
+        f.modified := FALSE
+    END Purge;
 
     (** Deletes a file. res = 0 indicates success. *)
     PROCEDURE Delete*(name: ARRAY OF CHAR; VAR res: INTEGER);
@@ -163,17 +182,31 @@ VAR
         END
     END Rename;
 
-    (** Returns the full name of a file. *)
-    PROCEDURE GetName*(f: File; VAR name: ARRAY OF CHAR);
-    BEGIN
-      	name := f.name
-    END GetName;
-
     (** Returns the current length of a file. *)
     PROCEDURE Length*(f: File): LONGINT;
     BEGIN
         RETURN olang_files_file_length(f.handle)
     END Length;
+
+    (** Returns the time `t` and date `d` of the last modification of file `f`. The encoding is:
+            hour = t DIV 4096;
+            minute = t DIV 64 MOD 64;
+            second = t MOD 64;
+            year = d DIV 512;
+            month = d DIV 32 MOD 16;
+            day = d MOD 32. *)
+    PROCEDURE GetDate*(f: File; VAR t, d: LONGINT);
+    BEGIN
+        ASSERT(f # NIL);
+        t := 0; d := 0;
+        IF f.registered THEN olang_files_file_date(f.name, t, d) END
+    END GetDate;
+
+    (** Returns the full name of a file. *)
+    PROCEDURE GetName*(f: File; VAR name: ARRAY OF CHAR);
+    BEGIN
+      	name := f.name
+    END GetName;
 
     (** Positions a Rider at a certain position in a file. Multiple Riders can be positioned at
         different locations in a file. A Rider cannot be positioned beyond the end of a file. *)
@@ -222,13 +255,13 @@ VAR
         END
     END Read;
 
-    PROCEDURE ReadBytes*(VAR r: Rider; VAR data: ARRAY OF BYTE);
+    (** Reads n bytes into the given buffer. *)
+    PROCEDURE ReadBytes*(VAR r: Rider; VAR data: ARRAY OF BYTE; n: LONGINT);
     VAR b: BYTE;
         i: LONGINT;
     BEGIN
-        FOR i := 0 TO LEN(data) - 1 DO
-            Read(r, b); data[i] := b; IF r.res # 0 THEN RETURN END;
-            Out.Int(data[i], 4)
+        FOR i := 0 TO n - 1 DO
+            Read(r, b); data[i] := b; IF r.res # 0 THEN RETURN END
         END
     END ReadBytes;
 
@@ -279,15 +312,57 @@ VAR
         END
     END DecodeInt;
 
+    (** Reads an short integer value. *)
+    PROCEDURE ReadSInt*(VAR r: Rider; VAR x: SHORTINT);
+    VAR data: WORD;
+        num: LONGINT;
+    BEGIN
+        ReadBytes(r, data, LEN(data));
+        DecodeInt(num, data);
+        x := SYSTEM.VAL(SHORTINT, num)
+    END ReadSInt;
+
     (** Reads an integer value. *)
     PROCEDURE ReadInt*(VAR r: Rider; VAR x: INTEGER);
     VAR data: DWORD;
         num: LONGINT;
     BEGIN
-        ReadBytes(r, data);
+        ReadBytes(r, data, LEN(data));
         DecodeInt(num, data);
         x := SYSTEM.VAL(INTEGER, num)
     END ReadInt;
+
+    (* Reads a long integer value. *)
+    PROCEDURE ReadLInt*(VAR r: Rider; VAR x: LONGINT);
+    VAR data: QWORD;
+    BEGIN
+        ReadBytes(r, data, LEN(data));
+        DecodeInt(x, data)
+    END ReadLInt;
+
+    (* Reads a real value. *)
+    PROCEDURE ReadReal*(VAR r: Rider; VAR x: REAL);
+    VAR num: INTEGER;
+    BEGIN
+        ReadInt(r, num);
+        x := SYSTEM.VAL(REAL, num)
+    END ReadReal;
+
+    (* Reads a long real value. *)
+    PROCEDURE ReadLReal*(VAR r: Rider; VAR x: LONGREAL);
+    VAR num: LONGINT;
+    BEGIN
+        ReadLInt(r, num);
+        x := SYSTEM.VAL(LONGREAL, num)
+    END ReadLReal;
+
+    (* Reads a set value. *)
+    PROCEDURE ReadSet*(VAR r: Rider; VAR x: SET);
+    VAR num: INTEGER;
+    BEGIN
+        ReadInt(r, num);
+        x := SYSTEM.VAL(SET, num)
+    END ReadSet;
 
     (** Reads a Boolean value. *)
     PROCEDURE ReadBool*(VAR r: Rider; VAR x: BOOLEAN);
@@ -303,7 +378,7 @@ VAR
         IF r.file # NIL THEN
             IF olang_files_file_seek(r.file.handle, r.pos) THEN
                 r.res := 0; r.eof := FALSE;
-                IF fputc(x, r.file.handle) # 0 THEN
+                IF fputc(x, r.file.handle) = x THEN (* if a write is successful, `fputc` returns the written `char`. *)
                     r.file.modified := TRUE;
                     pos := ftell(r.file.handle);
                     IF pos = r.pos THEN r.res := r.res + 1 ELSE r.pos := pos END
@@ -316,10 +391,11 @@ VAR
         END
     END Write;
 
-    PROCEDURE WriteBytes*(VAR r: Rider; data: ARRAY OF BYTE);
+    (** Writes n bytes from the given buffer. *)
+    PROCEDURE WriteBytes*(VAR r: Rider; data: ARRAY OF BYTE; n: LONGINT);
     VAR i: LONGINT;
     BEGIN
-        FOR i := 0 TO LEN(data) - 1 DO Write(r, data[i]) END
+        FOR i := 0 TO n - 1 DO Write(r, data[i]) END
     END WriteBytes;
 
     (** Writes a character. *)
@@ -358,13 +434,53 @@ VAR
         END
     END EncodeInt;
 
-    (** Writes an integer. *)
+    (** Writes an short integer value. *)
+    PROCEDURE WriteSInt*(VAR r: Rider; x: SHORTINT);
+    VAR data: WORD;
+    BEGIN
+        EncodeInt(x, data);
+        WriteBytes(r, data, LEN(data))
+    END WriteSInt;
+
+    (** Writes an integer value. *)
     PROCEDURE WriteInt*(VAR r: Rider; x: INTEGER);
     VAR data: DWORD;
     BEGIN
         EncodeInt(x, data);
-        WriteBytes(r, data)
+        WriteBytes(r, data, LEN(data))
     END WriteInt;
+
+    (** Writes an long integer value. *)
+    PROCEDURE WriteLInt*(VAR r: Rider; x: LONGINT);
+    VAR data: QWORD;
+    BEGIN
+        EncodeInt(x, data);
+        WriteBytes(r, data, LEN(data))
+    END WriteLInt;
+
+    (** Writes an real value. *)
+    PROCEDURE WriteReal*(VAR r: Rider; x: REAL);
+    VAR num: INTEGER;
+    BEGIN
+        num := SYSTEM.VAL(INTEGER, x);
+        WriteInt(r, num)
+    END WriteReal;
+
+    (** Writes an long real value. *)
+    PROCEDURE WriteLReal*(VAR r: Rider; x: LONGREAL);
+    VAR num: LONGINT;
+    BEGIN
+        num := SYSTEM.VAL(LONGINT, x);
+        WriteLInt(r, num)
+    END WriteLReal;
+
+    (** Writes a set value. *)
+    PROCEDURE WriteSet*(VAR r: Rider; x: SET);
+    VAR num: INTEGER;
+    BEGIN
+        num := SYSTEM.VAL(INTEGER, x);
+        WriteInt(r, num)
+    END WriteSet;
 
     (** Writes a Boolean value. *)
     PROCEDURE WriteBool*(VAR r: Rider; x: BOOLEAN);

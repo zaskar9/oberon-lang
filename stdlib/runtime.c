@@ -7,6 +7,8 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #include "ieee754.h"
@@ -67,8 +69,26 @@ int64_t olang_files_file_length(FILE *file) {
     return -1;
 }
 
-bool olang_files_file_seek(FILE* file, const int64_t offset) {
+bool olang_files_file_seek(FILE *file, const int64_t offset) {
     return fseek(file, offset, SEEK_SET) == 0;
+}
+
+FILE *olang_files_file_purge(const char *name, const void *dv) {
+    UNUSED(dv);
+    return fopen(name, "w+b");
+}
+
+void olang_files_file_date(const char *name, const void *dv, int64_t *t, int64_t *d) {
+    UNUSED(dv);
+    struct stat result;
+    const int error = stat(name, &result);
+    if (!error) {
+        const struct tm *td = localtime(&result.st_mtime);
+        if (td != NULL) {
+            *t = td->tm_hour << 12 | td->tm_min << 6 | td->tm_sec;
+            *d = (1900 + td->tm_year) << 9 | (td->tm_mon + 1) << 5 | td->tm_mday;
+        }
+    }
 }
 
 float olang_math_realf(const int32_t x) {

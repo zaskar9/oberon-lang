@@ -782,48 +782,51 @@ void LLVMIRBuilder::createTypeTestCase(const CaseOfNode &node, BasicBlock *dflt,
 }
 
 Value *LLVMIRBuilder::createStringComparison(const BinaryExpressionNode *node) {
-    if (node->getOperator() == OperatorType::EQ || node->getOperator() == OperatorType::NEQ) {
-        const auto lhs = node->getLeftExpression();
-        const auto rhs = node->getRightExpression();
-        const auto lhsType = lhs->getType();
-        const auto rhsType = rhs->getType();
-        setRefMode(false);
-        lhs->accept(*this);
-        restoreRefMode();
-        auto lhsValue = value_;
-        setRefMode(false);
-        rhs->accept(*this);
-        restoreRefMode();
-        auto rhsValue = value_;
-        Value *value = nullptr;
-        Value *test = builder_.getInt32(0);
-        if ((lhsType->isArray() && rhsType->isArray()) || lhsType->isString() || rhsType->isString()) {
-            // TODO This introduces a dependency to `strcmp` that might not be ideal.
-            auto fun = module_->getFunction("strcmp");
-            if (!fun) {
-                const auto type = FunctionType::get(builder_.getInt32Ty(), {builder_.getPtrTy(), builder_.getPtrTy()}, false);
-                fun = Function::Create(type, GlobalValue::ExternalLinkage, "strcmp", module_);
-                // fun->addFnAttr(Attribute::getWithAllocSizeArgs(builder_.getContext(), 0, {}));
-                fun->addParamAttr(0, Attribute::NoUndef);
-                fun->addParamAttr(1, Attribute::NoUndef);
-            }
-            value = builder_.CreateCall(FunctionCallee(fun), {lhsValue, rhsValue});
-        } else {
-            value = lhsType->isChar() ? rhsValue : lhsValue;
-            value = builder_.CreateInBoundsGEP(ArrayType::get(builder_.getInt8Ty(), 0), value,
-                                               {builder_.getInt32(0), builder_.getInt32(0)});
-            value = builder_.CreateLoad(builder_.getInt8Ty(), value);
-            test = lhsType->isChar() ? lhsValue : rhsValue;
+    const auto op = node->getOperator();
+    const auto lhs = node->getLeftExpression();
+    const auto rhs = node->getRightExpression();
+    const auto lhsType = lhs->getType();
+    const auto rhsType = rhs->getType();
+    setRefMode(false);
+    lhs->accept(*this);
+    restoreRefMode();
+    auto lhsValue = value_;
+    setRefMode(false);
+    rhs->accept(*this);
+    restoreRefMode();
+    auto rhsValue = value_;
+    Value *value = nullptr;
+    Value *test = builder_.getInt32(0);
+    if ((lhsType->isArray() && rhsType->isArray()) || lhsType->isString() || rhsType->isString()) {
+        // TODO This introduces a dependency to `strcmp` that might not be ideal.
+        auto fun = module_->getFunction("strcmp");
+        if (!fun) {
+            const auto type = FunctionType::get(builder_.getInt32Ty(), {builder_.getPtrTy(), builder_.getPtrTy()}, false);
+            fun = Function::Create(type, GlobalValue::ExternalLinkage, "strcmp", module_);
+            // fun->addFnAttr(Attribute::getWithAllocSizeArgs(builder_.getContext(), 0, {}));
+            fun->addParamAttr(0, Attribute::NoUndef);
+            fun->addParamAttr(1, Attribute::NoUndef);
         }
-        if (node->getOperator() == OperatorType::EQ) {
-            value = builder_.CreateICmpEQ(value, test);
-        } else {
-            value = builder_.CreateICmpNE(value, test);
-        }
-        return value;
+        value = builder_.CreateCall(FunctionCallee(fun), {lhsValue, rhsValue});
+    } else {
+        value = lhsType->isChar() ? rhsValue : lhsValue;
+        value = builder_.CreateInBoundsGEP(ArrayType::get(builder_.getInt8Ty(), 0), value,
+                                           {builder_.getInt32(0), builder_.getInt32(0)});
+        value = builder_.CreateLoad(builder_.getInt8Ty(), value);
+        test = lhsType->isChar() ? lhsValue : rhsValue;
     }
-    logger_.error(node->pos(), "operator " + to_string(node->getOperator()) + " not applicable to strings.");
-    return value_;
+    switch (op) {
+        case OperatorType::EQ: return builder_.CreateICmpEQ(value, test);
+        case OperatorType::NEQ: return builder_.CreateICmpNE(value, test);
+        case OperatorType::GT: return builder_.CreateICmpSGT(value, test);
+        case OperatorType::GEQ: return builder_.CreateICmpSGE(value, test);
+        case OperatorType::LT: return builder_.CreateICmpSLT(value, test);
+        case OperatorType::LEQ: return builder_.CreateICmpSLE(value, test);
+        default:
+            logger_.error(node->pos(), "operator " + to_string(node->getOperator()) +
+                                       " not applicable in binary string expression.");
+            return value_;
+    }
 }
 
 Value *LLVMIRBuilder::createNeg(Value *value) {
@@ -901,25 +904,10 @@ void LLVMIRBuilder::visit(UnaryExpressionNode &node) {
                 value_ = type->isReal() ? builder_.CreateFNeg(value_) : createNeg(value_);
             }
             break;
-        case OperatorType::AND:
-        case OperatorType::OR:
-        case OperatorType::PLUS:
-        case OperatorType::MINUS:
-        case OperatorType::TIMES:
-        case OperatorType::DIV:
-        case OperatorType::MOD:
-        case OperatorType::EQ:
-        case OperatorType::NEQ:
-        case OperatorType::LT:
-        case OperatorType::GT:
-        case OperatorType::LEQ:
-        case OperatorType::GEQ:
+        default:
             value_ = nullptr;
-            logger_.error(node.pos(), "binary operator in unary expression.");
-            break;
-        default: value_ = nullptr;
-            logger_.error(node.pos(), "unknown operator,");
-            break;
+            logger_.error(node.pos(), "operator " + to_string(node.getOperator()) +
+                                      " not applicable in unary expression.");
     }
 }
 
@@ -991,6 +979,9 @@ void LLVMIRBuilder::visit(BinaryExpressionNode &node) {
             case OperatorType::DIVIDE:
                 value_ = builder_.CreateXor(lhs, rhs);
                 break;
+            case OperatorType::EQ:
+                value_ = builder_.CreateICmpEQ(lhs, rhs);
+                break;
             case OperatorType::LEQ:
                 value_ = builder_.CreateXor(ConstantInt::get(builder_.getInt32Ty(), 0xffffffff), rhs);
                 value_ = builder_.CreateAnd(lhs, value_);
@@ -1013,8 +1004,8 @@ void LLVMIRBuilder::visit(BinaryExpressionNode &node) {
                 break;
             default:
                 value_ = nullptr;
-                logger_.error(node.pos(), "operator " + to_string(node.getOperator()) + " not applicable here.");
-                break;
+                logger_.error(node.pos(), "operator " + to_string(node.getOperator()) +
+                                          " not applicable in binary set expression.");
         }
     } else if (lhsType->isNumeric() && rhsType->isNumeric()) {
         node.getRightExpression()->accept(*this);
@@ -1058,20 +1049,10 @@ void LLVMIRBuilder::visit(BinaryExpressionNode &node) {
             case OperatorType::GEQ:
                 value_ = floating ? builder_.CreateFCmpUGE(lhs, rhs) : builder_.CreateICmpSGE(lhs, rhs);
                 break;
-            case OperatorType::IS:
-            case OperatorType::AND:
-            case OperatorType::OR:
-                // Unreachable code due to the if-branch and elsif-branch of this else-branch
-                break;
-            case OperatorType::NOT:
-            case OperatorType::NEG:
-                value_ = nullptr;
-                logger_.error(node.pos(), "unary operator " + to_string(node.getOperator()) + " in binary expression.");
-                break;
             default:
                 value_ = nullptr;
-                logger_.error(node.pos(), "operator " + to_string(node.getOperator()) + " not applicable here.");
-                break;
+                logger_.error(node.pos(), "operator " + to_string(node.getOperator()) +
+                                          " not applicable in binary numeric expression.");
         }
     } else if (lhsType->isChar() && rhsType->isChar()) {
         node.getRightExpression()->accept(*this);
@@ -1092,8 +1073,8 @@ void LLVMIRBuilder::visit(BinaryExpressionNode &node) {
                 value_ = builder_.CreateICmpUGE(lhs, rhs); break;
             default:
                 value_ = nullptr;
-                logger_.error(node.pos(), "operator " + to_string(node.getOperator()) + " not applicable here.");
-                break;
+                logger_.error(node.pos(), "operator " + to_string(node.getOperator()) +
+                                          " not applicable in binary character expression.");
         }
     } else if (lhsType->isPointer() || rhsType->isPointer()) {
         node.getRightExpression()->accept(*this);
@@ -1104,7 +1085,8 @@ void LLVMIRBuilder::visit(BinaryExpressionNode &node) {
         } else if (node.getOperator() == OperatorType::NEQ) {
             value_ = builder_.CreateICmpNE(lhs, rhs);
         } else {
-            logger_.error(node.pos(), "operator " + to_string(node.getOperator()) + " not applicable to pointers.");
+            logger_.error(node.pos(), "operator " + to_string(node.getOperator()) +
+                                      " not applicable in binary pointer expression.");
         }
     }
 }
