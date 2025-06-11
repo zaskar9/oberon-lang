@@ -19,7 +19,7 @@ VAR f: Files.File;
     t, d: LONGINT;
 
 BEGIN
-    f := Files.New("test.bin");
+    f := Files.New("test.tmp");
     ASSERT(f # NIL);
     (* Out.String("File created."); Out.Ln; *)
 
@@ -27,28 +27,28 @@ BEGIN
     (* Out.String("File registered."); Out.Ln; *)
     DISPOSE(f);
 
-    f := Files.Old("test.bin");
+    f := Files.Old("test.tmp");
     ASSERT(f # NIL);
     Files.GetName(f, str);
-    ASSERT(str = "test.bin");
+    ASSERT(str = "test.tmp");
     (* Out.String("File opened."); Out.Ln; *)
-
-    res := 0;
-    Files.Rename("test.bin", "test.txt", res);
-    ASSERT(res = 0);
-    (* Out.String("File renamed."); Out.Ln; *)
-
-    Files.GetName(f, str);
-    ASSERT(str = "test.txt");
-    (* Out.String("File name changed."); Out.Ln; *)
 
     Files.Close(f);
     (* Out.String("File closed."); Out.Ln; *)
     DISPOSE(f);
 
+    res := 0;
+    Files.Rename("test.tmp", "test.txt", res);
+    ASSERT(res = 0);
+    (* Out.String("File renamed."); Out.Ln; *)
+
     f := Files.Old("test.txt");
     ASSERT(f # NIL);
     (* Out.String("Renamed file opened."); Out.Ln; *)
+
+    Files.GetName(f, str);
+    ASSERT(str = "test.txt");
+    (* Out.String("File name changed."); Out.Ln; *)
 
     len := Files.Length(f);
     ASSERT(len = 0);

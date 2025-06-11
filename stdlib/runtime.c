@@ -9,7 +9,12 @@
 #include <stdlib.h>
 #include <time.h>
 #include <sys/stat.h>
-#include <unistd.h>
+#if (defined(_WIN32) || defined(_WIN64)) && !(defined(__MINGW32__) || defined(__MINGW64__))
+  #include <io.h>
+  #include <windows.h>
+#else
+  #include <unistd.h>
+#endif
 
 #include "ieee754.h"
 
@@ -22,7 +27,11 @@ int32_t olang_oberon_timespec_get(struct timespec* const time_spec, const void *
 
 bool olang_files_file_exists(const char *name, const void *dv) {
     UNUSED(dv);
-    return access(name, F_OK) != -1;
+#if (defined(_WIN32) || defined(_WIN64)) && !(defined(__MINGW32__) || defined(__MINGW64__))
+    return _access(name, 0) == 0;
+#else
+    return access(name, F_OK) == 0;
+#endif
 }
 
 FILE *olang_files_file_open(const char *name, const void *dv) {
@@ -48,17 +57,18 @@ int32_t olang_files_file_register(FILE *handle, const char *name, const void *dv
             ch = fgetc(handle);
         }
     }
+    fclose(file);
     return !ferror(handle) && !ferror(file);
 }
 
-bool olang_files_file_remove(const char *name, const void *dv) {
+int32_t olang_files_file_remove(const char *name, const void *dv) {
     UNUSED(dv);
-    return remove(name) == 0;
+    return remove(name);
 }
 
-bool olang_files_file_rename(const char *old, const void *old_dv, const char *new, const void* new_dv) {
+int32_t olang_files_file_rename(const char *old, const void *old_dv, const char *new, const void* new_dv) {
     UNUSED(old_dv); UNUSED(new_dv);
-    return rename(old, new) == 0;
+    return rename(old, new);
 }
 
 int64_t olang_files_file_length(FILE *file) {

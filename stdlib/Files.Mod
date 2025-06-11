@@ -61,10 +61,10 @@ VAR
     PROCEDURE olang_files_file_register(handle: Handle; name: ARRAY OF CHAR): INTEGER; EXTERN;
 
     (* Declare `bool olang_files_file_remove(const char *, const void * )` from Oberon runtime library. *)
-    PROCEDURE olang_files_file_remove(name: ARRAY OF CHAR): BOOLEAN; EXTERN;
+    PROCEDURE olang_files_file_remove(name: ARRAY OF CHAR): INTEGER; EXTERN;
 
     (* Declare `bool olang_files_file_rename(const char *, const void *, const char *, const void* )` from Oberon runtime library. *)
-    PROCEDURE olang_files_file_rename(old, new: ARRAY OF CHAR): BOOLEAN; EXTERN;
+    PROCEDURE olang_files_file_rename(old, new: ARRAY OF CHAR): INTEGER; EXTERN;
 
     (* Declare `int64_t olang_files_file_length(FILE * )` from Oberon runtime library. *)
     PROCEDURE olang_files_file_length(handle: Handle): LONGINT; EXTERN;
@@ -143,7 +143,7 @@ VAR
         RETURN f
     END New;
 
-    (** Enters the file f into the directory together with the name provided in the operation `New` that created f.
+    (** Enters the file `f` into the directory together with the name provided in the operation `New` that created `f`.
         The file buffers are written back. Any existing mapping of this name to another file is overwritten. *)
     PROCEDURE Register*(f: File);
     VAR res: BOOLEAN;
@@ -175,33 +175,25 @@ VAR
         f.modified := FALSE
     END Purge;
 
-    (** Deletes a file. res = 0 indicates success. *)
+    (** Deletes a (registered) file with the name `name`. In order to delete a file, the file must be closed.
+        Variable parameter `res` contains the status of the opration: 0 indicates success. *)
     PROCEDURE Delete*(name: ARRAY OF CHAR; VAR res: INTEGER);
     VAR f: File;
     BEGIN
-        IF olang_files_file_remove(name) THEN
-            f := root;
-            WHILE f # NIL DO
-                IF f.name = name THEN Close(f); RETURN END;
-                f := f.next
-            END;
-            res := 0
+        IF Search(name) = NIL THEN
+            res := olang_files_file_remove(name)
         ELSE
             res := 1
         END
     END Delete;
 
-    (** Renames a file. res = 0 indicates success. *)
+    (** Renames a (registered) file with name `old` to `new`. In order to rename a file, the file must be
+        closed. Variable `res` contains the status of the operation: `0` indicates success. *)
     PROCEDURE Rename*(old, new: ARRAY OF CHAR; VAR res: INTEGER);
     VAR f: File;
     BEGIN
-        IF olang_files_file_rename(old, new) THEN
-            res := 0;
-            f := root;
-            WHILE f # NIL DO
-                IF f.name = old THEN f.name := new; RETURN END;
-                f := f.next
-            END
+        IF Search(old) = NIL THEN
+            res := olang_files_file_rename(old, new)
         ELSE
             res := 1
         END
