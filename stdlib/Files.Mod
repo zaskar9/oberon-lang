@@ -6,7 +6,7 @@
 
 (** The Files module implements the Oberon file system. *)
 MODULE Files; (*NW 11.1.86 / 28.8.92 / pjm 17.04.97 / MG 24.04.2025 *)
-IMPORT (*Out,*) SYSTEM;
+IMPORT SYSTEM;
 
 TYPE
     Handle = POINTER TO RECORD END;  (* Declare FILE* data type from C <stdio.h> library. *)
@@ -21,7 +21,6 @@ TYPE
 				res*, pos: LONGINT;	 (** Rider operation result code. *)
 				file: File
 			END;
-
     WORD = ARRAY 2 OF BYTE;
 	DWORD = ARRAY 4 OF BYTE;
 	QWORD = ARRAY 8 OF BYTE;
@@ -58,7 +57,7 @@ VAR
     PROCEDURE olang_files_file_open(name: ARRAY OF CHAR): Handle; EXTERN;
 
     (* Declare `int32_t olang_files_file_register(FILE *, const char *, const void * )` from Oberon runtime library. *)
-    PROCEDURE olang_files_file_register(handle: Handle; name: ARRAY OF CHAR): INTEGER; EXTERN;
+    PROCEDURE olang_files_file_register(handle: Handle; name: ARRAY OF CHAR); EXTERN;
 
     (* Declare `bool olang_files_file_remove(const char *, const void * )` from Oberon runtime library. *)
     PROCEDURE olang_files_file_remove(name: ARRAY OF CHAR): INTEGER; EXTERN;
@@ -146,7 +145,6 @@ VAR
     (** Enters the file `f` into the directory together with the name provided in the operation `New` that created `f`.
         The file buffers are written back. Any existing mapping of this name to another file is overwritten. *)
     PROCEDURE Register*(f: File);
-    VAR res: BOOLEAN;
     BEGIN
         IF ~f.registered THEN olang_files_file_register(f.handle, f.name) END
     END Register;
@@ -176,7 +174,7 @@ VAR
     END Purge;
 
     (** Deletes a (registered) file with the name `name`. In order to delete a file, the file must be closed.
-        Variable parameter `res` contains the status of the opration: 0 indicates success. *)
+        Variable parameter `res` contains the status of the operation: 0 indicates success. *)
     PROCEDURE Delete*(name: ARRAY OF CHAR; VAR res: INTEGER);
     VAR f: File;
     BEGIN
@@ -205,7 +203,8 @@ VAR
         RETURN olang_files_file_length(f.handle)
     END Length;
 
-    (** Returns the time `t` and date `d` of the last modification of file `f`. The encoding is:
+    (** Returns the time `t` and date `d` of the last modification of file `f`.
+        The encoding is:
             hour = t DIV 4096;
             minute = t DIV 64 MOD 64;
             second = t MOD 64;

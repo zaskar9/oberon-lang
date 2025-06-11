@@ -46,7 +46,7 @@ FILE *olang_files_file_open(const char *name, const void *dv) {
     return file;
 }
 
-int32_t olang_files_file_register(FILE *handle, const char *name, const void *dv) {
+void olang_files_file_register(FILE *handle, const char *name, const void *dv) {
     UNUSED(dv);
     FILE *file = fopen(name, "w+b");
     rewind(handle);
@@ -58,7 +58,6 @@ int32_t olang_files_file_register(FILE *handle, const char *name, const void *dv
         }
     }
     fclose(file);
-    return !ferror(handle) && !ferror(file);
 }
 
 int32_t olang_files_file_remove(const char *name, const void *dv) {

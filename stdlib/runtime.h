@@ -17,7 +17,7 @@ int32_t olang_oberon_timespec_get(struct timespec *, const void *, int32_t);
 // Module `Files`
 bool olang_files_file_exists(const char *, const void *);
 FILE *olang_files_file_open(const char *, const void *);
-int32_t olang_files_file_register(FILE *, const char *, const void *);
+void olang_files_file_register(FILE *, const char *, const void *);
 int32_t olang_files_file_remove(const char *, const void *);
 int32_t olang_files_file_rename(const char *, const void *, const char *, const void *);
 int64_t olang_files_file_length(FILE *);
