@@ -32,10 +32,11 @@ private:
     void block(const BlockNode &, bool isGlobal);
     void selectors(const vector<unique_ptr<Selector>> &);
     void qualident(const DeclarationNode *) const;
-    void procedure(const string&, ProcedureTypeNode *);
+    void signature(const string&, ProcedureTypeNode *);
 
     void visit(ModuleNode &) override;
-    void visit(ProcedureNode &) override;
+    void visit(ProcedureDeclarationNode &) override;
+    void visit(ProcedureDefinitionNode &) override;
 
     void visit(ImportNode &) override;
 

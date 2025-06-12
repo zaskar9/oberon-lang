@@ -20,25 +20,24 @@ using std::string;
 using std::unique_ptr;
 using std::vector;
 
-class ModuleNode final : public BlockNode {
+class ModuleNode final : public DeclarationNode, public BlockNode {
 
 private:
     vector<unique_ptr<ImportNode>> imports_;
 
 public:
     // ctor for use in sema / parser
-    ModuleNode(const FilePos &pos, unique_ptr<Ident> name) :
-            BlockNode(NodeType::module, pos, make_unique<IdentDef>(name->start(), name->end(), name->name()), nullptr),
-            imports_() {};
+    ModuleNode(const FilePos &pos, const unique_ptr<Ident> &name) :
+            DeclarationNode(NodeType::module, pos, make_unique<IdentDef>(name->start(), name->end(), name->name()), nullptr) {}
     // ctor for use in symbol importer
-    explicit ModuleNode(unique_ptr<Ident> name) :
-            BlockNode(NodeType::module, EMPTY_POS, make_unique<IdentDef>(name->start(), name->end(), name->name()), nullptr),
-            imports_() {};
+    explicit ModuleNode(const unique_ptr<Ident> &name) :
+            DeclarationNode(NodeType::module, EMPTY_POS, make_unique<IdentDef>(name->start(), name->end(), name->name()), nullptr) {}
     ~ModuleNode() override = default;
 
     [[nodiscard]] vector<unique_ptr<ImportNode>> &imports();
 
     void accept(NodeVisitor& visitor) override;
+
     void print(std::ostream &stream) const override;
 
 };

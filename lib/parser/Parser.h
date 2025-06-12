@@ -10,6 +10,7 @@
 
 #include <memory>
 #include <set>
+#include <string>
 #include <vector>
 
 #include "Logger.h"
@@ -30,10 +31,18 @@
 #include "sema/Sema.h"
 
 using std::set;
+using std::string;
 using std::unique_ptr;
 using std::vector;
 
 class Parser {
+
+public:
+    explicit Parser(CompilerConfig &config, Scanner &scanner, Sema &sema) :
+            config_(config), scanner_(scanner), sema_(sema), logger_(config_.logger()) {}
+    ~Parser() = default;
+
+    void parse(ASTContext *context);
 
 private:
     CompilerConfig &config_;
@@ -45,7 +54,7 @@ private:
     unique_ptr<Ident> ident();
     unique_ptr<QualIdent> qualident();
     unique_ptr<IdentDef> identdef(bool checkAlphaNum = true);
-    void ident_list(vector<unique_ptr<IdentDef>> &idents);
+    void ident_list(vector<unique_ptr<IdentDef>> &);
 
     void module(ASTContext *context);
 
@@ -59,7 +68,9 @@ private:
     void const_declarations(vector<unique_ptr<ConstantDeclarationNode>> &);
     void type_declarations(vector<unique_ptr<TypeDeclarationNode>> &);
     void var_declarations(vector<unique_ptr<VariableDeclarationNode>> &);
-    void procedure_declaration(vector<unique_ptr<ProcedureNode>> &);
+    void procedure(vector<unique_ptr<ProcedureNode>> &);
+    void procedure_declaration(const FilePos &, vector<unique_ptr<ProcedureNode>> &);
+    void procedure_definition(const FilePos &, vector<unique_ptr<ProcedureNode>> &);
 
     void expression_list(vector<unique_ptr<ExpressionNode>> &);
     unique_ptr<ExpressionNode> expression();
@@ -84,7 +95,7 @@ private:
 
     ProcedureTypeNode *procedure_type();
     TypeNode *formal_parameters(vector<unique_ptr<ParameterNode>> &, bool &);
-    void procedure_body(ProcedureNode *);
+    void procedure_body(ProcedureDefinitionNode *);
     void fp_section(vector<unique_ptr<ParameterNode>> &, bool &);
     TypeNode *formal_type();
 
@@ -99,18 +110,12 @@ private:
     unique_ptr<StatementNode> case_statement();
     void elsif_clause(vector<unique_ptr<ElseIfNode>> &, TokenType = TokenType::kw_then);
 
-    bool assertToken(const Token *token, TokenType expected);
-    bool assertOberonIdent(const Ident *ident);
+    bool assertToken(const Token *, TokenType) const;
+    bool assertString(const Token *, string &) const;
+    bool assertOberonIdent(const Ident *) const;
 
-    void resync(std::set<TokenType> types);
-    void expect(std::set<TokenType> exp);
-
-public:
-    explicit Parser(CompilerConfig &config, Scanner &scanner, Sema &sema) :
-            config_(config), scanner_(scanner), sema_(sema), logger_(config_.logger()), token_() { };
-    ~Parser() = default;
-
-    void parse(ASTContext *context);
+    void resync(std::set<TokenType>);
+    void expect(std::set<TokenType>);
 
 };
 

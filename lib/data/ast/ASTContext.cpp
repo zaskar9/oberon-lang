@@ -86,7 +86,7 @@ void ASTContext::addExternalProcedure(ProcedureNode *proc) {
     }
 }
 
-ProcedureNode *ASTContext::getExternalProcedure(size_t num) const {
+ProcedureNode *ASTContext::getExternalProcedure(const size_t num) const {
     return ext_procedures_.at(num);
 }
 

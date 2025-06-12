@@ -110,10 +110,9 @@ void LLVMIRBuilder::visit(ModuleNode &node) {
     verifyModule(*module_, &errs());
 }
 
-void LLVMIRBuilder::visit(ProcedureNode &node) {
-    if (node.isExtern() || node.isImported()) {
-        return;
-    }
+void LLVMIRBuilder::visit(ProcedureDeclarationNode &) {}
+
+void LLVMIRBuilder::visit(ProcedureDefinitionNode &node) {
     const string name = node.getIdentifier()->name();
     scopes_.push_back(name);
     if (node.getProcedureCount() > 0) {
@@ -345,7 +344,7 @@ TypeNode *LLVMIRBuilder::selectors(NodeReference *ref, TypeNode *base, const Sel
             const auto params = dynamic_cast<ActualParameters *>(sel);
             auto procedure_t = dynamic_cast<ProcedureTypeNode *>(selector_t);
             vector<Value *> values;
-            parameters(procedure_t, params, values);
+            parameters(procedure_t, params, values, CallingConvention::OLANG);
             const auto funTy = funTypes_[procedure_t];
             // Output the GEP up to the procedure call
             value = processGEP(baseTy, value, indices);  // TODO Not sure if this call is ever necessary
@@ -456,14 +455,14 @@ TypeNode *LLVMIRBuilder::selectors(NodeReference *ref, TypeNode *base, const Sel
 }
 
 void
-LLVMIRBuilder::parameters(ProcedureTypeNode *proc, ActualParameters *actuals, vector<Value *> &values, bool) {
+LLVMIRBuilder::parameters(ProcedureTypeNode *type, ActualParameters *actuals, vector<Value *> &values, CallingConvention conv) {
     for (size_t i = 0; i < actuals->parameters().size(); i++) {
         const auto actualParam = actuals->parameters()[i].get();
         const auto actualType = actualParam->getType();
         const ParameterNode *formalParam = nullptr;
-        if (i < proc->parameters().size()) {
+        if (i < type->parameters().size()) {
             // Non-variadic argument
-            formalParam = proc->parameters()[i].get();
+            formalParam = type->parameters()[i].get();
             if (formalParam->isVar()              // VAR parameter
                 || actualType->isStructured()     // ARRAY or RECORD
                 || actualType->isString()) {      // STRING literal parameter
@@ -479,7 +478,7 @@ LLVMIRBuilder::parameters(ProcedureTypeNode *proc, ActualParameters *actuals, ve
         cast(*actualParam);
         values.push_back(value_);
         restoreRefMode();
-        if (formalParam) {
+        if (formalParam && conv == CallingConvention::OLANG) {
             const auto formalType = formalParam->getType();
             if (formalType->isArray() && dynamic_cast<ArrayTypeNode*>(formalType)->isOpen()) {
                 // Add a pointer to the dope vector of an open array
@@ -509,7 +508,6 @@ LLVMIRBuilder::parameters(ProcedureTypeNode *proc, ActualParameters *actuals, ve
 
 TypeNode *LLVMIRBuilder::createStaticCall(NodeReference &node, const QualIdent *ident, Selectors &selectors) {
     const auto proc = dynamic_cast<ProcedureNode *>(node.dereference());
-    const auto type = proc->getType();
     vector<Value*> values;
     ActualParameters *sel;
     bool args;
@@ -517,11 +515,13 @@ TypeNode *LLVMIRBuilder::createStaticCall(NodeReference &node, const QualIdent *
         args = false;
     } else {
         sel = dynamic_cast<ActualParameters *>(selectors[0].get());
-        parameters(type, sel, values, proc->isExtern());
+        const auto conv = proc->isExternal() ? dynamic_cast<ProcedureDeclarationNode*>(proc)->getConvention() :
+                                                              CallingConvention::OLANG;
+        parameters(proc->getType(), sel, values, conv);
         args = true;
     }
     if (proc->isPredefined()) {
-        vector<unique_ptr<ExpressionNode>> params;
+        constexpr vector<unique_ptr<ExpressionNode>> params;
         const auto callee = dynamic_cast<PredefinedProcedure *>(proc);
         value_ = createPredefinedCall(callee, ident, args ? sel->parameters() : params, values);
     } else {
@@ -2248,7 +2248,7 @@ void LLVMIRBuilder::procedure(ProcedureNode &node) {
 string LLVMIRBuilder::qualifiedName(DeclarationNode *node) const {
     if (node->getNodeType() == NodeType::procedure) {
         auto proc = dynamic_cast<ProcedureNode *>(node);
-        if ((proc->isExtern() || proc->isImported()) && node->getModule() == ast_->getTranslationUnit()) {
+        if (proc->isExternal() && node->getModule() == ast_->getTranslationUnit()) {
             return node->getIdentifier()->name();
         }
     }

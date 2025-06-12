@@ -350,9 +350,30 @@ Sema::onVariable(const FilePos &start, const FilePos &,
     return node;
 }
 
-ProcedureNode *
-Sema::onProcedureStart(const FilePos &start, unique_ptr<IdentDef> ident) {
-    procs_.push(make_unique<ProcedureNode>(start, std::move(ident)));
+unique_ptr<ProcedureDeclarationNode>
+Sema::onProcedureDeclaration(const FilePos &start, const FilePos &, unique_ptr<IdentDef> ident,
+                             ProcedureTypeNode *type, const string &conv, const string &name) {
+    auto convention = CallingConvention::OLANG;
+    if (conv == "C") {
+        convention = CallingConvention::C;
+    } else if (conv != "OLANG") {
+        logger_.error(start, "unsupported calling convention: " + conv + ".");
+    }
+    auto proc = make_unique<ProcedureDeclarationNode>(start, std::move(ident), type, convention, name);
+    assertUnique(proc->getIdentifier(), proc.get());
+    proc->setScope(symbols_->getLevel());
+    proc->setModule(context_->getTranslationUnit());
+    checkExport(proc.get());
+    if (proc->getScope() != SymbolTable::MODULE_SCOPE) {
+        logger_.error(proc->pos(), "only top-level procedures can be external.");
+    }
+    return proc;
+}
+
+
+ProcedureDefinitionNode *
+Sema::onProcedureDefinitionStart(const FilePos &start, unique_ptr<IdentDef> ident) {
+    procs_.push(make_unique<ProcedureDefinitionNode>(start, std::move(ident)));
     auto proc = procs_.top().get();
     assertUnique(proc->getIdentifier(), proc);
     proc->setScope(symbols_->getLevel());
@@ -362,35 +383,26 @@ Sema::onProcedureStart(const FilePos &start, unique_ptr<IdentDef> ident) {
     return proc;
 }
 
-unique_ptr<ProcedureNode>
-Sema::onProcedureEnd(const FilePos &, unique_ptr<Ident> ident) {
+unique_ptr<ProcedureDefinitionNode>
+Sema::onProcedureDefinitionEnd(const FilePos &, const unique_ptr<Ident> &ident) {
     onBlockEnd();
     auto proc = std::move(procs_.top());
     procs_.pop();
-    auto ret = proc->getType()->getReturnType();
-    if (ret) {
-        if (!proc->statements()->isReturn() && !proc->isExtern()) {
-            logger_.error(proc->pos(), "not all control flow paths of the procedure return a result.");
-        }
+    if (proc->getType()->getReturnType() && !proc->statements()->isReturn()) {
+        logger_.error(proc->pos(), "not all control flow paths of the procedure return a result.");
     }
-    if (proc->isExtern()) {
-        if (proc->getScope() != SymbolTable::MODULE_SCOPE) {
-            logger_.error(proc->pos(), "only top-level procedures can be external.");
-        }
-    } else {
-        if (*proc->getIdentifier() != *ident) {
-            logger_.error(ident->start(), "procedure name mismatch: expected " + to_string(*proc->getIdentifier()) +
-                                           ", found " + to_string(*ident) + ".");
-        }
+    if (*proc->getIdentifier() != *ident) {
+        logger_.error(ident->start(), "procedure name mismatch: expected " + to_string(*proc->getIdentifier()) +
+                                       ", found " + to_string(*ident) + ".");
     }
     return proc;
 }
 
 void Sema::onStatementSequence(StatementSequenceNode *stmts) {
-    size_t length = stmts->getStatementCount() - 1;
-    size_t termIdx = stmts->getTerminatorIndex();
+    const size_t length = stmts->getStatementCount() - 1;
+    const size_t termIdx = stmts->getTerminatorIndex();
     if (stmts->hasTerminator() && termIdx < length) {
-        auto stmt = stmts->getStatement(termIdx + 1);
+        const auto stmt = stmts->getStatement(termIdx + 1);
         logger_.error(stmt->pos(), "unreachable code.");
     }
 }
@@ -792,8 +804,8 @@ Sema::onQualifiedStatement(const FilePos &start, const FilePos &,
         return nullptr;
     }
     // Check whether this is an external or imported procedure
-    if (auto proc = dynamic_cast<ProcedureNode *>(sym)) {
-        if (ident->isQualified() && !proc->isPredefined() && (proc->isExtern() || proc->isImported())) {
+    if (const auto proc = dynamic_cast<ProcedureNode *>(sym)) {
+        if (ident->isQualified() && proc->isExternal()) {
             // A fully-qualified external reference needs to be added to module for code generation
             context_->addExternalProcedure(proc);
         }
@@ -839,8 +851,8 @@ Sema::onQualifiedExpression(const FilePos &start, const FilePos &,
         return make_unique<QualifiedExpression>(start, std::move(ident), std::move(selectors), sym, typeTy_);
     }
     // Check whether the qualified identifier is an external or imported procedure
-    if (auto proc = dynamic_cast<ProcedureNode *>(sym)) {
-        if (ident->isQualified() && !proc->isPredefined() && (proc->isExtern() || proc->isImported())) {
+    if (const auto proc = dynamic_cast<ProcedureNode *>(sym)) {
+        if (ident->isQualified() && proc->isExternal()) {
             // A fully-qualified external reference needs to be added to module for code generation
             context_->addExternalProcedure(proc);
         }
@@ -851,7 +863,8 @@ Sema::onQualifiedExpression(const FilePos &start, const FilePos &,
                 logger_.error(start, "predefined procedures cannot be referenced.");
             }
             return make_unique<QualifiedExpression>(start, std::move(ident), std::move(selectors), sym, type);
-        } else if (!selectors.empty() && selectors.back()->getNodeType() == NodeType::parameter) {
+        }
+        if (!selectors.empty() && selectors.back()->getNodeType() == NodeType::parameter) {
             // Looks like a call to a function procedure
             return make_unique<QualifiedExpression>(start, std::move(ident), std::move(selectors), sym, type);
         }
@@ -1053,7 +1066,7 @@ Sema::onActualParameters(DeclarationNode *context, TypeNode *base, ActualParamet
     vector<TypeNode *> types;
     TypeNode *typeType = noTy_;
     for (size_t cnt = 0; cnt < sel->parameters().size(); cnt++) {
-        auto expr = sel->parameters()[cnt].get();
+        const auto expr = sel->parameters()[cnt].get();
         if (!expr) {
             continue;
         }

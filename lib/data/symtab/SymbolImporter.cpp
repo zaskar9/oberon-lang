@@ -133,7 +133,7 @@ void SymbolImporter::readDeclaration(SymbolFile *file, NodeType nodeType) {
         decl->setModule(module_);
         module_->variables().push_back(std::move(decl));
     } else if (nodeType == NodeType::procedure) {
-        auto decl = make_unique<ProcedureNode>(std::move(ident), dynamic_cast<ProcedureTypeNode *>(type));
+        auto decl = make_unique<ProcedureDeclarationNode>(std::move(ident), dynamic_cast<ProcedureTypeNode *>(type));
         symbols_->import(module_->getIdentifier()->name(), name, decl.get());
         decl->setModule(module_);
         module_->procedures().push_back(std::move(decl));

@@ -107,8 +107,7 @@ void NodePrettyPrinter::visit(ModuleNode& node) {
     stream_ << "END " << *node.getIdentifier() << '.' << std::endl;
 }
 
-void NodePrettyPrinter::procedure(const string& ident, ProcedureTypeNode *type) {
-    stream_ << "PROCEDURE";
+void NodePrettyPrinter::signature(const string& ident, ProcedureTypeNode *type) {
     if (!ident.empty()) {
         stream_ << " " + ident;
     }
@@ -132,29 +131,35 @@ void NodePrettyPrinter::procedure(const string& ident, ProcedureTypeNode *type) 
     }
 }
 
-void NodePrettyPrinter::visit(ProcedureNode& node) {
+void NodePrettyPrinter::visit(ProcedureDeclarationNode &node) {
     indent();
+    stream_ << "PROCEDURE [ \"";
+    switch (node.getConvention()) {
+        case CallingConvention::C: stream_ << "C\" ]"; break;
+        case CallingConvention::OLANG: stream_ << "OLANG\" ]"; break;
+        default: stream_ << "unknown\" ]"; break;
+    }
+    signature(to_string(*node.getIdentifier()), node.getType());
+    stream_ << "; EXTERNAL [ \"" << node.getName() << "\" ]" << std::endl;
+}
+
+void NodePrettyPrinter::visit(ProcedureDefinitionNode& node) {
+    indent();
+    stream_ << "PROCEDURE";
     const auto type = node.getType();
     const string ident = to_string(*node.getIdentifier()) + "(*Scope:" + to_string(node.getScope()) + "*)";
-    procedure(ident, type);
-    stream_ << ";";
-    if (node.isExtern()) {
-        stream_ << " EXTERN;" << std::endl;
-    } else if (!node.isImported()) {
-        stream_ << std::endl;
-        block(node, false);
-        if (node.statements()->getStatementCount() > 0) {
-            indent();
-            stream_ << "BEGIN" << std::endl;
-            indent_ += TAB_WIDTH;
-            node.statements()->accept(*this);
-            indent_ -= TAB_WIDTH;
-        }
+    signature(ident, type);
+    stream_ << ";" << std::endl;
+    block(node, false);
+    if (node.statements()->getStatementCount() > 0) {
         indent();
-        stream_ << "END " << *node.getIdentifier() << ';' << std::endl;
-    } else {
-        stream_ << std::endl;
+        stream_ << "BEGIN" << std::endl;
+        indent_ += TAB_WIDTH;
+        node.statements()->accept(*this);
+        indent_ -= TAB_WIDTH;
     }
+    indent();
+    stream_ << "END " << *node.getIdentifier() << ';' << std::endl;
 }
 
 void NodePrettyPrinter::visit(ImportNode &node) {
@@ -365,7 +370,8 @@ void NodePrettyPrinter::visit(BasicTypeNode &node) {
 void NodePrettyPrinter::visit(ProcedureTypeNode &node) {
     if (node.isAnonymous() || isDecl_) {
         isDecl_ = false;
-        procedure("", &node);
+        stream_ << "PROCEDURE";
+        signature("", &node);
     } else {
         qualident(node.getDeclaration());
     }

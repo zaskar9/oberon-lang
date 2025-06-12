@@ -36,7 +36,9 @@ void LambdaLifter::visit(ModuleNode &node) {
     }
 }
 
-void LambdaLifter::visit(ProcedureNode &node) {
+void LambdaLifter::visit(ProcedureDeclarationNode &) {}
+
+void LambdaLifter::visit(ProcedureDefinitionNode &node) {
     env_ = nullptr;
     scope_ = node.getScope();
     path_.push_back(node.getIdentifier()->name());

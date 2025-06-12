@@ -90,7 +90,7 @@ private:
     using Selectors = vector<unique_ptr<Selector>>;
     using SelectorIterator = Selectors::iterator;
     TypeNode *selectors(NodeReference *, TypeNode *, SelectorIterator, SelectorIterator);
-    void parameters(ProcedureTypeNode *, ActualParameters *, vector<Value *> &, bool = false);
+    void parameters(ProcedureTypeNode *, ActualParameters *, vector<Value *> &, CallingConvention);
 
     void installTrap(Value *, uint8_t);
     void trapOutOfBounds(Value *, Value *, Value *);
@@ -157,7 +157,8 @@ private:
     Value *createSystemValCall(const vector<unique_ptr<ExpressionNode>> &, const std::vector<Value *> &);
     
     void visit(ModuleNode &) override;
-    void visit(ProcedureNode &) override;
+    void visit(ProcedureDeclarationNode &) override;
+    void visit(ProcedureDefinitionNode &) override;
 
     void visit(ImportNode &) override;
 

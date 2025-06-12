@@ -28,20 +28,8 @@ using std::vector;
 
 class ASTContext {
 
-private:
-    path file_;
-    unique_ptr<ModuleNode> module_;
-    vector<unique_ptr<ArrayTypeNode>> array_ts_;
-    vector<unique_ptr<RecordTypeNode>> record_ts_;
-    vector<unique_ptr<PointerTypeNode>> pointer_ts_;
-    vector<unique_ptr<ProcedureTypeNode>> procedure_ts;
-    map<string, unique_ptr<ModuleNode>> ext_modules_;
-    vector<ProcedureNode*> ext_procedures_;
-
 public:
-    explicit ASTContext(const path &file) : file_(file), module_(),
-            array_ts_(), record_ts_(), pointer_ts_(), procedure_ts(),
-            ext_modules_(), ext_procedures_() {};
+    explicit ASTContext(const path &file) : file_(file) {}
     ~ASTContext() = default;
 
     [[nodiscard]] const path &getSourceFileName() const;
@@ -64,6 +52,16 @@ public:
     void addExternalProcedure(ProcedureNode *proc);
     [[nodiscard]] ProcedureNode *getExternalProcedure(size_t num) const;
     [[nodiscard]] size_t getExternalProcedureCount() const;
+
+private:
+    path file_;
+    unique_ptr<ModuleNode> module_;
+    vector<unique_ptr<ArrayTypeNode>> array_ts_;
+    vector<unique_ptr<RecordTypeNode>> record_ts_;
+    vector<unique_ptr<PointerTypeNode>> pointer_ts_;
+    vector<unique_ptr<ProcedureTypeNode>> procedure_ts;
+    map<string, unique_ptr<ModuleNode>> ext_modules_;
+    vector<ProcedureNode*> ext_procedures_;
 
 };
 

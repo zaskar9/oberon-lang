@@ -91,7 +91,7 @@ public:
 
 };
 
-class ProcedureNode;
+class ProcedureDefinitionNode;
 
 class ActualParameters final : public Selector {
 

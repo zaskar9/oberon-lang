@@ -45,7 +45,7 @@ public:
     [[nodiscard]] IdentDef *getIdentifier() const;
 
     void setType(TypeNode *);
-    [[nodiscard]] TypeNode *getType() const;
+    [[nodiscard]] virtual TypeNode *getType() const;
 
     [[nodiscard]] unsigned int seqId() const;
 

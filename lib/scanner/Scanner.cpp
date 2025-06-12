@@ -26,8 +26,7 @@ using std::string;
 using std::stringstream;
 using std::unique_ptr;
 
-Scanner::Scanner(Logger &logger, const path &path) : logger_(logger), path_(path),
-        tokens_(), lineNo_(1), charNo_(0), ch_{}, eof_(false) {
+Scanner::Scanner(Logger &logger, const path &path) : logger_(logger), path_(path), lineNo_(1), charNo_(0), ch_{}, eof_(false) {
     init();
     file_.open(path_.string(), std::ifstream::binary);
     if (!file_.is_open()) {
@@ -47,7 +46,7 @@ void Scanner::init() {
     keywords_ = { { "DIV", TokenType::op_div }, { "MOD", TokenType::op_mod },
                   { "OR", TokenType::op_or }, { "IN", TokenType::op_in }, { "IS", TokenType::op_is },
                   { "MODULE", TokenType::kw_module }, { "IMPORT", TokenType::kw_import },
-                  { "PROCEDURE", TokenType::kw_procedure }, { "EXTERN", TokenType::kw_extern },
+                  { "PROCEDURE", TokenType::kw_procedure }, { "EXTERNAL", TokenType::kw_external },
                   { "BEGIN", TokenType::kw_begin }, { "END", TokenType::kw_end },
                   { "RETURN", TokenType::kw_return },
                   { "LOOP", TokenType::kw_loop }, { "EXIT", TokenType::kw_exit },

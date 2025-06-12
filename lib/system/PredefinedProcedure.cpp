@@ -16,10 +16,11 @@ using std::string;
 using std::unordered_set;
 using std::vector;
 
-PredefinedProcedure::PredefinedProcedure(ProcKind kind, const string &name,
-                                         const vector<pair<TypeNode *, bool>> &pairs, bool varargs, TypeNode *ret) :
-        ProcedureNode(make_unique<IdentDef>(name), nullptr), types_(), isCast_(), kind_(kind) {
-    auto type = overload(pairs, varargs, ret);
+PredefinedProcedure::PredefinedProcedure(const ProcKind kind, const string &name,
+                                         const vector<pair<TypeNode *, bool>> &pairs, const bool varargs, TypeNode *ret) :
+        ProcedureNode(EMPTY_POS, make_unique<IdentDef>(name), nullptr, CallingConvention::OLANG),
+        isCast_(), kind_(kind) {
+    const auto type = overload(pairs, varargs, ret);
     this->setType(type);
     isCast_ = false;
     if (ret && ret->kind() == TypeKind::TYPE) {
@@ -48,10 +49,10 @@ PredefinedProcedure::overload(const vector<pair<TypeNode *, bool>> &pairs, bool 
     return types_.back().get();
 }
 
-ProcedureTypeNode *PredefinedProcedure::dispatch(vector<TypeNode *> actuals, TypeNode *typeType) {
+ProcedureTypeNode *PredefinedProcedure::dispatch(const vector<TypeNode *> &actuals, TypeNode *typeType) const {
     if (isCast_ && typeType) {
-        auto signature = types_[0].get();
-        signature->setReturnType(typeType); // TODO : mutate not ideal
+        const auto signature = types_[0].get();
+        signature->setReturnType(typeType); // TODO avoid mutation of type node
         return signature;
     }
     int max_score = 0;
@@ -61,7 +62,7 @@ ProcedureTypeNode *PredefinedProcedure::dispatch(vector<TypeNode *> actuals, Typ
         if (actuals.size() >= signature->parameters().size()) {
             int score = 0;
             for (size_t i = 0; i < signature->parameters().size(); i++) {
-                int match = matchType(signature->parameters()[i]->getType(), actuals[i]);
+                const int match = matchType(signature->parameters()[i]->getType(), actuals[i]);
                 if (match == 0) {
                     score = -1;
                     break;
@@ -83,7 +84,7 @@ ProcedureTypeNode *PredefinedProcedure::dispatch(vector<TypeNode *> actuals, Typ
     return nullptr;
 }
 
-int PredefinedProcedure::matchType(TypeNode *expected, TypeNode *actual) const {
+int PredefinedProcedure::matchType(const TypeNode *expected, const TypeNode *actual) {
     if (expected == actual) {
         return 2;
     }

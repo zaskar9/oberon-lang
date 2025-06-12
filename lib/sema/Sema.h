@@ -44,7 +44,7 @@ private:
 
     Logger &logger_;
     vector<pair<unique_ptr<QualIdent>, PointerTypeNode *>> forwards_;
-    stack<unique_ptr<ProcedureNode>> procs_;
+    stack<unique_ptr<ProcedureDefinitionNode>> procs_;
     unordered_map<QualifiedExpression *, TypeNode *> caseTys_;
     stack<FilePos> loops_;
     SymbolTable *symbols_;
@@ -157,8 +157,11 @@ public:
 
     void onDeclarations();
 
-    ProcedureNode *onProcedureStart(const FilePos &, unique_ptr<IdentDef>);
-    unique_ptr<ProcedureNode> onProcedureEnd(const FilePos &, unique_ptr<Ident>);
+    unique_ptr<ProcedureDeclarationNode> onProcedureDeclaration(const FilePos &, const FilePos &,
+                                                                unique_ptr<IdentDef>, ProcedureTypeNode *,
+                                                                const string &, const string &);
+    ProcedureDefinitionNode *onProcedureDefinitionStart(const FilePos &, unique_ptr<IdentDef>);
+    unique_ptr<ProcedureDefinitionNode> onProcedureDefinitionEnd(const FilePos &, const unique_ptr<Ident> &);
 
     void onStatementSequence(StatementSequenceNode *);
 

@@ -12,6 +12,7 @@
 #include <string>
 #include <vector>
 
+#include "../../../../../../../opt/homebrew/Cellar/boost/1.88.0/include/boost/mpl/assert.hpp"
 #include "../scanner/IdentToken.h"
 
 using std::make_unique;
@@ -26,10 +27,10 @@ void Parser::parse(ASTContext *context) {
 
 // ident = letter { letter | digit } .
 unique_ptr<Ident> Parser::ident() {
-    auto token = scanner_.peek();
+    const auto token = scanner_.peek();
     if (assertToken(token, TokenType::const_ident)) {
         token_ = scanner_.next();
-        auto ident = dynamic_cast<const IdentToken*>(token_.get());
+        const auto ident = dynamic_cast<const IdentToken*>(token_.get());
         logger_.debug(to_string(*ident));
         return make_unique<Ident>(ident->start(), ident->end(), ident->value());
     }
@@ -48,11 +49,11 @@ unique_ptr<Ident> Parser::ident() {
 // qualident = [ ident "." ] ident .
 unique_ptr<QualIdent> Parser::qualident() {
     logger_.debug("qualident");
-    auto qualifier = ident();
+    const auto qualifier = ident();
     if (!sema_.isDefined(qualifier.get()) && scanner_.peek()->type() == TokenType::period) {
         scanner_.next(); // skip the period
         if (assertToken(scanner_.peek(), TokenType::const_ident)) {
-            auto identifier = ident();
+            const auto identifier = ident();
             return make_unique<QualIdent>(qualifier->start(), identifier->end(), qualifier->name(), identifier->name());
         }
     }
@@ -60,15 +61,15 @@ unique_ptr<QualIdent> Parser::qualident() {
 }
 
 // identdef = ident [ "*" ] .
-unique_ptr<IdentDef> Parser::identdef(bool checkAlphaNum) {
+unique_ptr<IdentDef> Parser::identdef(const bool checkAlphaNum) {
     logger_.debug("identdef");
-    auto identifier = ident();
+    const auto identifier = ident();
     if (checkAlphaNum) {
         assertOberonIdent(identifier.get());
     }
     auto exp = false;
     if (scanner_.peek()->type() == TokenType::op_times) {
-        scanner_.next(); // skip the asterisk
+        scanner_.next();  // skip the asterisk
         exp = true;
     }
     return make_unique<IdentDef>(identifier->start(), identifier->end(), identifier->name(), exp);
@@ -108,11 +109,11 @@ void Parser::module(ASTContext *context) {
     if (!assertToken(token_.get(), TokenType::kw_module)) {
         resync({TokenType::eof});   // [<EOF>]
     }
-    auto start = token_->start();
+    const auto start = token_->start();
     auto identifier = ident();
     sema_.onTranslationUnitStart(identifier->name());
     context->setTranslationUnit(sema_.onModuleStart(start, std::move(identifier)));
-    auto module = context->getTranslationUnit();
+    const auto module = context->getTranslationUnit();
     token_ = scanner_.next();
     if (!assertToken(token_.get(), TokenType::semicolon)) {
         // [<IMPORT>, <CONST>, <TYPE>, <VAR>, <PROCEDURE>, <BEGIN>, <END>]
@@ -169,8 +170,8 @@ void Parser::import(vector<unique_ptr<ImportNode>> &imports) {
     auto token = scanner_.peek();
     if (assertToken(token, TokenType::const_ident)) {
         auto identifier = ident();
-        FilePos start = identifier->start();
-        FilePos end = identifier->end();
+        const FilePos start = identifier->start();
+        const FilePos end = identifier->end();
         if (scanner_.peek()->type() == TokenType::op_becomes) {
             scanner_.next(); // skip := operator
             if (assertToken(scanner_.peek(), TokenType::const_ident)) {
@@ -210,7 +211,7 @@ void Parser::declarations(vector<unique_ptr<ConstantDeclarationNode>> & consts,
     expect({ TokenType::kw_procedure, TokenType::kw_begin, TokenType::kw_end });
 
     while (scanner_.peek()->type() == TokenType::kw_procedure) {
-        procedure_declaration(procs);
+        procedure(procs);
     }
     expect({ TokenType::kw_begin, TokenType::kw_end });
     sema_.onDeclarations();
@@ -221,7 +222,7 @@ void Parser::declarations(vector<unique_ptr<ConstantDeclarationNode>> & consts,
 // const_declarations = "CONST" { identdef "=" expression ";" } .
 void Parser::const_declarations(vector<unique_ptr<ConstantDeclarationNode>> & consts) {
     logger_.debug("const_declarations");
-    FilePos pos = scanner_.next()->start();  // skip CONST keyword and get its position
+    const FilePos pos = scanner_.next()->start();  // skip CONST keyword and get its position
     while (scanner_.peek()->type() == TokenType::const_ident) {
         FilePos start = scanner_.peek()->start();
         auto ident = identdef();
@@ -303,7 +304,7 @@ TypeNode* Parser::type() {
 // array_type = "ARRAY" expression { "," expression } "OF" type .
 ArrayTypeNode* Parser::array_type() {
     logger_.debug("array_type");
-    FilePos pos = scanner_.next()->start();  // skip ARRAY keyword and get its position
+    const FilePos pos = scanner_.next()->start();  // skip ARRAY keyword and get its position
     vector<unique_ptr<ExpressionNode>> indices;
     indices.push_back(expression());
     while (scanner_.peek()->type() == TokenType::comma) {
@@ -355,9 +356,9 @@ void Parser::field_list(vector<unique_ptr<FieldNode>> &fields) {
     if (next->type() == TokenType::const_ident) {
         ident_list(idents);
         if (!idents.empty()) {
-            auto token = scanner_.next();
+            const auto token = scanner_.next();
             if (assertToken(token.get(), TokenType::colon)) {
-                auto node = type();
+                const auto node = type();
                 unsigned index = 0;
                 for (auto &&ident: idents) {
                     FilePos start = ident->start();
@@ -421,7 +422,8 @@ TypeNode *Parser::formal_parameters(vector<unique_ptr<ParameterNode>> &params, b
             token = scanner_.peek();
             if (token->type() == TokenType::rparen) {
                 break;
-            } else if (token->type() == TokenType::semicolon) {
+            }
+            if (token->type() == TokenType::semicolon) {
                 scanner_.next();  // skip semicolon
                 if (varargs) {
                     logger_.error(token->start(), "variadic arguments must be last formal parameter.");
@@ -455,10 +457,9 @@ TypeNode *Parser::formal_parameters(vector<unique_ptr<ParameterNode>> &params, b
 void Parser::fp_section(vector<unique_ptr<ParameterNode>> &params, bool &varargs) {
     logger_.debug("fp_section");
     if (scanner_.peek()->type() == TokenType::varargs) {
-        auto token = scanner_.next(); // skip varargs
-        if (config_.hasFlag(Flag::ENABLE_VARARGS)) {
-            varargs = true;
-        } else {
+        varargs = true;
+        const auto token = scanner_.next();  // skip varargs
+        if (!config_.hasFlag(Flag::ENABLE_VARARGS)) {
             logger_.error(token->start(), "variadic arguments support disabled [-fenable-varargs].");
         }
     } else {
@@ -528,13 +529,13 @@ TypeNode *Parser::formal_type() {
 // var_declarations = "VAR" { ident_list ":" type ";" } .
 void Parser::var_declarations(vector<unique_ptr<VariableDeclarationNode>> &vars) {
     logger_.debug("var_declarations");
-    FilePos pos = scanner_.next()->start();  // skip VAR keyword and get its position
+    const FilePos pos = scanner_.next()->start();  // skip VAR keyword and get its position
     while (scanner_.peek()->type() == TokenType::const_ident) {
         vector<unique_ptr<IdentDef>> idents;
         ident_list(idents);
         if (assertToken(scanner_.peek(), TokenType::colon)) {
             scanner_.next();  // skip colon
-            auto node = type();
+            const auto node = type();
             int index = 0;
             for (auto &&ident : idents) {
                 FilePos start = ident->start();
@@ -552,59 +553,79 @@ void Parser::var_declarations(vector<unique_ptr<VariableDeclarationNode>> &vars)
     }
 }
 
-// procedure_declaration = "PROCEDURE" identdef [ formal_parameters ] ";" ( procedure_body ident | "EXTERN" ) ";" .
-void Parser::procedure_declaration(vector<unique_ptr<ProcedureNode>> &procs) {
-    logger_.debug("procedure_declaration");
-    token_ = scanner_.next(); // skip PROCEDURE keyword
+// procedure = "PROCEDURE ( procedure_declaration | procedure_definition ) ";" .
+void Parser::procedure(vector<unique_ptr<ProcedureNode>> &procs) {
+    logger_.debug("procedure");
+    token_ = scanner_.next();  // skip PROCEDURE keyword
     const FilePos start = token_->start();
-    const auto proc = sema_.onProcedureStart(start, identdef(false));
-    auto token = scanner_.peek();
-    if (token->type() == TokenType::lparen) {
-        // parse formal parameters
-        vector<unique_ptr<ParameterNode>> params;
-        bool varargs = false;
-        const auto ret = formal_parameters(params, varargs);
-        proc->setType(sema_.onProcedureType(start, token_->end(), std::move(params), varargs, ret));
-    } else {
-        // handle missing formal parameters
-        TypeNode *ret = nullptr;
-        if (scanner_.peek()->type() == TokenType::colon) {
-            token_ = scanner_.next();  // skip colon
-            logger_.error(token_->start(), "function procedure must be declared with a parameter list.");
-            ret = type();
-        }
-        vector<unique_ptr<ParameterNode>> params;
-        proc->setType(sema_.onProcedureType(start, token_->end(), std::move(params), false, ret));
-    }
-    token = scanner_.peek();
-    if (assertToken(token, TokenType::semicolon)) {
-        scanner_.next();
-    }
-    unique_ptr<Ident> name;
-    if (scanner_.peek()->type() == TokenType::kw_extern) {
-        const auto ext = scanner_.next(); // skip EXTERN keyword
-        proc->setExtern(true);
+    if (scanner_.peek()->type() == TokenType::lbrack) {
         if (!config_.hasFlag(Flag::ENABLE_EXTERN)) {
-            logger_.error(ext->start(), "external procedure support disabled [-fenable-extern].");
+            logger_.error(start, "external procedure support disabled [-fenable-extern].");
         }
+        procedure_declaration(start, procs);
     } else {
-        assertOberonIdent(proc->getIdentifier());
-        procedure_body(proc);
-        name = ident();
+        procedure_definition(start, procs);
     }
-    token = scanner_.peek();
-    if (assertToken(token, TokenType::semicolon)) {
-        token_ = scanner_.next();
+    if (assertToken(scanner_.peek(), TokenType::semicolon)) {
+        scanner_.next();  // skip semicolon
     }
-    auto node = sema_.onProcedureEnd(token->end(), std::move(name));
-    procs.push_back(std::move(node));
+}
+
+// procedure_declaration = "[" string "]" identdef [ formal_parameters ] ";" "EXTERNAL" "[" string "]" .
+void Parser::procedure_declaration(const FilePos &start, vector<unique_ptr<ProcedureNode>> &procs) {
+    logger_.debug("procedure_declaration");
+    scanner_.next();  //  skip left bracket
+    if (string conv; assertString(scanner_.peek(), conv)) {
+        scanner_.next();
+        if (assertToken(scanner_.peek(), TokenType::rbrack)) {
+            scanner_.next();  // skip right bracket
+            auto ident = identdef();
+            // parse formal parameters
+            vector<unique_ptr<ParameterNode>> params;
+            bool varargs = false;
+            const auto ret = formal_parameters(params, varargs);
+            const auto type = sema_.onProcedureType(start, token_->end(), std::move(params), varargs, ret);
+            if (assertToken(scanner_.peek(), TokenType::semicolon)) {
+                scanner_.next();  // skip semicolon
+            }
+            if (assertToken(scanner_.peek(), TokenType::kw_external)) {
+                scanner_.next();  // skip EXTERNAL keyword
+            }
+            if (assertToken(scanner_.peek(), TokenType::lbrack)) {
+                scanner_.next();  // skip left bracket
+            }
+            if (string name; assertString(scanner_.peek(), name)) {
+                scanner_.next();
+                procs.push_back(sema_.onProcedureDeclaration(start, token_->end(), std::move(ident), type, conv, name));
+                if (assertToken(scanner_.peek(), TokenType::rbrack)) {
+                    scanner_.next();
+                }
+            }
+        }
+    }
+}
+
+// procedure_definition = identdef [ formal_parameters ] ";" procedure_body ident ";" .
+void Parser::procedure_definition(const FilePos &start, vector<unique_ptr<ProcedureNode>> &procs) {
+    logger_.debug("procedure_definition");
+    const auto proc = sema_.onProcedureDefinitionStart(start, identdef());
+    // parse formal parameters
+    vector<unique_ptr<ParameterNode>> params;
+    bool varargs = false;
+    const auto ret = formal_parameters(params, varargs);
+    proc->setType(sema_.onProcedureType(start, token_->end(), std::move(params), varargs, ret));
+    if (assertToken(scanner_.peek(), TokenType::semicolon)) {
+        scanner_.next();  // skip semicolon
+    }
+    procedure_body(proc);
+    procs.push_back(sema_.onProcedureDefinitionEnd(token_->end(), ident()));
     // [<PROCEDURE>, <END>, <BEGIN>]
     // resync({ TokenType::kw_procedure, TokenType::kw_begin, TokenType::kw_end });
 }
 
-// TODO procedure_body = declarations [ "BEGIN" statement_sequence ] [ "RETURN" expression] "END" .
+// TODO procedure_body = declarations [ "BEGIN" statement_sequence ] [ "RETURN" expression ] "END" .
 // procedure_body = declarations [ "BEGIN" statement_sequence ] "END" .
-void Parser::procedure_body(ProcedureNode *proc) {
+void Parser::procedure_body(ProcedureDefinitionNode *proc) {
     logger_.debug("procedure_body");
     declarations(proc->constants(), proc->types(), proc->variables(), proc->procedures());
     auto token = scanner_.peek();
@@ -1172,7 +1193,7 @@ void Parser::range_expression_list(vector<unique_ptr<ExpressionNode>>& expressio
     }
 }
 
-bool Parser::assertToken(const Token *token, TokenType expected) {
+bool Parser::assertToken(const Token *token, const TokenType expected) const {
     if (token->type() == expected) {
         return true;
     }
@@ -1180,7 +1201,22 @@ bool Parser::assertToken(const Token *token, TokenType expected) {
     return false;
 }
 
-bool Parser::assertOberonIdent(const Ident *ident) {
+bool Parser::assertString(const Token *token, string &value) const {
+    switch (token->type()) {
+        case TokenType::string_literal:
+            value = dynamic_cast<const StringLiteralToken *>(token)->value();
+            return true;
+        case TokenType::char_literal:
+            value = { static_cast<char>(dynamic_cast<const CharLiteralToken *>(token)->value()) };
+            return true;
+        default:
+            logger_.error(token->start(), "string literal expected.");
+            return false;
+    }
+}
+
+
+bool Parser::assertOberonIdent(const Ident *ident) const {
     if (ident->name().find('_') != std::string::npos) {
         logger_.error(ident->start(), "illegal identifier: " + to_string(*ident) + ".");
         return false;
