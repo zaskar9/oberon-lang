@@ -110,7 +110,12 @@ void LLVMIRBuilder::visit(ModuleNode &node) {
     verifyModule(*module_, &errs());
 }
 
-void LLVMIRBuilder::visit(ProcedureDeclarationNode &) {}
+void LLVMIRBuilder::visit(ProcedureDeclarationNode &node) {
+    logger_.warning(node.pos(), node.getName());
+    if (module_->getFunction(node.getName())) {
+        logger_.error(node.pos(), "duplicate.");
+    }
+}
 
 void LLVMIRBuilder::visit(ProcedureDefinitionNode &node) {
     const string name = node.getIdentifier()->name();
@@ -2246,11 +2251,11 @@ void LLVMIRBuilder::procedure(ProcedureNode &node) {
 }
 
 string LLVMIRBuilder::qualifiedName(DeclarationNode *node) const {
-    if (node->getNodeType() == NodeType::procedure) {
-        auto proc = dynamic_cast<ProcedureNode *>(node);
-        if (proc->isExternal() && node->getModule() == ast_->getTranslationUnit()) {
-            return node->getIdentifier()->name();
+    if (node->getModule() == ast_->getTranslationUnit()) {
+        if (const auto proc = dynamic_cast<ProcedureDeclarationNode *>(node)) {
+            return proc->getName();
         }
+        return node->getIdentifier()->name();
     }
     return node->getModule()->getIdentifier()->name() + "_" + node->getIdentifier()->name();
 }
