@@ -19,24 +19,24 @@ VAR ts*: TimeSpec;
 
 
 (* Declare `long time(long)` from C <time.h> library. *)
-PROCEDURE time(t: LONGINT): LONGINT; EXTERN;
+PROCEDURE [ "C" ] GetTime(t: LONGINT): LONGINT; EXTERNAL [ "time" ];
 
-(* Declare `void olang_oberon_timespec_get(struct timespec *, void *, int32_t * )` from Oberon runtime library. *)
-PROCEDURE olang_oberon_timespec_get(VAR ts: TimeSpec; base: INTEGER); EXTERN;
+(* Declare `longtimespec_get(struct timespec*, int)` from C <time.h> library. *)
+PROCEDURE [ "C" ] GetTimespec(VAR ts: TimeSpec; base: INTEGER); EXTERNAL [ "timespec_get" ];
 
 
 (** Return elapsed clock ticks since program start *)
 PROCEDURE Time*(): LONGINT;
 VAR t: LONGINT;
 BEGIN
-    RETURN time(0)
+    RETURN GetTime(0)
 END Time;
 
 (** Return elapsed milliseconds since program start *)
 PROCEDURE TimeMillis*(): LONGINT;
 VAR ts: TimeSpec;
 BEGIN
-    olang_oberon_timespec_get(ts, TIMEUTC);
+    GetTimespec(ts, TIMEUTC);
     RETURN ts.secs * 1000 + ts.nsecs DIV 1000000
 END TimeMillis;
 
@@ -44,7 +44,7 @@ END TimeMillis;
 PROCEDURE TimeMicros*(): LONGINT;
 VAR ts: TimeSpec;
 BEGIN
-    olang_oberon_timespec_get(ts, TIMEUTC);
+    GetTimespec(ts, TIMEUTC);
     RETURN ts.secs * 1000000 + ts.nsecs DIV 1000
 END TimeMicros;
 
@@ -52,7 +52,7 @@ END TimeMicros;
 PROCEDURE TimeNanos*(): LONGINT;
 VAR ts: TimeSpec;
 BEGIN
-    olang_oberon_timespec_get(ts, TIMEUTC);
+    GetTimespec(ts, TIMEUTC);
     RETURN ts.secs * 1000000000 + ts.nsecs
 END TimeNanos;
 

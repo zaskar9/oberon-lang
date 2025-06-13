@@ -352,12 +352,21 @@ Sema::onVariable(const FilePos &start, const FilePos &,
 
 unique_ptr<ProcedureDeclarationNode>
 Sema::onProcedureDeclaration(const FilePos &start, const FilePos &, unique_ptr<IdentDef> ident,
-                             ProcedureTypeNode *type, const string &conv, const string &name) {
+                             ProcedureTypeNode *type, const string &cnv, string &name) {
     auto convention = CallingConvention::OLANG;
-    if (conv == "C") {
+    if (cnv.empty()) {
+        logger_.warning(start, "no calling convention specified, using default calling convention.");
+    } else if (cnv == "C") {
         convention = CallingConvention::C;
-    } else if (conv != "OLANG") {
-        logger_.error(start, "unsupported calling convention: " + conv + ".");
+    } else if (cnv != "OLANG") {
+        logger_.error(start, "unsupported calling convention: " + cnv + ".");
+    }
+    if (name.empty()) {
+        name = ident->name();
+        logger_.warning(start, "no external procedure name specified, defaulting to: " + name + ".");
+    }
+    if (ident->isExported()) {
+        logger_.error(start, "cannot export external procedures.");
     }
     auto proc = make_unique<ProcedureDeclarationNode>(start, std::move(ident), type, convention, name);
     assertUnique(proc->getIdentifier(), proc.get());
@@ -370,11 +379,10 @@ Sema::onProcedureDeclaration(const FilePos &start, const FilePos &, unique_ptr<I
     return proc;
 }
 
-
 ProcedureDefinitionNode *
 Sema::onProcedureDefinitionStart(const FilePos &start, unique_ptr<IdentDef> ident) {
     procs_.push(make_unique<ProcedureDefinitionNode>(start, std::move(ident)));
-    auto proc = procs_.top().get();
+    const auto proc = procs_.top().get();
     assertUnique(proc->getIdentifier(), proc);
     proc->setScope(symbols_->getLevel());
     proc->setModule(context_->getTranslationUnit());
@@ -398,7 +406,7 @@ Sema::onProcedureDefinitionEnd(const FilePos &, const unique_ptr<Ident> &ident) 
     return proc;
 }
 
-void Sema::onStatementSequence(StatementSequenceNode *stmts) {
+void Sema::onStatementSequence(const StatementSequenceNode *stmts) const {
     const size_t length = stmts->getStatementCount() - 1;
     const size_t termIdx = stmts->getTerminatorIndex();
     if (stmts->hasTerminator() && termIdx < length) {

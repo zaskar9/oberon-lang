@@ -61,12 +61,14 @@ void LLVMIRBuilder::visit(ModuleNode &node) {
     }
     // Generate external procedure signatures
     for (size_t i = 0; i < ast_->getExternalProcedureCount(); ++i) {
-        procedure(*ast_->getExternalProcedure(i));
+        // procedure(*ast_->getExternalProcedure(i));
+        ast_->getExternalProcedure(i)->accept(*this);
     }
+
     // Generate procedure signatures
-    for (size_t i = 0; i < node.getProcedureCount(); ++i) {
-        procedure(*node.getProcedure(i));
-    }
+    // for (size_t i = 0; i < node.getProcedureCount(); ++i) {
+    //     procedure(*node.getProcedure(i));
+    // }
     // Generate code for procedures
     for (size_t i = 0; i < node.getProcedureCount(); ++i) {
         node.getProcedure(i)->accept(*this);
@@ -111,10 +113,7 @@ void LLVMIRBuilder::visit(ModuleNode &node) {
 }
 
 void LLVMIRBuilder::visit(ProcedureDeclarationNode &node) {
-    logger_.warning(node.pos(), node.getName());
-    if (module_->getFunction(node.getName())) {
-        logger_.error(node.pos(), "duplicate.");
-    }
+    createFunction(node, node.getConvention());
 }
 
 void LLVMIRBuilder::visit(ProcedureDefinitionNode &node) {
@@ -127,7 +126,7 @@ void LLVMIRBuilder::visit(ProcedureDefinitionNode &node) {
     for (size_t i = 0; i < node.getTypeDeclarationCount(); ++i) {
         node.getTypeDeclaration(i)->accept(*this);
     }
-    function_ = functions_[&node];
+    function_ = createFunction(node, node.getConvention());
     function_->addFnAttrs(attrs_);
     // function_->addFnAttr(Attribute::AttrKind::NoInline);
     const auto entry = BasicBlock::Create(builder_.getContext(), "entry", function_);
@@ -1181,20 +1180,7 @@ void LLVMIRBuilder::visit(BasicTypeNode &node) {
 }
 
 void LLVMIRBuilder::visit(ProcedureTypeNode &node) {
-    vector<Type*> params;
-    for (const auto &param : node.parameters()) {
-        const auto type = param->getType();
-        auto param_t = getLLVMType(type);
-        params.push_back(param->isVar() || type->isStructured() ? PointerType::get(param_t, 0) : param_t);
-        // Add a parameter for the "dope vector" in case of an open array parameter
-        // or for the type descriptor in case of a variable record parameter
-        if ((type->isArray() && dynamic_cast<ArrayTypeNode*>(type)->isOpen()) || (type->isRecord() && param->isVar())) {
-            params.push_back(builder_.getPtrTy());
-        }
-    }
-    const auto type = FunctionType::get(getLLVMType(node.getReturnType()), params, node.hasVarArgs());
-    funTypes_[&node] = type;
-    types_[&node] = builder_.getPtrTy();
+    createFunctionType(node, CallingConvention::OLANG);
 }
 
 void LLVMIRBuilder::visit(RecordTypeNode &node) {
@@ -2235,19 +2221,38 @@ LLVMIRBuilder::createSystemValCall(const vector<unique_ptr<ExpressionNode>> &act
     return builder_.CreateTrunc(srcpar, getLLVMType(dsttype));
 }
 
-void LLVMIRBuilder::procedure(ProcedureNode &node) {
+FunctionType *LLVMIRBuilder::createFunctionType(ProcedureTypeNode &type, const CallingConvention cnv) {
+    vector<Type*> params;
+    for (const auto &param : type.parameters()) {
+        const auto paramTy = param->getType();
+        auto param_t = getLLVMType(paramTy);
+        params.push_back(param->isVar() || paramTy->isStructured() ? PointerType::get(param_t, 0) : param_t);
+        // Add a parameter for the "dope vector" in case of an open array parameter
+        // or for the type descriptor in case of a variable record parameter
+        if (cnv == CallingConvention::OLANG && ((paramTy->isArray() &&
+            dynamic_cast<ArrayTypeNode*>(paramTy)->isOpen()) || (paramTy->isRecord() && param->isVar()))) {
+            params.push_back(builder_.getPtrTy());
+            }
+    }
+    const auto funType = FunctionType::get(getLLVMType(type.getReturnType()), params, type.hasVarArgs());
+    funTypes_[&type] = funType;
+    types_[&type] = builder_.getPtrTy();
+    return funType;
+}
+
+Function *LLVMIRBuilder::createFunction(ProcedureNode &node, const CallingConvention cnv) {
     const auto name = qualifiedName(&node);
     if (module_->getFunction(name)) {
         logger_.error(node.pos(), "Function " + name + " already defined.");
-        return;
+        return nullptr;
     }
-    node.getType()->accept(*this);
-    auto callee = module_->getOrInsertFunction(name, funTypes_[node.getType()]);
+    const auto funType = createFunctionType(*node.getType(), cnv);
+    auto callee = module_->getOrInsertFunction(name, funType);
     const auto function = dyn_cast<Function>(callee.getCallee());
     if (triple_.isOSWindows() && node.getIdentifier()->isExported() && !config_.hasFlag(Flag::ENABLE_MAIN)) {
         function->setDLLStorageClass(GlobalValue::DLLStorageClassTypes::DLLExportStorageClass);
     }
-    functions_[&node] = function;
+    return function;
 }
 
 string LLVMIRBuilder::qualifiedName(DeclarationNode *node) const {
@@ -2326,7 +2331,7 @@ MaybeAlign LLVMIRBuilder::getLLVMAlign(TypeNode *type) {
     return {};
 }
 
-void LLVMIRBuilder::setRefMode(bool deref) {
+void LLVMIRBuilder::setRefMode(const bool deref) {
     deref_ctx.push(deref);
 }
 

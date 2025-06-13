@@ -20,11 +20,6 @@
 
 #define UNUSED(x) (void)(x)
 
-int32_t olang_oberon_timespec_get(struct timespec* const time_spec, const void *time_spec_td, int32_t const base) {
-    UNUSED(time_spec_td);
-    return timespec_get(time_spec, base);
-}
-
 bool olang_files_file_exists(const char *name, const void *dv) {
     UNUSED(dv);
 #if (defined(_WIN32) || defined(_WIN64)) && !(defined(__MINGW32__) || defined(__MINGW64__))

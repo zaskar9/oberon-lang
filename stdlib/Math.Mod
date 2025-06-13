@@ -12,28 +12,28 @@ CONST e* = 2.7182818284;
 
 
 (* Declare `float sqrtf(float)` from C <math.h> library. *)
-PROCEDURE sqrtf(x: REAL): REAL; EXTERN;
+PROCEDURE [ "C" ] sqrtf(x: REAL): REAL; EXTERNAL [ "sqrtf" ];
 
 (* Declare `float expf(float)` from C <math.h> library. *)
-PROCEDURE expf(x: REAL): REAL; EXTERN;
+PROCEDURE [ "C" ] expf(x: REAL): REAL; EXTERNAL [ "expf" ];
 
 (* Declare `float logf(float)` from C <math.h> library. *)
-PROCEDURE logf(x: REAL): REAL; EXTERN;
+PROCEDURE [ "C" ] logf(x: REAL): REAL; EXTERNAL [ "logf" ];
 
 (* Declare `float sinf(float)` from C <math.h> library. *)
-PROCEDURE sinf(x: REAL): REAL; EXTERN;
+PROCEDURE [ "C" ] sinf(x: REAL): REAL; EXTERNAL [ "sinf" ];
 
 (* Declare `float cosf(float)` from C <math.h> library. *)
-PROCEDURE cosf(x: REAL): REAL; EXTERN;
+PROCEDURE [ "C" ] cosf(x: REAL): REAL; EXTERNAL [ "cosf" ];
 
 (* Declare `float atanf(float)` from C <math.h> library. *)
-PROCEDURE atanf(x: REAL): REAL; EXTERN;
+PROCEDURE [ "C" ] atanf(x: REAL): REAL; EXTERNAL [ "atanf" ];
 
 (* Declare `float rt_realf(float)` from Oberon runtime library. *)
-PROCEDURE olang_math_realf(x: INTEGER): REAL; EXTERN;
+PROCEDURE [ "C" ] realf(x: INTEGER): REAL; EXTERNAL [ "olang_math_realf" ];
 
 (* Declare `int32_t rt_entierf(float)` from Oberon runtime library. *)
-PROCEDURE olang_math_entierf(x: REAL): INTEGER; EXTERN;
+PROCEDURE [ "C" ] entierf(x: REAL): INTEGER; EXTERNAL [ "olang_math_entierf" ];
 
 
 (** Computes the square root of the `REAL` x *)
@@ -75,13 +75,13 @@ END arctan;
 (** Return the `INTEGER` x converted to `REAL` *)
 PROCEDURE real*(x: INTEGER): REAL;
 BEGIN
-    RETURN olang_math_realf(x)
+    RETURN realf(x)
 END real;
 
 (** Computes the largest integer value not greater than x *)
 PROCEDURE entier*(x: REAL): INTEGER;
 BEGIN
-    RETURN olang_math_entierf(x)
+    RETURN entierf(x)
 END entier;
 
 END Math.

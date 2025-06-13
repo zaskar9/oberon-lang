@@ -35,6 +35,12 @@ using std::vector;
 
 class LLVMIRBuilder final : private NodeVisitor {
 
+public:
+    LLVMIRBuilder(CompilerConfig &config, LLVMContext &builder, Module *module);
+    ~LLVMIRBuilder() override = default;
+
+    void build(ASTContext *ast);
+
 private:
     CompilerConfig &config_;
     Logger &logger_;
@@ -52,7 +58,6 @@ private:
     map<RecordTypeNode*, GlobalValue*> recTypeTds_;
     map<DeclarationNode *, Value *> valueTds_;
     stack<BasicBlock *> loopTails_;
-    map<ProcedureNode*, Function*> functions_;
     map<string, Constant*> strings_;
     stack<bool> deref_ctx;
     unsigned int scope_;
@@ -85,7 +90,8 @@ private:
 
     void cast(const ExpressionNode &);
 
-    void procedure(ProcedureNode &);
+    FunctionType *createFunctionType(ProcedureTypeNode &, CallingConvention);
+    Function *createFunction(ProcedureNode &, CallingConvention);
 
     using Selectors = vector<unique_ptr<Selector>>;
     using SelectorIterator = Selectors::iterator;
@@ -204,12 +210,6 @@ private:
     void visit(ForLoopNode &) override;
     void visit(ReturnNode &) override;
     void visit(ExitNode &) override;
-
-public:
-    LLVMIRBuilder(CompilerConfig &config, LLVMContext &builder, Module *module);
-    ~LLVMIRBuilder() override = default;
-
-    void build(ASTContext *ast);
 
 };
 

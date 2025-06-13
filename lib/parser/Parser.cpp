@@ -581,9 +581,11 @@ void Parser::procedure_declaration(const FilePos &start, vector<unique_ptr<Proce
             scanner_.next();  // skip right bracket
             auto ident = identdef();
             // parse formal parameters
+            sema_.onBlockStart();
             vector<unique_ptr<ParameterNode>> params;
             bool varargs = false;
             const auto ret = formal_parameters(params, varargs);
+            sema_.onBlockEnd();
             const auto type = sema_.onProcedureType(start, token_->end(), std::move(params), varargs, ret);
             if (assertToken(scanner_.peek(), TokenType::semicolon)) {
                 scanner_.next();  // skip semicolon
@@ -596,10 +598,10 @@ void Parser::procedure_declaration(const FilePos &start, vector<unique_ptr<Proce
             }
             if (string name; assertString(scanner_.peek(), name)) {
                 scanner_.next();
-                procs.push_back(sema_.onProcedureDeclaration(start, token_->end(), std::move(ident), type, conv, name));
                 if (assertToken(scanner_.peek(), TokenType::rbrack)) {
-                    scanner_.next();
+                    token_ = scanner_.next();
                 }
+                procs.push_back(sema_.onProcedureDeclaration(start, token_->end(), std::move(ident), type, conv, name));
             }
         }
     }
@@ -1206,9 +1208,11 @@ bool Parser::assertString(const Token *token, string &value) const {
         case TokenType::string_literal:
             value = dynamic_cast<const StringLiteralToken *>(token)->value();
             return true;
-        case TokenType::char_literal:
-            value = { static_cast<char>(dynamic_cast<const CharLiteralToken *>(token)->value()) };
+        case TokenType::char_literal: {
+            const auto val = dynamic_cast<const CharLiteralToken *>(token)->value();
+            value = val == '\0' ? "" : string{ static_cast<char>(val) };
             return true;
+        }
         default:
             logger_.error(token->start(), "string literal expected.");
             return false;

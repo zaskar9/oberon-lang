@@ -159,11 +159,11 @@ public:
 
     unique_ptr<ProcedureDeclarationNode> onProcedureDeclaration(const FilePos &, const FilePos &,
                                                                 unique_ptr<IdentDef>, ProcedureTypeNode *,
-                                                                const string &, const string &);
+                                                                const string &, string &name);
     ProcedureDefinitionNode *onProcedureDefinitionStart(const FilePos &, unique_ptr<IdentDef>);
     unique_ptr<ProcedureDefinitionNode> onProcedureDefinitionEnd(const FilePos &, const unique_ptr<Ident> &);
 
-    void onStatementSequence(StatementSequenceNode *);
+    void onStatementSequence(const StatementSequenceNode *) const;
 
     unique_ptr<AssignmentNode> onAssignment(const FilePos &, const FilePos &,
                                             unique_ptr<QualifiedExpression>, unique_ptr<ExpressionNode>);
