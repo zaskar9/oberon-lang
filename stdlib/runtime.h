@@ -15,15 +15,11 @@
 int32_t olang_oberon_timespec_get(struct timespec *, const void *, int32_t);
 
 // Module `Files`
-bool olang_files_file_exists(const char *, const void *);
-FILE *olang_files_file_open(const char *, const void *);
-void olang_files_file_register(FILE *, const char *, const void *);
-int32_t olang_files_file_remove(const char *, const void *);
-int32_t olang_files_file_rename(const char *, const void *, const char *, const void *);
-int64_t olang_files_file_length(FILE *);
-bool olang_files_file_seek(FILE*, int64_t);
-FILE *olang_files_file_purge(const char *, const void *);
-void olang_files_file_date(const char *, const void *, int64_t *, int64_t *);
+bool olang_files_fexists(const char *);
+void olang_files_file_register(FILE *, const char *);
+int64_t olang_files_flength(FILE *);
+bool olang_files_fseek(FILE*, int64_t);
+void olang_files_fdate(const char *, int64_t *, int64_t *);
 
 // Module `Math`
 float olang_math_realf(int32_t);

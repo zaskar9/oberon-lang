@@ -59,19 +59,21 @@ void LLVMIRBuilder::visit(ModuleNode &node) {
         value->setAlignment(module_->getDataLayout().getPreferredAlign(value));
         values_[variable] = value;
     }
-    // Generate external procedure signatures
+    // Create declarations for imported external procedure
     for (size_t i = 0; i < ast_->getExternalProcedureCount(); ++i) {
-        // procedure(*ast_->getExternalProcedure(i));
         ast_->getExternalProcedure(i)->accept(*this);
     }
-
-    // Generate procedure signatures
-    // for (size_t i = 0; i < node.getProcedureCount(); ++i) {
-    //     procedure(*node.getProcedure(i));
-    // }
-    // Generate code for procedures
+    // Create declarations for module procedures first to enable mutually calling procedures
     for (size_t i = 0; i < node.getProcedureCount(); ++i) {
-        node.getProcedure(i)->accept(*this);
+        const auto proc = node.getProcedure(i);
+        createFunction(*proc, proc->getConvention());
+    }
+    // Create definitions for module procedures
+    for (size_t i = 0; i < node.getProcedureCount(); ++i) {
+        // skip external module procedures
+        if (const auto proc = node.getProcedure(i); !proc->isExternal()) {
+            proc->accept(*this);
+        }
     }
     // Generate code for body
     auto body = module_->getOrInsertFunction(node.getIdentifier()->name(), builder_.getInt32Ty());
@@ -126,7 +128,7 @@ void LLVMIRBuilder::visit(ProcedureDefinitionNode &node) {
     for (size_t i = 0; i < node.getTypeDeclarationCount(); ++i) {
         node.getTypeDeclaration(i)->accept(*this);
     }
-    function_ = createFunction(node, node.getConvention());
+    function_ = module_->getFunction(qualifiedName(&node));
     function_->addFnAttrs(attrs_);
     // function_->addFnAttr(Attribute::AttrKind::NoInline);
     const auto entry = BasicBlock::Create(builder_.getContext(), "entry", function_);
@@ -185,7 +187,7 @@ void LLVMIRBuilder::visit(ProcedureDefinitionNode &node) {
 void LLVMIRBuilder::visit(ImportNode &node) {
     const string name = node.getModule()->name();
     if (name == "SYSTEM") {
-        return; // No initialization for pseudo modules
+        return;  // No initialization for pseudo modules
     }
     const auto type = FunctionType::get(builder_.getInt32Ty(), {});
     if (auto fun = module_->getOrInsertFunction(name, type)) {
@@ -532,7 +534,7 @@ TypeNode *LLVMIRBuilder::createStaticCall(NodeReference &node, const QualIdent *
         if (const auto fun = module_->getFunction(qualifiedName(proc))) {
             value_ = builder_.CreateCall(fun, values);
         } else {
-            logger_.error(ident->start(), "undefined procedure: " + to_string(*ident) + ".");
+            logger_.error(ident->start(), "undefined procedure: " + to_string(*ident) + " [" + qualifiedName(proc) + "].");
         }
     }
     return this->selectors(&node, proc->getType()->getReturnType(), selectors.begin() + (args ? 1 : 0), selectors.end());
@@ -2240,11 +2242,10 @@ FunctionType *LLVMIRBuilder::createFunctionType(ProcedureTypeNode &type, const C
     return funType;
 }
 
-Function *LLVMIRBuilder::createFunction(ProcedureNode &node, const CallingConvention cnv) {
+void LLVMIRBuilder::createFunction(ProcedureNode &node, const CallingConvention cnv) {
     const auto name = qualifiedName(&node);
     if (module_->getFunction(name)) {
-        logger_.error(node.pos(), "Function " + name + " already defined.");
-        return nullptr;
+        logger_.error(node.pos(), "function " + name + " already defined.");
     }
     const auto funType = createFunctionType(*node.getType(), cnv);
     auto callee = module_->getOrInsertFunction(name, funType);
@@ -2252,15 +2253,15 @@ Function *LLVMIRBuilder::createFunction(ProcedureNode &node, const CallingConven
     if (triple_.isOSWindows() && node.getIdentifier()->isExported() && !config_.hasFlag(Flag::ENABLE_MAIN)) {
         function->setDLLStorageClass(GlobalValue::DLLStorageClassTypes::DLLExportStorageClass);
     }
-    return function;
 }
 
 string LLVMIRBuilder::qualifiedName(DeclarationNode *node) const {
-    if (node->getModule() == ast_->getTranslationUnit()) {
-        if (const auto proc = dynamic_cast<ProcedureDeclarationNode *>(node)) {
+    if (node->getNodeType() == NodeType::procedure) {
+        if (const auto proc = dynamic_cast<ProcedureDeclarationNode *>(node);
+            proc && node->getModule() == ast_->getTranslationUnit()) {
+            // External (and non-imported) procedure
             return proc->getName();
         }
-        return node->getIdentifier()->name();
     }
     return node->getModule()->getIdentifier()->name() + "_" + node->getIdentifier()->name();
 }

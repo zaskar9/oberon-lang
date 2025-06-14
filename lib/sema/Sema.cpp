@@ -814,11 +814,11 @@ Sema::onQualifiedStatement(const FilePos &start, const FilePos &,
     // Check whether this is an external or imported procedure
     if (const auto proc = dynamic_cast<ProcedureNode *>(sym)) {
         if (ident->isQualified() && proc->isExternal()) {
-            // A fully-qualified external reference needs to be added to module for code generation
-            context_->addExternalProcedure(proc);
+            // A fully qualified external reference needs to be added to module for code generation
+            context_->addExternalProcedure(dynamic_cast<ProcedureDeclarationNode *>(proc));
         }
     }
-    auto type = onSelectors(ident->start(), ident->end(), sym, sym->getType(), selectors);
+    const auto type = onSelectors(ident->start(), ident->end(), sym, sym->getType(), selectors);
     if (auto procTy = dynamic_cast<ProcedureTypeNode *>(type)) {
         // Looks like a procedure reference that needs to be treated as a procedure call
         if (procTy->getReturnType()) {
@@ -861,8 +861,8 @@ Sema::onQualifiedExpression(const FilePos &start, const FilePos &,
     // Check whether the qualified identifier is an external or imported procedure
     if (const auto proc = dynamic_cast<ProcedureNode *>(sym)) {
         if (ident->isQualified() && proc->isExternal()) {
-            // A fully-qualified external reference needs to be added to module for code generation
-            context_->addExternalProcedure(proc);
+            // A fully qualified external reference needs to be added to module for code generation
+            context_->addExternalProcedure(dynamic_cast<ProcedureDeclarationNode *>(proc));
         }
         auto type = onSelectors(ident->start(), ident->end(), sym, sym->getType(), selectors);
         if (type->isProcedure()) {

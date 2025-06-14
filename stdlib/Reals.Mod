@@ -11,41 +11,41 @@ MODULE Reals;
 
 
   (* Import `int32_t olang_reals_expo(float)` from Oberon runtime library. *)
-  PROCEDURE olang_reals_expo(x: REAL): INTEGER; EXTERN;
+  PROCEDURE [ "C" ] GetExpo(x: REAL): INTEGER; EXTERNAL [ "olang_reals_expo" ];
 
   (* Import `int32_t olang_reals_expoL(double)` from Oberon runtime library. *)
-  PROCEDURE olang_reals_expoL(x: LONGREAL): INTEGER; EXTERN;
+  PROCEDURE [ "C" ] GetExpoL(x: LONGREAL): INTEGER; EXTERNAL [ "olang_reals_expoL" ];
 
   (* Import `float olang_reals_ten(int32_t)` from Oberon runtime library. *)
-  PROCEDURE olang_reals_ten(e: INTEGER): REAL; EXTERN;
+  PROCEDURE [ "C" ] GetTen(e: INTEGER): REAL; EXTERNAL [ "olang_reals_ten" ];
 
   (* Import `double olang_reals_tenL(int32_t)` from Oberon runtime library. *)
-  PROCEDURE olang_reals_tenL(e: INTEGER): LONGREAL; EXTERN;
+  PROCEDURE [ "C" ] GetTenL(e: INTEGER): LONGREAL; EXTERNAL [ "olang_reals_tenL" ];
 
   (* Import `float olang_reals_nan(int32_t)` from Oberon runtime library. *)
-  PROCEDURE olang_reals_nan(): REAL; EXTERN;
+  PROCEDURE [ "C" ] GetNaN(): REAL; EXTERNAL [ "olang_reals_nan" ];
 
   (* Import `int32_t olang_reals_nan_code(float)` from Oberon runtime library. *)
-  PROCEDURE olang_reals_nan_code(x: REAL): INTEGER; EXTERN;
-
-  (* Import `void olang_reals_nan_codeL(double, int32_t *, int32_t * )` from Oberon runtime library. *)
-  PROCEDURE olang_reals_nan_codeL(x: LONGREAL; VAR h, l: LONGINT); EXTERN;
+  PROCEDURE [ "C" ] GetNaNCode(x: REAL): INTEGER; EXTERNAL [ "olang_reals_nan_code" ];
 
   (* Import `double olang_reals_nan()` from Oberon runtime library. *)
-  PROCEDURE olang_reals_nanL(): LONGREAL; EXTERN;
+  PROCEDURE [ "C" ] GetNaNL(): LONGREAL; EXTERNAL [ "olang_reals_nanL" ];
+
+  (* Import `void olang_reals_nan_codeL(double, int32_t *, int32_t * )` from Oberon runtime library. *)
+  PROCEDURE [ "C" ] GetNaNCodeL(x: LONGREAL; VAR h, l: LONGINT); EXTERNAL [ "olang_reals_nan_codeL" ];
 
 
   (* Returns the shifted binary exponent (0 <= e < 256). *)
   PROCEDURE Expo*(x: REAL): INTEGER;
   BEGIN
-    RETURN olang_reals_expo(x)
+    RETURN GetExpo(x)
   END Expo;
 
   (* Returns the shifted binary exponent (0 <= e < 2048). *)
   PROCEDURE ExpoL*(x: LONGREAL): INTEGER;
     VAR i: LONGINT;
   BEGIN
-    RETURN olang_reals_expoL(x)
+    RETURN GetExpoL(x)
   END ExpoL;
 
   (* Sets the shifted binary exponent. *)
@@ -85,12 +85,12 @@ MODULE Reals;
   (* Returns 10^e (e <= 308, 308 < e delivers IEEE-code +INF). *)
   PROCEDURE Ten*(e: INTEGER): REAL;
   BEGIN
-    RETURN olang_reals_ten(e)
+    RETURN GetTen(e)
   END Ten;
 
   PROCEDURE TenL*(e: INTEGER): LONGREAL;
   BEGIN
-    RETURN olang_reals_tenL(e)
+    RETURN GetTenL(e)
   END TenL;
 
   PROCEDURE ConvertL*(x: LONGREAL; n: INTEGER; VAR d: ARRAY OF CHAR);
@@ -134,27 +134,27 @@ MODULE Reals;
   (* Returns NaN with the specified code (0 <= c < 8399608). *)
   PROCEDURE NaN*(): REAL;
   BEGIN
-    RETURN olang_reals_nan()
+    RETURN GetNaN()
   END NaN;
 
   (* Returns the NaN code (0 <= c < 8399608) or -1 if not NaN/Infinite. *)
   PROCEDURE NaNCode*(x: REAL): LONGINT;
   BEGIN
-    RETURN olang_reals_nan_code(x)
+    RETURN GetNaNCode(x)
   END NaNCode;
+
+  (* Returns NaN with the specified code (0 <= c < 8399608). *)
+  PROCEDURE NaNL*(): LONGREAL;
+  BEGIN
+    RETURN GetNaNL()
+  END NaNL;
 
   (* Returns the NaN code (0 <= h < 1048576, MIN(LONGINT) <= l <= MAX(LONGINT)) or (-1,-1) if not NaN/Infinite. *)
   PROCEDURE NaNCodeL*(x: LONGREAL; VAR h, l: LONGINT);
   BEGIN
     h := 0; l := 0; (* zero out all 64 bits *)
-    olang_reals_nan_codeL(x, h, l)
+    GetNaNCodeL(x, h, l)
   END NaNCodeL;
-
-  (* Returns NaN with the specified code (0 <= c < 8399608). *)
-  PROCEDURE NaNL*(): LONGREAL;
-  BEGIN
-    RETURN olang_reals_nanL()
-  END NaNL;
 
   (* Return state of the floating-point control register. *)
   (*PROCEDURE FCR*(): SET;

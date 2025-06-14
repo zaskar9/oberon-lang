@@ -80,13 +80,13 @@ ModuleNode *ASTContext::getExternalModule(const std::string &name) {
     return ext_modules_[name].get();
 }
 
-void ASTContext::addExternalProcedure(ProcedureNode *proc) {
+void ASTContext::addExternalProcedure(ProcedureDeclarationNode *proc) {
     if (std::find(ext_procedures_.begin(), ext_procedures_.end(), proc) == ext_procedures_.end()) {
         ext_procedures_.push_back(proc);
     }
 }
 
-ProcedureNode *ASTContext::getExternalProcedure(const size_t num) const {
+ProcedureDeclarationNode *ASTContext::getExternalProcedure(const size_t num) const {
     return ext_procedures_.at(num);
 }
 

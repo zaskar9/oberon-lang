@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <sys/stat.h>
+
 #if (defined(_WIN32) || defined(_WIN64)) && !(defined(__MINGW32__) || defined(__MINGW64__))
   #include <io.h>
   #include <windows.h>
@@ -20,8 +21,7 @@
 
 #define UNUSED(x) (void)(x)
 
-bool olang_files_file_exists(const char *name, const void *dv) {
-    UNUSED(dv);
+bool olang_files_fexists(const char *name) {
 #if (defined(_WIN32) || defined(_WIN64)) && !(defined(__MINGW32__) || defined(__MINGW64__))
     return _access(name, 0) == 0;
 #else
@@ -29,20 +29,7 @@ bool olang_files_file_exists(const char *name, const void *dv) {
 #endif
 }
 
-FILE *olang_files_file_open(const char *name, const void *dv) {
-    UNUSED(dv);
-    FILE *file = fopen(name, "r+b");
-    if (file == NULL) {
-        file = fopen(name, "rb");
-        if (file == NULL && olang_files_file_exists(name, NULL)) {
-            file = fopen(name, "ab");
-        }
-    }
-    return file;
-}
-
-void olang_files_file_register(FILE *handle, const char *name, const void *dv) {
-    UNUSED(dv);
+void olang_files_fregister(FILE *handle, const char *name) {
     FILE *file = fopen(name, "w+b");
     rewind(handle);
     int ch = fgetc(handle);
@@ -55,17 +42,7 @@ void olang_files_file_register(FILE *handle, const char *name, const void *dv) {
     fclose(file);
 }
 
-int32_t olang_files_file_remove(const char *name, const void *dv) {
-    UNUSED(dv);
-    return remove(name);
-}
-
-int32_t olang_files_file_rename(const char *old, const void *old_dv, const char *new, const void* new_dv) {
-    UNUSED(old_dv); UNUSED(new_dv);
-    return rename(old, new);
-}
-
-int64_t olang_files_file_length(FILE *file) {
+int64_t olang_files_flength(FILE *file) {
     int err = fseek(file, 0, SEEK_END);
     if (!err) {
         return ftell(file);
@@ -73,17 +50,11 @@ int64_t olang_files_file_length(FILE *file) {
     return -1;
 }
 
-bool olang_files_file_seek(FILE *file, const int64_t offset) {
+bool olang_files_fseek(FILE *file, const int64_t offset) {
     return fseek(file, offset, SEEK_SET) == 0;
 }
 
-FILE *olang_files_file_purge(const char *name, const void *dv) {
-    UNUSED(dv);
-    return fopen(name, "w+b");
-}
-
-void olang_files_file_date(const char *name, const void *dv, int64_t *t, int64_t *d) {
-    UNUSED(dv);
+void olang_files_fdate(const char *name, int64_t *t, int64_t *d) {
     struct stat result;
     const int error = stat(name, &result);
     if (!error) {

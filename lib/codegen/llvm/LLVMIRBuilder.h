@@ -33,7 +33,7 @@ using std::string;
 using std::unordered_set;
 using std::vector;
 
-class LLVMIRBuilder final : private NodeVisitor {
+class LLVMIRBuilder final : NodeVisitor {
 
 public:
     LLVMIRBuilder(CompilerConfig &config, LLVMContext &builder, Module *module);
@@ -91,7 +91,7 @@ private:
     void cast(const ExpressionNode &);
 
     FunctionType *createFunctionType(ProcedureTypeNode &, CallingConvention);
-    Function *createFunction(ProcedureNode &, CallingConvention);
+    void createFunction(ProcedureNode &, CallingConvention);
 
     using Selectors = vector<unique_ptr<Selector>>;
     using SelectorIterator = Selectors::iterator;

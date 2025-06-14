@@ -49,8 +49,8 @@ public:
     void addExternalModule(unique_ptr<ModuleNode> module);
     ModuleNode* getExternalModule(const string &name);
 
-    void addExternalProcedure(ProcedureNode *proc);
-    [[nodiscard]] ProcedureNode *getExternalProcedure(size_t num) const;
+    void addExternalProcedure(ProcedureDeclarationNode *proc);
+    [[nodiscard]] ProcedureDeclarationNode *getExternalProcedure(size_t num) const;
     [[nodiscard]] size_t getExternalProcedureCount() const;
 
 private:
@@ -61,7 +61,7 @@ private:
     vector<unique_ptr<PointerTypeNode>> pointer_ts_;
     vector<unique_ptr<ProcedureTypeNode>> procedure_ts;
     map<string, unique_ptr<ModuleNode>> ext_modules_;
-    vector<ProcedureNode*> ext_procedures_;
+    vector<ProcedureDeclarationNode*> ext_procedures_;
 
 };
 

@@ -29,53 +29,50 @@ VAR
     root: File;
 
 
+    (* Declare `FILE *fopen( char *, char * )` function from C <stdio.h> library. *)
+    PROCEDURE [ "C" ] fopen(name: ARRAY OF CHAR; mode: ARRAY OF CHAR): Handle; EXTERNAL [ "fopen" ];
+
     (* Declare `FILE *tmpfile( void )` function from C <stdio.h> library. *)
-    PROCEDURE tmpfile(): Handle; EXTERN;
+    PROCEDURE [ "C" ] tmpfile(): Handle; EXTERNAL [ "tmpfile" ];
 
     (* Declare `int fgetc( FILE* )` function from C <stdio.h> library.  *)
-    PROCEDURE fgetc(handle: Handle): BYTE; EXTERN;
+    PROCEDURE [ "C" ] fgetc(handle: Handle): BYTE; EXTERNAL [ "fgetc" ];
 
     (* Declare `int fputc ( int, FILE * )` function from C <stdio.h> library. *)
-    PROCEDURE fputc(x: BYTE; handle: Handle): INTEGER; EXTERN;
+    PROCEDURE [ "C" ] fputc(x: BYTE; handle: Handle): INTEGER; EXTERNAL [ "fputc" ];
 
     (* Declare `int32_t feof( FILE * )` function from C <stdio.h> library. *)
-    PROCEDURE feof(handle: Handle): INTEGER; EXTERN;
+    PROCEDURE [ "C" ] feof(handle: Handle): INTEGER; EXTERNAL [ "feof" ];
 
     (* Declare `int64_t ftell( FILE* )` function from C <stdio.h> library. *)
-    PROCEDURE ftell(handle: Handle): LONGINT; EXTERN;
+    PROCEDURE [ "C" ] ftell(handle: Handle): LONGINT; EXTERNAL [ "ftell" ];
 
     (* Declare `int fflush( FILE * )` function from C <stdio.h> library. *)
-    PROCEDURE fflush(handle: Handle): INTEGER; EXTERN;
+    PROCEDURE [ "C" ] fflush(handle: Handle): INTEGER; EXTERNAL [ "fflush" ];
 
     (* Declare `int fclose( FILE * )` function from C <stdio.h> library. *)
-    PROCEDURE fclose(handle: Handle): INTEGER; EXTERN;
+    PROCEDURE [ "C" ] fclose(handle: Handle): INTEGER; EXTERNAL [ "fclose" ];
 
-    (* Declare `bool olang_files_file_exist(const char*, const void * )` from Oberon runtime library. *)
-    PROCEDURE olang_files_file_exists(name: ARRAY OF CHAR): BOOLEAN; EXTERN;
+    (* Declare `bool olang_files_fexist(const char* )` from Oberon runtime library. *)
+    PROCEDURE [ "C" ] fexists(name: ARRAY OF CHAR): BOOLEAN; EXTERNAL [ "olang_files_fexists" ];
 
-    (* Declare `FILE *olang_files_file_exist(const char*, const void * )` from Oberon runtime library. *)
-    PROCEDURE olang_files_file_open(name: ARRAY OF CHAR): Handle; EXTERN;
+    (* Declare `int32_t olang_files_fregister(FILE *, const char * )` from Oberon runtime library. *)
+    PROCEDURE [ "C" ] fregister(handle: Handle; name: ARRAY OF CHAR); EXTERNAL [ "olang_files_fregister" ];
 
-    (* Declare `int32_t olang_files_file_register(FILE *, const char *, const void * )` from Oberon runtime library. *)
-    PROCEDURE olang_files_file_register(handle: Handle; name: ARRAY OF CHAR); EXTERN;
+    (* Declare `int32_t remove(const char * )` from C <stdio.h> library. *)
+    PROCEDURE [ "C" ] fremove(name: ARRAY OF CHAR): INTEGER; EXTERNAL [ "remove" ];
 
-    (* Declare `bool olang_files_file_remove(const char *, const void * )` from Oberon runtime library. *)
-    PROCEDURE olang_files_file_remove(name: ARRAY OF CHAR): INTEGER; EXTERN;
+    (* Declare `int32_t rename(const char *, const char * )` from C <stdio.h> library. *)
+    PROCEDURE [ "C" ] frename(old, new: ARRAY OF CHAR): INTEGER; EXTERNAL [ "rename" ];
 
-    (* Declare `bool olang_files_file_rename(const char *, const void *, const char *, const void* )` from Oberon runtime library. *)
-    PROCEDURE olang_files_file_rename(old, new: ARRAY OF CHAR): INTEGER; EXTERN;
+    (* Declare `int64_t olang_files_flength(FILE * )` from Oberon runtime library. *)
+    PROCEDURE [ "C" ] flength(handle: Handle): LONGINT; EXTERNAL [ "olang_files_flength" ];
 
-    (* Declare `int64_t olang_files_file_length(FILE * )` from Oberon runtime library. *)
-    PROCEDURE olang_files_file_length(handle: Handle): LONGINT; EXTERN;
+    (* Declare `bool olang_files_fseek(FILE*, int64_t)` from Oberon runtime library. *)
+    PROCEDURE [ "C" ] fseek(handle: Handle; offset: LONGINT): BOOLEAN; EXTERNAL [ "olang_files_fseek" ];
 
-    (* Declare `bool olang_files_file_seek(FILE*, int64_t)` from Oberon runtime library. *)
-    PROCEDURE olang_files_file_seek(handle: Handle; offset: LONGINT): BOOLEAN; EXTERN;
-
-    (* Declare `void olang_files_file_purge(FILE * )` from Oberon runtime library. *)
-    PROCEDURE olang_files_file_purge(name: ARRAY OF CHAR): Handle; EXTERN;
-
-    (* Declare `void olang_files_file_date(const char *, const void *, int64_t *, int64_t * )` from Oberon runtime library. *)
-    PROCEDURE olang_files_file_date(name: ARRAY OF CHAR; VAR t, d: LONGINT); EXTERN;
+    (* Declare `void olang_files_fdate(const char *, int64_t *, int64_t * )` from Oberon runtime library. *)
+    PROCEDURE [ "C" ] fdate(name: ARRAY OF CHAR; VAR t, d: LONGINT); EXTERNAL [ "olang_files_fdate" ];
 
 
     PROCEDURE Insert(f: File);
@@ -115,8 +112,12 @@ VAR
     BEGIN
         f := Search(name);
         IF f = NIL THEN
-            IF ~olang_files_file_exists(name) THEN RETURN NIL END;
-            handle := olang_files_file_open(name);
+            (* IF ~fexists(name) THEN RETURN NIL END; *)
+            handle := fopen(name, "r+b");
+            IF handle = NIL THEN
+                handle := fopen(name, "rb");
+                IF (handle = NIL) & fexists(name) THEN handle := fopen(name, "ab") END
+            END;
             IF handle = NIL THEN RETURN NIL END;
             NEW(f);
             f.name := name;
@@ -146,7 +147,7 @@ VAR
         The file buffers are written back. Any existing mapping of this name to another file is overwritten. *)
     PROCEDURE Register*(f: File);
     BEGIN
-        IF ~f.registered THEN olang_files_file_register(f.handle, f.name) END
+        IF ~f.registered THEN fregister(f.handle, f.name) END
     END Register;
 
     (** Flushes the changes made to a file to disk. Register will automatically Close a file. *)
@@ -166,7 +167,7 @@ VAR
         ASSERT(f # NIL);
         Close(f);
         IF f.registered THEN
-            f.handle := olang_files_file_purge(f.name)
+            f.handle := fopen(f.name, "w+b")
         ELSE
             f.handle := tmpfile()
         END;
@@ -179,7 +180,7 @@ VAR
     VAR f: File;
     BEGIN
         IF Search(name) = NIL THEN
-            res := olang_files_file_remove(name)
+            res := fremove(name)
         ELSE
             res := 1
         END
@@ -191,7 +192,7 @@ VAR
     VAR f: File;
     BEGIN
         IF Search(old) = NIL THEN
-            res := olang_files_file_rename(old, new)
+            res := frename(old, new)
         ELSE
             res := 1
         END
@@ -200,7 +201,7 @@ VAR
     (** Returns the current length of a file. *)
     PROCEDURE Length*(f: File): LONGINT;
     BEGIN
-        RETURN olang_files_file_length(f.handle)
+        RETURN flength(f.handle)
     END Length;
 
     (** Returns the time `t` and date `d` of the last modification of file `f`.
@@ -215,7 +216,7 @@ VAR
     BEGIN
         ASSERT(f # NIL);
         t := 0; d := 0;
-        IF f.registered THEN olang_files_file_date(f.name, t, d) END
+        IF f.registered THEN fdate(f.name, t, d) END
     END GetDate;
 
     (** Returns the full name of a file. *)
@@ -256,7 +257,7 @@ VAR
     BEGIN
         x := 0;
         IF r.file # NIL THEN
-            IF olang_files_file_seek(r.file.handle, r.pos) THEN
+            IF fseek(r.file.handle, r.pos) THEN
                 r.res := 0; r.eof := FALSE;
                 IF feof(r.file.handle) # 0 THEN
                     r.eof := TRUE; r.res := 1
@@ -392,7 +393,7 @@ VAR
     VAR pos: LONGINT;
     BEGIN
         IF r.file # NIL THEN
-            IF olang_files_file_seek(r.file.handle, r.pos) THEN
+            IF fseek(r.file.handle, r.pos) THEN
                 r.res := 0; r.eof := FALSE;
                 IF fputc(x, r.file.handle) = x THEN (* if a write is successful, `fputc` returns the written `char`. *)
                     r.file.modified := TRUE;

@@ -18,12 +18,12 @@ VAR
 
 
   (* Declare `int putchar(char)` from C <stdio.h> library. *)
-  PROCEDURE putchar(ch: CHAR): INTEGER; EXTERN;
+  PROCEDURE [ "C" ] PutChar(ch: CHAR): INTEGER; EXTERNAL [ "putchar" ];
 
 
   PROCEDURE Write* (VAR W: Writer; ch: CHAR);
   BEGIN
-    putchar(ch)
+    PutChar(ch)
   END Write;
 
   PROCEDURE WriteLn* (VAR W: Writer);

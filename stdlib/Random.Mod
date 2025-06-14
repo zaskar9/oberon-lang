@@ -10,23 +10,23 @@ IMPORT Oberon;
 
 
 (* Declare `int rand()` function from C <stdlib.h> library. *)
-PROCEDURE rand(): INTEGER; EXTERN;
+PROCEDURE [ "C" ] RandomInt(): INTEGER; EXTERNAL [ "rand" ];
 
 (* Declare `void srand(long)` function from C <stdlib.h> library. *)
-PROCEDURE srand(seed: LONGINT); EXTERN;
+PROCEDURE [ "C" ] Seed(seed: LONGINT); EXTERNAL [ "srand" ];
 
 
 (** Returns next random integer number from 0 to max *)
 PROCEDURE Int*(max: INTEGER): INTEGER;
 BEGIN
-    RETURN rand() MOD max
+    RETURN RandomInt() MOD max
 END Int;
 
 (** Reset the random process with the current time *)
 PROCEDURE Randomize*();
 VAR time: LONGINT;
 BEGIN
-    srand(Oberon.Time())
+    Seed(Oberon.Time())
 END Randomize;
 
 END Random.
