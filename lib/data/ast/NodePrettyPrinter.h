@@ -28,14 +28,15 @@ private:
     ModuleNode *module_;
     Node *parent_;
 
-    void indent();
-    void block(BlockNode &, bool isGlobal);
-    void selectors(vector<unique_ptr<Selector>> &);
-    void qualident(DeclarationNode *);
-    void procedure(string, ProcedureTypeNode *);
+    void indent() const;
+    void block(const BlockNode &, bool isGlobal);
+    void selectors(const vector<unique_ptr<Selector>> &);
+    void qualident(const DeclarationNode *) const;
+    void signature(const string&, ProcedureTypeNode *);
 
     void visit(ModuleNode &) override;
-    void visit(ProcedureNode &) override;
+    void visit(ProcedureDeclarationNode &) override;
+    void visit(ProcedureDefinitionNode &) override;
 
     void visit(ImportNode &) override;
 

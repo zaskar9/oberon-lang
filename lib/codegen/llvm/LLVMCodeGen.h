@@ -58,11 +58,11 @@ private:
     std::unique_ptr<llvm::orc::LLJIT> jit_;
     llvm::ExitOnError exitOnErr_;
 
-    void emit(llvm::Module *, path, OutputFileType);
+    void emit(llvm::Module *, path, OutputFileType) const;
     static std::string getLibName(const string &, bool, const llvm::Triple &);
     static std::string getObjName(const string &, const llvm::Triple &);
 
-    void loadObjects(ASTContext *);
+    void loadObjects(const ASTContext *) const;
 
 public:
     LLVMCodeGen(CompilerConfig &);

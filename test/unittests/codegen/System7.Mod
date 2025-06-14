@@ -23,6 +23,8 @@ BEGIN
     b := 0DEADBEEFH;
     d := SYSTEM.VAL(SET, b);
     Out.Hex(SYSTEM.VAL(INTEGER, d)); Out.Ln;
+    d := { 0, 1, 2, 3 };
+    Out.Int(SYSTEM.VAL(INTEGER, d), 0); Out.Ln;
     x := -1.0;
     Out.LongHex(SYSTEM.VAL(LONGINT, x)); Out.Ln;
     y := -1.0;
@@ -40,6 +42,7 @@ END System7.
     CHECK: 123456789
     CHECK: 12345
     CHECK: DEADBEEF
+    CHECK: 15
     CHECK: BFF0000000000000
     CHECK: BF800000
     CHECK: -1.00E+00

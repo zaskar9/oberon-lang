@@ -23,7 +23,8 @@ class NodeVisitor {
 
 public:
     virtual void visit(ModuleNode &) = 0;
-    virtual void visit(ProcedureNode &) = 0;
+    virtual void visit(ProcedureDeclarationNode &) = 0;
+    virtual void visit(ProcedureDefinitionNode &) = 0;
 
     virtual void visit(ImportNode &) = 0;
 

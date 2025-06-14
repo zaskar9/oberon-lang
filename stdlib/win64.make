@@ -29,11 +29,11 @@ clean:
 .smb.Mod:
 	@$(O7C) $(O7CFLAGS) $<
 
-lib: runtime.obj Oberon.obj Math.obj Reals.obj Texts.obj Random.obj Out.obj
-	@$(CXX) /nologo /D_USRDLL /D_WINDLL runtime.obj Oberon.obj Math.obj Reals.obj Texts.obj Random.obj Out.obj /MT /link /DLL /out:oberon.dll
+lib: runtime.obj Oberon.obj Math.obj Reals.obj Texts.obj Random.obj Out.obj Files.obj
+	@$(CXX) /nologo /D_USRDLL /D_WINDLL runtime.obj Oberon.obj Math.obj Reals.obj Texts.obj Random.obj Out.obj Files.obj /MT /link /DLL /out:oberon.dll
 	@move oberon.dll $(LIB_DIR) >nul
 	@move oberon.lib $(LIB_DIR) >nul
-	@$(LIBX) /nologo /machine:$(CPU_ARCH) runtime.obj Oberon.obj Math.obj Reals.obj Texts.obj Random.obj Out.obj /out:oberon-static.lib
+	@$(LIBX) /nologo runtime.obj Oberon.obj Math.obj Reals.obj Texts.obj Random.obj Out.obj Files.obj /out:oberon-static.lib
 	@move oberon-static.lib $(LIB_DIR) >nul
 
 inc:
@@ -43,3 +43,4 @@ inc:
 	@move Random.smb $(INC_DIR) >nul
 	@move Reals.smb $(INC_DIR) >nul
 	@move Texts.smb $(INC_DIR) >nul
+	@move Files.smb $(INC_DIR) >nul

@@ -2,7 +2,6 @@
   RUN: %oberon -I "%S%{pathsep}%inc" -L "%S%{pathsep}%lib" -l oberon --run %s | filecheck %s
 *)
 MODULE Procedure4;
-
 IMPORT Out;
 
 PROCEDURE Test(a, b : INTEGER) : INTEGER;

@@ -40,7 +40,8 @@ private:
     void selectors(TypeNode *, vector<unique_ptr<Selector>> &);
 
     void visit(ModuleNode &) override;
-    void visit(ProcedureNode &) override;
+    void visit(ProcedureDeclarationNode &) override;
+    void visit(ProcedureDefinitionNode &) override;
 
     void visit(ImportNode &) override;
 

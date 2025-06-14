@@ -17,7 +17,7 @@ void BlockNode::addConstant(std::unique_ptr<ConstantDeclarationNode> constant) {
     constants_.push_back(std::move(constant));
 }
 
-ConstantDeclarationNode* BlockNode::getConstant(size_t num) const {
+ConstantDeclarationNode* BlockNode::getConstant(const size_t num) const {
     return constants_.at(num).get();
 }
 
@@ -33,7 +33,7 @@ void BlockNode::addTypeDeclaration(std::unique_ptr<TypeDeclarationNode> type_dec
     type_declarations_.push_back(std::move(type_declaration));
 }
 
-TypeDeclarationNode* BlockNode::getTypeDeclaration(size_t num) const {
+TypeDeclarationNode* BlockNode::getTypeDeclaration(const size_t num) const {
     return type_declarations_.at(num).get();
 }
 
@@ -49,11 +49,11 @@ void BlockNode::addVariable(std::unique_ptr<VariableDeclarationNode> variable) {
     variables_.push_back(std::move(variable));
 }
 
-void BlockNode::insertVariable(size_t pos, std::unique_ptr<VariableDeclarationNode> variable) {
-    variables_.insert(variables_.begin() + (long) pos, std::move(variable));
+void BlockNode::insertVariable(const size_t pos, std::unique_ptr<VariableDeclarationNode> variable) {
+    variables_.insert(variables_.begin() + static_cast<long>(pos), std::move(variable));
 }
 
-VariableDeclarationNode* BlockNode::getVariable(size_t num) const {
+VariableDeclarationNode* BlockNode::getVariable(const size_t num) const {
     return variables_.at(num).get();
 }
 
@@ -61,8 +61,9 @@ size_t BlockNode::getVariableCount() const {
     return variables_.size();
 }
 
-void BlockNode::removeVariables(size_t from, size_t to) {
-    variables_.erase(variables_.begin() + (long) from, variables_.begin() + (long) to);
+void BlockNode::removeVariables(const size_t from, const size_t to) {
+    variables_.erase(variables_.begin() + static_cast<long>(from),
+                     variables_.begin() + static_cast<long>(to));
 }
 
 vector<unique_ptr<ProcedureNode>> &BlockNode::procedures() {
@@ -73,7 +74,7 @@ void BlockNode::addProcedure(std::unique_ptr<ProcedureNode> procedure) {
     procedures_.push_back(std::move(procedure));
 }
 
-ProcedureNode* BlockNode::getProcedure(size_t num) const {
+ProcedureNode* BlockNode::getProcedure(const size_t num) const {
     return procedures_.at(num).get();
 }
 
@@ -81,12 +82,12 @@ size_t BlockNode::getProcedureCount() const {
     return procedures_.size();
 }
 
-std::unique_ptr<ProcedureNode> BlockNode::removeProcedure(size_t num) {
+std::unique_ptr<ProcedureNode> BlockNode::removeProcedure(const size_t num) {
     auto res = std::move(procedures_[num]);
-    procedures_.erase(procedures_.begin() + (long) num);
+    procedures_.erase(procedures_.begin() + static_cast<long>(num));
     return res;
 }
 
-StatementSequenceNode* BlockNode::statements() {
+StatementSequenceNode* BlockNode::statements() const {
     return statements_.get();
 }

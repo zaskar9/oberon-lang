@@ -7,26 +7,42 @@
 #include "ProcedureNode.h"
 #include "NodeVisitor.h"
 
+ProcedureNode::~ProcedureNode() = default;
+
+CallingConvention ProcedureNode::getConvention() const {
+    return conv_;
+}
+
+bool ProcedureNode::isExternal() const {
+    return false;
+}
+
+bool ProcedureNode::isPredefined() const {
+    return false;
+}
+
 ProcedureTypeNode *ProcedureNode::getType() const {
     return dynamic_cast<ProcedureTypeNode*>(DeclarationNode::getType());
 }
 
-void ProcedureNode::setExtern(bool value) {
-    extern_ = value;
+void ProcedureNode::print(std::ostream &stream) const {
+    stream << "PROCEDURE " << *getIdentifier() << ";";
 }
 
-bool ProcedureNode::isExtern() const {
-    return extern_;
+
+string ProcedureDeclarationNode::getName() const {
+    return name_;
 }
 
-bool ProcedureNode::isImported() const {
-    return imported_;
+bool ProcedureDeclarationNode::isExternal() const {
+    return true;
 }
 
-void ProcedureNode::accept(NodeVisitor &visitor) {
+void ProcedureDeclarationNode::accept(NodeVisitor &visitor) {
     visitor.visit(*this);
 }
 
-void ProcedureNode::print(std::ostream &stream) const {
-    stream << "PROCEDURE " << *getIdentifier() << ";";
+
+void ProcedureDefinitionNode::accept(NodeVisitor &visitor) {
+    visitor.visit(*this);
 }

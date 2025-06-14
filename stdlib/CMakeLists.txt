@@ -41,6 +41,7 @@ function(add_oberon_module target depends)
 endfunction()
 
 add_oberon_module(Oberon "")
+add_oberon_module(Files "")
 add_oberon_module(Reals "")
 add_oberon_module(Texts "${CMAKE_CURRENT_BINARY_DIR}/Reals${O_EXT}")
 add_oberon_module(Out "${CMAKE_CURRENT_BINARY_DIR}/Texts${O_EXT}")
@@ -50,6 +51,7 @@ add_oberon_module(Math "")
 add_library(${LIBOBERON_SHARED} SHARED
     runtime.c
     ${CMAKE_CURRENT_BINARY_DIR}/Oberon${O_EXT}
+    ${CMAKE_CURRENT_BINARY_DIR}/Files${O_EXT}
     ${CMAKE_CURRENT_BINARY_DIR}/Reals${O_EXT}
     ${CMAKE_CURRENT_BINARY_DIR}/Texts${O_EXT}
     ${CMAKE_CURRENT_BINARY_DIR}/Out${O_EXT}
@@ -65,6 +67,7 @@ set_target_properties(
 add_library(${LIBOBERON_STATIC} STATIC
     runtime.c
     ${CMAKE_CURRENT_BINARY_DIR}/Oberon${O_EXT}
+    ${CMAKE_CURRENT_BINARY_DIR}/Files${O_EXT}
     ${CMAKE_CURRENT_BINARY_DIR}/Reals${O_EXT}
     ${CMAKE_CURRENT_BINARY_DIR}/Texts${O_EXT}
     ${CMAKE_CURRENT_BINARY_DIR}/Out${O_EXT}
