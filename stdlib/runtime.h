@@ -11,9 +11,6 @@
 #include <stdio.h>
 #include <time.h>
 
-// Module `Oberon`
-int32_t olang_oberon_timespec_get(struct timespec *, const void *, int32_t);
-
 // Module `Files`
 bool olang_files_fexists(const char *);
 void olang_files_file_register(FILE *, const char *);
@@ -21,9 +18,20 @@ int64_t olang_files_flength(FILE *);
 bool olang_files_fseek(FILE*, int64_t);
 void olang_files_fdate(const char *, int64_t *, int64_t *);
 
+// Module `In`
+bool olang_in_getchar(char *);
+bool olang_in_ungetchar(char);
+bool olang_in_getfloat(float *);
+bool olang_in_getdouble(double *);
+bool olang_in_getint(const char *, int32_t *, bool);
+bool olang_in_getlong(const char *, int64_t *, bool);
+
 // Module `Math`
 float olang_math_realf(int32_t);
 int32_t olang_math_entierf(float);
+
+// Module `Oberon`
+int32_t olang_oberon_timespec_get(struct timespec *, const void *, int32_t);
 
 // Module `Reals`
 int32_t olang_reals_expo(float);

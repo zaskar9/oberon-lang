@@ -66,6 +66,41 @@ void olang_files_fdate(const char *name, int64_t *t, int64_t *d) {
     }
 }
 
+bool olang_in_getchar(char *ch) {
+    const int n = getchar();
+    *ch = (char) n;
+    return n != EOF;
+}
+
+bool olang_in_ungetchar(const char ch) {
+    if (ch != EOF) {
+        return ungetc(ch, stdin) == ch;
+    }
+    return false;
+}
+
+bool olang_in_getfloat(float *f) {
+    return scanf("%f", f) == 1;
+}
+
+bool olang_in_getdouble(double *d) {
+    return scanf("%lf", d) == 1;
+}
+
+bool olang_in_getint(const char *buf, int32_t *val, bool hex) {
+    if (hex) {
+        return sscanf(buf, "%x", val) == 1;
+    }
+    return sscanf(buf, "%d", val) == 1;
+}
+
+bool olang_in_getlong(const char *buf, int64_t *val, bool hex) {
+    if (hex) {
+        return sscanf(buf, "%llx", val) == 1;
+    }
+    return sscanf(buf, "%lld", val) == 1;
+}
+
 float olang_math_realf(const int32_t x) {
     return (float) x;
 }

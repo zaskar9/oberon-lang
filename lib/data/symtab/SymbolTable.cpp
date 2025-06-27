@@ -16,15 +16,14 @@ using std::string;
 const unsigned int SymbolTable::GLOBAL_SCOPE = 0;
 const unsigned int SymbolTable::MODULE_SCOPE = 1;
 
-SymbolTable::SymbolTable() : scopes_(), aliases_(), scope_(), references_() {
+SymbolTable::SymbolTable() : scope_() {
     universe_ = make_unique<Scope>(GLOBAL_SCOPE, nullptr);
 }
 
 SymbolTable::~SymbolTable() = default;
 
 void SymbolTable::import(const string &module, const string &name, DeclarationNode *node) {
-    auto scope = getModule(module);
-    if (scope) {
+    if (const auto scope = getModule(module)) {
         node->setScope(MODULE_SCOPE);
         scope->insert(name, node);
     } else {
@@ -34,20 +33,20 @@ void SymbolTable::import(const string &module, const string &name, DeclarationNo
     }
 }
 
-void SymbolTable::setRef(unsigned ref, TypeNode *type) {
-    auto idx = (size_t) ref;
+void SymbolTable::setRef(const unsigned ref, TypeNode *type) {
+    const auto idx = static_cast<size_t>(ref);
     if (references_.size() <= idx) {
         references_.resize(idx + 1);
     }
     references_[idx] = type;
 }
 
-TypeNode *SymbolTable::getRef(unsigned ref) const {
-    auto idx = (size_t) ref;
+TypeNode *SymbolTable::getRef(const unsigned ref) const {
+    const auto idx = static_cast<size_t>(ref);
     return references_[idx];
 }
 
-void SymbolTable::insert(const string &name, DeclarationNode *node) {
+void SymbolTable::insert(const string &name, DeclarationNode *node) const {
 #ifdef _DEBUG
     if (name.empty() || node == nullptr) {
         std::cerr << "Illegal symbol table state: trying to insert anonymous or null declaration." << std::endl;
@@ -57,7 +56,7 @@ void SymbolTable::insert(const string &name, DeclarationNode *node) {
     scope_->insert(name, node);
 }
 
-void SymbolTable::insertGlobal(const string &name, DeclarationNode *node) {
+void SymbolTable::insertGlobal(const string &name, DeclarationNode *node) const {
 #ifdef _DEBUG
     if (name.empty() || node == nullptr) {
         std::cerr << "Illegal symbol table state: trying to insert anonymous or null declaration." << std::endl;
@@ -77,16 +76,15 @@ DeclarationNode *SymbolTable::lookup(Ident *ident) const {
 DeclarationNode *SymbolTable::lookup(const string &qualifier, const string &name) const {
     if (!qualifier.empty()) {
         if (aliases_.contains(qualifier)) {
-            string module = aliases_.find(qualifier)->second;
-            auto it = scopes_.find(module);
-            if (it != scopes_.end()) {
+            const string module = aliases_.find(qualifier)->second;
+            if (const auto it = scopes_.find(module); it != scopes_.end()) {
                 return it->second->lookup(name, true);
             }
         }
         return nullptr;
-    } else if (scope_) {
-        auto node = scope_->lookup(name, false);
-        if (node) {
+    }
+    if (scope_) {
+        if (const auto node = scope_->lookup(name, false)) {
             return node;
         }
     }
@@ -116,7 +114,7 @@ void SymbolTable::setNilType(TypeNode *nilType) {
     nilType_ = nilType;
 }
 
-void SymbolTable::addModule(const string &module, bool activate) {
+void SymbolTable::addModule(const string &module, const bool activate) {
     if (getModule(module)) {
         // TODO throw exception
         std::cerr << "Illegal symbol table state: namespace " + module + " already exists." << std::endl;
@@ -131,8 +129,7 @@ void SymbolTable::addModule(const string &module, bool activate) {
 }
 
 Scope *SymbolTable::getModule(const string &module) {
-    auto itr = scopes_.find(module);
-    if (itr != scopes_.end()) {
+    if (const auto itr = scopes_.find(module); itr != scopes_.end()) {
         return itr->second.get();
     }
     return nullptr;

@@ -37,7 +37,11 @@ Sema::Sema(CompilerConfig &config, ASTContext *context, OberonSystem *system) :
 }
 
 void
-Sema::onTranslationUnitStart(const string &name) {
+Sema::onTranslationUnitStart(const FilePos &start, const FilePos &, const unique_ptr<Ident> &ident) const {
+    const string name = ident->name();
+    if (symbols_->getModule(name)) {
+        logger_.error(start, "duplicate module definition: " + name + ".");
+    }
     symbols_->addModule(name, true);
 }
 
@@ -86,14 +90,14 @@ void Sema::onDeclarations() {
 unique_ptr<ModuleNode>
 Sema::onModuleStart(const FilePos &start, unique_ptr<Ident> ident) {
     auto module = make_unique<ModuleNode>(start, std::move(ident));
-    assertUnique(module->getIdentifier(), module.get());
+    // assertUnique(module->getIdentifier(), module.get());
     module->setScope(symbols_->getLevel());
     onBlockStart();
     return module;
 }
 
 void
-Sema::onModuleEnd(const FilePos &, unique_ptr<Ident> ident) {
+Sema::onModuleEnd(const FilePos &, const unique_ptr<Ident>& ident) {
     onBlockEnd();
     auto module = context_->getTranslationUnit();
     if (*module->getIdentifier() != *ident.get()) {
@@ -108,16 +112,20 @@ Sema::onImport(const FilePos &start, const FilePos &,
     auto node = make_unique<ImportNode>(start, std::move(alias), std::move(ident));
     auto name = node->getModule()->name();
     // Check for duplicate imports
-    for (auto &import : context_->getTranslationUnit()->imports()) {
+    for (const auto &import : context_->getTranslationUnit()->imports()) {
         if (import->getModule()->name() == name) {
             logger_.error(node->pos(), "duplicate import of module " + name + ".");
             break;
         }
     }
-    // Import the external module
     if (name == "SYSTEM") {
+        // Import the pseudo-module SYSTEM
         context_->addExternalModule(std::make_unique<ModuleNode>(std::make_unique<Ident>(name)));
+    } else if (name == context_->getTranslationUnit()->getIdentifier()->name()) {
+        // Check for recursive import
+        logger_.error(node->pos(), "module " + name + " must not import itself.");
     } else {
+        // Check whether the module can be imported
         if (!importer_.read(name)) {
             logger_.error(node->pos(), "module " + name + " could not be imported.");
         }
@@ -452,7 +460,7 @@ Sema::onIf(const FilePos &start, const FilePos &,
                     unique_ptr<ExpressionNode> condition,
                     unique_ptr<StatementSequenceNode> thenStmts,
                     vector<unique_ptr<ElseIfNode>> elseIfs,
-                    unique_ptr<StatementSequenceNode> elseStmts) {
+                    unique_ptr<StatementSequenceNode> elseStmts) const {
     if (!condition) {
         logger_.error(start, "undefined condition in if-statement.");
         return nullptr;
@@ -468,7 +476,7 @@ Sema::onIf(const FilePos &start, const FilePos &,
 unique_ptr<ElseIfNode>
 Sema::onElseIf(const FilePos &start, const FilePos &,
                unique_ptr<ExpressionNode> condition,
-               unique_ptr<StatementSequenceNode> stmts) {
+               unique_ptr<StatementSequenceNode> stmts) const {
     if (!condition) {
         logger_.error(start, "undefined condition in elsif-statement.");
     }
@@ -796,7 +804,7 @@ Sema::onReturn(const FilePos &start, const FilePos &, unique_ptr<ExpressionNode>
     return make_unique<ReturnNode>(start, std::move(expr));
 }
 
-unique_ptr<ExitNode> Sema::onExit(const FilePos &start, const FilePos &) {
+unique_ptr<ExitNode> Sema::onExit(const FilePos &start, const FilePos &) const {
     if (loops_.empty()) {
         logger_.error(start, "EXIT statement outside of loop.");
     }
@@ -819,7 +827,7 @@ Sema::onQualifiedStatement(const FilePos &start, const FilePos &,
         }
     }
     const auto type = onSelectors(ident->start(), ident->end(), sym, sym->getType(), selectors);
-    if (auto procTy = dynamic_cast<ProcedureTypeNode *>(type)) {
+    if (const auto procTy = dynamic_cast<ProcedureTypeNode *>(type)) {
         // Looks like a procedure reference that needs to be treated as a procedure call
         if (procTy->getReturnType()) {
             logger_.error(ident->start(), "function procedure call must be followed by parameter list.");
@@ -827,7 +835,8 @@ Sema::onQualifiedStatement(const FilePos &start, const FilePos &,
         // For uniformity, add an empty parameter list to the procedure call if none is present
         selectors.insert(selectors.end(), make_unique<ActualParameters>(ident->end()));
         return make_unique<QualifiedStatement>(start, std::move(ident), std::move(selectors), sym);
-    } else if (!selectors.empty() && selectors.back()->getNodeType() == NodeType::parameter) {
+    }
+    if (!selectors.empty() && selectors.back()->getNodeType() == NodeType::parameter) {
         // Looks like a proper or function procedure call
         if (type != noTy_) {
             logger_.warning(ident->start(), "discarded expression value.");
@@ -1582,7 +1591,7 @@ Sema::onBooleanLiteral(const FilePos &start, const FilePos &, bool value) {
 }
 
 unique_ptr<IntegerLiteralNode>
-Sema::onIntegerLiteral(const FilePos &start, const FilePos &, int64_t value, TypeKind kind) const {
+Sema::onIntegerLiteral(const FilePos &start, const FilePos &, int64_t value, const TypeKind kind) const {
     TypeNode *type;
     switch (kind) {
         case TypeKind::SHORTINT: type = shortIntTy_; break;
@@ -1595,7 +1604,7 @@ Sema::onIntegerLiteral(const FilePos &start, const FilePos &, int64_t value, Typ
 }
 
 unique_ptr<RealLiteralNode>
-Sema::onRealLiteral(const FilePos &start, const FilePos &, double value, TypeKind kind) {
+Sema::onRealLiteral(const FilePos &start, const FilePos &, double value, const TypeKind kind) const {
     TypeNode *type;
     switch (kind) {
         case TypeKind::REAL: type = realTy_; break;
@@ -1617,7 +1626,7 @@ Sema::onCharLiteral(const FilePos &start, const FilePos &, uint8_t value) {
 }
 
 unique_ptr<NilLiteralNode>
-Sema::onNilLiteral(const FilePos &start, const FilePos &) {
+Sema::onNilLiteral(const FilePos &start, const FilePos &) const {
     return make_unique<NilLiteralNode>(start, symbols_->getNilType());
 }
 
@@ -1626,17 +1635,17 @@ Sema::onSetLiteral(const FilePos &start, const FilePos &, bitset<32> value) {
     return make_unique<SetLiteralNode>(start, value, setTy_);
 }
 
-bool Sema::isDefined(Ident *ident) {
+bool Sema::isDefined(Ident *ident) const {
     return symbols_->lookup(ident) != nullptr;
 }
 
-bool Sema::isConstant(QualIdent *ident) {
-    auto sym = symbols_->lookup(ident);
+bool Sema::isConstant(QualIdent *ident) const {
+    const auto sym = symbols_->lookup(ident);
     return sym && sym->getNodeType() == NodeType::constant;
 }
 
-bool Sema::isType(QualIdent *ident) {
-    auto sym = symbols_->lookup(ident);
+bool Sema::isType(QualIdent *ident) const {
+    const auto sym = symbols_->lookup(ident);
     return sym && sym->getNodeType() == NodeType::type;
 }
 
@@ -2096,7 +2105,7 @@ Sema::fold(const FilePos &start, const FilePos &end,
 }
 
 bool
-Sema::assertEqual(Ident *aIdent, Ident *bIdent) const {
+Sema::assertEqual(Ident *aIdent, Ident *bIdent) {
     if (!aIdent || !bIdent) {
         return false;
     }
@@ -2114,7 +2123,7 @@ Sema::assertEqual(Ident *aIdent, Ident *bIdent) const {
 }
 
 void
-Sema::assertUnique(IdentDef *ident, DeclarationNode *node) {
+Sema::assertUnique(const IdentDef *ident, DeclarationNode *node) const {
     if (symbols_->isDuplicate(ident->name())) {
         logger_.error(ident->start(), "duplicate definition: " + ident->name() + ".");
     }
@@ -2125,7 +2134,7 @@ Sema::assertUnique(IdentDef *ident, DeclarationNode *node) {
 }
 
 void
-Sema::checkExport(DeclarationNode *node) {
+Sema::checkExport(DeclarationNode *node) const {
     if (node->getIdentifier()->isExported()) {
         if (node->getScope() != SymbolTable::MODULE_SCOPE) {
             logger_.error(node->getIdentifier()->start(), "only top-level declarations can be exported.");
@@ -2134,7 +2143,7 @@ Sema::checkExport(DeclarationNode *node) {
         if (node->getNodeType() == NodeType::type) {
             auto decl = dynamic_cast<TypeDeclarationNode *>(node);
             if (decl->getType()->kind() == TypeKind::RECORD) {
-                auto type = dynamic_cast<RecordTypeNode *>(decl->getType());
+                const auto type = dynamic_cast<RecordTypeNode *>(decl->getType());
                 for (size_t i = 0; i < type->getFieldCount(); i++) {
                     auto field = type->getField(i);
                     if (field->getIdentifier()->isExported()) {
@@ -2147,7 +2156,7 @@ Sema::checkExport(DeclarationNode *node) {
 }
 
 bool
-Sema::assertCompatible(const FilePos &pos, TypeNode *expected, TypeNode *actual, bool isPtr) {
+Sema::assertCompatible(const FilePos &pos, TypeNode *expected, TypeNode *actual, const bool isPtr) {
     if (!expected || !actual) {
         logger_.error(pos, "type mismatch.");
         return false;

@@ -51,7 +51,7 @@ unique_ptr<QualIdent> Parser::qualident() {
     logger_.debug("qualident");
     const auto qualifier = ident();
     if (!sema_.isDefined(qualifier.get()) && scanner_.peek()->type() == TokenType::period) {
-        scanner_.next(); // skip the period
+        scanner_.next();  // skip the period
         if (assertToken(scanner_.peek(), TokenType::const_ident)) {
             const auto identifier = ident();
             return make_unique<QualIdent>(qualifier->start(), identifier->end(), qualifier->name(), identifier->name());
@@ -111,7 +111,7 @@ void Parser::module(ASTContext *context) {
     }
     const auto start = token_->start();
     auto identifier = ident();
-    sema_.onTranslationUnitStart(identifier->name());
+    sema_.onTranslationUnitStart(start, identifier->end(), identifier);
     context->setTranslationUnit(sema_.onModuleStart(start, std::move(identifier)));
     const auto module = context->getTranslationUnit();
     token_ = scanner_.next();
@@ -1105,8 +1105,7 @@ unique_ptr<QualIdent> Parser::designator(vector<unique_ptr<Selector>> &selectors
            token->type() == TokenType::lbrack ||
            token->type() == TokenType::caret ||
            token->type() == TokenType::lparen) {
-        auto sel = selector();
-        if (sel) {
+        if (auto sel = selector()) {
             selectors.push_back(std::move(sel));
         } else {
             break;

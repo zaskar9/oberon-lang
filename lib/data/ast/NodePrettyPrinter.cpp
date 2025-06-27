@@ -133,14 +133,20 @@ void NodePrettyPrinter::signature(const string& ident, ProcedureTypeNode *type) 
 
 void NodePrettyPrinter::visit(ProcedureDeclarationNode &node) {
     indent();
-    stream_ << "PROCEDURE [ \"";
-    switch (node.getConvention()) {
-        case CallingConvention::C: stream_ << "C\" ]"; break;
-        case CallingConvention::OLANG: stream_ << "OLANG\" ]"; break;
-        default: stream_ << "unknown\" ]"; break;
+    const auto name = node.getName();
+    stream_ << "PROCEDURE";
+    if (!name.empty()) {
+        switch (node.getConvention()) {
+            case CallingConvention::C: stream_ << " [ \"C\" ]"; break;
+            case CallingConvention::OLANG: stream_ << "OLANG\" ]"; break;
+            default: stream_ << " [ \"unknown\" ]"; break;
+        }
     }
     signature(to_string(*node.getIdentifier()), node.getType());
-    stream_ << "; EXTERNAL [ \"" << node.getName() << "\" ]" << std::endl;
+    if (!name.empty()) {
+        stream_ << "; EXTERNAL [ \"" << node.getName() << "\" ]";
+    }
+    stream_  << ";" << std::endl;
 }
 
 void NodePrettyPrinter::visit(ProcedureDefinitionNode& node) {

@@ -53,8 +53,8 @@ private:
     TypeNode *boolTy_, *byteTy_, *charTy_, *shortIntTy_, *integerTy_, *longIntTy_, *realTy_, *longRealTy_,
              *stringTy_, *setTy_, *anyTy_, *noTy_, *typeTy_;
 
-    bool assertEqual(Ident *, Ident *) const;
-    void assertUnique(IdentDef *, DeclarationNode *);
+    static bool assertEqual(Ident *, Ident *) ;
+    void assertUnique(const IdentDef *, DeclarationNode *) const;
     int64_t assertInBounds(const IntegerLiteralNode *, int64_t , int64_t) const;
     bool assertAssignable(const ExpressionNode *, string &) const;
 
@@ -62,7 +62,7 @@ private:
     void castLiteral(unique_ptr<ExpressionNode> &, TypeNode *);
     TypeNode* intType(int64_t);
 
-    void checkExport(DeclarationNode *);
+    void checkExport(DeclarationNode *) const;
 
     bool assertCompatible(const FilePos &, TypeNode *, TypeNode *, bool = false);
     TypeNode *commonType(const FilePos &, TypeNode *, TypeNode *) const;
@@ -126,11 +126,11 @@ public:
     void onBlockStart();
     void onBlockEnd();
 
-    void onTranslationUnitStart(const string &);
+    void onTranslationUnitStart(const FilePos &, const FilePos &, const unique_ptr<Ident> &) const;
     void onTranslationUnitEnd(const string &);
 
     unique_ptr<ModuleNode> onModuleStart(const FilePos &, unique_ptr<Ident>);
-    void onModuleEnd(const FilePos&, unique_ptr<Ident>);
+    void onModuleEnd(const FilePos&, const unique_ptr<Ident>&);
 
     unique_ptr<ImportNode> onImport(const FilePos &, const FilePos &, unique_ptr<Ident>, unique_ptr<Ident>);
 
@@ -171,10 +171,10 @@ public:
                                     unique_ptr<ExpressionNode>,
                                     unique_ptr<StatementSequenceNode>,
                                     vector<unique_ptr<ElseIfNode>>,
-                                    unique_ptr<StatementSequenceNode>);
+                                    unique_ptr<StatementSequenceNode>) const;
     unique_ptr<ElseIfNode> onElseIf(const FilePos &, const FilePos &,
                                     unique_ptr<ExpressionNode>,
-                                    unique_ptr<StatementSequenceNode>);
+                                    unique_ptr<StatementSequenceNode>) const;
 
     void onLoopStart(const FilePos &);
     unique_ptr<LoopNode> onLoop(const FilePos &, const FilePos &,
@@ -206,7 +206,7 @@ public:
                                 unique_ptr<CaseLabelNode>,
                                 unique_ptr<StatementSequenceNode>);
     unique_ptr<ReturnNode> onReturn(const FilePos &, const FilePos &, unique_ptr<ExpressionNode>);
-    unique_ptr<ExitNode> onExit(const FilePos &, const FilePos &);
+    unique_ptr<ExitNode> onExit(const FilePos &, const FilePos &) const;
 
     unique_ptr<StatementNode> onQualifiedStatement(const FilePos &, const FilePos &,
                                                    unique_ptr<QualIdent>, vector<unique_ptr<Selector>>);
@@ -230,15 +230,15 @@ public:
 
     unique_ptr<BooleanLiteralNode> onBooleanLiteral(const FilePos &, const FilePos &, bool);
     unique_ptr<IntegerLiteralNode> onIntegerLiteral(const FilePos &, const FilePos &, int64_t, TypeKind = TypeKind::INTEGER) const;
-    unique_ptr<RealLiteralNode> onRealLiteral(const FilePos &, const FilePos &, double, TypeKind = TypeKind::REAL);
+    unique_ptr<RealLiteralNode> onRealLiteral(const FilePos &, const FilePos &, double, TypeKind = TypeKind::REAL) const;
     unique_ptr<StringLiteralNode> onStringLiteral(const FilePos &, const FilePos &, const string &);
     unique_ptr<CharLiteralNode> onCharLiteral(const FilePos &, const FilePos &, uint8_t);
-    unique_ptr<NilLiteralNode> onNilLiteral(const FilePos &, const FilePos &);
+    unique_ptr<NilLiteralNode> onNilLiteral(const FilePos &, const FilePos &) const;
     unique_ptr<SetLiteralNode> onSetLiteral(const FilePos &, const FilePos &, bitset<32>);
 
-    bool isDefined(Ident *);
-    bool isConstant(QualIdent *);
-    bool isType(QualIdent *);
+    bool isDefined(Ident *) const;
+    bool isConstant(QualIdent *) const;
+    bool isType(QualIdent *) const;
     bool isVariable(QualIdent *);
     bool isProcedure(QualIdent *);
 
