@@ -26,7 +26,7 @@ endif
 ifeq ($(OS), windows)
 	O7CFLAGS = -q -c -O3 -fenable-extern -fenable-varargs # --target $(TGT)
 else
-	O7CFLAGS = -q -c -O3 --reloc=pic -fenable-extern -fenable-varargs # --target $(TGT)
+	O7CFLAGS = -c -O3 --reloc=pic -fenable-extern -fenable-varargs # --target $(TGT)
 	ifeq ($(PLATFORM), aarch64)
       O7CFLAGS += -fno-stack-protector
     endif
@@ -67,13 +67,13 @@ clean :
 %.smb : %.Mod
 	@$(O7C) $(O7CFLAGS) $<
 
-dist : runtime.o Files.o In.o Math.o Oberon.o Reals.o Texts.o Out.o Random.o
+dist : runtime.o Files.o In.o Math.o Oberon.o Reals.o Texts.o Out.o Random.o Strings.o
 	@echo -n Building library...
-	@$(CXX) $(LDFLAGS) -o $(LIBNAME).$(EXT) runtime.o Files.o In.o Math.o Oberon.o Out.o Random.o Reals.o Texts.o
-	@ar rcs $(LIBNAME).a runtime.o Files.o In.o Math.o Oberon.o Out.o Random.o Reals.o Texts.o
+	@$(CXX) $(LDFLAGS) -o $(LIBNAME).$(EXT) runtime.o Files.o In.o Math.o Oberon.o Out.o Random.o Reals.o Strings.o Texts.o
+	@ar rcs $(LIBNAME).a runtime.o Files.o In.o Math.o Oberon.o Out.o Random.o Reals.o Strings.o Texts.o
 	@echo ' done.'
 
-install : dist Files.smb Oberon.smb Out.smb Random.smb Math.smb Reals.smb Texts.smb
+install : dist Files.smb Oberon.smb Out.smb Random.smb Math.smb Reals.smb Strings.smb Texts.smb
 	@echo -n Installing library...
 	@mkdir -p $(LIB)
 	@mv $(LIBNAME).$(EXT) $(LIB)
@@ -88,5 +88,6 @@ install : dist Files.smb Oberon.smb Out.smb Random.smb Math.smb Reals.smb Texts.
 	@mv Out.smb $(INC)
 	@mv Random.smb $(INC)
 	@mv Reals.smb $(INC)
+	@mv Strings.smb $(INC)
 	@mv Texts.smb $(INC)
 	@echo ' done.'
