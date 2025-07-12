@@ -1,3 +1,9 @@
+(* The Oberon modules of the standard library contained in this directory are based on ETH Oberon.
+ * The original source code is used and distributed under the ETH Oberon License, see LICENSE file
+ * for details. The modules have been adapted from the original source code to work with the LLVM
+ * Oberon compiler and leverage its capabilities in interfacing with the host operating system.
+ *)
+
 (**  Module with a set of basic routines for formatted output of characters, numbers and strings. *)
 MODULE Out;
 

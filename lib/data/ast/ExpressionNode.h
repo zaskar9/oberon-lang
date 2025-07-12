@@ -264,7 +264,7 @@ class CharLiteralNode final : public LiteralNode<uint8_t> {
 
 public:
     CharLiteralNode(const FilePos &pos, uint8_t value, TypeNode *type = nullptr, TypeNode *cast = nullptr) :
-            LiteralNode(NodeType::character, pos, TypeKind::CHAR, value, type, cast) {};
+            LiteralNode(NodeType::character, pos, TypeKind::CHAR, value, type, cast) {}
     ~CharLiteralNode() final = default;
 
     void accept(NodeVisitor &visitor) final;

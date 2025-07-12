@@ -19,20 +19,10 @@ using std::vector;
 
 class ProcedureNode;
 
-class BlockNode : public DeclarationNode {
-
-private:
-    vector<unique_ptr<ConstantDeclarationNode>> constants_;
-    vector<unique_ptr<TypeDeclarationNode>> type_declarations_;
-    vector<unique_ptr<VariableDeclarationNode>> variables_;
-    vector<unique_ptr<ProcedureNode>> procedures_;
-    unique_ptr<StatementSequenceNode> statements_;
+class BlockNode {
 
 public:
-    BlockNode(const NodeType nodeType, const FilePos &pos, unique_ptr<IdentDef> ident, TypeNode *type, unsigned int index = 0) :
-            DeclarationNode(nodeType, pos, std::move(ident), type, index),
-            constants_(), type_declarations_(), variables_(), procedures_(),
-            statements_(make_unique<StatementSequenceNode>(EMPTY_POS)) {};
+    BlockNode() : statements_(make_unique<StatementSequenceNode>(EMPTY_POS)) {}
     virtual ~BlockNode();
 
     [[nodiscard]] vector<unique_ptr<ConstantDeclarationNode>> &constants();
@@ -58,7 +48,14 @@ public:
     [[nodiscard]] size_t getProcedureCount() const;
     [[nodiscard]] std::unique_ptr<ProcedureNode> removeProcedure(size_t num);
 
-    StatementSequenceNode* statements();
+    StatementSequenceNode* statements() const;
+
+private:
+    vector<unique_ptr<ConstantDeclarationNode>> constants_;
+    vector<unique_ptr<TypeDeclarationNode>> type_declarations_;
+    vector<unique_ptr<VariableDeclarationNode>> variables_;
+    vector<unique_ptr<ProcedureNode>> procedures_;
+    unique_ptr<StatementSequenceNode> statements_;
 
 };
 

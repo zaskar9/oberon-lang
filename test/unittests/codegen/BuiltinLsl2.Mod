@@ -1,9 +1,5 @@
 (*
-  RUN: %oberon -I "%S%{pathsep}%inc" -L "%S%{pathsep}%lib" -l oberon --run %s
-  XFAIL: *
-  This should fail or give a warning it is not left shift and gives garbage result and is undefined in C/C++.
-  OBNC gives a warning on negative value,  while oberon-lang reports an error for negative literal values.
-  Project Oberon uses negative value one place in Texts.Mod.
+  RUN: not %oberon -I "%S%{pathsep}%inc" -L "%S%{pathsep}%lib" -l oberon --run %s 2>&1 | filecheck %s
 *)
 MODULE BuiltinLsl2;
 
@@ -21,3 +17,6 @@ END Test;
 BEGIN
     Test
 END BuiltinLsl2.
+(*
+  CHECK: {{.*}}code 10 (implicit sign conversion)
+*)

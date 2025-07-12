@@ -67,13 +67,13 @@ clean :
 %.smb : %.Mod
 	@$(O7C) $(O7CFLAGS) $<
 
-dist : runtime.o Oberon.o Math.o Reals.o Texts.o Random.o Out.o
+dist : runtime.o Files.o In.o Math.o Oberon.o Reals.o Texts.o Out.o Random.o Strings.o
 	@echo -n Building library...
-	@$(CXX) $(LDFLAGS) -o $(LIBNAME).$(EXT) runtime.o Oberon.o Math.o Reals.o Texts.o Random.o Out.o
-	@ar rcs $(LIBNAME).a runtime.o Oberon.o Math.o Reals.o Texts.o Random.o Out.o
+	@$(CXX) $(LDFLAGS) -o $(LIBNAME).$(EXT) runtime.o Files.o In.o Math.o Oberon.o Out.o Random.o Reals.o Strings.o Texts.o
+	@ar rcs $(LIBNAME).a runtime.o Files.o In.o Math.o Oberon.o Out.o Random.o Reals.o Strings.o Texts.o
 	@echo ' done.'
 
-install : dist Oberon.smb Out.smb Random.smb Math.smb Reals.smb Texts.smb
+install : dist Files.smb Oberon.smb Out.smb Random.smb Math.smb Reals.smb Strings.smb Texts.smb
 	@echo -n Installing library...
 	@mkdir -p $(LIB)
 	@mv $(LIBNAME).$(EXT) $(LIB)
@@ -81,10 +81,13 @@ install : dist Oberon.smb Out.smb Random.smb Math.smb Reals.smb Texts.smb
 	@echo ' done.'
 	@echo -n Installing symbol files...
 	@mkdir -p $(INC)
+	@mv Files.smb $(INC)
+	@mv in.smb $(INC)
 	@mv Math.smb $(INC)
 	@mv Oberon.smb $(INC)
 	@mv Out.smb $(INC)
 	@mv Random.smb $(INC)
 	@mv Reals.smb $(INC)
+	@mv Strings.smb $(INC)
 	@mv Texts.smb $(INC)
 	@echo ' done.'

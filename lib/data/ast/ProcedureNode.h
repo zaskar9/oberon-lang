@@ -9,47 +9,75 @@
 
 
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "BlockNode.h"
 #include "DeclarationNode.h"
-#include "ProcedureTypeNode.h"
 #include "ModuleNode.h"
+#include "ProcedureTypeNode.h"
 
-using std::make_unique;
+using std::string;
 using std::unique_ptr;
 using std::vector;
 
-class ProcedureNode : public BlockNode {
+enum class CallingConvention { OLANG, C };
 
-private:
-    bool extern_;
-    bool imported_;
+class ProcedureNode : public DeclarationNode {
 
 public:
-    // ctor for use in sema / parser
-    ProcedureNode(const FilePos &pos, unique_ptr<IdentDef> ident) :
-            BlockNode(NodeType::procedure, pos, std::move(ident), nullptr),
-            extern_(false), imported_(false) {};
-    // ctor for use in symbol importer
-    ProcedureNode(unique_ptr<IdentDef> ident, ProcedureTypeNode *type) :
-            BlockNode(NodeType::procedure, EMPTY_POS, std::move(ident), type),
-            extern_(false), imported_(true) {};
-    ~ProcedureNode() override = default;
+    ProcedureNode(const FilePos &pos, unique_ptr<IdentDef> ident, ProcedureTypeNode *type, const CallingConvention conv) :
+            DeclarationNode(NodeType::procedure, pos, std::move(ident), type), conv_(conv) {}
+    ~ProcedureNode() override = 0;
 
-    [[nodiscard]] ProcedureTypeNode *getType() const;
+    [[nodiscard]] CallingConvention getConvention() const;
 
-    void setExtern(bool value);
-    [[nodiscard]] bool isExtern() const;
-    [[nodiscard]] bool isImported() const;
+    [[nodiscard]] virtual bool isExternal() const;
+    [[nodiscard]] virtual bool isPredefined() const;
 
-    [[nodiscard]] virtual bool isPredefined() const {
-        return false;
-    }
+    [[nodiscard]] ProcedureTypeNode *getType() const override;
+
+    void print(std::ostream &stream) const override;
+
+private:
+    CallingConvention conv_;
+
+};
+
+
+class ProcedureDeclarationNode final : public ProcedureNode {
+
+public:
+    // ctor for external procedures
+    ProcedureDeclarationNode(const FilePos &pos, unique_ptr<IdentDef> ident, ProcedureTypeNode *type,
+                             const CallingConvention conv, const string &name) :
+            ProcedureNode(pos, std::move(ident), type, conv), name_(name) {}
+    // ctor for imported procedures
+    ProcedureDeclarationNode(unique_ptr<IdentDef> ident, ProcedureTypeNode *type) :
+            ProcedureNode(EMPTY_POS, std::move(ident), type, CallingConvention::OLANG) {}
+
+    ~ProcedureDeclarationNode() override = default;
+
+    [[nodiscard]] string getName() const;
+
+    [[nodiscard]] bool isExternal() const override;
 
     void accept(NodeVisitor &visitor) override;
 
-    void print(std::ostream &stream) const override;
+private:
+    string name_;
+
+};
+
+
+class ProcedureDefinitionNode final : public ProcedureNode, public BlockNode {
+
+public:
+    ProcedureDefinitionNode(const FilePos &pos, unique_ptr<IdentDef> ident) :
+            ProcedureNode(pos, std::move(ident), nullptr, CallingConvention::OLANG) {}
+    ~ProcedureDefinitionNode() override = default;
+
+    void accept(NodeVisitor &visitor) override;
 
 };
 

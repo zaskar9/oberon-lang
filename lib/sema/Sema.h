@@ -44,7 +44,7 @@ private:
 
     Logger &logger_;
     vector<pair<unique_ptr<QualIdent>, PointerTypeNode *>> forwards_;
-    stack<unique_ptr<ProcedureNode>> procs_;
+    stack<unique_ptr<ProcedureDefinitionNode>> procs_;
     unordered_map<QualifiedExpression *, TypeNode *> caseTys_;
     stack<FilePos> loops_;
     SymbolTable *symbols_;
@@ -53,16 +53,16 @@ private:
     TypeNode *boolTy_, *byteTy_, *charTy_, *shortIntTy_, *integerTy_, *longIntTy_, *realTy_, *longRealTy_,
              *stringTy_, *setTy_, *anyTy_, *noTy_, *typeTy_;
 
-    bool assertEqual(Ident *, Ident *) const;
-    void assertUnique(IdentDef *, DeclarationNode *);
-    int64_t assertInBounds(const IntegerLiteralNode *, int64_t , int64_t);
+    static bool assertEqual(Ident *, Ident *) ;
+    void assertUnique(const IdentDef *, DeclarationNode *) const;
+    int64_t assertInBounds(const IntegerLiteralNode *, int64_t , int64_t) const;
     bool assertAssignable(const ExpressionNode *, string &) const;
 
     static void cast(ExpressionNode *, TypeNode *);
     void castLiteral(unique_ptr<ExpressionNode> &, TypeNode *);
     TypeNode* intType(int64_t);
 
-    void checkExport(DeclarationNode *);
+    void checkExport(DeclarationNode *) const;
 
     bool assertCompatible(const FilePos &, TypeNode *, TypeNode *, bool = false);
     TypeNode *commonType(const FilePos &, TypeNode *, TypeNode *) const;
@@ -109,14 +109,14 @@ private:
     using Selectors = vector<unique_ptr<Selector>>;
     using SelectorIterator = Selectors::iterator;
     SelectorIterator &handleMissingParameters(const FilePos &, const FilePos &,
-                                              TypeNode*, Selectors &, SelectorIterator &);
-    void handleRepeatedIndices(const FilePos &, const FilePos &, Selectors &);
+                                              TypeNode*, Selectors &, SelectorIterator &) const;
+    void handleRepeatedIndices(const FilePos &, const FilePos &, Selectors &) const;
     TypeNode *onSelectors(const FilePos &, const FilePos &, DeclarationNode *, TypeNode*, Selectors &);
     TypeNode *onActualParameters(DeclarationNode *, TypeNode *, ActualParameters *);
-    TypeNode *onArrayIndex(TypeNode *, ArrayIndex *);
-    TypeNode *onDereference(TypeNode *, Dereference *);
-    FieldNode *onRecordField(TypeNode *, RecordField *);
-    TypeNode *onTypeguard(DeclarationNode *, TypeNode *, Typeguard *);
+    TypeNode *onArrayIndex(TypeNode *, ArrayIndex *) const;
+    TypeNode *onDereference(TypeNode *, const Dereference *) const;
+    FieldNode *onRecordField(TypeNode *, RecordField *) const;
+    TypeNode *onTypeguard(DeclarationNode *, TypeNode *, Typeguard *) const;
 
 public:
     Sema(CompilerConfig &, ASTContext *, OberonSystem *);
@@ -126,11 +126,11 @@ public:
     void onBlockStart();
     void onBlockEnd();
 
-    void onTranslationUnitStart(const string &);
+    void onTranslationUnitStart(const FilePos &, const FilePos &, const unique_ptr<Ident> &) const;
     void onTranslationUnitEnd(const string &);
 
     unique_ptr<ModuleNode> onModuleStart(const FilePos &, unique_ptr<Ident>);
-    void onModuleEnd(const FilePos&, unique_ptr<Ident>);
+    void onModuleEnd(const FilePos&, const unique_ptr<Ident>&);
 
     unique_ptr<ImportNode> onImport(const FilePos &, const FilePos &, unique_ptr<Ident>, unique_ptr<Ident>);
 
@@ -140,26 +140,30 @@ public:
     unique_ptr<TypeDeclarationNode> onType(const FilePos &, const FilePos &,
                                            unique_ptr<IdentDef>, TypeNode *);
     ArrayTypeNode *onArrayType(const FilePos &, const FilePos &, vector<unique_ptr<ExpressionNode>>, TypeNode *);
-    PointerTypeNode *onPointerType(const FilePos &, const FilePos &, unique_ptr<QualIdent>);
-    PointerTypeNode *onPointerType(const FilePos &, const FilePos &, TypeNode *);
+    PointerTypeNode *onPointerTypeStart(const FilePos &, const FilePos &) const;
+    void onPointerTypeEnd(const FilePos &, const FilePos &, PointerTypeNode *, unique_ptr<QualIdent>);
+    void onPointerTypeEnd(const FilePos &, const FilePos &, PointerTypeNode *, TypeNode *) const;
     ProcedureTypeNode *onProcedureType(const FilePos &, const FilePos &,
-                                       vector<unique_ptr<ParameterNode>>, bool varargs, TypeNode *);
+                                       vector<unique_ptr<ParameterNode>>, bool varargs, TypeNode *) const;
     unique_ptr<ParameterNode> onParameter(const FilePos &, const FilePos &,
                                           unique_ptr<Ident>, TypeNode *, bool, unsigned = 0);
     RecordTypeNode *onRecordType(const FilePos &, const FilePos &, unique_ptr<QualIdent>, vector<unique_ptr<FieldNode>>);
     unique_ptr<FieldNode> onField(const FilePos&, const FilePos&, unique_ptr<IdentDef>, TypeNode*, unsigned = 0);
 
-    TypeNode *onTypeReference(const FilePos &, const FilePos &, unique_ptr<QualIdent>, unsigned = 0);
+    TypeNode *onTypeReference(const FilePos &, const FilePos &, const unique_ptr<QualIdent> &, unsigned = 0) const;
 
     unique_ptr<VariableDeclarationNode> onVariable(const FilePos &, const FilePos &,
                                                    unique_ptr<IdentDef>, TypeNode*, int = 0);
 
     void onDeclarations();
 
-    ProcedureNode *onProcedureStart(const FilePos &, unique_ptr<IdentDef>);
-    unique_ptr<ProcedureNode> onProcedureEnd(const FilePos &, unique_ptr<Ident>);
+    unique_ptr<ProcedureDeclarationNode> onProcedureDeclaration(const FilePos &, const FilePos &,
+                                                                unique_ptr<IdentDef>, ProcedureTypeNode *,
+                                                                const string &, string &name);
+    ProcedureDefinitionNode *onProcedureDefinitionStart(const FilePos &, unique_ptr<IdentDef>);
+    unique_ptr<ProcedureDefinitionNode> onProcedureDefinitionEnd(const FilePos &, const unique_ptr<Ident> &);
 
-    void onStatementSequence(StatementSequenceNode *);
+    void onStatementSequence(const StatementSequenceNode *) const;
 
     unique_ptr<AssignmentNode> onAssignment(const FilePos &, const FilePos &,
                                             unique_ptr<QualifiedExpression>, unique_ptr<ExpressionNode>);
@@ -167,10 +171,10 @@ public:
                                     unique_ptr<ExpressionNode>,
                                     unique_ptr<StatementSequenceNode>,
                                     vector<unique_ptr<ElseIfNode>>,
-                                    unique_ptr<StatementSequenceNode>);
+                                    unique_ptr<StatementSequenceNode>) const;
     unique_ptr<ElseIfNode> onElseIf(const FilePos &, const FilePos &,
                                     unique_ptr<ExpressionNode>,
-                                    unique_ptr<StatementSequenceNode>);
+                                    unique_ptr<StatementSequenceNode>) const;
 
     void onLoopStart(const FilePos &);
     unique_ptr<LoopNode> onLoop(const FilePos &, const FilePos &,
@@ -202,14 +206,14 @@ public:
                                 unique_ptr<CaseLabelNode>,
                                 unique_ptr<StatementSequenceNode>);
     unique_ptr<ReturnNode> onReturn(const FilePos &, const FilePos &, unique_ptr<ExpressionNode>);
-    unique_ptr<ExitNode> onExit(const FilePos &, const FilePos &);
+    unique_ptr<ExitNode> onExit(const FilePos &, const FilePos &) const;
 
     unique_ptr<StatementNode> onQualifiedStatement(const FilePos &, const FilePos &,
                                                    unique_ptr<QualIdent>, vector<unique_ptr<Selector>>);
     unique_ptr<QualifiedExpression> onQualifiedExpression(const FilePos &, const FilePos &,
                                                           unique_ptr<QualIdent>, vector<unique_ptr<Selector>>);
     unique_ptr<ExpressionNode> onQualifiedConstant(const FilePos &, const FilePos &,
-                                                   unique_ptr<QualIdent>, vector<unique_ptr<Selector>>);
+                                                   const unique_ptr<QualIdent> &, const vector<unique_ptr<Selector>> &);
 
     unique_ptr<ExpressionNode> onUnaryExpression(const FilePos &, const FilePos &,
                                                  OperatorType,
@@ -220,21 +224,21 @@ public:
                                                   unique_ptr<ExpressionNode>);
     unique_ptr<ExpressionNode> onRangeExpression(const FilePos &, const FilePos &,
                                                  unique_ptr<ExpressionNode>,
-                                                 unique_ptr<ExpressionNode>);
+                                                 unique_ptr<ExpressionNode>) const;
     unique_ptr<ExpressionNode> onSetExpression(const FilePos &, const FilePos &,
                                                vector<unique_ptr<ExpressionNode>>);
 
     unique_ptr<BooleanLiteralNode> onBooleanLiteral(const FilePos &, const FilePos &, bool);
-    unique_ptr<IntegerLiteralNode> onIntegerLiteral(const FilePos &, const FilePos &, int64_t, TypeKind = TypeKind::INTEGER);
-    unique_ptr<RealLiteralNode> onRealLiteral(const FilePos &, const FilePos &, double, TypeKind = TypeKind::REAL);
+    unique_ptr<IntegerLiteralNode> onIntegerLiteral(const FilePos &, const FilePos &, int64_t, TypeKind = TypeKind::INTEGER) const;
+    unique_ptr<RealLiteralNode> onRealLiteral(const FilePos &, const FilePos &, double, TypeKind = TypeKind::REAL) const;
     unique_ptr<StringLiteralNode> onStringLiteral(const FilePos &, const FilePos &, const string &);
     unique_ptr<CharLiteralNode> onCharLiteral(const FilePos &, const FilePos &, uint8_t);
-    unique_ptr<NilLiteralNode> onNilLiteral(const FilePos &, const FilePos &);
+    unique_ptr<NilLiteralNode> onNilLiteral(const FilePos &, const FilePos &) const;
     unique_ptr<SetLiteralNode> onSetLiteral(const FilePos &, const FilePos &, bitset<32>);
 
-    bool isDefined(Ident *);
-    bool isConstant(QualIdent *);
-    bool isType(QualIdent *);
+    bool isDefined(Ident *) const;
+    bool isConstant(QualIdent *) const;
+    bool isType(QualIdent *) const;
     bool isVariable(QualIdent *);
     bool isProcedure(QualIdent *);
 

@@ -79,7 +79,7 @@ void SymbolImporter::readDeclaration(SymbolFile *file, NodeType nodeType) {
         auto kind = type->kind();
         if (kind == TypeKind::PROCEDURE) {
             // read in export number
-            [[maybe_unused]] auto exno = file->readInt();
+            [[maybe_unused]] auto exno = file->readChar();
         } else {
             std::unique_ptr<ExpressionNode> expr;
             switch (kind) {
@@ -127,13 +127,13 @@ void SymbolImporter::readDeclaration(SymbolFile *file, NodeType nodeType) {
         module_->types().push_back(std::move(decl));
     } else if (nodeType == NodeType::variable) {
         // read in export number
-        [[maybe_unused]] auto exno = file->readInt();
+        [[maybe_unused]] auto exno = file->readChar();
         auto decl = make_unique<VariableDeclarationNode>(EMPTY_POS, std::move(ident), type);
         symbols_->import(module_->getIdentifier()->name(), name, decl.get());
         decl->setModule(module_);
         module_->variables().push_back(std::move(decl));
     } else if (nodeType == NodeType::procedure) {
-        auto decl = make_unique<ProcedureNode>(std::move(ident), dynamic_cast<ProcedureTypeNode *>(type));
+        auto decl = make_unique<ProcedureDeclarationNode>(std::move(ident), dynamic_cast<ProcedureTypeNode *>(type));
         symbols_->import(module_->getIdentifier()->name(), name, decl.get());
         decl->setModule(module_);
         module_->procedures().push_back(std::move(decl));
@@ -274,11 +274,11 @@ TypeNode *SymbolImporter::readRecordType(SymbolFile *file) {
     // for extended records, read base type of record type (or TypeKind::NOTYPE)
     auto *base_t = dynamic_cast<RecordTypeNode*>(readType(file));
     // read export number
-    [[maybe_unused]] auto exno = file->readInt();
+    [[maybe_unused]] auto exno = file->readChar();
     // read the number of fields in this record
     [[maybe_unused]] auto fld_cnt = file->readInt();
     // read the size of the type, i.e., sum of the sizes of the types of all fields
-    auto size = (unsigned) file->readInt();
+    const auto size = static_cast<unsigned>(file->readInt());
     // read fields
     vector<unique_ptr<FieldNode>> fields;
     TypeNode *type = nullptr;

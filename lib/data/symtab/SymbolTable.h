@@ -48,8 +48,8 @@ public:
     void setRef(unsigned ref, TypeNode *type);
     [[nodiscard]] TypeNode *getRef(unsigned ref) const;
 
-    void insert(const string &name, DeclarationNode *node);
-    void insertGlobal(const string &name, DeclarationNode *node);
+    void insert(const string &name, DeclarationNode *node) const;
+    void insertGlobal(const string &name, DeclarationNode *node) const;
 
     [[nodiscard]] DeclarationNode *lookup(const string &qualifier, const string &name) const;
     [[nodiscard]] DeclarationNode *lookup(Ident *ident) const;

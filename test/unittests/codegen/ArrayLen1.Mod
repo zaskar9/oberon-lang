@@ -67,8 +67,8 @@ BEGIN
 END TestStrLen;
 
 PROCEDURE TestMixing();
-VAR a: ARRAY Dim OF INTEGER;
-PROCEDURE Call(a: Vector); END Call;
+  VAR a: ARRAY Dim OF INTEGER;
+  PROCEDURE Call(a: Vector); END Call;
 BEGIN
     Call(a)
 END TestMixing;

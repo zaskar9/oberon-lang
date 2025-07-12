@@ -1,5 +1,10 @@
-(*JG 21.11.90 / NW 11.7.90 / 24.12.95 / 22.11.10 / 18.11.2014 / 10.1.2019 / AP 15.9.20 / MG 28.3.2024 *)
-MODULE Texts;
+(* The Oberon modules of the standard library contained in this directory are based on ETH Oberon.
+ * The original source code is used and distributed under the ETH Oberon License, see LICENSE file
+ * for details. The modules have been adapted from the original source code to work with the LLVM
+ * Oberon compiler and leverage its capabilities in interfacing with the host operating system.
+ *)
+
+MODULE Texts; (*JG 21.11.90 / NW 11.7.90 / 24.12.95 / 22.11.10 / 18.11.2014 / 10.1.2019 / AP 15.9.20 / MG 28.3.2024 *)
 IMPORT SYSTEM, Reals;
 
 CONST
@@ -11,12 +16,14 @@ TYPE
 VAR
     W: Writer;
 
-  (* Import `putchar` function from C <stdio.h> library. *)
-  PROCEDURE putchar(ch: CHAR): INTEGER; EXTERN;
+
+  (* Declare `int putchar(char)` from C <stdio.h> library. *)
+  PROCEDURE [ "C" ] PutChar(ch: CHAR): INTEGER; EXTERNAL [ "putchar" ];
+
 
   PROCEDURE Write* (VAR W: Writer; ch: CHAR);
   BEGIN
-    putchar(ch)
+    PutChar(ch)
   END Write;
 
   PROCEDURE WriteLn* (VAR W: Writer);

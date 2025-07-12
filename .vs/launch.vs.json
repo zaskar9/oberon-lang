@@ -27,7 +27,7 @@
         //"-S",
         //"--emit-llvm",
         "-r",
-        "RecordExt.Mod"
+        "..\\unittests\\stdlib\\FilesTest.Mod"
       ]
     }
   ]

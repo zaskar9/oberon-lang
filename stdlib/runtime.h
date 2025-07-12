@@ -2,24 +2,46 @@
 // Created by Michael Grossniklaus on 10/21/22.
 //
 
+#ifndef _STDLIB_RUNTIME_H
+
+#define _STDLIB_RUNTIME_H 1
+
+#include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <time.h>
 
-float rt_realf(int32_t x);
-int32_t rt_entierf(float x);
+// Module `Files`
+bool olang_files_fexists(const char *);
+void olang_files_file_register(FILE *, const char *);
+int64_t olang_files_flength(FILE *);
+bool olang_files_fseek(FILE*, int64_t);
+void olang_files_fdate(const char *, int64_t *, int64_t *);
 
-int32_t rt_timespec_get(struct timespec* const time_spec, int32_t const base);
+// Module `In`
+bool olang_in_getchar(char *);
+bool olang_in_ungetchar(char);
+bool olang_in_getfloat(float *);
+bool olang_in_getdouble(double *);
+bool olang_in_getint(const char *, int32_t *, bool);
+bool olang_in_getlong(const char *, int64_t *, bool);
 
-int32_t rt_reals_expo(float x);
-int32_t rt_reals_expoL(double x);
+// Module `Math`
+float olang_math_realf(int32_t);
+int32_t olang_math_entierf(float);
 
-float rt_reals_ten(int32_t e);
-double rt_reals_tenL(int32_t e);
+// Module `Oberon`
+int32_t olang_oberon_timespec_get(struct timespec *, const void *, int32_t);
 
-void rt_reals_convert(float x, int32_t n, char* d);
+// Module `Reals`
+int32_t olang_reals_expo(float);
+int32_t olang_reals_expoL(double);
+float olang_reals_ten(int32_t);
+double olang_reals_tenL(int32_t);
+int32_t olang_reals_nan_code(float);
+void olang_reals_nan_codeL(double, int32_t *, int32_t *);
+float olang_reals_nan(void);
+double olang_reals_nanL(void);
 
-int32_t rt_reals_nan_code(float x);
-void rt_reals_nan_codeL(double x, int32_t *l, int32_t *h);
 
-float rt_reals_nan(void);
-double rt_reals_nanL(void);
+#endif //_STDLIB_RUNTIME_H

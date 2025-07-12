@@ -8,14 +8,14 @@
 #include <iostream>
 #include <regex>
 
-#include <boost/algorithm/string.hpp>
 #include <boost/program_options.hpp>
+#include <boost/algorithm/string.hpp>
 
 #include "config.h"
 #include "Logger.h"
+#include "codegen/llvm/LLVMCodeGen.h"
 #include "compiler/Compiler.h"
 #include "compiler/CompilerConfig.h"
-#include "codegen/llvm/LLVMCodeGen.h"
 
 // For certain modules, LLVM emits stack protection functionality under Windows that
 // involves calls to the standard runtime of the target platform. Since these libraries 
@@ -98,17 +98,19 @@ int main(const int argc, const char **argv) {
         cout << "USAGE: " << PROGRAM_NAME << " [options] file...\n" << endl;
         cout << visible << endl;
         return EXIT_SUCCESS;
-    } else if (vm.count("version")) {
+    }
+    if (vm.count("version")) {
         cout << PROGRAM_NAME << " version " << PROJECT_VERSION;
         cout << " (build " << GIT_COMMIT << "@" << GIT_BRANCH << ")" << endl;
         cout << "Target:   " << codegen->getDescription() << endl;
         cout << "Includes: ";
         cout << "Boost " << BOOST_VERSION / 100000 << "."
-                              << BOOST_VERSION / 100 % 1000 << "."
-                              << BOOST_VERSION % 100 << ", ";
+                << BOOST_VERSION / 100 % 1000 << "."
+                << BOOST_VERSION % 100 << ", ";
         cout << "LLVM " << LLVM_VERSION << endl;
         return EXIT_SUCCESS;
-    } else if (vm.count("inputs")) {
+    }
+    if (vm.count("inputs")) {
         if (vm.count("quiet")) {
             logger.setLevel(LogLevel::QUIET);
         }
@@ -144,7 +146,7 @@ int main(const int argc, const char **argv) {
             }
         }
         if (vm.count("-l")) {
-            auto params = vm["-l"].as<vector<string>>();
+            const auto params = vm["-l"].as<vector<string>>();
             for (const auto& lib : params) {
                 config.addLibrary(lib);
                 logger.debug("Library: '" + lib + "'.");
@@ -154,7 +156,6 @@ int main(const int argc, const char **argv) {
             auto params = vm["-f"].as<vector<string>>();
             regex pattern{"^(no-)?sanitize=(.*)$"};
             for (const auto& flag : params) {
-                smatch matches;
                 if (flag == "enable-extern") {
                     config.setFlag(Flag::ENABLE_EXTERN);
                 } else if (flag == "enable-varargs") {
@@ -163,12 +164,19 @@ int main(const int argc, const char **argv) {
                     config.setFlag(Flag::ENABLE_MAIN);
                 } else if (flag == "no-stack-protector") {
                     config.setFlag(Flag::NO_STACK_PROTECT);
-                } else if (regex_search(flag, matches, pattern)) {
+                } else if (smatch matches; regex_search(flag, matches, pattern)) {
                     bool active = flag[0] != 'n';
-                    string opt = matches.str(2);
+                    const string opt = matches.str(2);
                     if (opt == "array-bounds" || opt == "bounds") {
                         // Out of bounds array indexing.
                         config.toggleSanitize(Trap::OUT_OF_BOUNDS, active);
+                    } else if (opt == "type-guard") {
+                        // Using an invalid type as guard will lead to undefined behaviour.
+                        config.toggleSanitize(Trap::TYPE_GUARD, active);
+                    } else if (opt == "copy-overflow") {
+                        // Assignment of an array or a string to a variable that is not large enough to
+                        // hold the value.
+                        config.toggleSanitize(Trap::COPY_OVERFLOW, active);
                     } else if (opt == "float-divide-by-zero") {
                         // Floating point division by zero.
                         config.toggleSanitize(Trap::FLT_DIVISION, active);
@@ -178,18 +186,28 @@ int main(const int argc, const char **argv) {
                     } else if (opt == "integer-divide-by-zero") {
                         // Integer division by zero.
                         config.toggleSanitize(Trap::INT_DIVISION, active);
-                    } else if (opt == "null") {
+                    } else if (opt == "assert") {
+                        // Toggle whether assert leads to a trap or to a crash.
+                        config.toggleSanitize(Trap::ASSERT, active);
+                    } else if (opt == "null" || opt == "nil") {
                         // Use of a null pointer or creation of a null reference.
                         config.toggleSanitize(Trap::NIL_POINTER, active);
                     } else if (opt == "signed-integer-overflow") {
                         // Signed integer overflow, where the result of a signed integer computation
                         // cannot be represented in its type.
                         config.toggleSanitize(Trap::INT_OVERFLOW, active);
+                    } else if (opt == "sign-conversion") {
+                        // Implicit conversions of signed to unsigned integers can lead to undefined behavior.
+                        config.toggleSanitize(Trap::SIGN_CONVERSION, active);
                     } else if (opt == "undefined") {
-                        config.toggleSanitize(Trap::INT_OVERFLOW, active);
-                        config.toggleSanitize(Trap::INT_DIVISION, active);
-                        config.toggleSanitize(Trap::FLT_DIVISION, active);
                         config.toggleSanitize(Trap::OUT_OF_BOUNDS, active);
+                        config.toggleSanitize(Trap::COPY_OVERFLOW, active);
+                        config.toggleSanitize(Trap::FLT_DIVISION, active);
+                        config.toggleSanitize(Trap::INT_DIVISION, active);
+                        config.toggleSanitize(Trap::INT_OVERFLOW, active);
+                        config.toggleSanitize(Trap::SIGN_CONVERSION, active);
+                        config.toggleSanitize(Trap::TYPE_GUARD, active);
+                        config.toggleSanitize(Trap::PROCEDURE_CALL, active);
                     } else if (opt == "all") {
                         if (active) {
                             config.setSanitizeAll();
@@ -205,19 +223,18 @@ int main(const int argc, const char **argv) {
             }
         }
         if (vm.count("-O")) {
-            int level = vm["-O"].as<int>();
-            switch (level) {
+            switch (int level = vm["-O"].as<int>()) {
                 case 0:
-                    config.setOptimizationLevel(::OptimizationLevel::O0);
+                    config.setOptimizationLevel(OptimizationLevel::O0);
                     break;
                 case 1:
-                    config.setOptimizationLevel(::OptimizationLevel::O1);
+                    config.setOptimizationLevel(OptimizationLevel::O1);
                     break;
                 case 2:
-                    config.setOptimizationLevel(::OptimizationLevel::O2);
+                    config.setOptimizationLevel(OptimizationLevel::O2);
                     break;
                 case 3:
-                    config.setOptimizationLevel(::OptimizationLevel::O3);
+                    config.setOptimizationLevel(OptimizationLevel::O3);
                     break;
                 default:
                     logger.error(PROGRAM_NAME, "unsupported optimization level: " + to_string(level) + ".");
@@ -228,7 +245,7 @@ int main(const int argc, const char **argv) {
             config.setOutputFile(vm["-o"].as<string>());
         }
         if (vm.count("-W")) {
-            auto params = vm["-W"].as<vector<string>>();
+            const auto params = vm["-W"].as<vector<string>>();
             for (const auto& warn : params) {
                 if (warn == "error") {
                     config.setWarning(Warning::ERROR);
@@ -264,7 +281,7 @@ int main(const int argc, const char **argv) {
                 logger.error(PROGRAM_NAME, "--reloc not compatible with --run.");
                 return EXIT_FAILURE;
             }
-            auto model = vm["reloc"].as<string>();
+            const auto model = vm["reloc"].as<string>();
             if (model == "pic") {
                 config.setRelocationModel(RelocationModel::PIC);
             } else if (model == "static") {
@@ -275,7 +292,7 @@ int main(const int argc, const char **argv) {
         }
         if (vm.count("sym-dir")) {
             config.setSymDir(vm["sym-dir"].as<string>());
-            auto path = std::filesystem::path(config.getSymDir());
+            const auto path = std::filesystem::path(config.getSymDir());
             if (!std::filesystem::is_directory(path)) {
                 logger.error(PROGRAM_NAME, "--sym-dir path not valid.");
             }
@@ -302,22 +319,21 @@ int main(const int argc, const char **argv) {
             exit(compiler.jit(path));
 #else
             logger.error(PROGRAM_NAME, "linked LLVM version does not support JIT mode.");
+            return EXIT_FAILURE;
 #endif
-        } else {
-            for (auto &input : inputs) {
-                logger.debug("Compiling module " + input + ".");
-                auto path = std::filesystem::path(input);
-                compiler.compile(path);
-            }
         }
-        string status = (logger.getErrorCount() == 0 ? "complete" : "failed");
+        for (auto &input : inputs) {
+            logger.debug("Compiling module " + input + ".");
+            auto path = std::filesystem::path(input);
+            compiler.compile(path);
+        }
+        string status = logger.getErrorCount() == 0 ? "complete" : "failed";
         logger.info("Compilation " + status + ": " +
-                          to_string(logger.getErrorCount()) + " error(s), " +
-                          to_string(logger.getWarningCount()) + " warning(s), " +
-                          to_string(logger.getInfoCount()) + " message(s).");
+                    to_string(logger.getErrorCount()) + " error(s), " +
+                    to_string(logger.getWarningCount()) + " warning(s), " +
+                    to_string(logger.getInfoCount()) + " message(s).");
         exit(logger.getErrorCount() != 0);
-    } else {
-        logger.error(PROGRAM_NAME, "no input files specified.");
-        return EXIT_FAILURE;
     }
+    logger.error(PROGRAM_NAME, "no input files specified.");
+    return EXIT_FAILURE;
 }
