@@ -1,24 +1,20 @@
 #include <stdio.h>
 
-void init(int size, int array[10][10]) {
-  for (int i = 0; i < size; ++i) {
-    for (int j = 0; j < size; ++j) {
-      array[i][j] = i + j;
-    }
+void print(int array[], int len) {
+  for (int i = 0; i < len; ++i) {
+      printf("%3d", array[i]);
   }
-}
-
-void print(int size, int array[size][size][size]) {
-  for (int i = 0; i < size; ++i) {
-    for (int j = 0; j < size; ++j) {
-      printf(" %d", array[i][j][size-1]);
-    }
-    printf("\n");
-  }
+  printf("\n");
 }
 
 int main(int argc, char** argv) {
-  int matrix[10][10] = { 0 };
-  init(10, matrix);
-  //print(10, matrix);
+  int matrix[10 * 10] = { 0 };
+  for (int i = 0; i < 10; ++i) {
+    for (int j = 0; j < 10; ++j) {
+      matrix[10 * i + j] = 10 * i + j;
+    }
+  }
+  for (int i = 0; i < 10; ++i) {
+    print(&matrix[i * 10], 10);
+  }
 }
