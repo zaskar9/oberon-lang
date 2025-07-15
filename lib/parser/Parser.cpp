@@ -12,7 +12,6 @@
 #include <string>
 #include <vector>
 
-#include "../../../../../../../opt/homebrew/Cellar/boost/1.88.0/include/boost/mpl/assert.hpp"
 #include "../scanner/IdentToken.h"
 
 using std::make_unique;
