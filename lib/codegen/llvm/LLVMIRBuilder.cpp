@@ -321,7 +321,7 @@ Value *LLVMIRBuilder::getDopeVector(const NodeReference *ref, TypeNode *type) {
             const auto delta = base->dimensions() - array_t->dimensions();
             const auto dopeTy = ArrayType::get(builder_.getInt64Ty(), base->dimensions());
             if ((array_t->isOpen() && decl->getScope() > 1) || deref()) {
-                dopeV = builder_.CreateLoad(builder_.getPtrTy(), dopeV, "huhu");
+                dopeV = builder_.CreateLoad(builder_.getPtrTy(), dopeV);
             }
             dopeV = builder_.CreateInBoundsGEP(dopeTy, dopeV, {builder_.getInt32(0), builder_.getInt32(delta)});
         }
