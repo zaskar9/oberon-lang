@@ -1,5 +1,5 @@
 (*
-  RUN: echo 'Hello Niklaus!\nHoi Moira!' | %oberon -I "%S%{pathsep}%inc" -L "%S%{pathsep}%lib" -l oberon --run %s | filecheck %s
+  RUN: echo $'Hello Niklaus!\nHoi Moira!' | %oberon -I "%S%{pathsep}%inc" -L "%S%{pathsep}%lib" -l oberon --run %s | filecheck %s
 *)
 MODULE InLineTest;
 IMPORT In, Out;

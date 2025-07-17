@@ -74,6 +74,7 @@ private:
 
     Value *getArrayLength(ExpressionNode *, uint32_t);
     Value *getOpenArrayLength(Value *, const ArrayTypeNode *, uint32_t, bool = true);
+    Value *getOrLoadArrayLength(vector<Value*> &, Value *, const ArrayTypeNode *, uint32_t);
     Value *getDopeVector(ExpressionNode *);
     Value *getDopeVector(const NodeReference *, TypeNode *);
 
