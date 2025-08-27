@@ -6,15 +6,18 @@ MODULE SymbolImport;
 IMPORT SymbolExport, Oberon, M := Math, O := Out, S := SYSTEM;
 
 VAR t: Oberon.TimeSpec;
+    n: SymbolExport.Node;
 
 BEGIN
     t.secs := 0;
     t.nsecs := 0;
     SymbolExport.SetTime(t);
     O.Real(M.pi, 10); O.Ln;
-    O.Long(S.SIZE(INTEGER), 0); O.Ln
+    O.Long(S.SIZE(INTEGER), 0); O.Ln;
+    IF n IS SymbolExport.Object THEN O.String("TRUE"); O.Ln END
 END SymbolImport.
 (*
   CHECK:  3.142E+00
   CHECK: 4
+  CHECK: TRUE
 *)

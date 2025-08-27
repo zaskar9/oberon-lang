@@ -24,7 +24,8 @@ CONST BOOLFALSE* = FALSE;
 
 TYPE Vector* = ARRAY 10 OF INTEGER;
      Matrix* = ARRAY 10, 10 OF INTEGER;
-     (*Object* = RECORD END;*)
+     Object* = POINTER TO ObjectDesc;
+     ObjectDesc* = RECORD END;
      Point2d* = RECORD
         x*, y*: INTEGER
      END;
@@ -46,7 +47,7 @@ TYPE Vector* = ARRAY 10 OF INTEGER;
      END;
      Polygons* = ARRAY 1024 OF Polygon;
      Node* = POINTER TO NodeDesc;
-     NodeDesc* = RECORD
+     NodeDesc* = RECORD (ObjectDesc)
         val*: INTEGER;
         next*: Node
      END;

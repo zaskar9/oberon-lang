@@ -18,9 +18,9 @@ using std::string;
 using std::unique_ptr;
 
 ModuleNode *SymbolImporter::read(const string &name) {
-    auto path = context_->getSourceFileName().parent_path();
+    const auto path = context_->getSourceFileName().parent_path();
     auto fp = (path / name).replace_extension(".smb");
-    auto include = fp.filename();
+    const auto include = fp.filename();
     if (!std::filesystem::exists(fp)) {
         logger_.debug("Symbol file not found: '" + fp.string() + "'.");
         auto opt = config_.findInclude(include);
@@ -32,13 +32,13 @@ ModuleNode *SymbolImporter::read(const string &name) {
         }
     }
     logger_.debug("Symbol file found: '" + fp.string() + "'.");
-    auto file = make_unique<SymbolFile>();
+    const auto file = make_unique<SymbolFile>();
     file->open(fp.string(), std::ios::in);
 
     // read symbol file header
     [[maybe_unused]] auto key = file->readLong();
     [[maybe_unused]] auto ident = file->readString();
-    auto version = file->readChar();
+    const auto version = file->readChar();
     if (version != SymbolFile::VERSION) {
         logger_.error(fp.string(), "Wrong symbol file version: expected " + to_string(SymbolFile::VERSION) +
                                    ", found " + to_string((int) version) + ".");
@@ -51,7 +51,7 @@ ModuleNode *SymbolImporter::read(const string &name) {
     module_ = getOrCreateModule(name);
     auto ch = file->readChar();
     while (ch != 0 && !file->eof()) {
-        auto nodeType = (NodeType) ch;
+        const auto nodeType = static_cast<NodeType>(ch);
         readDeclaration(file.get(), nodeType);
 #ifdef _DEBUG
         std::cout << std::endl;
@@ -62,10 +62,13 @@ ModuleNode *SymbolImporter::read(const string &name) {
 #ifdef _DEBUG
     std::cout << std::endl;
 #endif
+    if (!forwards_.empty()) {
+        logger_.error(fp.string(), "Unresolved forward references during import.");
+    }
     file->flush();
     file->close();
 #ifdef _DEBUG
-    auto printer = make_unique<NodePrettyPrinter>(std::cout);
+    const auto printer = make_unique<NodePrettyPrinter>(std::cout);
     printer->print(module_);
 #endif
     return module_;
@@ -76,7 +79,7 @@ void SymbolImporter::readDeclaration(SymbolFile *file, NodeType nodeType) {
     auto ident = make_unique<IdentDef>(name);
     auto type = readType(file);
     if (nodeType == NodeType::constant) {
-        auto kind = type->kind();
+        const auto kind = type->kind();
         if (kind == TypeKind::PROCEDURE) {
             // read in export number
             [[maybe_unused]] auto exno = file->readChar();
@@ -142,7 +145,7 @@ void SymbolImporter::readDeclaration(SymbolFile *file, NodeType nodeType) {
 
 TypeNode *SymbolImporter::readType(SymbolFile *file, PointerTypeNode *ptr) {
     TypeNode *type = nullptr;
-    auto ch = file->readChar();
+    const auto ch = file->readChar();
     // handle type references
     unsigned ref = 0;
     if (ch < 0) {
@@ -162,7 +165,7 @@ TypeNode *SymbolImporter::readType(SymbolFile *file, PointerTypeNode *ptr) {
         return nullptr;
     }
     // handle re-exported types
-    TypeDeclarationNode *decl = nullptr;
+    const TypeDeclarationNode *decl = nullptr;
     string module, name;
     if (ch > 0) {
         ref = static_cast<unsigned char>(ch);
@@ -174,7 +177,7 @@ TypeNode *SymbolImporter::readType(SymbolFile *file, PointerTypeNode *ptr) {
         }
     }
     // read, possibly redundant, type description
-    auto kind = (TypeKind) file->readChar();
+    const auto kind = static_cast<TypeKind>(file->readChar());
     if (kind == TypeKind::ARRAY) {
         type = readArrayType(file);
     } else if (kind == TypeKind::POINTER) {
@@ -190,7 +193,7 @@ TypeNode *SymbolImporter::readType(SymbolFile *file, PointerTypeNode *ptr) {
     } else if (type) {
         // import a re-exported
         if (!module.empty()) {
-            auto external = getOrCreateModule(module);
+            const auto external = getOrCreateModule(module);
             auto node = make_unique<TypeDeclarationNode>(EMPTY_POS, make_unique<IdentDef>(name), type);
             symbols_->import(module, name, node.get());
             node->setModule(external);
@@ -204,6 +207,7 @@ TypeNode *SymbolImporter::readType(SymbolFile *file, PointerTypeNode *ptr) {
     // check if the imported type resolves a forward reference
     if (forwards_.contains(ref)) {
         forwards_[ref]->setBase(type);
+        forwards_.erase(ref);
     }
     return type;
 }
@@ -216,18 +220,18 @@ TypeNode *SymbolImporter::readArrayType(SymbolFile *file) {
     types.push_back(type);
     // read dimension
     vector<unsigned> lengths;
-    auto length = (unsigned) file->readInt();
+    const auto length = static_cast<unsigned>(file->readInt());
     lengths.push_back(length);
     // check for multi-dimensional array
     if (type->isArray()) {
-        auto array = dynamic_cast<ArrayTypeNode *>(type);
+        const auto array = dynamic_cast<ArrayTypeNode *>(type);
         dim += array->dimensions();
         lengths.insert(lengths.end(), array->lengths().begin(), array->lengths().end());
         types.insert(types.end(), array->types().begin(), array->types().end());
     }
-    auto res = context_->getOrInsertArrayType(EMPTY_POS, EMPTY_POS, dim, lengths, types, module_);
+    const auto res = context_->getOrInsertArrayType(EMPTY_POS, EMPTY_POS, dim, lengths, types, module_);
     // read in size
-    res->setSize((unsigned) file->readInt());
+    res->setSize(static_cast<unsigned>(file->readInt()));
     return res;
 }
 
