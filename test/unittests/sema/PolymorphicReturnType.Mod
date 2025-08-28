@@ -1,5 +1,5 @@
 MODULE PolymorphicReturnType;
-IMPORT Math, Out, Shape;
+IMPORT Math, Out, Shape, Object;
 
 TYPE
   (* Object = POINTER TO ObjectDesc;

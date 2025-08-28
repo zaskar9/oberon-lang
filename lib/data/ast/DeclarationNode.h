@@ -38,7 +38,7 @@ public:
     ~DeclarationNode() override = default;
 
     // TODO Maybe move the module information to super class `Node`?
-    void setModule(ModuleNode *);
+    virtual void setModule(ModuleNode *);
     [[nodiscard]] ModuleNode *getModule() const;
 
     void setIdentifier(unique_ptr<IdentDef>);
@@ -94,6 +94,8 @@ class TypeDeclarationNode final : public DeclarationNode {
 public:
     TypeDeclarationNode(const FilePos &pos, unique_ptr<IdentDef> ident, TypeNode *type);
     ~TypeDeclarationNode() final = default;
+
+    void setModule(ModuleNode *) override;
 
     void accept(NodeVisitor& visitor) override;
 

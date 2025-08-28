@@ -294,8 +294,7 @@ TypeNode *SymbolImporter::readRecordType(SymbolFile *file) {
         // read field name
         auto name = file->readString();
         // read field res
-        auto cur = readType(file);
-        if (cur) {
+        if (auto cur = readType(file)) {
             index = 0;
             type = cur;
         } else {
@@ -307,12 +306,12 @@ TypeNode *SymbolImporter::readRecordType(SymbolFile *file) {
         // check for terminator
         ch = file->readChar();
     }
-    auto res = context_->getOrInsertRecordType(EMPTY_POS, EMPTY_POS, base_t, std::move(fields), module_);
+    const auto res = context_->getOrInsertRecordType(EMPTY_POS, EMPTY_POS, base_t, std::move(fields), module_);
     res->setSize(size);
     return res;
 }
 
-ModuleNode *SymbolImporter::getOrCreateModule(const std::string &module) {
+ModuleNode *SymbolImporter::getOrCreateModule(const std::string &module) const {
     if (!symbols_->getModule(module)) {
         symbols_->addModule(module);
         context_->addExternalModule(make_unique<ModuleNode>(make_unique<Ident>(module)));

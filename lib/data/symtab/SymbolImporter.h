@@ -41,7 +41,7 @@ private:
     TypeNode *readProcedureType(SymbolFile *);
     TypeNode *readRecordType(SymbolFile *);
 
-    ModuleNode *getOrCreateModule(const string &module);
+    ModuleNode *getOrCreateModule(const string &module) const;
 
 public:
     explicit SymbolImporter(CompilerConfig &config, ASTContext *context, SymbolTable *symbols) :
