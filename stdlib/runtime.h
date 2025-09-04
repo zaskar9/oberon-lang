@@ -13,7 +13,7 @@
 
 // Module `Files`
 bool olang_files_fexists(const char *);
-void olang_files_file_register(FILE *, const char *);
+void olang_files_fregister(FILE *, const char *);
 int64_t olang_files_flength(FILE *);
 bool olang_files_fseek(FILE*, int64_t);
 void olang_files_fdate(const char *, int64_t *, int64_t *);
