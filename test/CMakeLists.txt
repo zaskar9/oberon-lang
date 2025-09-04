@@ -1,6 +1,6 @@
 # Check that lit binary is in path.
 find_program(TEST_SUITE_LIT NAMES "lit" "llvm-lit")
-set(TEST_SUITE_LIT_FLAGS --ignore-fail --show-unsupported --show-xfail -v CACHE STRING "Flags used when running lit.")
+set(TEST_SUITE_LIT_FLAGS --ignore-fail --show-unsupported --show-xfail -s CACHE STRING "Flags used when running lit.")
 
 # Check that filecheck binary is in path.
 find_program(TEST_SUITE_FILECHECK NAMES "filecheck")

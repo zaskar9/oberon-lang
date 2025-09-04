@@ -43,10 +43,10 @@ TypeDeclarationNode *OberonSystem::createTypeDeclaration(TypeNode *type) {
 }
 
 void OberonSystem::createBasicTypes(const vector<pair<pair<TypeKind, unsigned int>, bool>>& types) {
-    for (const auto pair: types) {
-        const auto type = createBasicType(pair.first.first, pair.first.second);
+    for (const auto& [kind, global]: types) {
+        const auto type = createBasicType(kind.first, kind.second);
         const auto decl = createTypeDeclaration(type);
-        if (pair.second) {
+        if (global) {
             symbols_->insertGlobal(type->getIdentifier()->name(), decl);
         }
     }
