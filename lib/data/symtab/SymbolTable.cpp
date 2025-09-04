@@ -33,17 +33,6 @@ void SymbolTable::import(const string &module, const string &name, DeclarationNo
     }
 }
 
-void SymbolTable::setRef(const unsigned ref, TypeNode *type) {
-    references_[ref] = type;
-}
-
-TypeNode *SymbolTable::getRef(const unsigned ref) const {
-    if (const auto it = references_.find(ref); it != references_.end()) {
-        return it->second;
-    }
-    return nullptr;
-}
-
 void SymbolTable::insert(const string &name, DeclarationNode *node) const {
 #ifdef _DEBUG
     if (name.empty() || node == nullptr) {

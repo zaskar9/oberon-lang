@@ -18,9 +18,9 @@ using std::set;
 using std::string;
 
 Sema::Sema(CompilerConfig &config, ASTContext *context, OberonSystem *system) :
-        config_(config), context_(context), system_(system), logger_(config_.logger()),
-        forwards_(), procs_(), caseTys_(), loops_(), symbols_(system_->getSymbolTable()),
-        importer_(config_, context, symbols_), exporter_(config_, context) {
+        config_(config), context_(context), system_(system), logger_(config.logger()),
+        symbols_(system->getSymbolTable()), importer_(config, *context, *system),
+        exporter_(config, *context) {
     boolTy_ = system_->getBasicType(TypeKind::BOOLEAN);
     byteTy_ = system_->getBasicType(TypeKind::BYTE);
     charTy_ = system_->getBasicType(TypeKind::CHAR);

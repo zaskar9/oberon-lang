@@ -7,11 +7,11 @@
 using std::filesystem::path;
 
 void SymbolExporter::write(const std::string &name, SymbolTable *symbols) {
-    ref_ = ((int) TypeKind::TYPE) + 1;
+    xref_ = static_cast<int>(TypeKind::TYPE) + 1;
     path pth;
     auto symdir = config_.getSymDir();
     if (symdir.empty()) {
-        pth = context_->getSourceFileName().parent_path();
+        pth = context_.getSourceFileName().parent_path();
     } else {
         pth = symdir;
     }
@@ -33,7 +33,7 @@ void SymbolExporter::write(const std::string &name, SymbolTable *symbols) {
     std::vector<DeclarationNode *> exports;
     scope->getExportedSymbols(exports);
     // write out exported symbols to file
-    for (auto decl: exports) {
+    for (const auto decl: exports) {
         writeDeclaration(file.get(), decl);
 #ifdef _DEBUG
         std::cout << std::endl;
@@ -58,12 +58,12 @@ void SymbolExporter::writeDeclaration(SymbolFile *file, DeclarationNode *decl) {
     // write out type
     writeType(file, decl->getType());
     if (nodeType == NodeType::constant) {
-        auto kind = decl->getType()->kind();
+        const auto kind = decl->getType()->kind();
         if (kind == TypeKind::PROCEDURE) {
             // TODO write out export number ("exno" in Wirth's code)
             file->writeChar(-1);
         } else {
-            auto con = dynamic_cast<ConstantDeclarationNode*>(decl);
+            const auto con = dynamic_cast<ConstantDeclarationNode*>(decl);
             switch (kind) {
                 case TypeKind::STRING:
                     file->writeString(dynamic_cast<StringLiteralNode *>(con->getValue())->value());
@@ -103,32 +103,39 @@ void SymbolExporter::writeDeclaration(SymbolFile *file, DeclarationNode *decl) {
 }
 
 void SymbolExporter::writeType(SymbolFile *file, TypeNode *type) {
+    // unknown type
     if (!type) {
         file->writeChar(-static_cast<char>(TypeKind::NOTYPE));
         return;
     }
-    if (type->getRef() > 0) {
-        // declaration already serialized to file
-        file->writeChar(static_cast<signed char>(-type->getRef()));
+    // basic non-virtual type
+    if ((type->isBasic() || type->isString()) && !type->isVirtual()) {
+        file->writeChar(-static_cast<char>(type->kind()));
         return;
     }
+    // declaration already serialized to file
+    if (xrefs_.contains(type)) {
+        file->writeChar(static_cast<signed char>(-xrefs_[type]));
+        return;
+    }
+    // actual type that needs exporting
     if (type->isAnonymous()) {
         // anonymous type
         file->writeChar(0);
     } else {
-        if (refs_.contains(type)) {
+        if (fwds_.contains(type)) {
             // resolve forward reference
-            auto ref = refs_[type];
+            const unsigned ref = fwds_[type];
             file->writeChar(static_cast<signed char>(ref));
-            type->setRef(ref);
+            xrefs_[type] = ref;
         } else {
             // create new reference for the type to be used within this symbol file
-            file->writeChar(static_cast<signed char>(ref_));
-            type->setRef(ref_);
-            ref_++;
+            file->writeChar(static_cast<signed char>(xref_));
+            xrefs_[type] = xref_;
+            xref_++;
         }
-        if (type->getDeclaration()->getModule() != context_->getTranslationUnit()) {
-            auto decl = type->getDeclaration();
+        if (type->getDeclaration()->getModule() != context_.getTranslationUnit()) {
+            const auto decl = type->getDeclaration();
             file->writeString(decl->getModule()->getIdentifier()->name());
             file->writeString(decl->getIdentifier()->name());
         } else {
@@ -157,22 +164,22 @@ void SymbolExporter::writeType(SymbolFile *file, TypeNode *type) {
     // https://github.com/andreaspirklbauer/Oberon-module-imports/blob/master/Sources/FPGAOberon2013/ORB.Mod
 }
 
-void SymbolExporter::writeArrayType(SymbolFile *file, ArrayTypeNode *type) {
+void SymbolExporter::writeArrayType(SymbolFile *file, const ArrayTypeNode *type) {
     // write out member type
     writeType(file, type->types()[0]);
     // write out length
-    file->writeInt((int) type->lengths()[0]);
+    file->writeInt(static_cast<int>(type->lengths()[0]));
     // write out size
-    file->writeInt((int) type->getSize());
+    file->writeInt(static_cast<int>(type->getSize()));
 }
 
-void SymbolExporter::writePointerType(SymbolFile *file, PointerTypeNode *type) {
-    auto base = type->getBase();
-    if (!base->isAnonymous() && base->getRef() == 0) {
+void SymbolExporter::writePointerType(SymbolFile *file, const PointerTypeNode *type) {
+    const auto base = type->getBase();
+    if (!base->isAnonymous() && !xrefs_.contains(base)) {
         // create forward reference
-        file->writeChar(static_cast<signed char>(-ref_));
-        refs_[base] = ref_;
-        ref_++;
+        file->writeChar(static_cast<signed char>(-xref_));
+        fwds_[base] = xref_;
+        xref_++;
     } else {
         writeType(file, base);
     }
@@ -186,7 +193,7 @@ void SymbolExporter::writeProcedureType(SymbolFile *file, ProcedureTypeNode *typ
     file->writeChar(0);
 }
 
-void SymbolExporter::writeRecordType(SymbolFile *file, RecordTypeNode *type) {
+void SymbolExporter::writeRecordType(SymbolFile *file, const RecordTypeNode *type) {
     // for extended records, write their base type (or TypeKind::NOTYPE) first
     writeType(file, type->getBaseType());
     // write out export number
@@ -202,14 +209,14 @@ void SymbolExporter::writeRecordType(SymbolFile *file, RecordTypeNode *type) {
     file->writeInt(static_cast<int>(type->getSize()));
     auto offset = 0u;
     for (size_t i = 0; i < type->getFieldCount(); i++) {
-        auto field = type->getField(i);
+        const auto field = type->getField(i);
         // write out field node type
         file->writeChar(static_cast<signed char>(field->getNodeType()));
         // write out field number
         file->writeInt(static_cast<int>(i + 1));
         // write out field name
         if (field->getIdentifier()->isExported() ||
-            (!type->isAnonymous() && type->getDeclaration()->getModule() != context_->getTranslationUnit())) {
+            (!type->isAnonymous() && type->getDeclaration()->getModule() != context_.getTranslationUnit())) {
             file->writeString(field->getIdentifier()->name());
         } else {
             // write a "hidden" field to preserve the correct record layout
@@ -226,7 +233,7 @@ void SymbolExporter::writeRecordType(SymbolFile *file, RecordTypeNode *type) {
     file->writeChar(0);
 }
 
-void SymbolExporter::writeParameter(SymbolFile *file, ParameterNode *param) {
+void SymbolExporter::writeParameter(SymbolFile *file, const ParameterNode *param) {
     // write out numeric value for NodeType::parameter
     file->writeChar(static_cast<signed char>(param->getNodeType()));
     // write out whether this parameter is read-only (1) or a VAR-parameter (0)

@@ -1,33 +1,36 @@
+(*
+  RUN: %oberon -I "%S%{pathsep}%inc" -L "%S%{pathsep}%lib" -l oberon --run %s | filecheck %s
+*)
 MODULE PolymorphicReturnType;
-IMPORT Math, Out, Shape, Object;
+IMPORT Math, Out;
 
 TYPE
-  (* Object = POINTER TO ObjectDesc;
-  ObjectDesc = RECORD END; *)
+  Object = POINTER TO ObjectDesc;
+  ObjectDesc = RECORD END;
 
-  (* Shape = POINTER TO ShapeDesc;
-  ShapeDesc = RECORD (Object.ObjectDesc)
+  Shape = POINTER TO ShapeDesc;
+  ShapeDesc = RECORD (ObjectDesc)
                 area: PROCEDURE(this: Shape): REAL
-              END; *)
+              END;
 
   Circle = POINTER TO CircleDesc;
-  CircleDesc = RECORD (Shape.ShapeDesc)
+  CircleDesc = RECORD (ShapeDesc)
                  radius: REAL
                END;
 
 VAR
-  shape: Shape.Shape;
+  shape: Shape;
 
-  PROCEDURE circleArea(this: Shape.Shape): REAL;
+  PROCEDURE circleArea(this: Shape): REAL;
   VAR
     circle: Circle;
   BEGIN
-    IF circle IS Shape.Shape THEN Out.String("Yes") END;
+    IF circle IS Shape THEN Out.String("Yes") ELSE Out.String("No") END; Out.Ln;
     circle := this(Circle);
     RETURN Math.pi * circle.radius * circle.radius
   END circleArea;
 
-  PROCEDURE createCircle(radius: REAL): Shape.Shape;
+  PROCEDURE createCircle(radius: REAL): Shape;
   VAR
     circle: Circle;
   BEGIN
@@ -39,5 +42,11 @@ VAR
 
 BEGIN
   shape := createCircle(2.5);
-  Out.Real(shape.area(shape), 16); Out.Ln
+  Out.Real(shape.area(shape), 16); Out.Ln;
+  IF shape IS Object THEN Out.String("Yes") ELSE Out.String("No") END; Out.Ln
 END PolymorphicReturnType.
+(*
+  CHECK: Yes
+  CHECK:   1.96349552E+01
+  CHECK: Yes
+*)

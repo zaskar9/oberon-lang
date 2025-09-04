@@ -36,9 +36,6 @@ public:
 
     void import(const string &module, const string &name, DeclarationNode *node);
 
-    void setRef(unsigned ref, TypeNode *type);
-    [[nodiscard]] TypeNode *getRef(unsigned ref) const;
-
     void insert(const string &name, DeclarationNode *node) const;
     void insertGlobal(const string &name, DeclarationNode *node) const;
 
@@ -68,8 +65,6 @@ private:
     unordered_map<string, unique_ptr<Scope>> scopes_;
     unordered_map<string, string> aliases_;
     Scope *scope_;
-    // references for import and export
-    unordered_map<unsigned, TypeNode*> references_;
     unique_ptr<Scope> universe_;
     TypeNode *nilType_{};
 };

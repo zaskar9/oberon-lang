@@ -2082,8 +2082,7 @@ LLVMIRBuilder::createSystemAdrCall(const vector<unique_ptr<ExpressionNode>> &act
     // TODO Handle procedure reference
     const auto actual = actuals[0].get();
     const auto type = actual->getType();
-    // TODO Isn't CHAR a basic type?
-    if (type->isChar() || type->isBasic()) {
+    if (type->isBasic()) {
         value_ = builder_.CreatePtrToInt(params[0], builder_.getInt64Ty());
     } else if (type->isArray() || type->isString()) {
         auto arrayTy = getLLVMType(type);
@@ -2097,9 +2096,8 @@ LLVMIRBuilder::createSystemAdrCall(const vector<unique_ptr<ExpressionNode>> &act
             // indices.push_back(builder_.getInt32(0));
         } else {
             const auto atype = dynamic_cast<ArrayTypeNode *>(type);
-            // TODO Isn't CHAR a basic type?
-            if (!atype->getMemberType()->isChar() && !atype->getMemberType()->isBasic()) {
-                logger_.error(actual->pos(), "expected array of basic type or CHAR");
+            if (!atype->getMemberType()->isBasic()) {
+                logger_.error(actual->pos(), "expected array of basic type");
                 return value_;
             }
         }
@@ -2111,9 +2109,8 @@ LLVMIRBuilder::createSystemAdrCall(const vector<unique_ptr<ExpressionNode>> &act
         const auto rtype = dynamic_cast<RecordTypeNode *>(type);
         for (size_t i = 0; i < rtype->getFieldCount(); i++) {
             const auto fieldTy = rtype->getField(i)->getType();
-            // TODO Isn't CHAR a basic type?
-            if (!fieldTy->isChar() && !fieldTy->isBasic()) {
-                logger_.error(actual->pos(), "expected record of basic type or CHAR");
+            if (!fieldTy->isBasic()) {
+                logger_.error(actual->pos(), "expected record of basic type");
                 return value_;
             }
         }
@@ -2128,14 +2125,14 @@ Value *
 LLVMIRBuilder::createSystemGetCall(const vector<unique_ptr<ExpressionNode>> &actuals, const vector<Value *> &params) {
     auto const param = actuals[1].get();
     auto const type = param->getType();
-    if (type->isChar() || type->isBasic()) {
+    if (type->isBasic()) {
         const auto base = getLLVMType(type);
         const auto ptrtype = PointerType::get(base, 0);
         const auto ptr = builder_.CreateIntToPtr(params[0], ptrtype);
         const auto value = builder_.CreateLoad(base, ptr, true);
         value_ = builder_.CreateStore(value, params[1]);
     } else {
-        logger_.error(param->pos(), "expected basic or char type");
+        logger_.error(param->pos(), "expected basic type");
     }
     return value_;
 }
@@ -2144,13 +2141,13 @@ Value *
 LLVMIRBuilder::createSystemPutCall(const vector<unique_ptr<ExpressionNode>> &actuals, const vector<Value *> &params) {
     const auto param = actuals[1].get();
     const auto type = param->getType();
-    if (type->isChar() || type->isBasic()) {
+    if (type->isBasic()) {
         const auto base = getLLVMType(type);
         const auto ptrtype = PointerType::get(base, 0);
         const auto ptr = builder_.CreateIntToPtr(params[0], ptrtype);
         value_ = builder_.CreateStore(params[1], ptr, true);
     } else {
-        logger_.error(param->pos(), "expected basic or char type");
+        logger_.error(param->pos(), "expected basic type");
     }
     return value_;
 }

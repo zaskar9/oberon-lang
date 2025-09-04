@@ -36,7 +36,7 @@ public:
 
     [[nodiscard]] FieldNode *getField(const string &name) const;
     [[nodiscard]] FieldNode *getField(size_t num) const;
-    [[nodiscard]] size_t getFieldCount();
+    [[nodiscard]] size_t getFieldCount() const;
 
     [[nodiscard]] RecordTypeNode *getBaseType() const;
     [[nodiscard]] bool isExtended() const;

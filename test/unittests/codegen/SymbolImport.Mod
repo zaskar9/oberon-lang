@@ -14,7 +14,9 @@ BEGIN
     SymbolExport.SetTime(t);
     O.Real(M.pi, 10); O.Ln;
     O.Long(S.SIZE(INTEGER), 0); O.Ln;
-    IF n IS SymbolExport.Object THEN O.String("TRUE"); O.Ln END
+    NEW(n);
+    IF n IS SymbolExport.Object THEN O.String("TRUE") ELSE O.String("FALSE") END; O.Ln;
+    DISPOSE(n)
 END SymbolImport.
 (*
   CHECK:  3.142E+00
