@@ -2230,19 +2230,21 @@ LLVMIRBuilder::createSystemCopyCall(Value *src, Value *dst, Value *n) {
 
 Value *
 LLVMIRBuilder::createSystemValCall(const vector<unique_ptr<ExpressionNode>> &actuals, const vector<Value *> &params) {
-    // TODO Introduce support further types: RECORD, etc.
     const auto dst = actuals[0].get();
     const auto decl = dynamic_cast<QualifiedExpression *>(dst)->dereference();
-    const auto dsttype = dynamic_cast<TypeDeclarationNode *>(decl)->getType();
+    const auto dstType = dynamic_cast<TypeDeclarationNode *>(decl)->getType();
     const auto src = actuals[1].get();
-    const auto srctype = src->getType();
-    if (!srctype->isBasic() || !dsttype->isBasic()) {
+    const auto srcType = src->getType();
+    if (srcType->isStructured() && dstType->isStructured()) {
+        return params[1];
+    }
+    if (!srcType->isBasic() || !dstType->isBasic()) {
         logger_.error(dst->pos(), "expected basic type");
         return value_;
     }
     Value *srcpar;
-    if (srctype->isReal()) {
-        if (srctype->getSize() == 4) {
+    if (srcType->isReal()) {
+        if (srcType->getSize() == 4) {
             srcpar = builder_.CreateBitCast(params[1], builder_.getInt32Ty());
         } else {
             srcpar = builder_.CreateBitCast(params[1], builder_.getInt64Ty());
@@ -2250,19 +2252,19 @@ LLVMIRBuilder::createSystemValCall(const vector<unique_ptr<ExpressionNode>> &act
     } else {
         srcpar = params[1];
     }
-    if (dsttype->isReal()) {
-        auto rcast = dsttype->getSize() == 4 ? builder_.getInt32Ty() : builder_.getInt64Ty();
-        if (srctype->getSize() <= dsttype->getSize()) {
+    if (dstType->isReal()) {
+        auto rcast = dstType->getSize() == 4 ? builder_.getInt32Ty() : builder_.getInt64Ty();
+        if (srcType->getSize() <= dstType->getSize()) {
             srcpar = builder_.CreateZExt(srcpar, rcast);
         } else {
             srcpar = builder_.CreateTrunc(srcpar, rcast);
         }
-        return builder_.CreateBitCast(srcpar, getLLVMType(dsttype));
+        return builder_.CreateBitCast(srcpar, getLLVMType(dstType));
     }
-    if (srctype->getSize() <= dsttype->getSize()) {
-        return builder_.CreateZExt(srcpar, getLLVMType(dsttype));
+    if (srcType->getSize() <= dstType->getSize()) {
+        return builder_.CreateZExt(srcpar, getLLVMType(dstType));
     }
-    return builder_.CreateTrunc(srcpar, getLLVMType(dsttype));
+    return builder_.CreateTrunc(srcpar, getLLVMType(dstType));
 }
 
 FunctionType *LLVMIRBuilder::createFunctionType(ProcedureTypeNode &type, const CallingConvention cnv) {
