@@ -4,6 +4,7 @@
 
 #include "runtime.h"
 
+#include <inttypes.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -86,16 +87,16 @@ bool olang_in_getdouble(double *d) {
 
 bool olang_in_getint(const char *buf, int32_t *val, bool hex) {
     if (hex) {
-        return sscanf(buf, "%x", (uint32_t *) val) == 1;
+        return sscanf(buf, "%" SCNx32, (uint32_t *) val) == 1;
     }
-    return sscanf(buf, "%d", val) == 1;
+    return sscanf(buf, "%" SCNd32, val) == 1;
 }
 
 bool olang_in_getlong(const char *buf, int64_t *val, bool hex) {
     if (hex) {
-        return sscanf(buf, "%lx", (uint64_t *) val) == 1;
+        return sscanf(buf, "%" SCNx64, (uint64_t *) val) == 1;
     }
-    return sscanf(buf, "%ld", val) == 1;
+    return sscanf(buf, "%" SCNd64, val) == 1;
 }
 
 float olang_math_realf(const int32_t x) {
