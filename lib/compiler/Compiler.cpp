@@ -16,7 +16,7 @@ using std::filesystem::path;
 unique_ptr<ASTContext> Compiler::run(const path &file) {
     // Scan, parse, and analyze the input file
     logger_.debug("Parsing and analyzing...");
-    int errors = logger_.getErrorCount();
+    const int errors = logger_.getErrorCount();
     Scanner scanner(logger_, file);
     auto ast = std::make_unique<ASTContext>(file);
     Sema sema(config_, ast.get(), system_.get());
@@ -26,27 +26,27 @@ unique_ptr<ASTContext> Compiler::run(const path &file) {
         // Parsing and analyzing failed
         return nullptr;
     }
-    auto module = ast->getTranslationUnit();
+    const auto module = ast->getTranslationUnit();
     // Check if file name matches module name
     if (file.filename().replace_extension("").string() != module->getIdentifier()->name()) {
-        std::string name = module->getIdentifier()->name();
+        const std::string name = module->getIdentifier()->name();
         logger_.warning(module->pos(), "module " + name + " should be declared in a file named " + name + ".Mod.");
     }
     // Run AST transformations
     logger_.debug("Transforming...");
-    auto analyzer = std::make_unique<Analyzer>(config_);
+    const auto analyzer = std::make_unique<Analyzer>(config_);
     analyzer->add(std::make_unique<LambdaLifter>(ast.get()));
     analyzer->run(module);
 #ifdef _DEBUG
-    auto printer = std::make_unique<NodePrettyPrinter>(std::cout);
+    const auto printer = std::make_unique<NodePrettyPrinter>(std::cout);
     printer->print(module);
 #endif
     return ast;
 }
 
 void Compiler::compile(const path &file) {
-    auto path = absolute(file);
-    auto ast = run(file);
+    const auto path = absolute(file);
+    const auto ast = run(file);
     if (ast) {
         codegen_->generate(ast.get(), path.string());
     }
@@ -54,8 +54,8 @@ void Compiler::compile(const path &file) {
 
 #ifndef _LLVM_LEGACY
 int Compiler::jit(const path &file) {
-    auto path = absolute(file);
-    auto ast = run(path);
+    const auto path = absolute(file);
+    const auto ast = run(path);
     if (ast) {
         return codegen_->jit(ast.get(), path.string());
     }

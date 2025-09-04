@@ -1,10 +1,9 @@
 /*
- * Scope of the symtab table used by the Oberon LLVM compiler.
+ * Scope of the symbol table used by the Oberon LLVM compiler.
  *
  * Created by Michael Grossniklaus on 12/25/18.
  */
 
-#include <iostream>
 #include "Scope.h"
 
 unsigned int Scope::getLevel() const {
@@ -29,24 +28,24 @@ void Scope::insert(const std::string &name, DeclarationNode *symbol) {
     indices_.insert(std::make_pair(name, idx));
 }
 
-DeclarationNode *Scope::lookup(const std::string &name, bool local) const {
+DeclarationNode *Scope::lookup(const std::string &name, const bool local) const {
     auto itr = indices_.find(name);
     if (itr != indices_.end()) {
-        auto idx = itr->second;
+        const auto idx = itr->second;
         return symbols_.at(idx);
-    } else if (!local && parent_ != nullptr) {
-        return parent_->lookup(name, local);
-    } else {
-        return nullptr;
     }
+    if (!local && parent_ != nullptr) {
+        return parent_->lookup(name, local);
+    }
+    return nullptr;
 }
 
 void Scope::getExportedSymbols(std::vector<DeclarationNode *> &exports) const {
     for (const auto& symbol: symbols_) {
-        auto type = symbol->getNodeType();
+        const auto type = symbol->getNodeType();
         if (type == NodeType::constant || type == NodeType::variable || type == NodeType::type ||
             type == NodeType::field || type == NodeType::procedure) {
-            auto decl = dynamic_cast<DeclarationNode *>(symbol);
+            const auto decl = dynamic_cast<DeclarationNode *>(symbol);
             if (decl->getIdentifier()->isExported()) {
                 exports.push_back(decl);
             }

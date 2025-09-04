@@ -8,22 +8,22 @@
 
 #include <bitset>
 #include <functional>
-#include <unordered_map>
 #include <memory>
 #include <optional>
 #include <stack>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "Logger.h"
 #include "data/ast/ASTContext.h"
-#include "data/ast/ModuleNode.h"
 #include "data/ast/CaseOfNode.h"
 #include "data/ast/IfThenElseNode.h"
 #include "data/ast/LoopNode.h"
-#include "data/symtab/SymbolTable.h"
+#include "data/ast/ModuleNode.h"
 #include "data/symtab/SymbolExporter.h"
 #include "data/symtab/SymbolImporter.h"
+#include "data/symtab/SymbolTable.h"
 #include "system/OberonSystem.h"
 
 using std::function;
@@ -36,87 +36,6 @@ using std::unique_ptr;
 using std::vector;
 
 class Sema {
-
-private:
-    CompilerConfig &config_;
-    ASTContext *context_;
-    OberonSystem *system_;
-
-    Logger &logger_;
-    vector<pair<unique_ptr<QualIdent>, PointerTypeNode *>> forwards_;
-    stack<unique_ptr<ProcedureDefinitionNode>> procs_;
-    unordered_map<QualifiedExpression *, TypeNode *> caseTys_;
-    stack<FilePos> loops_;
-    SymbolTable *symbols_;
-    SymbolImporter importer_;
-    SymbolExporter exporter_;
-    TypeNode *boolTy_, *byteTy_, *charTy_, *shortIntTy_, *integerTy_, *longIntTy_, *realTy_, *longRealTy_,
-             *stringTy_, *setTy_, *anyTy_, *noTy_, *typeTy_;
-
-    static bool assertEqual(Ident *, Ident *) ;
-    void assertUnique(const IdentDef *, DeclarationNode *) const;
-    int64_t assertInBounds(const IntegerLiteralNode *, int64_t , int64_t) const;
-    bool assertAssignable(const ExpressionNode *, string &) const;
-
-    static void cast(ExpressionNode *, TypeNode *);
-    void castLiteral(unique_ptr<ExpressionNode> &, TypeNode *);
-    TypeNode* intType(int64_t);
-
-    void checkExport(DeclarationNode *) const;
-
-    bool assertCompatible(const FilePos &, TypeNode *, TypeNode *, bool = false);
-    TypeNode *commonType(const FilePos &, TypeNode *, TypeNode *) const;
-
-    static string format(const TypeNode *, bool = false);
-
-    static int64_t euclidean_mod(int64_t, int64_t);
-    static int64_t floor_div(int64_t, int64_t);
-
-    template<typename L, typename T>
-    optional<unique_ptr<ExpressionNode>> foldBinaryOp(const FilePos &, const FilePos &,
-                                                      unique_ptr<ExpressionNode> &, unique_ptr<ExpressionNode> &,
-                                                      optional<T>, optional<T>, function<T(T, T)>, TypeNode *);
-    optional<unique_ptr<ExpressionNode>> foldBooleanOp(const FilePos &, const FilePos &, OperatorType,
-                                                       unique_ptr<ExpressionNode> &, unique_ptr<ExpressionNode> &, TypeNode*);
-    template<typename T>
-    optional<unique_ptr<BooleanLiteralNode>> foldRelationOp(const FilePos &, const FilePos &,
-                                                            OperatorType, unique_ptr<ExpressionNode> &, unique_ptr<ExpressionNode> &, TypeNode *);
-    optional<unique_ptr<ExpressionNode>> foldDivModOp(const FilePos &, const FilePos &,
-                                                      OperatorType, unique_ptr<ExpressionNode> &, unique_ptr<ExpressionNode> &, TypeNode *);
-    optional<unique_ptr<ExpressionNode>> foldFDivOp(const FilePos &, const FilePos &,
-                                                    unique_ptr<ExpressionNode> &, unique_ptr<ExpressionNode> &, TypeNode *);
-    template<typename L, typename T>
-    optional<unique_ptr<ExpressionNode>> foldSubOp(const FilePos &, const FilePos &,
-                                                   unique_ptr<ExpressionNode> &, unique_ptr<ExpressionNode> &, TypeNode *);
-
-    template<typename L, typename T>
-    optional<unique_ptr<LiteralNode<T>>> clone(const FilePos &, const FilePos &, LiteralNode<T> *);
-    optional<bool> boolean_cast(const ExpressionNode *);
-    optional<int64_t> integer_cast(const ExpressionNode *);
-    optional<uint8_t> char_cast(const ExpressionNode *);
-    optional<double> real_cast(const ExpressionNode *);
-    optional<string> string_cast(const ExpressionNode *);
-    optional<bitset<32>> set_cast(const ExpressionNode *);
-
-    optional<unique_ptr<ExpressionNode>> fold(const FilePos &, const FilePos &, ExpressionNode *);
-
-    optional<unique_ptr<ExpressionNode>> fold(const FilePos &, const FilePos &,
-            OperatorType, unique_ptr<ExpressionNode> &);
-
-    optional<unique_ptr<ExpressionNode>> fold(const FilePos &, const FilePos &,
-            OperatorType, unique_ptr<ExpressionNode> &, unique_ptr<ExpressionNode> &, TypeNode *);
-
-    using Selectors = vector<unique_ptr<Selector>>;
-    using SelectorIterator = Selectors::iterator;
-    SelectorIterator &handleMissingParameters(const FilePos &, const FilePos &,
-                                              TypeNode*, Selectors &, SelectorIterator &) const;
-    void handleRepeatedIndices(const FilePos &, const FilePos &, Selectors &) const;
-    TypeNode *onSelectors(const FilePos &, const FilePos &, DeclarationNode *, TypeNode*, Selectors &);
-    TypeNode *onActualParameters(DeclarationNode *, TypeNode *, ActualParameters *);
-    TypeNode *onArrayIndex(TypeNode *, ArrayIndex *) const;
-    TypeNode *onDereference(TypeNode *, const Dereference *) const;
-    FieldNode *onRecordField(TypeNode *, RecordField *) const;
-    TypeNode *onTypeguard(DeclarationNode *, TypeNode *, Typeguard *) const;
 
 public:
     Sema(CompilerConfig &, ASTContext *, OberonSystem *);
@@ -139,7 +58,7 @@ public:
 
     unique_ptr<TypeDeclarationNode> onType(const FilePos &, const FilePos &,
                                            unique_ptr<IdentDef>, TypeNode *);
-    ArrayTypeNode *onArrayType(const FilePos &, const FilePos &, vector<unique_ptr<ExpressionNode>>, TypeNode *);
+    ArrayTypeNode *onArrayType(const FilePos &, const FilePos &, const vector<unique_ptr<ExpressionNode>> &, TypeNode *) const;
     PointerTypeNode *onPointerTypeStart(const FilePos &, const FilePos &) const;
     void onPointerTypeEnd(const FilePos &, const FilePos &, PointerTypeNode *, unique_ptr<QualIdent>);
     void onPointerTypeEnd(const FilePos &, const FilePos &, PointerTypeNode *, TypeNode *) const;
@@ -241,6 +160,87 @@ public:
     bool isType(QualIdent *) const;
     bool isVariable(QualIdent *);
     bool isProcedure(QualIdent *);
+
+private:
+    [[maybe_unused]] CompilerConfig &config_;
+    ASTContext *context_;
+    OberonSystem *system_;
+
+    Logger &logger_;
+    vector<pair<unique_ptr<QualIdent>, PointerTypeNode *>> forwards_;
+    stack<unique_ptr<ProcedureDefinitionNode>> procs_;
+    unordered_map<QualifiedExpression *, TypeNode *> caseTys_;
+    stack<FilePos> loops_;
+    SymbolTable *symbols_;
+    SymbolImporter importer_;
+    SymbolExporter exporter_;
+    TypeNode *boolTy_, *byteTy_, *charTy_, *shortIntTy_, *integerTy_, *longIntTy_, *realTy_, *longRealTy_,
+             *stringTy_, *setTy_, *anyTy_, *noTy_, *typeTy_;
+
+    static bool assertEqual(Ident *, Ident *) ;
+    void assertUnique(const IdentDef *, DeclarationNode *) const;
+    int64_t assertInBounds(const IntegerLiteralNode *, int64_t , int64_t) const;
+    bool assertAssignable(const ExpressionNode *, string &) const;
+
+    static void cast(ExpressionNode *, TypeNode *);
+    void castLiteral(unique_ptr<ExpressionNode> &, TypeNode *);
+    TypeNode* intType(int64_t);
+
+    void checkExport(DeclarationNode *) const;
+
+    bool assertCompatible(const FilePos &, TypeNode *, TypeNode *, bool = false);
+    TypeNode *commonType(const FilePos &, TypeNode *, TypeNode *) const;
+
+    static string format(const TypeNode *, bool = false);
+
+    static int64_t euclidean_mod(int64_t, int64_t);
+    static int64_t floor_div(int64_t, int64_t);
+
+    template<typename L, typename T>
+    optional<unique_ptr<ExpressionNode>> foldBinaryOp(const FilePos &, const FilePos &,
+                                                      unique_ptr<ExpressionNode> &, unique_ptr<ExpressionNode> &,
+                                                      optional<T>, optional<T>, function<T(T, T)>, TypeNode *);
+    optional<unique_ptr<ExpressionNode>> foldBooleanOp(const FilePos &, const FilePos &, OperatorType,
+                                                       unique_ptr<ExpressionNode> &, unique_ptr<ExpressionNode> &, TypeNode*);
+    template<typename T>
+    optional<unique_ptr<BooleanLiteralNode>> foldRelationOp(const FilePos &, const FilePos &,
+                                                            OperatorType, unique_ptr<ExpressionNode> &, unique_ptr<ExpressionNode> &, TypeNode *);
+    optional<unique_ptr<ExpressionNode>> foldDivModOp(const FilePos &, const FilePos &,
+                                                      OperatorType, unique_ptr<ExpressionNode> &, unique_ptr<ExpressionNode> &, TypeNode *);
+    optional<unique_ptr<ExpressionNode>> foldFDivOp(const FilePos &, const FilePos &,
+                                                    unique_ptr<ExpressionNode> &, unique_ptr<ExpressionNode> &, TypeNode *);
+    template<typename L, typename T>
+    optional<unique_ptr<ExpressionNode>> foldSubOp(const FilePos &, const FilePos &,
+                                                   unique_ptr<ExpressionNode> &, unique_ptr<ExpressionNode> &, TypeNode *);
+
+    template<typename L, typename T>
+    optional<unique_ptr<LiteralNode<T>>> clone(const FilePos &, const FilePos &, LiteralNode<T> *);
+    optional<bool> boolean_cast(const ExpressionNode *);
+    optional<int64_t> integer_cast(const ExpressionNode *);
+    optional<uint8_t> char_cast(const ExpressionNode *);
+    optional<double> real_cast(const ExpressionNode *);
+    optional<string> string_cast(const ExpressionNode *);
+    optional<bitset<32>> set_cast(const ExpressionNode *);
+
+    optional<unique_ptr<ExpressionNode>> fold(const FilePos &, const FilePos &, ExpressionNode *);
+
+    optional<unique_ptr<ExpressionNode>> fold(const FilePos &, const FilePos &,
+            OperatorType, unique_ptr<ExpressionNode> &);
+
+    optional<unique_ptr<ExpressionNode>> fold(const FilePos &, const FilePos &,
+            OperatorType, unique_ptr<ExpressionNode> &, unique_ptr<ExpressionNode> &, TypeNode *);
+
+    using Selectors = vector<unique_ptr<Selector>>;
+    using SelectorIterator = Selectors::iterator;
+    SelectorIterator &handleMissingParameters(const FilePos &, const FilePos &,
+                                              TypeNode*, Selectors &, SelectorIterator &) const;
+    void handleRepeatedIndices(const FilePos &, const FilePos &, Selectors &) const;
+    TypeNode *onSelectors(const FilePos &, const FilePos &, DeclarationNode *, TypeNode*, Selectors &);
+    TypeNode *onActualParameters(DeclarationNode *, TypeNode *, ActualParameters *);
+    TypeNode *onArrayIndex(TypeNode *, ArrayIndex *) const;
+    TypeNode *onDereference(TypeNode *, const Dereference *) const;
+    FieldNode *onRecordField(TypeNode *, RecordField *) const;
+    TypeNode *onTypeguard(DeclarationNode *, TypeNode *, Typeguard *) const;
 
 };
 

@@ -18,9 +18,9 @@ using std::set;
 using std::string;
 
 Sema::Sema(CompilerConfig &config, ASTContext *context, OberonSystem *system) :
-        config_(config), context_(context), system_(system), logger_(config_.logger()),
-        forwards_(), procs_(), caseTys_(), loops_(), symbols_(system_->getSymbolTable()),
-        importer_(config_, context, symbols_), exporter_(config_, context) {
+        config_(config), context_(context), system_(system), logger_(config.logger()),
+        symbols_(system->getSymbolTable()), importer_(config, *context, *system),
+        exporter_(config, *context) {
     boolTy_ = system_->getBasicType(TypeKind::BOOLEAN);
     byteTy_ = system_->getBasicType(TypeKind::BYTE);
     charTy_ = system_->getBasicType(TypeKind::CHAR);
@@ -170,22 +170,21 @@ Sema::onType(const FilePos &start, const FilePos &,
 }
 
 ArrayTypeNode *
-Sema::onArrayType(const FilePos &start, const FilePos &end, vector<unique_ptr<ExpressionNode>> indices, TypeNode *type) {
+Sema::onArrayType(const FilePos &start, const FilePos &end, const vector<unique_ptr<ExpressionNode>> &indices, TypeNode *type) const {
     vector<unsigned> values(indices.size(), 0);
     for (size_t i = 0; i < indices.size(); ++i) {
-        auto expr = indices[i].get();
-        if (expr) {
+        if (const auto expr = indices[i].get()) {
             if (!expr->isConstant()) {
                 logger_.error(expr->pos(), "constant expression expected.");
             }
             if (expr->getType()) {
                 if (expr->isLiteral()) {
                     if (expr->getType()->isInteger()) {
-                        auto literal = dynamic_cast<const IntegerLiteralNode *>(expr);
+                        const auto literal = dynamic_cast<const IntegerLiteralNode *>(expr);
                         if (literal->value() <= 0) {
                             logger_.error(expr->pos(), "array dimension must be a positive value.");
                         }
-                        values[i] = (unsigned) literal->value();
+                        values[i] = static_cast<unsigned>(literal->value());
                     } else {
                         logger_.error(expr->pos(), "integer expression expected.");
                     }
@@ -203,10 +202,14 @@ Sema::onArrayType(const FilePos &start, const FilePos &end, vector<unique_ptr<Ex
         logger_.error(start, "undefined member type.");
         type = noTy_;
     }
+    if (values.empty()) {
+        logger_.error(start, "undefined array dimension.");
+        values.emplace_back(0);
+    }
     vector<unsigned> lengths;
     vector<TypeNode *> types;
     if (type->isArray()) {
-        auto array_t = dynamic_cast<ArrayTypeNode *>(type);
+        const auto array_t = dynamic_cast<ArrayTypeNode *>(type);
         lengths.insert(lengths.begin(), array_t->lengths().begin(), array_t->lengths().end());
         types.insert(types.begin(), array_t->types().begin(), array_t->types().end());
         logger_.warning(start, "nested array found, use multi-dimensional array instead.");
@@ -216,7 +219,7 @@ Sema::onArrayType(const FilePos &start, const FilePos &end, vector<unique_ptr<Ex
         types.insert(types.begin(), type);
         type = context_->getOrInsertArrayType(start, end, static_cast<unsigned>(lengths.size()), lengths, types);
     }
-    auto array_t = dynamic_cast<ArrayTypeNode *>(type);
+    const auto array_t = dynamic_cast<ArrayTypeNode *>(type);
     array_t->setBase(array_t);
     return array_t;
 }
@@ -224,7 +227,7 @@ Sema::onArrayType(const FilePos &start, const FilePos &end, vector<unique_ptr<Ex
 void
 Sema::onPointerTypeEnd(const FilePos &, const FilePos &, PointerTypeNode *type, unique_ptr<QualIdent> reference) {
     logger_.debug("Found possible forward type reference: " + to_string(*reference) + ".");
-    forwards_.push_back({std::move(reference), type});
+    forwards_.emplace_back(std::move(reference), type);
 }
 
 PointerTypeNode *
@@ -235,11 +238,13 @@ Sema::onPointerTypeStart(const FilePos &start, const FilePos &end) const {
 
 void
 Sema::onPointerTypeEnd(const FilePos &start, const FilePos &, PointerTypeNode *type, TypeNode *base) const {
-    if (!base->isRecord()) {
+    if (base && base->isRecord()) {
+        type->setBase(base);
+    } else {
         // O07.6.4: Pointer base type must be a record type.
         logger_.error(start, "pointer base type must be a record type.");
+        type->setBase(noTy_);
     }
-    type->setBase(base);
 }
 
 ProcedureTypeNode *

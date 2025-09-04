@@ -4,7 +4,7 @@
 
 #include "OberonSystem.h"
 
-#include<memory>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -37,16 +37,16 @@ void OberonSystem::leaveNamespace() {
 
 TypeDeclarationNode *OberonSystem::createTypeDeclaration(TypeNode *type) {
     auto decl = make_unique<TypeDeclarationNode>(EMPTY_POS, make_unique<IdentDef>(type->getIdentifier()->name()), type);
-    auto ptr = decl.get();
+    const auto ptr = decl.get();
     decls_.push_back(std::move(decl));
     return ptr;
 }
 
 void OberonSystem::createBasicTypes(const vector<pair<pair<TypeKind, unsigned int>, bool>>& types) {
-    for (auto pair: types) {
-        auto type = createBasicType(pair.first.first, pair.first.second);
-        auto decl = createTypeDeclaration(type);
-        if (pair.second) {
+    for (const auto& [kind, global]: types) {
+        const auto type = createBasicType(kind.first, kind.second);
+        const auto decl = createTypeDeclaration(type);
+        if (global) {
             symbols_->insertGlobal(type->getIdentifier()->name(), decl);
         }
     }
@@ -54,30 +54,27 @@ void OberonSystem::createBasicTypes(const vector<pair<pair<TypeKind, unsigned in
 
 BasicTypeNode *OberonSystem::createBasicType(TypeKind kind, unsigned int size) {
     auto type = make_unique<BasicTypeNode>(make_unique<Ident>(to_string(kind)), kind, size);
-    auto ptr = type.get();
+    const auto ptr = type.get();
     types_.push_back(std::move(type));
-    symbols_->setRef(static_cast<unsigned char>(kind), ptr);
     baseTypes_[ptr->getIdentifier()->name()] = ptr;
     return ptr;
 }
 
-BasicTypeNode *OberonSystem::getBasicType(TypeKind kind) {
+BasicTypeNode *OberonSystem::getBasicType(const TypeKind kind) {
     return baseTypes_[to_string(kind)];
 }
 
 PointerTypeNode *OberonSystem::createPointerType(TypeNode *base) {
     auto type = make_unique<PointerTypeNode>(EMPTY_POS, base);
-    auto ptr = type.get();
+    const auto ptr = type.get();
     types_.push_back(std::move(type));
-    symbols_->setRef(static_cast<unsigned char>(TypeKind::POINTER), ptr);
     return ptr;
 }
 
 ArrayTypeNode *OberonSystem::createArrayType(const vector<unsigned> &dimensions, const vector<TypeNode *> &types) {
     auto type = make_unique<ArrayTypeNode>(EMPTY_POS, static_cast<unsigned>(dimensions.size()), dimensions, types);
-    auto ptr = type.get();
+    const auto ptr = type.get();
     types_.push_back(std::move(type));
-    symbols_->setRef(static_cast<unsigned char>(TypeKind::ARRAY), ptr);
     return ptr;
 }
 
@@ -85,7 +82,7 @@ PredefinedProcedure*
 OberonSystem::createProcedure(ProcKind kind, const string& name, const vector<pair<TypeNode *, bool>>& params,
                               TypeNode *ret, bool varargs, bool toSymbols) {
     auto proc = make_unique<PredefinedProcedure>(kind, name, params, varargs, ret);
-    auto ptr = proc.get();
+    const auto ptr = proc.get();
     decls_.push_back(std::move(proc));
     if (toSymbols) {
         if (symbols_->getLevel() == SymbolTable::GLOBAL_SCOPE) {
