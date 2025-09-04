@@ -73,10 +73,7 @@ bool olang_in_getchar(char *ch) {
 }
 
 bool olang_in_ungetchar(const char ch) {
-    if (ch != EOF) {
-        return ungetc(ch, stdin) == ch;
-    }
-    return false;
+    return ungetc(ch, stdin) == ch;
 }
 
 bool olang_in_getfloat(float *f) {
@@ -89,16 +86,16 @@ bool olang_in_getdouble(double *d) {
 
 bool olang_in_getint(const char *buf, int32_t *val, bool hex) {
     if (hex) {
-        return sscanf(buf, "%x", val) == 1;
+        return sscanf(buf, "%x", (uint32_t *) val) == 1;
     }
     return sscanf(buf, "%d", val) == 1;
 }
 
 bool olang_in_getlong(const char *buf, int64_t *val, bool hex) {
     if (hex) {
-        return sscanf(buf, "%llx", val) == 1;
+        return sscanf(buf, "%lx", (uint64_t *) val) == 1;
     }
-    return sscanf(buf, "%lld", val) == 1;
+    return sscanf(buf, "%ld", val) == 1;
 }
 
 float olang_math_realf(const int32_t x) {
