@@ -30,23 +30,11 @@ using std::vector;
  */
 class SymbolTable {
 
-private:
-    unordered_map<string, unique_ptr<Scope>> scopes_;
-    unordered_map<string, string> aliases_;
-    Scope *scope_;
-    // references for import and export
-    vector<TypeNode*> references_;
-    unique_ptr<Scope> universe_;
-    TypeNode *nilType_{};
-
 public:
     explicit SymbolTable();
     ~SymbolTable();
 
     void import(const string &module, const string &name, DeclarationNode *node);
-
-    void setRef(unsigned ref, TypeNode *type);
-    [[nodiscard]] TypeNode *getRef(unsigned ref) const;
 
     void insert(const string &name, DeclarationNode *node) const;
     void insertGlobal(const string &name, DeclarationNode *node) const;
@@ -73,6 +61,12 @@ public:
     static const unsigned int GLOBAL_SCOPE;
     static const unsigned int MODULE_SCOPE;
 
+private:
+    unordered_map<string, unique_ptr<Scope>> scopes_;
+    unordered_map<string, string> aliases_;
+    Scope *scope_;
+    unique_ptr<Scope> universe_;
+    TypeNode *nilType_{};
 };
 
 

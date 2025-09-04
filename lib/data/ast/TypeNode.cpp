@@ -61,7 +61,7 @@ TypeKind TypeNode::kind() const {
     return kind_;
 }
 
-void TypeNode::setSize(unsigned int size) {
+void TypeNode::setSize(const unsigned size) {
     size_ = size;
 }
 
@@ -143,17 +143,9 @@ bool TypeNode::isVirtual() const {
 }
 
 bool TypeNode::isBasic() const {
-    return isBoolean() || isNumeric() || isSet();
+    return isBoolean() || isNumeric() || isChar() || isSet();
 }
 
 bool TypeNode::extends(TypeNode *) const {
     return false;
-}
-
-void TypeNode::setRef(int ref) {
-    ref_ = ref;
-}
-
-int TypeNode::getRef() const {
-    return ref_;
 }

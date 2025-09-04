@@ -41,7 +41,7 @@ FieldNode *RecordTypeNode::getField(size_t num) const {
     return fields_.at(num).get();
 }
 
-size_t RecordTypeNode::getFieldCount() {
+size_t RecordTypeNode::getFieldCount() const {
     return fields_.size();
 }
 

@@ -8,26 +8,28 @@
 #define OBERON0C_BASICTYPENODE_H
 
 
+#include <memory>
 #include "TypeNode.h"
-#include <string>
+
+using std::unique_ptr;
 
 class BasicTypeNode final : public TypeNode {
 
-private:
-    std::unique_ptr<Ident> ident_;
-
 public:
-    explicit BasicTypeNode(std::unique_ptr<Ident> ident, TypeKind kind, unsigned int size) :
-            TypeNode(NodeType::basic_type, EMPTY_POS, kind, size, (int) kind), ident_(std::move(ident)) {};
-    ~BasicTypeNode() final = default;
+    explicit BasicTypeNode(unique_ptr<Ident> ident, const TypeKind kind, const unsigned size) :
+            TypeNode(NodeType::basic_type, EMPTY_POS, kind, size), ident_(std::move(ident)) {}
+    ~BasicTypeNode() override = default;
 
     [[nodiscard]] Ident* getIdentifier() const override;
 
     void operator=(BasicTypeNode const&) = delete;
 
-    void accept(NodeVisitor& visitor) final;
+    void accept(NodeVisitor& visitor) override;
 
-    void print(std::ostream &stream) const final;
+    void print(std::ostream &stream) const override;
+
+private:
+    std::unique_ptr<Ident> ident_;
 
 };
 

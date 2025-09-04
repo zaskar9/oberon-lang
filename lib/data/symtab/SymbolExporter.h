@@ -21,27 +21,30 @@ using std::map;
 
 class SymbolExporter {
 
+public:
+    SymbolExporter(CompilerConfig &config, ASTContext &context) :
+            config_(config), context_(context), logger_(config.logger()), xref_() {}
+    ~SymbolExporter() = default;
+
+    void write(const std::string &, SymbolTable *);
+
 private:
     CompilerConfig &config_;
-    ASTContext *context_;
+    ASTContext &context_;
     Logger &logger_;
-    int ref_;
-    map<TypeNode *, int> refs_;
+    // cross-references
+    unsigned xref_;
+    map<TypeNode *, unsigned> xrefs_;
+    // forward declarations
+    map<TypeNode *, unsigned> fwds_;
 
     void writeDeclaration(SymbolFile *, DeclarationNode *);
     void writeType(SymbolFile *, TypeNode *);
-    void writeArrayType(SymbolFile *, ArrayTypeNode *);
-    void writePointerType(SymbolFile *, PointerTypeNode *);
+    void writeArrayType(SymbolFile *, const ArrayTypeNode *);
+    void writePointerType(SymbolFile *, const PointerTypeNode *);
     void writeProcedureType(SymbolFile *, ProcedureTypeNode *);
-    void writeRecordType(SymbolFile *, RecordTypeNode *);
-    void writeParameter(SymbolFile *, ParameterNode *);
-
-public:
-    explicit SymbolExporter(CompilerConfig &config, ASTContext *context) :
-            config_(config), context_(context), logger_(config_.logger()), ref_(), refs_() {};
-    ~SymbolExporter() = default;
-
-    void write(const std::string &module, SymbolTable *symbols);
+    void writeRecordType(SymbolFile *, const RecordTypeNode *);
+    void writeParameter(SymbolFile *, const ParameterNode *);
 
 };
 

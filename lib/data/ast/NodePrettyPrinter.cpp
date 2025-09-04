@@ -89,10 +89,13 @@ void NodePrettyPrinter::visit(ModuleNode& node) {
     stream_ << "MODULE " << *node.getIdentifier() << "(*Scope:" << node.getScope() << "*);" << std::endl;
     if (!node.imports().empty()) {
         stream_ << "IMPORT ";
+        string sep = "";
         for (const auto &import: node.imports()) {
+            stream_ << sep;
             import->accept(*this);
+            sep = ", ";
         }
-        stream_ << std::endl;
+        stream_ << ";" << std::endl;
     }
     block(node, true);
     stream_ << std::endl;
@@ -172,7 +175,7 @@ void NodePrettyPrinter::visit(ImportNode &node) {
     if (node.getAlias()) {
         stream_ << *node.getAlias() << " := ";
     }
-    stream_ << *node.getModule() << "; ";
+    stream_ << *node.getModule();
 }
 
 void NodePrettyPrinter::visit(QualifiedStatement &node) {

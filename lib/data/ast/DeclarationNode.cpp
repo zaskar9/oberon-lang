@@ -68,6 +68,11 @@ TypeDeclarationNode::TypeDeclarationNode(const FilePos &pos, unique_ptr<IdentDef
    }
 }
 
+void TypeDeclarationNode::setModule(ModuleNode *module) {
+    DeclarationNode::setModule(module);
+    this->getType()->setModule(module);
+}
+
 void TypeDeclarationNode::accept(NodeVisitor& visitor) {
     visitor.visit(*this);
 }
@@ -85,7 +90,7 @@ void FieldNode::setRecordType(RecordTypeNode *parent) {
     parent_ = parent;
 }
 
-void FieldNode::setIndex(unsigned index) {
+void FieldNode::setIndex(const unsigned index) {
     index_ = index;
 }
 

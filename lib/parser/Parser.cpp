@@ -305,14 +305,17 @@ ArrayTypeNode* Parser::array_type() {
     logger_.debug("array_type");
     const FilePos pos = scanner_.next()->start();  // skip ARRAY keyword and get its position
     vector<unique_ptr<ExpressionNode>> indices;
-    indices.push_back(expression());
-    while (scanner_.peek()->type() == TokenType::comma) {
-        scanner_.next(); // skip comma
+    // check to give an informative error in case dimension expressions are missing
+    if (scanner_.peek()->type() != TokenType::kw_of) {
         indices.push_back(expression());
+        while (scanner_.peek()->type() == TokenType::comma) {
+            scanner_.next(); // skip comma
+            indices.push_back(expression());
+        }
     }
     if (assertToken(scanner_.peek(), TokenType::kw_of)) {
         scanner_.next(); // skip OF keyword
-        return sema_.onArrayType(pos, EMPTY_POS, std::move(indices), type());
+        return sema_.onArrayType(pos, EMPTY_POS, indices, type());
     }
     // [<)>, <;>, <END>]
     resync({ TokenType::semicolon, TokenType::rparen, TokenType::kw_end });
@@ -322,7 +325,7 @@ ArrayTypeNode* Parser::array_type() {
 // record_type = "RECORD" [ "(" qualident ")" ] [ field_list { ";" field_list } ] END.
 RecordTypeNode* Parser::record_type() {
     logger_.debug("record_type");
-    FilePos pos = scanner_.next()->start(); // skip RECORD keyword and get its position
+    const FilePos pos = scanner_.next()->start(); // skip RECORD keyword and get its position
     unique_ptr<QualIdent> base;
     if (scanner_.peek()->type() == TokenType::lparen) {
         scanner_.next(); // skip left parenthesis
@@ -335,7 +338,7 @@ RecordTypeNode* Parser::record_type() {
     if (scanner_.peek()->type() == TokenType::const_ident) {
         field_list(fields);
         while (scanner_.peek()->type() == TokenType::semicolon) {
-            scanner_.next();  // skip semicolon
+            token_ = scanner_.next();  // skip semicolon (and remember token for redundancy warning)
             field_list(fields);
         }
     }
@@ -350,9 +353,9 @@ RecordTypeNode* Parser::record_type() {
 // field_list = ident_list ":" type .
 void Parser::field_list(vector<unique_ptr<FieldNode>> &fields) {
     logger_.debug("field_list");
-    vector<unique_ptr<IdentDef>> idents;
     auto next = scanner_.peek();
     if (next->type() == TokenType::const_ident) {
+        vector<unique_ptr<IdentDef>> idents;
         ident_list(idents);
         if (!idents.empty()) {
             const auto token = scanner_.next();
@@ -514,12 +517,12 @@ TypeNode *Parser::formal_type() {
     if (token->type() == TokenType::kw_pointer || token->type() == TokenType::kw_record) {
         logger_.error(token->start(), "formal type cannot be an anonymous record or pointer type.");
     } else if (assertToken(scanner_.peek(), TokenType::const_ident)) {
-        auto ident = qualident();
+        const auto ident = qualident();
         if (dims == 0) {
             start = ident->start();
         }
         const FilePos end = ident->end();
-        return sema_.onTypeReference(start, end, std::move(ident), dims);
+        return sema_.onTypeReference(start, end, ident, dims);
     }
     resync({ TokenType::semicolon, TokenType::rparen });
     return nullptr;
