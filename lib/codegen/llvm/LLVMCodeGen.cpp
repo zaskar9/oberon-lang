@@ -174,8 +174,7 @@ void LLVMCodeGen::configure() {
     logger_.debug("Using target triple: " + triple + ".");
     // Set up target
     string error;
-    auto target = TargetRegistry::lookupTarget(triple, error);
-    if (!target) {
+    if (const auto target = TargetRegistry::lookupTarget(triple, error); !target) {
         logger_.error(string(), error);
     } else {
         // Set up target machine to match host
@@ -198,7 +197,13 @@ void LLVMCodeGen::configure() {
             default:
                 break;
         }
+#if defined(_LLVM_21)
+        Triple t(triple);
+        tm_ = target->createTargetMachine(t, cpu, features, opt, model);
+#else
         tm_ = target->createTargetMachine(triple, cpu, features, opt, model);
+#endif
+
     }
     // TODO Setup for JIT
     if (config_.isJit()) {
@@ -297,7 +302,11 @@ void LLVMCodeGen::generate(ASTContext *ast, const path path) {
     auto module = std::make_unique<Module>(path.filename().string(), ctx_);
     module->setSourceFileName(path.string());
     module->setDataLayout(tm_->createDataLayout());
+#ifndef _LLVM_21
     module->setTargetTriple(tm_->getTargetTriple().getTriple());
+#else
+    module->setTargetTriple(tm_->getTargetTriple());
+#endif
     // Generate LLVM intermediate representation
     auto builder = std::make_unique<LLVMIRBuilder>(config_, ctx_, module.get());
     builder->build(ast);
@@ -335,7 +344,11 @@ int LLVMCodeGen::jit(ASTContext *ast, const path path) {
     auto module = std::make_unique<Module>(path.filename().string(), *context);
     module->setSourceFileName(path.string());
     module->setDataLayout(tm_->createDataLayout());
+#ifndef _LLVM_21
     module->setTargetTriple(tm_->getTargetTriple().getTriple());
+#else
+    module->setTargetTriple(tm_->getTargetTriple());
+#endif
     // Generate LLVM intermediate representation
     const auto builder = std::make_unique<LLVMIRBuilder>(config_, *context, module.get());
     builder->build(ast);
@@ -350,7 +363,7 @@ int LLVMCodeGen::jit(ASTContext *ast, const path path) {
         // Execute Oberon program using ORC JIT
         const string entry = ast->getTranslationUnit()->getIdentifier()->name();
         const auto mainAddr = exitOnErr_(jit_->lookup(entry));
-        const auto mainFn = mainAddr.toPtr<int(void)>();
+        const auto mainFn = mainAddr.toPtr<int()>();
         const int result = mainFn();
         logger_.debug("Process finished with exit code " + to_string(result));
         return result;
@@ -403,14 +416,14 @@ void LLVMCodeGen::emit(Module *module, path path, OutputFileType type) const {
     CodeGenFileType ft;
     switch (type) {
         case OutputFileType::AssemblyFile:
-#if defined(_LLVM_18) || defined(_LLVM_19)  || defined(_LLVM_20)
+#if defined(_LLVM_18) || defined(_LLVM_19)  || defined(_LLVM_20) || defined(_LLVM_21)
             ft = CodeGenFileType::AssemblyFile;
 #else
             ft = CodeGenFileType::CGFT_AssemblyFile;
 #endif
             break;
         default:
-#if defined(_LLVM_18) || defined(_LLVM_19)  || defined(_LLVM_20)
+#if defined(_LLVM_18) || defined(_LLVM_19)  || defined(_LLVM_20) || defined(_LLVM_21)
             ft = CodeGenFileType::ObjectFile;
 #else
             ft = CodeGenFileType::CGFT_ObjectFile;
