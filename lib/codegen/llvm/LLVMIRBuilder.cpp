@@ -392,9 +392,8 @@ TypeNode *LLVMIRBuilder::selectors(NodeReference *ref, TypeNode *base, const Sel
             } else {
                 dopeV = typeDopes_[array_t->getBase()];
             }
-            // Get and cache array dimension lengths
-            vector<Value*> lengths;
-            lengths.reserve(array->indices().size());
+            // Cache for array dimension lengths
+            vector<Value*> lengths(array->indices().size(), nullptr);
             // Process the array indices
             Value *offset = nullptr;
             for (size_t i = 0; i < array->indices().size(); ++i) {
@@ -406,6 +405,7 @@ TypeNode *LLVMIRBuilder::selectors(NodeReference *ref, TypeNode *base, const Sel
                 // Create an out-of-bounds check and trap for the current array index
                 if (config_.isSanitized(Trap::OUT_OF_BOUNDS) && (array_t->isOpen() || !index->isLiteral())) {
                     Value *lower = builder_.getInt64(0);
+                    // Value *upper = builder_.getInt64(3);
                     Value *upper = getOrLoadArrayLength(lengths, dopeV, array_t, i);
                     trapOutOfBounds(builder_.CreateSExt(value_, builder_.getInt64Ty()), lower, upper);
                 }
