@@ -12,6 +12,8 @@ TYPE Vector = ARRAY Dim OF INTEGER;
      Cube = ARRAY Dim, 2 * Dim, 3 * Dim OF INTEGER;
 
 VAR v: Vector;
+    m: Matrix;
+    c: Cube;
 
 PROCEDURE Assert1(a: ARRAY OF INTEGER; i: INTEGER);
 BEGIN
@@ -36,12 +38,15 @@ VAR v: Vector;
     m: Matrix;
     c: Cube;
 BEGIN
+    (* one-dimensional array *)
     ASSERT(LEN(v) = Dim);
     Assert1(v, Dim);
+    (* two-dimensional array *)
     ASSERT(LEN(m, 0) = Dim);
     ASSERT(LEN(m, 1) = 2 * Dim);
-    Assert1(m[0], 2 * Dim);
+    Assert1(m[Dim - 1], 2 * Dim);
     Assert2(m, Dim, 2 * Dim);
+    (* three-dimensional array *)
     ASSERT(LEN(c, 0) = Dim);
     ASSERT(LEN(c, 1) = 2 * Dim);
     ASSERT(LEN(c, 2) = 3 * Dim);
@@ -68,7 +73,11 @@ END TestStrLen;
 
 PROCEDURE TestMixing();
   VAR a: ARRAY Dim OF INTEGER;
-  PROCEDURE Call(a: Vector); END Call;
+  PROCEDURE Call(a: Vector);
+  BEGIN
+    ASSERT(LEN(a) = Dim);
+    Assert1(a, Dim)
+  END Call;
 BEGIN
     Call(a)
 END TestMixing;
@@ -85,10 +94,25 @@ BEGIN
 END TestPassingOn;
 
 BEGIN
+    (* one-dimensional array *)
     ASSERT(LEN(v) = Dim);
     Assert1(v, Dim);
+    (* two-dimensional array *)
+    ASSERT(LEN(m, 0) = Dim);
+    ASSERT(LEN(m, 1) = 2 * Dim);
+    Assert1(m[0], 2 * Dim);
+    Assert2(m, Dim, 2 * Dim);
+    (* three dimensional array *)
+    ASSERT(LEN(c, 0) = Dim);
+    ASSERT(LEN(c, 1) = 2 * Dim);
+    ASSERT(LEN(c, 2) = 3 * Dim);
+    Assert1(c[0][0], 3 * Dim);
+    Assert2(c[0], 2 * Dim, 3 * Dim);
+    Assert3(c, Dim, 2 * Dim, 3 * Dim);
+    (* tests for one-, two-, and three-dimensional arrays, but with local variables *)
     TestLen;
+    (* test for string lengths *)
     ASSERT(LEN(Msg) = Len);
     TestStrLen(Msg);
-    TestPassingOn
+    TestPassingOn;
 END ArrayLen1.
