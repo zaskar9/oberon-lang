@@ -269,22 +269,24 @@ Value *LLVMIRBuilder::getArrayLength(ExpressionNode *expr, const uint32_t dim) {
     const auto type = dynamic_cast<ArrayTypeNode *>(expr->getType());
     if (type->isOpen()) {
         Value *dopeV = getDopeVector(expr);
-        return getOpenArrayLength(dopeV, type, dim, dim == type->getBase()->dimensions() - 1);
+        return getOpenArrayLength(dopeV, type, dim);
     }
     return builder_.getInt64(type->lengths()[dim]);
 }
 
-Value *LLVMIRBuilder::getOpenArrayLength(Value *dopeV, const ArrayTypeNode *type, const uint32_t dim, const bool ref) {
-    const auto dopeTy = ArrayType::get(builder_.getInt64Ty(), type->dimensions());
-    if (ref) {
-        // dereference the pointer to the dope vector
-        dopeV = builder_.CreateLoad(builder_.getPtrTy(), dopeV);
-    }
-    Value *value = builder_.CreateInBoundsGEP(dopeTy, dopeV, {builder_.getInt32(0), builder_.getInt32(dim) });
+Value *LLVMIRBuilder::getOpenArrayLength(Value *dopeV, const ArrayTypeNode *type, const uint32_t dim) {
+    // dereference the pointer to the dope vector
+    dopeV = builder_.CreateLoad(builder_.getPtrTy(), dopeV);
+    // calculate adjustment for the given dimension relative to array base type
+    const auto base = type->getBase();
+    const auto dopeTy = ArrayType::get(builder_.getInt64Ty(), base->dimensions());
+    const auto delta = base->dimensions() - type->dimensions();
+    // load the array length for the adjusted dimension
+    Value *value = builder_.CreateInBoundsGEP(dopeTy, dopeV, { builder_.getInt32(0), builder_.getInt32(dim + delta) });
     return builder_.CreateLoad(builder_.getInt64Ty(), value);
 }
 
-Value* LLVMIRBuilder::getOrLoadArrayLength(vector<Value*> &lengths, Value* dopeV, const ArrayTypeNode *type, uint32_t dim) {
+Value* LLVMIRBuilder::getOrLoadArrayLength(vector<Value*> &lengths, Value* dopeV, const ArrayTypeNode *type, const uint32_t dim) {
     if (!lengths[dim]) {
         if (type->isOpen()) {
             lengths[dim] = getOpenArrayLength(dopeV, type, dim);
@@ -293,9 +295,7 @@ Value* LLVMIRBuilder::getOrLoadArrayLength(vector<Value*> &lengths, Value* dopeV
         }
     }
     return lengths[dim];
-
 }
-
 
 Value *LLVMIRBuilder::getDopeVector(ExpressionNode *expr) {
     if (const auto qual = dynamic_cast<QualifiedExpression *>(expr)) {
@@ -306,32 +306,20 @@ Value *LLVMIRBuilder::getDopeVector(ExpressionNode *expr) {
 }
 
 Value *LLVMIRBuilder::getDopeVector(const NodeReference *ref, TypeNode *type) {
-    Value *dopeV = nullptr;
-    const auto decl = ref->dereference();
     if (const auto array_t = dynamic_cast<ArrayTypeNode *>(type)) {
+        const auto decl = ref->dereference();
         // Find the base array type of the parameter expression
         const auto base = array_t->getBase();
+        Value *dopeV = nullptr;
         if (array_t->isOpen()) {
             dopeV = valueDopes_[decl];
         } else {
             dopeV = typeDopes_[base];
         }
-        // Check whether the actual array has fewer dimensions than the base array due to applied array indices
-        if (array_t->dimensions() < base->dimensions()) {
-            const auto delta = base->dimensions() - array_t->dimensions();
-            const auto dopeTy = ArrayType::get(builder_.getInt64Ty(), base->dimensions());
-            if ((array_t->isOpen() && decl->getScope() > 1) || deref()) {
-                dopeV = builder_.CreateLoad(builder_.getPtrTy(), dopeV);
-            }
-            dopeV = builder_.CreateInBoundsGEP(dopeTy, dopeV, {builder_.getInt32(0), builder_.getInt32(delta)});
-        }
-    } else if (decl->getType()->isArray()) {
-        dopeV = valueDopes_[decl];
+        return dopeV;
     }
-    if (!dopeV) {
-        logger_.error(ref->pos(), "cannot determine array telemetry of expression.");
-    }
-    return dopeV;
+    logger_.error(ref->pos(), "cannot determine array telemetry of expression.");
+    return nullptr;
 }
 
 Value *LLVMIRBuilder::getTypeDescriptor(Value *value, const NodeReference *ref, TypeNode *type) {
@@ -527,10 +515,21 @@ LLVMIRBuilder::parameters(ProcedureTypeNode *type, ActualParameters *actuals, ve
                     builder_.CreateStore(builder_.getInt64(value[0] == '\0' ? 1 : value.size() + 1), dopeV);
                     values.push_back(dopeV);
                 } else {
-                    // Look up the "dope vector" of explicitly defined array types
+                    // Look up dope vector of explicitly defined array types
                     Value *dopeV = getDopeVector(actualParam);
                     if (actualType->isArray()) {
                         const auto actArrType = dynamic_cast<ArrayTypeNode *>(actualType);
+                        const auto base = actArrType->getBase();
+                        // Check whether the actual array has fewer dimensions than the base array due to applied array indices
+                        if (actArrType->dimensions() < base->dimensions()) {
+                            const auto delta = base->dimensions() - actArrType->dimensions();
+                            const auto dopeTy = ArrayType::get(builder_.getInt64Ty(), base->dimensions());
+                            const auto decl = dynamic_cast<NodeReference *>(actualParam)->dereference();
+                            if ((actArrType->isOpen() && decl->getScope() > 1) || deref()) {
+                                dopeV = builder_.CreateLoad(builder_.getPtrTy(), dopeV);
+                            }
+                            dopeV = builder_.CreateInBoundsGEP(dopeTy, dopeV, {builder_.getInt32(0), builder_.getInt32(delta)});
+                        }
                         const auto frmArrType = dynamic_cast<ArrayTypeNode *>(formalType);
                         if (actArrType->isOpen() &&
                             (frmArrType->getMemberType()->kind() == TypeKind::ANYTYPE ||
@@ -1344,10 +1343,8 @@ void LLVMIRBuilder::visit(AssignmentNode &node) {
         const auto elemSize = layout.getTypeAllocSize(getLLVMType(lArray->getMemberType()));
         Value *size;
         if (len == 0) {
-            setRefMode(true);
             Value *lSize = getArrayLength(node.getLvalue(), 0);
             Value *rSize = getArrayLength(node.getRvalue(), 0);
-            restoreRefMode();
             if (config_.isSanitized(Trap::COPY_OVERFLOW)) {
                 trapCopyOverflow(lSize, rSize);
             }
@@ -1938,11 +1935,14 @@ LLVMIRBuilder::createLenCall(const vector<unique_ptr<ExpressionNode>> &actuals, 
             return value_;
         }
     }
-    if (!array_t->isOpen()) {
+    if (array_t->isOpen()) {
+        const auto dopeTy = ArrayType::get(builder_.getInt64Ty(), array_t->dimensions());
+        Value *value = builder_.CreateInBoundsGEP(dopeTy, params[1], {builder_.getInt32(0), builder_.getInt32(static_cast<uint32_t>(dim))});
+        value_ = builder_.CreateLoad(builder_.getInt64Ty(), value);
+    } else {
         value_ = builder_.getInt64(array_t->lengths()[static_cast<size_t>(dim)]);
-        return value_;
     }
-    return getOpenArrayLength(params[1], array_t, static_cast<uint32_t>(dim), false);
+    return value_;
 }
 
 Value *

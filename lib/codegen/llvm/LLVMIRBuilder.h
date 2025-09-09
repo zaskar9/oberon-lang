@@ -73,7 +73,7 @@ private:
     Value *processGEP(Type *, Value *, vector<Value *> &);
 
     Value *getArrayLength(ExpressionNode *, uint32_t);
-    Value *getOpenArrayLength(Value *, const ArrayTypeNode *, uint32_t, bool = true);
+    Value *getOpenArrayLength(Value *, const ArrayTypeNode *, uint32_t);
     Value *getOrLoadArrayLength(vector<Value*> &, Value *, const ArrayTypeNode *, uint32_t);
     Value *getDopeVector(ExpressionNode *);
     Value *getDopeVector(const NodeReference *, TypeNode *);

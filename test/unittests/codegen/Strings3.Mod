@@ -1,5 +1,5 @@
 (*
-  RUN: %oberon -I "%S%{pathsep}%inc" -L "%S%{pathsep}%lib" -l oberon --run %s
+  RUN: %oberon -I "%S%{pathsep}%inc" -L "%S%{pathsep}%lib" -l oberon --run %s | filecheck %s
 *)
 MODULE Strings3;
 IMPORT Out;
@@ -22,7 +22,7 @@ BEGIN
     list[6] := "Zug";
     list[7] := "Lugano";
     list[8] := "Luzern";
-    list[9] := "Chur";
+    list[9] := "Chur"
 END Init;
 
 PROCEDURE Print(list: ARRAY OF ARRAY OF CHAR);
