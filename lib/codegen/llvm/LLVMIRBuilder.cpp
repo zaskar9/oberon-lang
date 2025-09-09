@@ -269,7 +269,7 @@ Value *LLVMIRBuilder::getArrayLength(ExpressionNode *expr, const uint32_t dim) {
     const auto type = dynamic_cast<ArrayTypeNode *>(expr->getType());
     if (type->isOpen()) {
         Value *dopeV = getDopeVector(expr);
-        return getOpenArrayLength(dopeV, type, dim);
+        return getOpenArrayLength(dopeV, type, dim, dim == type->getBase()->dimensions() - 1);
     }
     return builder_.getInt64(type->lengths()[dim]);
 }
@@ -349,7 +349,7 @@ Value *LLVMIRBuilder::getTypeDescriptor(Value *value, const NodeReference *ref, 
     return typeD;
 }
 
-TypeNode *LLVMIRBuilder::selectors(NodeReference *ref, TypeNode *base, const SelectorIterator start, const SelectorIterator end) {
+TypeNode *LLVMIRBuilder::selectors(const NodeReference *ref, TypeNode *base, const SelectorIterator start, const SelectorIterator end) {
     if (!base || base->isVirtual()) {
         return nullptr;
     }

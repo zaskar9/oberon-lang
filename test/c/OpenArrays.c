@@ -1,11 +1,22 @@
 #include <stdio.h>
 #include <string.h>
 
+int m[100];
+int l[10] = { 0, 2, 4, 6, 8, 10, 12, 14, 16, 18 };
+
 void print(int array[], int len) {
   for (int i = 0; i < len; ++i) {
       printf("%3d", array[i]);
   }
   printf("\n");
+}
+
+void Test2(int matrix[], int array[], int len) {
+  memcpy(&matrix[10], array, len);
+}
+
+void Test3(int matrix[], int array[], int len) {
+  Test2(matrix, array, len);
 }
 
 int main(int argc, char** argv) {
@@ -19,9 +30,10 @@ int main(int argc, char** argv) {
     print(&matrix[i * 10], 10);
   }
   printf("\n");
-  int array[10] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-  memcpy(&matrix[10], &array, sizeof array);
+  // int l[10]; = { 0, 2, 4, 6, 8, 10, 12, 14, 16, 18 };
+  Test2(m, l, sizeof l);
+  // memcpy(&matrix[10], array, sizeof array);
   for (int i = 0; i < 10; ++i) {
-    print(&matrix[i * 10], 10);
+    print(&m[i * 10], 10);
   }
 }

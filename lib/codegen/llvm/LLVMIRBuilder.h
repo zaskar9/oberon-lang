@@ -96,7 +96,7 @@ private:
 
     using Selectors = vector<unique_ptr<Selector>>;
     using SelectorIterator = Selectors::iterator;
-    TypeNode *selectors(NodeReference *, TypeNode *, SelectorIterator, SelectorIterator);
+    TypeNode *selectors(const NodeReference *, TypeNode *, SelectorIterator, SelectorIterator);
     void parameters(ProcedureTypeNode *, ActualParameters *, vector<Value *> &, CallingConvention);
 
     void installTrap(Value *, uint8_t);
