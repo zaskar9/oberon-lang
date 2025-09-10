@@ -82,7 +82,7 @@ install : dist Files.smb Oberon.smb Out.smb Random.smb Math.smb Reals.smb String
 	@echo -n Installing symbol files...
 	@mkdir -p $(INC)
 	@mv Files.smb $(INC)
-	@mv in.smb $(INC)
+	@mv In.smb $(INC)
 	@mv Math.smb $(INC)
 	@mv Oberon.smb $(INC)
 	@mv Out.smb $(INC)

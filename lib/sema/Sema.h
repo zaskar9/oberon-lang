@@ -66,19 +66,19 @@ public:
                                        vector<unique_ptr<ParameterNode>>, bool varargs, TypeNode *) const;
     unique_ptr<ParameterNode> onParameter(const FilePos &, const FilePos &,
                                           unique_ptr<Ident>, TypeNode *, bool, unsigned = 0);
-    RecordTypeNode *onRecordType(const FilePos &, const FilePos &, unique_ptr<QualIdent>, vector<unique_ptr<FieldNode>>);
-    unique_ptr<FieldNode> onField(const FilePos&, const FilePos&, unique_ptr<IdentDef>, TypeNode*, unsigned = 0);
+    RecordTypeNode *onRecordType(const FilePos &, const FilePos &, const unique_ptr<QualIdent> &, vector<unique_ptr<FieldNode>>) const;
+    unique_ptr<FieldNode> onField(const FilePos&, const FilePos&, unique_ptr<IdentDef>, TypeNode*, unsigned = 0) const;
 
     TypeNode *onTypeReference(const FilePos &, const FilePos &, const unique_ptr<QualIdent> &, unsigned = 0) const;
 
     unique_ptr<VariableDeclarationNode> onVariable(const FilePos &, const FilePos &,
-                                                   unique_ptr<IdentDef>, TypeNode*, int = 0);
+                                                   unique_ptr<IdentDef>, TypeNode*, int = 0) const;
 
     void onDeclarations();
 
     unique_ptr<ProcedureDeclarationNode> onProcedureDeclaration(const FilePos &, const FilePos &,
                                                                 unique_ptr<IdentDef>, ProcedureTypeNode *,
-                                                                const string &, string &name);
+                                                                const string &, string &name) const;
     ProcedureDefinitionNode *onProcedureDefinitionStart(const FilePos &, unique_ptr<IdentDef>);
     unique_ptr<ProcedureDefinitionNode> onProcedureDefinitionEnd(const FilePos &, const unique_ptr<Ident> &);
 
@@ -112,13 +112,13 @@ public:
                                       unique_ptr<ExpressionNode>,
                                       unique_ptr<StatementSequenceNode>);
     void onCaseOfStart(const FilePos &, const FilePos &,
-                       unique_ptr<ExpressionNode> &);
+                       const unique_ptr<ExpressionNode> &);
     unique_ptr<CaseOfNode> onCaseOfEnd(const FilePos &, const FilePos &,
                                        unique_ptr<ExpressionNode>,
                                        vector<unique_ptr<CaseNode>>,
                                        unique_ptr<StatementSequenceNode>);
     unique_ptr<CaseLabelNode> onCaseLabel(const FilePos &, const FilePos &,
-                                          unique_ptr<ExpressionNode> &,
+                                          const unique_ptr<ExpressionNode> &,
                                           vector<unique_ptr<ExpressionNode>>);
     unique_ptr<CaseNode> onCase(const FilePos &, const FilePos &,
                                 unique_ptr<ExpressionNode> &,
@@ -143,7 +143,7 @@ public:
                                                   unique_ptr<ExpressionNode>);
     unique_ptr<ExpressionNode> onRangeExpression(const FilePos &, const FilePos &,
                                                  unique_ptr<ExpressionNode>,
-                                                 unique_ptr<ExpressionNode>) const;
+                                                 unique_ptr<ExpressionNode>);
     unique_ptr<ExpressionNode> onSetExpression(const FilePos &, const FilePos &,
                                                vector<unique_ptr<ExpressionNode>>);
 
@@ -182,14 +182,15 @@ private:
     int64_t assertInBounds(const IntegerLiteralNode *, int64_t , int64_t) const;
     bool assertAssignable(const ExpressionNode *, string &) const;
 
-    static void cast(ExpressionNode *, TypeNode *);
+    void cast(unique_ptr<ExpressionNode> &, TypeNode *);
     void castLiteral(unique_ptr<ExpressionNode> &, TypeNode *);
-    TypeNode* intType(int64_t);
+    [[nodiscard]] TypeNode* intType(int64_t) const;
 
     void checkExport(DeclarationNode *) const;
 
     bool assertCompatible(const FilePos &, TypeNode *, TypeNode *, bool = false);
     TypeNode *commonType(const FilePos &, TypeNode *, TypeNode *) const;
+    static bool isArrayOfChar(TypeNode *) ;
 
     static string format(const TypeNode *, bool = false);
 
@@ -202,30 +203,31 @@ private:
                                                       optional<T>, optional<T>, function<T(T, T)>, TypeNode *);
     optional<unique_ptr<ExpressionNode>> foldBooleanOp(const FilePos &, const FilePos &, OperatorType,
                                                        unique_ptr<ExpressionNode> &, unique_ptr<ExpressionNode> &, TypeNode*);
-    template<typename T>
+    template<typename T, typename Cast>
     optional<unique_ptr<BooleanLiteralNode>> foldRelationOp(const FilePos &, const FilePos &,
-                                                            OperatorType, unique_ptr<ExpressionNode> &, unique_ptr<ExpressionNode> &, TypeNode *);
+                                                            OperatorType, unique_ptr<ExpressionNode> &, unique_ptr<ExpressionNode> &,
+                                                            Cast, TypeNode *);
     optional<unique_ptr<ExpressionNode>> foldDivModOp(const FilePos &, const FilePos &,
-                                                      OperatorType, unique_ptr<ExpressionNode> &, unique_ptr<ExpressionNode> &, TypeNode *);
+                                                      OperatorType, unique_ptr<ExpressionNode> &, const unique_ptr<ExpressionNode> &, TypeNode *);
     optional<unique_ptr<ExpressionNode>> foldFDivOp(const FilePos &, const FilePos &,
-                                                    unique_ptr<ExpressionNode> &, unique_ptr<ExpressionNode> &, TypeNode *);
+                                                    unique_ptr<ExpressionNode> &, const unique_ptr<ExpressionNode> &, TypeNode *);
     template<typename L, typename T>
     optional<unique_ptr<ExpressionNode>> foldSubOp(const FilePos &, const FilePos &,
                                                    unique_ptr<ExpressionNode> &, unique_ptr<ExpressionNode> &, TypeNode *);
 
     template<typename L, typename T>
     optional<unique_ptr<LiteralNode<T>>> clone(const FilePos &, const FilePos &, LiteralNode<T> *);
-    optional<bool> boolean_cast(const ExpressionNode *);
-    optional<int64_t> integer_cast(const ExpressionNode *);
-    optional<uint8_t> char_cast(const ExpressionNode *);
-    optional<double> real_cast(const ExpressionNode *);
-    optional<string> string_cast(const ExpressionNode *);
-    optional<bitset<32>> set_cast(const ExpressionNode *);
+    static optional<bool> boolean_cast(const ExpressionNode *);
+    static optional<int64_t> integer_cast(const ExpressionNode *);
+    static optional<uint8_t> char_cast(const ExpressionNode *);
+    static optional<double> real_cast(const ExpressionNode *);
+    static optional<string> string_cast(const ExpressionNode *);
+    static optional<bitset<32>> set_cast(const ExpressionNode *);
 
     optional<unique_ptr<ExpressionNode>> fold(const FilePos &, const FilePos &, ExpressionNode *);
 
     optional<unique_ptr<ExpressionNode>> fold(const FilePos &, const FilePos &,
-            OperatorType, unique_ptr<ExpressionNode> &);
+            OperatorType, const unique_ptr<ExpressionNode> &) const;
 
     optional<unique_ptr<ExpressionNode>> fold(const FilePos &, const FilePos &,
             OperatorType, unique_ptr<ExpressionNode> &, unique_ptr<ExpressionNode> &, TypeNode *);

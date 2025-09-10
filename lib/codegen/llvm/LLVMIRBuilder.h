@@ -73,7 +73,7 @@ private:
     Value *processGEP(Type *, Value *, vector<Value *> &);
 
     Value *getArrayLength(ExpressionNode *, uint32_t);
-    Value *getOpenArrayLength(Value *, const ArrayTypeNode *, uint32_t, bool = true);
+    Value *getOpenArrayLength(Value *, const ArrayTypeNode *, uint32_t);
     Value *getOrLoadArrayLength(vector<Value*> &, Value *, const ArrayTypeNode *, uint32_t);
     Value *getDopeVector(ExpressionNode *);
     Value *getDopeVector(const NodeReference *, TypeNode *);
@@ -96,7 +96,7 @@ private:
 
     using Selectors = vector<unique_ptr<Selector>>;
     using SelectorIterator = Selectors::iterator;
-    TypeNode *selectors(NodeReference *, TypeNode *, SelectorIterator, SelectorIterator);
+    TypeNode *selectors(const NodeReference *, TypeNode *, SelectorIterator, SelectorIterator);
     void parameters(ProcedureTypeNode *, ActualParameters *, vector<Value *> &, CallingConvention);
 
     void installTrap(Value *, uint8_t);
