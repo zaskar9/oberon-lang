@@ -2,10 +2,14 @@
   RUN: %oberon -I "%S%{pathsep}%inc" -L "%S%{pathsep}%lib" -l oberon --run %s | filecheck %s
 *)
 MODULE Strings3;
-IMPORT Out;
+IMPORT Out, SYSTEM;
 
-TYPE String = ARRAY 32 OF CHAR;
-     StringList = ARRAY 10, 32 OF CHAR;
+CONST Len = 10;
+      StrLen = 32;
+
+TYPE String = ARRAY StrLen OF CHAR;
+     StringList = ARRAY Len, StrLen OF CHAR;
+     CharList = ARRAY Len * StrLen OF CHAR;
 
 VAR list: StringList;
 
@@ -14,16 +18,22 @@ VAR str: String;
 BEGIN
     str := "Basel";
     list[0] := str;
-    list[1] := "Zürich";
+    list[1] := "Zurich";
     list[2] := "Bern";
     list[3] := str;
     list[4] := "Basel";
     list[5] := "Lausanne";
     list[6] := "Zug";
     list[7] := "Lugano";
-    list[8] := "Luzern";
+    list[8] := "Lucerne";
     list[9] := "Chur"
 END Init;
+
+PROCEDURE Swap(VAR x, y: String);
+VAR t: String;
+BEGIN
+    t := x; x := y; y := t
+END Swap;
 
 PROCEDURE Print(list: ARRAY OF ARRAY OF CHAR);
 VAR i: INTEGER;
@@ -48,13 +58,35 @@ BEGIN
     Print(list); Out.Ln
 END Test1;
 
+PROCEDURE Dump(list: StringList);
+VAR chars: CharList;
+    ch: CHAR;
+    i: INTEGER;
+BEGIN
+    chars := SYSTEM.VAL(CharList, list);
+    FOR i := 0 TO SHORT(LEN(chars) - 1) DO
+        IF i MOD StrLen = 0 THEN Out.Char("[") END;
+        ch := chars[i];
+        IF (ch >= "A") & (ch <= "Z") OR (ch >= "a") & (ch <= "z") THEN
+            Out.Char(ch)
+        ELSE
+            Out.Char(".")
+        END;
+        IF (i + 1) MOD StrLen = 0 THEN
+            Out.Char("]"); Out.Ln
+        END
+    END
+END Dump;
+
 BEGIN
     Test1;
     Init(list);
-    Print(list);
-    Out.Ln
+    Print(list); Out.Ln;
+    Swap(list[0], list[9]);
+    Print(list); Out.Ln
 END Strings3.
 (*
   CHECK: [Wakanda, Wakanda, Wakanda, Wakanda, Wakanda, Wakanda, Wakanda, Wakanda, Wakanda, Wakanda]
-  CHECK: [Basel, Zürich, Bern, Basel, Basel, Lausanne, Zug, Lugano, Luzern, Chur]
+  CHECK: [Basel, Zurich, Bern, Basel, Basel, Lausanne, Zug, Lugano, Lucerne, Chur]
+  CHECK: [Chur, Zurich, Bern, Basel, Basel, Lausanne, Zug, Lugano, Lucerne, Basel]
 *)

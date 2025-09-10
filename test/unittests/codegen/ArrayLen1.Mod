@@ -114,5 +114,5 @@ BEGIN
     (* test for string lengths *)
     ASSERT(LEN(Msg) = Len);
     TestStrLen(Msg);
-    TestPassingOn;
+    TestPassingOn
 END ArrayLen1.

@@ -380,8 +380,8 @@ TypeNode *LLVMIRBuilder::selectors(const NodeReference *ref, TypeNode *base, con
             } else {
                 dopeV = typeDopes_[array_t->getBase()];
             }
-            // Cache for array dimension lengths
-            vector<Value*> lengths(array->indices().size(), nullptr);
+            // Cache for dimension lengths of array type, in case they need to be looked up repeatedly
+            vector<Value*> lengths(array_t->dimensions(), nullptr);
             // Process the array indices
             Value *offset = nullptr;
             for (size_t i = 0; i < array->indices().size(); ++i) {
@@ -399,7 +399,7 @@ TypeNode *LLVMIRBuilder::selectors(const NodeReference *ref, TypeNode *base, con
                 }
                 Value *addr = builder_.CreateSExt(value_, builder_.getInt64Ty());
                 for (size_t j = i; j < array_t->dimensions() - 1; ++j) {
-                    Value *length = getOrLoadArrayLength(lengths, dopeV, array_t, j);
+                    Value *length = getOrLoadArrayLength(lengths, dopeV, array_t, j + 1);
                     if (j == i) {
                         addr = builder_.CreateNSWMul(addr, length);
                     } else {
