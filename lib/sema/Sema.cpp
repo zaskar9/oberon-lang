@@ -1685,7 +1685,7 @@ int64_t
 Sema::floor_div(const int64_t x, const int64_t y) {
     const int64_t d = x / y;
     const int64_t r = x % y;
-    return r ? d - (x < 0 ^ y < 0) : d;
+    return r ? d - ((x < 0) ^ (y < 0)) : d;
 }
 
 template<typename L, typename T>
