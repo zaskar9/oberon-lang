@@ -173,14 +173,14 @@ ArrayTypeNode *
 Sema::onArrayType(const FilePos &start, const FilePos &end, const vector<unique_ptr<ExpressionNode>> &indices, TypeNode *type) const {
     vector<unsigned> values(indices.size(), 0);
     for (size_t i = 0; i < indices.size(); ++i) {
-        if (const auto expr = indices[i].get()) {
+        if (const auto& expr = indices[i]) {
             if (!expr->isConstant()) {
                 logger_.error(expr->pos(), "constant expression expected.");
             }
             if (expr->getType()) {
                 if (expr->isLiteral()) {
                     if (expr->getType()->isInteger()) {
-                        const auto literal = dynamic_cast<const IntegerLiteralNode *>(expr);
+                        const auto literal = dynamic_cast<const IntegerLiteralNode *>(expr.get());
                         if (literal->value() <= 0) {
                             logger_.error(expr->pos(), "array dimension must be a positive value.");
                         }
@@ -272,12 +272,12 @@ Sema::onParameter(const FilePos &start, const FilePos &,
 
 RecordTypeNode *
 Sema::onRecordType(const FilePos &start, const FilePos &end,
-                   unique_ptr<QualIdent> ident, vector<unique_ptr<FieldNode>> fields) {
+                   const unique_ptr<QualIdent> &ident, vector<unique_ptr<FieldNode>> fields) const {
     RecordTypeNode *base = nullptr;
     if (ident) {
-        auto sym = symbols_->lookup(ident.get());
+        const auto sym = symbols_->lookup(ident.get());
         if (sym && sym->getNodeType() == NodeType::type) {
-            auto type = dynamic_cast<TypeDeclarationNode *>(sym)->getType();
+            const auto type = dynamic_cast<TypeDeclarationNode *>(sym)->getType();
             if (type->isRecord()) {
                 base = dynamic_cast<RecordTypeNode *>(type);
             } else {
@@ -287,28 +287,27 @@ Sema::onRecordType(const FilePos &start, const FilePos &end,
             logger_.error(start, "undefined type: " + to_string(*ident) + ".");
         }
     }
-    auto node = context_->getOrInsertRecordType(start, end, base, std::move(fields));
+    const auto node = context_->getOrInsertRecordType(start, end, base, std::move(fields));
     set<string> names;
     for (size_t i = 0; i < node->getFieldCount(); i++) {
-        auto field = node->getField(i);
+        const auto field = node->getField(i);
         auto name = field->getIdentifier()->name();
         if (base && base->getField(name)) {
             logger_.error(field->pos(), "redefinition of record field: " + to_string(*field->getIdentifier()) + ".");
             continue;
         }
-        if (names.count(name)) {
+        if (names.contains(name)) {
             logger_.error(field->pos(), "duplicate record field: " + to_string(*field->getIdentifier()) + ".");
             continue;
-        } else {
-            names.insert(name);
         }
+        names.insert(name);
     }
     return node;
 }
 
 unique_ptr<FieldNode>
 Sema::onField(const FilePos &start, const FilePos &,
-              unique_ptr<IdentDef> ident, TypeNode *type, unsigned index) {
+              unique_ptr<IdentDef> ident, TypeNode *type, unsigned index) const {
     if (!type) {
         logger_.error(start, "undefined record field type.");
         type = noTy_;
@@ -350,7 +349,7 @@ Sema::onTypeReference(const FilePos &start, const FilePos &end,
 
 unique_ptr<VariableDeclarationNode>
 Sema::onVariable(const FilePos &start, const FilePos &,
-                 unique_ptr<IdentDef> ident, TypeNode *type, int index) {
+                 unique_ptr<IdentDef> ident, TypeNode *type, int index) const {
     if (!type) {
         logger_.error(start, "undefined variable type.");
         type = noTy_;
@@ -365,7 +364,7 @@ Sema::onVariable(const FilePos &start, const FilePos &,
 
 unique_ptr<ProcedureDeclarationNode>
 Sema::onProcedureDeclaration(const FilePos &start, const FilePos &, unique_ptr<IdentDef> ident,
-                             ProcedureTypeNode *type, const string &cnv, string &name) {
+                             ProcedureTypeNode *type, const string &cnv, string &name) const {
     auto convention = CallingConvention::OLANG;
     if (cnv.empty()) {
         logger_.warning(start, "no calling convention specified, using default calling convention.");
@@ -395,13 +394,13 @@ Sema::onProcedureDeclaration(const FilePos &start, const FilePos &, unique_ptr<I
 ProcedureDefinitionNode *
 Sema::onProcedureDefinitionStart(const FilePos &start, unique_ptr<IdentDef> ident) {
     procs_.push(make_unique<ProcedureDefinitionNode>(start, std::move(ident)));
-    const auto proc = procs_.top().get();
-    assertUnique(proc->getIdentifier(), proc);
+    const auto& proc = procs_.top();
+    assertUnique(proc->getIdentifier(), proc.get());
     proc->setScope(symbols_->getLevel());
     proc->setModule(context_->getTranslationUnit());
-    checkExport(proc);
+    checkExport(proc.get());
     onBlockStart();
-    return proc;
+    return proc.get();
 }
 
 unique_ptr<ProcedureDefinitionNode>
@@ -434,8 +433,7 @@ Sema::onAssignment(const FilePos &start, const FilePos &,
     if (!lvalue) {
         logger_.error(start, "undefined left-hand side in assignment.");
     }
-    string err;
-    if (!assertAssignable(lvalue.get(), err)) {
+    if (string err; !assertAssignable(lvalue.get(), err)) {
         logger_.error(lvalue->pos(), "cannot assign to " + err + ".");
     }
     if (!rvalue) {
@@ -452,7 +450,7 @@ Sema::onAssignment(const FilePos &start, const FilePos &,
                     if (lvalue->getType()->isArray() && rvalue->getType()->isChar()) {
                         logger_.error(lvalue->pos(), "type mismatch: cannot assign a non-constant character value to a string variable.");
                     }
-                    cast(rvalue.get(), lvalue->getType());
+                    cast(rvalue, lvalue->getType());
                 }
             }
         }
@@ -565,14 +563,14 @@ Sema::onForLoop(const FilePos &start, const FilePos &,
     }
     if (low) {
         if (type && assertCompatible(low->pos(), type, low->getType())) {
-            cast(low.get(), type);
+            cast(low, type);
         }
     } else {
         logger_.error(start, "undefined low value in for-loop.");
     }
     if (high) {
         if (type && assertCompatible(high->pos(), type, high->getType())) {
-            cast(high.get(), type);
+            cast(high, type);
         }
     } else {
         logger_.error(start, "undefined high value in for-loop.");
@@ -584,7 +582,7 @@ Sema::onForLoop(const FilePos &start, const FilePos &,
                 if (val == 0) {
                     logger_.error(step->pos(), "step value cannot be zero.");
                 } else {
-                    cast(step.get(), integerTy_);
+                    cast(step, integerTy_);
                 }
             }
         } else  {
@@ -598,7 +596,7 @@ Sema::onForLoop(const FilePos &start, const FilePos &,
                                     std::move(stmts));
 }
 
-void Sema::onCaseOfStart(const FilePos &start, const FilePos &, unique_ptr<ExpressionNode> &expr) {
+void Sema::onCaseOfStart(const FilePos &start, const FilePos &, const unique_ptr<ExpressionNode> &expr) {
     if (!expr) {
         logger_.error(start, "undefined expression in case statement.");
     }
@@ -646,16 +644,17 @@ Sema::onCaseOfEnd(const FilePos &start, const FilePos &,
     } else if (eType->isPointer() || eType->isRecord()) {
         vector<TypeNode *> labels;
         // Check if the types specified by the cases are unique or whether a case subsumes a later case
-        for (auto &c: cases) {
-            auto label = c->getLabel()->getValue(0);
-            if (auto lExpr = dynamic_cast<QualifiedExpression *>(label)) {
-                auto decl = dynamic_cast<TypeDeclarationNode *>(lExpr->dereference());
+        for (const auto &c: cases) {
+            const auto label = c->getLabel()->getValue(0);
+            if (const auto lExpr = dynamic_cast<QualifiedExpression *>(label)) {
+                const auto decl = dynamic_cast<TypeDeclarationNode *>(lExpr->dereference());
                 auto lType = decl->getType();
-                for (auto l: labels) {
+                for (const auto l: labels) {
                     if (l == lType) {
                         logger_.error(label->pos(), "duplicate case labels in case statement.");
                         break;
-                    } else if (lType->extends(l)) {
+                    }
+                    if (lType->extends(l)) {
                         logger_.warning(label->pos(), "unreachable case label in case statement.");
                     }
                 }
@@ -665,7 +664,7 @@ Sema::onCaseOfEnd(const FilePos &start, const FilePos &,
             }
         }
         // Clean up at the end of the case statement by deleting the saved formal type of the case expression
-        if (auto qExpr = dynamic_cast<QualifiedExpression *>(expr.get())) {
+        if (const auto qExpr = dynamic_cast<QualifiedExpression *>(expr.get())) {
             if (caseTys_[qExpr]) {
                 caseTys_.erase(qExpr);
             }
@@ -678,10 +677,10 @@ Sema::onCaseOfEnd(const FilePos &start, const FilePos &,
 
 unique_ptr<CaseLabelNode>
 Sema::onCaseLabel(const FilePos &start, const FilePos &,
-                  unique_ptr<ExpressionNode> &expr,
+                  const unique_ptr<ExpressionNode> &expr,
                   vector<unique_ptr<ExpressionNode>> labels) {
     set<int64_t> cases;
-    TypeNode *common = nullptr;
+    const TypeNode *common = nullptr;
     for (const auto &label : labels) {
         const auto lType = label->getType();
         if (lType->isInteger() || lType->isChar()) {
@@ -695,14 +694,14 @@ Sema::onCaseLabel(const FilePos &start, const FilePos &,
             }
             if (label->getNodeType() == NodeType::range_expression) {
                 const auto lExpr = dynamic_cast<RangeExpressionNode *>(label.get());
-                auto lower = lExpr->getLower();
+                const auto lower = lExpr->getLower();
                 optional<int64_t> loValue;
                 if (lower->getType()->isInteger()) {
                     loValue = integer_cast(lower);
                 } else if (label->getType()->isChar()) {
                     loValue = char_cast(lower);
                 }
-                auto upper = lExpr->getUpper();
+                const auto upper = lExpr->getUpper();
                 optional<int64_t> upValue;
                 if (upper->getType()->isInteger()) {
                     upValue = integer_cast(upper);
@@ -798,7 +797,7 @@ Sema::onReturn(const FilePos &start, const FilePos &, unique_ptr<ExpressionNode>
                 logger_.error(expr->pos(), "procedure cannot return a value.");
             }
             if (assertCompatible(expr->pos(), proc->getType()->getReturnType(), expr->getType())) {
-                cast(expr.get(), proc->getType()->getReturnType());
+                cast(expr, proc->getType()->getReturnType());
             }
         } else {
             if (proc->getType()->getReturnType()) {
@@ -1088,18 +1087,18 @@ Sema::onActualParameters(DeclarationNode *context, TypeNode *base, ActualParamet
     vector<TypeNode *> types;
     TypeNode *typeType = noTy_;
     for (size_t cnt = 0; cnt < sel->parameters().size(); cnt++) {
-        const auto expr = sel->parameters()[cnt].get();
-        if (!expr) {
+        auto& expr = sel->parameters()[cnt];
+        if (expr == nullptr) {
             continue;
         }
         const auto exprTy = expr->getCast() ? expr->getCast() : expr->getType();
         if (cnt < proc->parameters().size()) {
-            const auto param = proc->parameters()[cnt].get();
+            const auto& param = proc->parameters()[cnt];
             const auto paramTy = param->getType();
             if (assertCompatible(expr->pos(), paramTy, exprTy)) {
                 if (param->isVar()) {
                     string err;
-                    if (!assertAssignable(expr, err)) {
+                    if (!assertAssignable(expr.get(), err)) {
                         logger_.error(expr->pos(), "illegal actual parameter: cannot pass " + err + " by reference.");
                     } else if (exprTy->isNumeric() && paramTy->isNumeric()) {
                         // The types of variable parameters need to be an exact match as they are read-write parameters
@@ -1124,7 +1123,7 @@ Sema::onActualParameters(DeclarationNode *context, TypeNode *base, ActualParamet
                 types.push_back(sel->parameters()[cnt]->getType());
                 if (param->getType()->kind() == TypeKind::TYPE)  {
                     if (expr->getNodeType() == NodeType::qualified_expression) {
-                        const auto decl = dynamic_cast<QualifiedExpression *>(expr)->dereference();
+                        const auto decl = dynamic_cast<QualifiedExpression *>(expr.get())->dereference();
                         typeType = decl->getType();
                     }
                 }
@@ -1145,8 +1144,8 @@ Sema::onActualParameters(DeclarationNode *context, TypeNode *base, ActualParamet
                 const auto signature = predefined->dispatch(types, typeType);
                 if (signature) {
                     for (size_t cnt = 0; cnt < sel->parameters().size(); cnt++) {
-                        const auto param = sel->parameters()[cnt].get();
-                        if (param) {
+                        auto& param = sel->parameters()[cnt];
+                        if (param != nullptr) {
                             param->setCast(nullptr);
                             cast(param, signature->parameters()[cnt]->getType());
                         }
@@ -1171,11 +1170,11 @@ TypeNode *Sema::onArrayIndex(TypeNode *base, ArrayIndex *sel) const {
     }
     const auto num = std::min(array->lengths().size(), sel->indices().size());
     for (size_t i = 0; i < num; ++i) {
-        const auto index = sel->indices()[i].get();
+        const auto& index = sel->indices()[i];
         const auto type = index->getType();
         if (type->isInteger()) {
             if (index->isLiteral()) {
-                const auto literal = dynamic_cast<const IntegerLiteralNode *>(index);
+                const auto literal = dynamic_cast<const IntegerLiteralNode *>(index.get());
                 if (array->isOpen()) {
                     if (literal->value() < 0) {
                         logger_.error(literal->pos(), "negative value " + to_string(literal->value())
@@ -1295,8 +1294,41 @@ Sema::onBinaryExpression(const FilePos &start, const FilePos &end,
     switch (op) {
         case OperatorType::EQ:
         case OperatorType::NEQ:
-            if ((lhs->isLiteral() && (lhsType->isString() || lhsType->isChar())) ||
-                (rhs->isLiteral() && (rhsType->isString() || rhsType->isChar()))) {
+            // BOOLEAN
+            if (lhsType->isBoolean() && rhsType->isBoolean()) {
+                result = boolTy_;
+                break;
+            }
+            // POINTER
+            if ((lhsType->isPointer() && rhsType->isPointer()) ||
+                (lhsType->isPointer() && rhsType->kind() == TypeKind::NILTYPE) ||
+                (lhsType->kind() == TypeKind::NILTYPE && rhsType->isPointer()) ||
+                (lhsType->kind() == TypeKind::NILTYPE && rhsType->kind() == TypeKind::NILTYPE)) {
+                common = commonType(start, lhsType, rhsType);
+                result = boolTy_;
+                break;
+                }
+            [[fallthrough]];
+        case OperatorType::LEQ:
+        case OperatorType::GEQ:
+            // SET
+            if (lhsType->isSet() && rhsType->isSet()) {
+                common = commonType(start, lhsType, rhsType);
+                result = boolTy_;
+                break;
+            }
+            [[fallthrough]];
+        case OperatorType::LT:
+        case OperatorType::GT:
+            // SHORTINT, INTEGER, LONGINT, REAL, and LONGREAL
+            if ((lhsType->isNumeric() && rhsType->isNumeric()) || (lhsType->isChar() && rhsType->isChar())) {
+                common = commonType(start, lhsType, rhsType);
+                result = boolTy_;
+                break;
+            }
+            // STRING and ARRAY OF CHAR
+            if  ((lhs->isLiteral() && (lhsType->isString() || lhsType->isChar())) ||
+                 (rhs->isLiteral() && (rhsType->isString() || rhsType->isChar()))) {
                 if ((lhs->isLiteral() && rhsType->isArray()) || (lhsType->isArray() && rhs->isLiteral())) {
                     const auto type = lhsType->isArray() ? lhsType : rhsType;
                     const auto &literal = lhs->isLiteral() ? lhs : rhs;
@@ -1305,9 +1337,11 @@ Sema::onBinaryExpression(const FilePos &start, const FilePos &end,
                             if (!array->isOpen() && literal->getType()->isString()) {
                                 const auto str = dynamic_cast<StringLiteralNode *>(literal.get());
                                 if (str->value().size() + 1 > array->lengths()[0]) {
-                                    logger_.warning(literal->pos(), "string literal is longer than length of character array.");
+                                    logger_.warning(literal->pos(),
+                                                 "string literal is longer than length of character array.");
                                 }
                             }
+                            common = commonType(start, lhsType, rhsType);
                             result = boolTy_;
                             break;
                         }
@@ -1321,43 +1355,21 @@ Sema::onBinaryExpression(const FilePos &start, const FilePos &end,
                 const auto lhsArray = dynamic_cast<ArrayTypeNode *>(lhsType);
                 const auto rhsArray = dynamic_cast<ArrayTypeNode *>(rhsType);
                 if (lhsArray->dimensions() == 1 && rhsArray->dimensions() == 1 &&
-                    lhsArray->getMemberType()->isChar() && rhsArray->getMemberType()->isChar()) {
-                    result = boolTy_;
+                     lhsArray->getMemberType()->isChar() && rhsArray->getMemberType()->isChar()) {
+                     result = boolTy_;
                 } else {
-                    logger_.error(lhs->pos(), "comparison operator requires one-dimensional character array arguments.");
+                    logger_.error(lhs->pos(), "comparison operator " + to_string(op) +
+                                              " requires one-dimensional character array arguments.");
                 }
                 break;
-            } else if ((lhsType->isPointer() && rhsType->isPointer()) ||
-                       (lhsType->isPointer() && rhsType->kind() == TypeKind::NILTYPE) ||
-                       (lhsType->kind() == TypeKind::NILTYPE && rhsType->isPointer()) ||
-                       (lhsType->kind() == TypeKind::NILTYPE && rhsType->kind() == TypeKind::NILTYPE)) {
-                common = commonType(start, lhsType, rhsType);
-                result = boolTy_;
-                break;
-            } else if (lhsType->isBoolean() && rhsType->isBoolean()) {
-                result = boolTy_;
-                break;
             }
-            [[fallthrough]];
-        case OperatorType::LEQ:
-        case OperatorType::GEQ:
-            if ((lhsType->isNumeric() && rhsType->isNumeric()) ||
-                (lhsType->isChar() && rhsType->isChar()) ||
-                (lhsType->isSet() && rhsType->isSet())) {
-                common = commonType(start, lhsType, rhsType);
-                result = boolTy_;
+            if (lhsType == rhsType) {
+                logger_.error(lhs->pos(), "comparison operator " + to_string(op) +
+                                          " is not defined for operands of type " + format(lhsType) + ".");
             } else {
-                logger_.error(lhs->pos(), "comparison operation requires numeric arguments.");
-            }
-            break;
-        case OperatorType::LT:
-        case OperatorType::GT:
-            if ((lhsType->isNumeric() && rhsType->isNumeric()) ||
-                (lhsType->isChar() && rhsType->isChar())) {
-                common = commonType(start, lhsType, rhsType);
-                result = boolTy_;
-            } else {
-                logger_.error(lhs->pos(), "comparison operation requires numeric arguments.");
+                logger_.error(lhs->pos(), "comparison operator " + to_string(op) +
+                                          " is not defined for operands of types " + format(lhsType) +
+                                          " and " + format(rhsType) + ".");
             }
             break;
         case OperatorType::IN:
@@ -1367,7 +1379,7 @@ Sema::onBinaryExpression(const FilePos &start, const FilePos &end,
                 logger_.error(lhs->pos(), "integer expression expected.");
             }
             if (!rhsType->isSet()) {
-                logger_.error(rhs->pos(), "set expression expected");
+                logger_.error(rhs->pos(), "set expression expected.");
             }
             break;
         case OperatorType::PLUS:
@@ -1383,8 +1395,7 @@ Sema::onBinaryExpression(const FilePos &start, const FilePos &end,
             [[fallthrough]];
         case OperatorType::MINUS:
         case OperatorType::TIMES:
-            if ((lhsType->isNumeric() && rhsType->isNumeric())
-                || (lhsType->isSet() && rhsType->isSet())){
+            if ((lhsType->isNumeric() && rhsType->isNumeric()) || (lhsType->isSet() && rhsType->isSet())) {
                 common = commonType(start, lhsType, rhsType);
                 result = common;
             } else {
@@ -1393,8 +1404,7 @@ Sema::onBinaryExpression(const FilePos &start, const FilePos &end,
             break;
         case OperatorType::DIV:
         case OperatorType::MOD:
-            if ((lhsType->isInteger() || lhsType->isByte()) &&
-                (rhsType->isInteger() || rhsType->isByte())) {
+            if ((lhsType->isInteger() || lhsType->isByte()) && (rhsType->isInteger() || rhsType->isByte())) {
                 common = commonType(start, lhsType, rhsType);
                 result = common;
             } else {
@@ -1474,16 +1484,16 @@ Sema::onBinaryExpression(const FilePos &start, const FilePos &end,
     }
     if (common) {
         // Casting left-hand side to common type
-        cast(lhs.get(), common);
+        cast(lhs, common);
         // Casting right-hand side to common type
-        cast(rhs.get(), common);
+        cast(rhs, common);
     }
     return make_unique<BinaryExpressionNode>(start, op, std::move(lhs), std::move(rhs), result);
 }
 
 unique_ptr<ExpressionNode>
 Sema::onRangeExpression(const FilePos &start, const FilePos &,
-                        unique_ptr<ExpressionNode> lower, unique_ptr<ExpressionNode> upper) const {
+                        unique_ptr<ExpressionNode> lower, unique_ptr<ExpressionNode> upper) {
     if (!lower) {
         logger_.error(start, "undefined lower bound in range expression.");
         return nullptr;
@@ -1505,9 +1515,9 @@ Sema::onRangeExpression(const FilePos &start, const FilePos &,
     }
     auto common = loType;
     if (loType->getSize() > upType->getSize()) {
-        cast(upper.get(), loType);
+        cast(upper, loType);
     } else if (loType->getSize() < upType->getSize()) {
-        cast(lower.get(), upType);
+        cast(lower, upType);
         common = upType;
     }
     return make_unique<RangeExpressionNode>(start, std::move(lower), std::move(upper), common);
@@ -1675,7 +1685,7 @@ int64_t
 Sema::floor_div(const int64_t x, const int64_t y) {
     const int64_t d = x / y;
     const int64_t r = x % y;
-    return r ? d - ((x < 0) ^ (y < 0)) : d;
+    return r ? d - (x < 0 ^ y < 0) : d;
 }
 
 template<typename L, typename T>
@@ -1716,9 +1726,10 @@ optional<double>
 Sema::real_cast(const ExpressionNode *expr) {
     if (expr->getNodeType() == NodeType::real) {
         return { dynamic_cast<const RealLiteralNode *>(expr)->value() };
-    } else if (expr->getNodeType() == NodeType::integer) {
+    }
+    if (expr->getNodeType() == NodeType::integer) {
         // Promote integer literal to real literal
-        auto value = dynamic_cast<const IntegerLiteralNode *>(expr)->value();
+        const auto value = dynamic_cast<const IntegerLiteralNode *>(expr)->value();
         return { static_cast<double>(value) };
     }
     return std::nullopt;
@@ -1728,9 +1739,10 @@ optional<string>
 Sema::string_cast(const ExpressionNode *expr) {
     if (expr->getNodeType() == NodeType::string) {
         return dynamic_cast<const StringLiteralNode *>(expr)->value();
-    } else if (expr->getNodeType() == NodeType::character) {
+    }
+    if (expr->getNodeType() == NodeType::character) {
         // Promote character literal to string literal
-        auto value = dynamic_cast<const CharLiteralNode *>(expr)->value();
+        const auto value = dynamic_cast<const CharLiteralNode *>(expr)->value();
         return { string{static_cast<char>(value)} };
     }
     return std::nullopt;
@@ -1747,22 +1759,26 @@ Sema::set_cast(const ExpressionNode *expr) {
 optional<unique_ptr<ExpressionNode>>
 Sema::fold(const FilePos &start, const FilePos &end, ExpressionNode *expr) {
     if (expr && expr->isLiteral()) {
-        auto type = expr->getType();
-        if (type) {
+        if (const auto type = expr->getType()) {
             if (type->kind() == TypeKind::CHAR) {
                 return clone<CharLiteralNode>(start, end, dynamic_cast<CharLiteralNode*>(expr));
-            } else if (type->kind() == TypeKind::SHORTINT ||
-                       type->kind() == TypeKind::INTEGER ||
-                       type->kind() == TypeKind::LONGINT) {
+            }
+            if (type->kind() == TypeKind::SHORTINT ||
+                type->kind() == TypeKind::INTEGER ||
+                type->kind() == TypeKind::LONGINT) {
                 return clone<IntegerLiteralNode>(start, end, dynamic_cast<IntegerLiteralNode*>(expr));
-            } else if (type->kind() == TypeKind::REAL ||
-                       type->kind() == TypeKind::LONGREAL) {
+            }
+            if (type->kind() == TypeKind::REAL ||
+                type->kind() == TypeKind::LONGREAL) {
                 return clone<RealLiteralNode>(start, end, dynamic_cast<RealLiteralNode*>(expr));
-            } else if (type->kind() == TypeKind::BOOLEAN) {
+            }
+            if (type->kind() == TypeKind::BOOLEAN) {
                 return clone<BooleanLiteralNode>(start, end, dynamic_cast<BooleanLiteralNode*>(expr));
-            } else if (type->kind() == TypeKind::STRING) {
+            }
+            if (type->kind() == TypeKind::STRING) {
                 return clone<StringLiteralNode>(start, end, dynamic_cast<StringLiteralNode*>(expr));
-            } else if (type->kind() == TypeKind::SET) {
+            }
+            if (type->kind() == TypeKind::SET) {
                 return clone<SetLiteralNode>(start, end, dynamic_cast<SetLiteralNode*>(expr));
             }
             logger_.error(start, "unsupported literal type: " + to_string(*type->getIdentifier()) + ".");
@@ -1774,11 +1790,11 @@ Sema::fold(const FilePos &start, const FilePos &end, ExpressionNode *expr) {
 }
 
 optional<unique_ptr<ExpressionNode>>
-Sema::fold(const FilePos &start, const FilePos &, OperatorType op, unique_ptr<ExpressionNode> &expr) {
+Sema::fold(const FilePos &start, const FilePos &, const OperatorType op, const unique_ptr<ExpressionNode> &expr) const {
     auto type = expr->getType();
     auto cast = expr->getCast();
     if (type->isBoolean()) {
-        if (auto opt = boolean_cast(expr.get())) {
+        if (const auto opt = boolean_cast(expr.get())) {
             switch (op) {
                 case OperatorType::NOT:
                     return make_unique<BooleanLiteralNode>(start, !opt.value(), type, cast);
@@ -1872,13 +1888,13 @@ Sema::foldBooleanOp(const FilePos &start, const FilePos &end,
     }
 }
 
-template<typename T>
+template<typename T, typename Cast>
 optional<unique_ptr<BooleanLiteralNode>>
 Sema::foldRelationOp(const FilePos &start, const FilePos &,
                      const OperatorType op, unique_ptr<ExpressionNode> &lhs, unique_ptr<ExpressionNode> &rhs,
-                     TypeNode *common) {
-    auto lopt = literal_cast<T>(*lhs);
-    auto ropt = literal_cast<T>(*rhs);
+                     Cast cast, TypeNode *common) {
+    auto lopt = cast(lhs.get());
+    auto ropt = cast(rhs.get());
     if (lopt && ropt) {
         T lvalue = lopt.value();
         T rvalue = ropt.value();
@@ -1904,11 +1920,12 @@ Sema::foldRelationOp(const FilePos &start, const FilePos &,
 
 optional<unique_ptr<ExpressionNode>>
 Sema::foldDivModOp(const FilePos &start, const FilePos &,
-                   OperatorType op, unique_ptr<ExpressionNode> &lhs, unique_ptr<ExpressionNode> &rhs, TypeNode *common) {
-    auto lopt = integer_cast(lhs.get());
-    auto ropt = integer_cast(rhs.get());
+                   const OperatorType op, unique_ptr<ExpressionNode> &lhs, const unique_ptr<ExpressionNode> &rhs,
+                   TypeNode *common) {
+    const auto lopt = integer_cast(lhs.get());
+    const auto ropt = integer_cast(rhs.get());
     if (ropt) {
-        auto rvalue = ropt.value();
+        const auto rvalue = ropt.value();
         if (rvalue == 0) {
             logger_.error(rhs->pos(), "division by zero.");
             return std::nullopt;
@@ -1934,11 +1951,12 @@ Sema::foldDivModOp(const FilePos &start, const FilePos &,
 
 optional<unique_ptr<ExpressionNode>>
 Sema::foldFDivOp(const FilePos &start, const FilePos &,
-                 unique_ptr<ExpressionNode> &lhs, unique_ptr<ExpressionNode> &rhs, TypeNode *common) {
-    auto lopt = real_cast(lhs.get());
-    auto ropt = real_cast(rhs.get());
+                 unique_ptr<ExpressionNode> &lhs, const unique_ptr<ExpressionNode> &rhs,
+                 TypeNode *common) {
+    const auto lopt = real_cast(lhs.get());
+    const auto ropt = real_cast(rhs.get());
     if (ropt) {
-        auto rvalue = ropt.value();
+        const auto rvalue = ropt.value();
         if (rvalue == 0) {
             logger_.error(rhs->pos(), "division by zero.");
             return std::nullopt;
@@ -1978,39 +1996,25 @@ Sema::foldSubOp(const FilePos &start, const FilePos &,
 
 optional<unique_ptr<ExpressionNode>>
 Sema::fold(const FilePos &start, const FilePos &end,
-           OperatorType op, unique_ptr<ExpressionNode> &lhs, unique_ptr<ExpressionNode> &rhs, TypeNode* common) {
+           const OperatorType op, unique_ptr<ExpressionNode> &lhs, unique_ptr<ExpressionNode> &rhs, TypeNode* common) {
     if (common->isBoolean()) {
         if (lhs->getType()->isBoolean() && rhs->getType()->isBoolean()) {
             return foldBooleanOp(start, end, op, lhs, rhs, common);
         }
         if (lhs->getType()->isNumeric() && rhs->getType()->isNumeric()) {
             if (lhs->getType()->isInteger() && rhs->getType()->isInteger()) {
-                return foldRelationOp<int64_t>(start, end, op, lhs, rhs, common);
+                return foldRelationOp<int64_t>(start, end, op, lhs, rhs, integer_cast, common);
             }
-            return foldRelationOp<double>(start, end, op, lhs, rhs, common);
+            return foldRelationOp<double>(start, end, op, lhs, rhs, real_cast, common);
         }
         if (lhs->getType()->isChar() && rhs->getType()->isChar()) {
-            return foldRelationOp<uint8_t>(start, end, op, lhs, rhs, common);
+            return foldRelationOp<uint8_t>(start, end, op, lhs, rhs, char_cast, common);
         }
         if ((lhs->getType()->isString() || lhs->getType()->isChar()) &&
             (rhs->getType()->isString() || rhs->getType()->isChar())) {
-            auto lopt = string_cast(lhs.get());
-            auto ropt = string_cast(rhs.get());
-            if (lopt && ropt) {
-                string lvalue = lopt.value();
-                string rvalue = ropt.value();
-                switch (op) {
-                    case OperatorType::EQ: {
-                        return make_unique<BooleanLiteralNode>(start, lopt.value() == ropt.value(), boolTy_);
-                    }
-                    case OperatorType::NEQ: {
-                        return make_unique<BooleanLiteralNode>(start, lopt.value() != ropt.value(), boolTy_);
-                    }
-                    default:
-                        logger_.error(start, "operator " + to_string(op) + " does not return a boolean value.");
-                }
-            }
-        } else if (lhs->getType()->kind() == TypeKind::NILTYPE && rhs->getType()->kind() == TypeKind::NILTYPE) {
+            return foldRelationOp<string>(start, end, op, lhs, rhs, string_cast, common);
+        }
+        if (lhs->getType()->kind() == TypeKind::NILTYPE && rhs->getType()->kind() == TypeKind::NILTYPE) {
             switch (op) {
                 case OperatorType::EQ:
                     return make_unique<BooleanLiteralNode>(start, true, common);
@@ -2018,13 +2022,15 @@ Sema::fold(const FilePos &start, const FilePos &end,
                     return make_unique<BooleanLiteralNode>(start, false, common);
                 default:
                     logger_.error(start, "operator " + to_string(op) + " does not return a boolean value.");
+                    return std::nullopt;
             }
-        } else if (rhs->getType()->isSet()) {
-            auto ropt = set_cast(rhs.get());
+        }
+        if (rhs->getType()->isSet()) {
+            const auto ropt = set_cast(rhs.get());
             if (ropt) {
                 auto rvalue = ropt.value();
                 if (lhs->getType()->isSet()) {
-                    auto lopt = set_cast(lhs.get());
+                    const auto lopt = set_cast(lhs.get());
                     if (lopt) {
                         auto lvalue = lopt.value();
                         switch (op) {
@@ -2038,13 +2044,15 @@ Sema::fold(const FilePos &start, const FilePos &end,
                                 return make_unique<BooleanLiteralNode>(start, (rvalue & lvalue.flip()).none(), common);
                             default:
                                 logger_.error(start, "operator " + to_string(op) + " does not return a boolean value.");
+                                return std::nullopt;
                         }
                     }
                 } else if (op == OperatorType::IN && lhs->getType()->isInteger()) {
-                    auto lvalue = assertInBounds(dynamic_cast<IntegerLiteralNode *>(lhs.get()), 0, 31);
-                    return make_unique<BooleanLiteralNode>(start, rvalue.test(std::size_t(lvalue)), common);
+                    const auto lvalue = assertInBounds(dynamic_cast<IntegerLiteralNode *>(lhs.get()), 0, 31);
+                    return make_unique<BooleanLiteralNode>(start, rvalue.test(static_cast<std::size_t>(lvalue)), common);
                 } else {
                     logger_.error(start, "operator " + to_string(op) + " cannot be applied here.");
+                    return std::nullopt;
                 }
             }
         }
@@ -2076,8 +2084,8 @@ Sema::fold(const FilePos &start, const FilePos &end,
                 logger_.error(start, "operator " + to_string(op) + " cannot be applied to real values.");
         }
     } else if (common->isString()) {
-        auto lopt = string_cast(lhs.get());
-        auto ropt = string_cast(rhs.get());
+        const auto lopt = string_cast(lhs.get());
+        const auto ropt = string_cast(rhs.get());
         if (lopt && ropt) {
             switch (op) {
                 case OperatorType::PLUS:
@@ -2087,8 +2095,8 @@ Sema::fold(const FilePos &start, const FilePos &end,
             }
         }
     } else if (common->isSet()) {
-        auto lopt = set_cast(lhs.get());
-        auto ropt = set_cast(rhs.get());
+        const auto lopt = set_cast(lhs.get());
+        const auto ropt = set_cast(rhs.get());
         if (lopt && ropt) {
             auto lvalue = lopt.value();
             auto rvalue = ropt.value();
@@ -2117,8 +2125,7 @@ Sema::assertEqual(Ident *aIdent, Ident *bIdent) {
     if (aIdent->name() == bIdent->name()) {
         if (aIdent->isQualified() == bIdent->isQualified()) {
             if (aIdent->isQualified()) {
-                return dynamic_cast<QualIdent *>(aIdent)->qualifier() ==
-                       dynamic_cast<QualIdent *>(bIdent)->qualifier();
+                return dynamic_cast<QualIdent *>(aIdent)->qualifier() == dynamic_cast<QualIdent *>(bIdent)->qualifier();
             }
             return true;
         }
@@ -2208,45 +2215,43 @@ Sema::assertCompatible(const FilePos &pos, TypeNode *expected, TypeNode *actual,
     }
     // Check array type
     if (expected->isArray()) {
-        auto exp_array = dynamic_cast<ArrayTypeNode *>(expected);
+        const auto exp_array = dynamic_cast<ArrayTypeNode *>(expected);
         if (actual->isArray()) {
             if (exp_array->getMemberType()->kind() == TypeKind::ANYTYPE) {
                 // If the expected member type is `ANYTYPE`, as for example with the LEN procedure,
                 // the dimensions cannot be checked as `ANYTYPE` can also be a nested ARRAY type.
                 return true;
             }
-            auto act_array = dynamic_cast<ArrayTypeNode *>(actual);
+            const auto act_array = dynamic_cast<ArrayTypeNode *>(actual);
             if (exp_array->dimensions() >= act_array->dimensions()) {
                 if (exp_array->isOpen()) {
                     return assertCompatible(pos, exp_array->getMemberType(), act_array->getMemberType());
-                } else {
-                    for (size_t i = 0; i < exp_array->dimensions(); ++i) {
-                        if (!assertCompatible(pos, exp_array->types()[i], act_array->types()[i])) {
-                            return false;
-                        }
-                        if (exp_array->lengths()[i] < act_array->lengths()[i]) {
-                            logger_.error(pos, "type mismatch: incompatible array lengths found " +
-                                               to_string(act_array->lengths()[i]) + " > " +
-                                               to_string(exp_array->lengths()[i]) + ".");
-                            return false;
-                        }
-                    }
-                    return true;
                 }
-            } else {
-                logger_.error(pos, "type mismatch: incompatible array dimensions, expected " +
-                                   to_string(exp_array->dimensions()) + ", found " +
-                                   to_string(act_array->dimensions()) + ".");
-                return false;
+                for (size_t i = 0; i < exp_array->dimensions(); ++i) {
+                    if (!assertCompatible(pos, exp_array->types()[i], act_array->types()[i])) {
+                        return false;
+                    }
+                    if (exp_array->lengths()[i] < act_array->lengths()[i]) {
+                        logger_.error(pos, "type mismatch: incompatible array lengths found " +
+                                           to_string(act_array->lengths()[i]) + " > " +
+                                           to_string(exp_array->lengths()[i]) + ".");
+                        return false;
+                    }
+                }
+                return true;
             }
-        } else if ((actual->isString() || actual->isChar()) &&
-                (exp_array->getMemberType()->isChar() || exp_array->getMemberType()->kind() == TypeKind::ANYTYPE)) {
+            logger_.error(pos, "type mismatch: incompatible array dimensions, expected " +
+                               to_string(exp_array->dimensions()) + ", found " +
+                               to_string(act_array->dimensions()) + ".");
+            return false;
+        }
+        if ((actual->isString() || actual->isChar()) &&
+            (exp_array->getMemberType()->isChar() || exp_array->getMemberType()->kind() == TypeKind::ANYTYPE)) {
             if (exp_array->dimensions() == 1) {
                 return true;
-            } else {
-                logger_.error(pos, "type mismatch: cannot assign string to multi-dimensional array.");
-                return false;
             }
+            logger_.error(pos, "type mismatch: cannot assign string to multi-dimensional array.");
+            return false;
         }
     }
     // Check record type
@@ -2259,17 +2264,18 @@ Sema::assertCompatible(const FilePos &pos, TypeNode *expected, TypeNode *actual,
             if (actual->extends(expected)) {
                 return true;
             }
-            auto exp_ptr = dynamic_cast<PointerTypeNode *>(expected);
-            auto act_ptr = dynamic_cast<PointerTypeNode *>(actual);
+            const auto exp_ptr = dynamic_cast<PointerTypeNode *>(expected);
+            const auto act_ptr = dynamic_cast<PointerTypeNode *>(actual);
             return assertCompatible(pos, exp_ptr->getBase(), act_ptr->getBase(), true);
-        } else if (actual->kind() == TypeKind::NILTYPE) {
+        }
+        if (actual->kind() == TypeKind::NILTYPE) {
             return true;
         }
     }
     if (expected->isProcedure()) {
         if (actual->isProcedure()) {
-            auto exp_proc = dynamic_cast<ProcedureTypeNode *>(expected);
-            auto act_proc = dynamic_cast<ProcedureTypeNode *>(actual);
+            const auto exp_proc = dynamic_cast<ProcedureTypeNode *>(expected);
+            const auto act_proc = dynamic_cast<ProcedureTypeNode *>(actual);
             if (exp_proc->hasVarArgs() || act_proc->hasVarArgs()) {
                 logger_.error(pos, "procedure types with variadic arguments cannot be used here.");
                 return false;
@@ -2281,17 +2287,17 @@ Sema::assertCompatible(const FilePos &pos, TypeNode *expected, TypeNode *actual,
             if (exp_proc->parameters().size() == act_proc->parameters().size()) {
                 bool match = true;
                 for (size_t i = 0; i < exp_proc->parameters().size(); ++i) {
-                    auto exp = exp_proc->parameters()[i].get();
-                    auto act = act_proc->parameters()[i].get();
+                    const auto& exp = exp_proc->parameters()[i];
+                    const auto& act = act_proc->parameters()[i];
                     if (exp->isVar() != act->isVar()) {
                         match = false;
                         break;
                     }
-                    auto exp_param = exp->getType();
-                    auto act_param = act->getType();
+                    const auto exp_param = exp->getType();
+                    const auto act_param = act->getType();
                     if (exp_param->isArray() && act_param->isArray()) {
-                        auto exp_array = dynamic_cast<ArrayTypeNode *>(exp_param);
-                        auto act_array = dynamic_cast<ArrayTypeNode *>(act_param);
+                        const auto exp_array = dynamic_cast<ArrayTypeNode *>(exp_param);
+                        const auto act_array = dynamic_cast<ArrayTypeNode *>(act_param);
                         if (!exp_array->isOpen() || !act_array->isOpen()) {
                             match = false;
                             break;
@@ -2309,7 +2315,8 @@ Sema::assertCompatible(const FilePos &pos, TypeNode *expected, TypeNode *actual,
             }
             logger_.error(pos, "type mismatch: procedure types have different number of parameters.");
             return false;
-        } else if (actual->kind() == TypeKind::NILTYPE) {
+        }
+        if (actual->kind() == TypeKind::NILTYPE) {
             return true;
         }
     }
@@ -2321,9 +2328,12 @@ TypeNode *
 Sema::commonType(const FilePos &pos, TypeNode *lhsType, TypeNode *rhsType) const {
     if (lhsType == rhsType) {
         return lhsType;
-    } else if (assertEqual(lhsType->getIdentifier(), rhsType->getIdentifier())) {
+    }
+    if (assertEqual(lhsType->getIdentifier(), rhsType->getIdentifier())) {
         return lhsType;
-    } else if (lhsType->isNumeric() && rhsType->isNumeric()) {
+    }
+    // Numeric types
+    if (lhsType->isNumeric() && rhsType->isNumeric()) {
         if (lhsType->isReal() && rhsType->isInteger()) {
             return lhsType;
         }
@@ -2331,27 +2341,45 @@ Sema::commonType(const FilePos &pos, TypeNode *lhsType, TypeNode *rhsType) const
             return rhsType;
         }
         return lhsType->getSize() > rhsType->getSize() ? lhsType : rhsType;
-    } else if ((lhsType->isChar() && rhsType->isString()) ||
-               (lhsType->isString() && rhsType->isChar())) {
+    }
+    // String and (array of) character types
+    if ((lhsType->isChar() || lhsType->isString()) && isArrayOfChar(rhsType)) {
+        return rhsType;
+    }
+    if ((rhsType->isChar() || rhsType->isString()) && isArrayOfChar(lhsType)) {
+        return lhsType;
+    }
+    if ((lhsType->isChar() && rhsType->isString()) || (lhsType->isString() && rhsType->isChar())) {
         // TODO This type inference rule is questionable.
         return stringTy_;
-    } else if (lhsType->kind() == TypeKind::NILTYPE) {
+    }
+    // NILTYPE
+    if (lhsType->kind() == TypeKind::NILTYPE) {
         return rhsType;
-    } else if (rhsType->kind() == TypeKind::NILTYPE) {
+    }
+    if (rhsType->kind() == TypeKind::NILTYPE) {
         return lhsType;
     }
     logger_.error(pos, "incompatible or illegal operand types (" + format(lhsType) + ", " + format(rhsType) + ")");
     return noTy_;
 }
 
+bool Sema::isArrayOfChar(TypeNode *type) {
+    if (const auto array = dynamic_cast<ArrayTypeNode *>(type)) {
+        return array->dimensions() == 1 && array->getMemberType()->kind() == TypeKind::CHAR;
+    }
+    return false;
+}
+
+
 string
-Sema::format(const TypeNode *type, bool isPtr) {
+Sema::format(const TypeNode *type, const bool isPtr) {
     std::stringstream stream;
     if (isPtr) {
         stream << "POINTER TO ";
     }
     if (type->isArray()) {
-        auto array = dynamic_cast<const ArrayTypeNode *>(type);
+        const auto array = dynamic_cast<const ArrayTypeNode *>(type);
         stream << "ARRAY";
         if (!array->isOpen()) {
             string sep = " ";
@@ -2361,6 +2389,11 @@ Sema::format(const TypeNode *type, bool isPtr) {
             }
         }
         stream << " OF " << format(array->getMemberType());
+    } else if (type->kind() == TypeKind::RECORD) {
+        stream << "RECORD ... END";
+    } else if (type->kind() == TypeKind::POINTER) {
+        const auto pointer = dynamic_cast<const PointerTypeNode *>(type);
+        stream << format(pointer->getBase(), true);
     } else if (type->kind() == TypeKind::NOTYPE) {
         stream << "undefined type";
     } else {
@@ -2369,49 +2402,52 @@ Sema::format(const TypeNode *type, bool isPtr) {
     return stream.str();
 }
 
-void Sema::cast(ExpressionNode *expr, TypeNode *expected) {
-    if (expr->getType() != expected && !expected->isVirtual()) {
+void Sema::cast(unique_ptr<ExpressionNode> &expr, TypeNode *expected) {
+    if (expr->isLiteral()) {
+        castLiteral(expr, expected);
+    } else  if (expr->getType() != expected && !expected->isVirtual()) {
         expr->setCast(expected);
     }
 }
 
 void Sema::castLiteral(unique_ptr<ExpressionNode> &literal, TypeNode *expected) {
-    if (expected->isVirtual()) {
+    const auto actual = literal->getType();
+    if (actual == expected || expected->isVirtual()) {
         return;
     }
-    auto actual = literal->getType();
     if (expected->isArray()) {
         if (actual->isChar()) {
-            auto value = dynamic_cast<CharLiteralNode *>(literal.get());
+            const auto value = dynamic_cast<CharLiteralNode *>(literal.get());
             literal = onStringLiteral(literal->pos(), EMPTY_POS, string_cast(value).value());
         } else if (actual->isString()) {
-            auto value = dynamic_cast<StringLiteralNode *>(literal.get())->value();
-            auto array = dynamic_cast<ArrayTypeNode *>(expected);
+            const auto value = dynamic_cast<StringLiteralNode *>(literal.get())->value();
+            const auto array = dynamic_cast<ArrayTypeNode *>(expected);
             if (!array->isOpen() && value.size() + 1 > array->lengths()[0]) {
                 logger_.warning(literal->pos(), "string literal will be truncated to length of character array.");
                 literal = onStringLiteral(literal->pos(), EMPTY_POS, value.substr(0, array->lengths()[0] - 1));
             }
         }
     } else if (expected->isReal() && actual->isInteger()) {
-        auto value = dynamic_cast<IntegerLiteralNode *>(literal.get());
+        const auto value = dynamic_cast<IntegerLiteralNode *>(literal.get());
         literal = onRealLiteral(literal->pos(), EMPTY_POS, real_cast(value).value());
-        cast(literal.get(), expected);
+        literal->setCast(expected);
     } else if (((expected->isInteger() || expected->isByte()) && actual->isInteger())
             || (expected->isReal() && actual->isReal())
             || ((expected->isPointer() || expected->isProcedure()) && actual->kind() == TypeKind::NILTYPE)
-            || (expected->kind() == TypeKind::ANYTYPE)) {
-        cast(literal.get(), expected);
+            || expected->kind() == TypeKind::ANYTYPE) {
+        literal->setCast(expected);
     } else {
-        cast(literal.get(), expected);
+        literal->setCast(expected);
         logger_.warning(literal->pos(), "unable to cast " + to_string(actual) + " literal to type " + to_string(expected) + ".");
     }
 }
 
 TypeNode *
-Sema::intType(int64_t value) {
+Sema::intType(const int64_t value) const {
     if (value >= std::numeric_limits<int16_t>::lowest() && value <= std::numeric_limits<int16_t>::max()) {
         return shortIntTy_;
-    } else if (value < std::numeric_limits<int32_t>::lowest() || value > std::numeric_limits<int32_t>::max()) {
+    }
+    if (value < std::numeric_limits<int32_t>::lowest() || value > std::numeric_limits<int32_t>::max()) {
         return longIntTy_;
     }
     return integerTy_;

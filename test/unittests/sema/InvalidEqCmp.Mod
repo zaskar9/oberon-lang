@@ -16,8 +16,8 @@ BEGIN
     ASSERT(matrix = matrix)
 END InvalidEqCmp.
 (*
-  CHECK: {{.*}}:13:12:{{.*}}error:{{.*}}comparison operator requires one-dimensional character array arguments.
-  CHECK: {{.*}}:14:12:{{.*}}error:{{.*}}comparison operator requires one-dimensional character array arguments.
-  CHECK: {{.*}}:15:12:{{.*}}error:{{.*}}comparison operator requires one-dimensional character array arguments.
-  CHECK: {{.*}}:16:12:{{.*}}error:{{.*}}comparison operator requires one-dimensional character array arguments.
+  CHECK: {{.*}}:13:12:{{.*}}error:{{.*}}comparison operator = requires one-dimensional character array arguments.
+  CHECK: {{.*}}:14:12:{{.*}}error:{{.*}}comparison operator = requires one-dimensional character array arguments.
+  CHECK: {{.*}}:15:12:{{.*}}error:{{.*}}comparison operator = requires one-dimensional character array arguments.
+  CHECK: {{.*}}:16:12:{{.*}}error:{{.*}}comparison operator = requires one-dimensional character array arguments.
 *)

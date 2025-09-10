@@ -1024,6 +1024,9 @@ void LLVMIRBuilder::visit(BinaryExpressionNode &node) {
             case OperatorType::EQ:
                 value_ = builder_.CreateICmpEQ(lhs, rhs);
                 break;
+            case OperatorType::NEQ:
+                value_ = builder_.CreateICmpNE(lhs, rhs);
+                break;
             case OperatorType::LEQ:
                 value_ = builder_.CreateXor(ConstantInt::get(builder_.getInt32Ty(), 0xffffffff), rhs);
                 value_ = builder_.CreateAnd(lhs, value_);

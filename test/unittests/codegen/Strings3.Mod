@@ -46,6 +46,22 @@ BEGIN
     Out.Char("]")
 END Print;
 
+PROCEDURE Sort(VAR list: ARRAY OF ARRAY OF CHAR);
+VAR i, n, len: INTEGER;
+BEGIN
+    len := SHORT(LEN(list));
+    REPEAT
+        n := 0;
+        FOR i := 1 TO len - 1 DO
+            IF list[i - 1] > list[i] THEN
+                Swap(list[i - 1], list[i]);
+                n := i
+            END
+        END;
+        len := n
+    UNTIL n <= 1
+END Sort;
+
 PROCEDURE Test1;
 VAR list: StringList;
     str: String;
@@ -82,11 +98,15 @@ BEGIN
     Test1;
     Init(list);
     Print(list); Out.Ln;
-    Swap(list[0], list[9]);
-    Print(list); Out.Ln
+    Sort(list);
+    Print(list); Out.Ln;
+    ASSERT("Z" > list[0]);
+    ASSERT("Zurich" >= list[9]);
+    ASSERT("A" < "Z");
+    ASSERT("A" <= "Aa")
 END Strings3.
 (*
   CHECK: [Wakanda, Wakanda, Wakanda, Wakanda, Wakanda, Wakanda, Wakanda, Wakanda, Wakanda, Wakanda]
   CHECK: [Basel, Zurich, Bern, Basel, Basel, Lausanne, Zug, Lugano, Lucerne, Chur]
-  CHECK: [Chur, Zurich, Bern, Basel, Basel, Lausanne, Zug, Lugano, Lucerne, Basel]
+  CHECK: [Basel, Basel, Basel, Bern, Chur, Lausanne, Lucerne, Lugano, Zug, Zurich]
 *)
