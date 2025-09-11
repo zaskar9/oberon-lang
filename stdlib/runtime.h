@@ -30,6 +30,10 @@ bool olang_in_getlong(const char *, int64_t *, bool);
 float olang_math_realf(int32_t);
 int32_t olang_math_entierf(float);
 
+// Module `MathL`
+double olang_mathL_real(int64_t);
+int64_t olang_mathL_entier(double);
+
 // Module `Oberon`
 int32_t olang_oberon_timespec_get(struct timespec *, const void *, int32_t);
 

@@ -107,6 +107,14 @@ int32_t olang_math_entierf(const float x) {
     return (int32_t) floorf(x);
 }
 
+double olang_mathL_real(const int64_t x) {
+    return (double) x;
+}
+
+int64_t olang_mathL_entier(const double x) {
+    return (int64_t) floor(x);
+}
+
 int32_t olang_reals_expo(const float x) {
     const union ieee754_float f = { .f = x };
     return f.ieee.exponent;

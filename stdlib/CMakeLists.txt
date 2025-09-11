@@ -43,6 +43,7 @@ endfunction()
 add_oberon_module(Files "")
 add_oberon_module(In "")
 add_oberon_module(Math "")
+add_oberon_module(MathL "")
 add_oberon_module(Oberon "")
 add_oberon_module(Reals "")
 add_oberon_module(Strings "")
@@ -55,6 +56,7 @@ set(LIBOBERON_SOURCES
     ${CMAKE_CURRENT_BINARY_DIR}/Files${O_EXT}
     ${CMAKE_CURRENT_BINARY_DIR}/In${O_EXT}
     ${CMAKE_CURRENT_BINARY_DIR}/Math${O_EXT}
+    ${CMAKE_CURRENT_BINARY_DIR}/MathL${O_EXT}
     ${CMAKE_CURRENT_BINARY_DIR}/Oberon${O_EXT}
     ${CMAKE_CURRENT_BINARY_DIR}/Out${O_EXT}
     ${CMAKE_CURRENT_BINARY_DIR}/Random${O_EXT}
@@ -78,6 +80,7 @@ install(FILES
     ${CMAKE_CURRENT_BINARY_DIR}/Files.smb
     ${CMAKE_CURRENT_BINARY_DIR}/In.smb
     ${CMAKE_CURRENT_BINARY_DIR}/Math.smb
+    ${CMAKE_CURRENT_BINARY_DIR}/MathL.smb
     ${CMAKE_CURRENT_BINARY_DIR}/Oberon.smb
     ${CMAKE_CURRENT_BINARY_DIR}/Out.smb
     ${CMAKE_CURRENT_BINARY_DIR}/Random.smb
