@@ -67,10 +67,10 @@ clean :
 %.smb : %.Mod
 	@$(O7C) $(O7CFLAGS) $<
 
-dist : runtime.o Files.o In.o Math.o Oberon.o Reals.o Texts.o Out.o Random.o Strings.o
+dist : runtime.o Files.o In.o Math.o MathL.o Oberon.o Reals.o Texts.o Out.o Random.o Strings.o
 	@echo -n Building library...
-	@$(CXX) $(LDFLAGS) -o $(LIBNAME).$(EXT) runtime.o Files.o In.o Math.o Oberon.o Out.o Random.o Reals.o Strings.o Texts.o
-	@ar rcs $(LIBNAME).a runtime.o Files.o In.o Math.o Oberon.o Out.o Random.o Reals.o Strings.o Texts.o
+	@$(CXX) $(LDFLAGS) -o $(LIBNAME).$(EXT) runtime.o Files.o In.o Math.o MathL.o Oberon.o Out.o Random.o Reals.o Strings.o Texts.o
+	@ar rcs $(LIBNAME).a runtime.o Files.o In.o Math.o MathL.o Oberon.o Out.o Random.o Reals.o Strings.o Texts.o
 	@echo ' done.'
 
 install : dist Files.smb Oberon.smb Out.smb Random.smb Math.smb Reals.smb Strings.smb Texts.smb
@@ -84,6 +84,7 @@ install : dist Files.smb Oberon.smb Out.smb Random.smb Math.smb Reals.smb String
 	@mv Files.smb $(INC)
 	@mv In.smb $(INC)
 	@mv Math.smb $(INC)
+	@mv MathL.smb $(INC)
 	@mv Oberon.smb $(INC)
 	@mv Out.smb $(INC)
 	@mv Random.smb $(INC)
