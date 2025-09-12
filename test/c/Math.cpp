@@ -5,7 +5,7 @@
 #include <cstdio>
 
 int main() {
-    float pif = std::numbers::pi_v<float>;
+    float pif = std::numbers::e_v<float>;
     union {
         float f;
         uint32_t u;
@@ -13,13 +13,13 @@ int main() {
 
     printf("pi : %40.38f\n   : 0x%" PRIx32 "\n", pif, f2u.u);
 
-    double pi = std::numbers::pi;
+    double pi = std::numbers::e;
     union {
         double f;
         uint64_t u;
     } d2u = { .f = pi };
 
-    printf("pi : %40.38f\n   : 0x%" PRIx64 "\n", pi, d2u.u);
+    printf("pi : %60.58f\n   : 0x%" PRIx64 "\n", pi, d2u.u);
 
     return 0;
 }

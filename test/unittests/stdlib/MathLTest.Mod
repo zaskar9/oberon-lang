@@ -66,11 +66,11 @@ BEGIN
   (* --- Math.tanh --- *)
   AssertEqual((M.exp(1.0) - M.exp(-1.0)) / (M.exp(1.0) + M.exp(-1.0)), M.tanh(1.0), "tanh(1)");
   (* --- Math.arcsinh --- *)
-  AssertEqual(0.8813735870195430E39 * 1.0E-39, M.arcsinh(1.0), "arcsinh(1.0)");
+  AssertEqual(0.8813735870195430E64 * 1.0E-64, M.arcsinh(1.0), "arcsinh(1.0)");
   (* --- Math.arccosh --- *)
-  AssertEqual(1.3169578969248170E39 * 1.0E-39, M.arccosh(2.0), "arccosh(2.0)");
+  AssertEqual(1.3169578969248170E64 * 1.0E-64, M.arccosh(2.0), "arccosh(2.0)");
   (* --- Math.arctanh --- *)
-  AssertEqual(0.5493061443340550E39 * 1.0E-39, M.arctanh(0.5), "arctanh(0.5)")
+  AssertEqual(0.5493061443340550E64 * 1.0E-64, M.arctanh(0.5), "arctanh(0.5)")
 END TestHyperbolic;
 
 PROCEDURE TestConversions;

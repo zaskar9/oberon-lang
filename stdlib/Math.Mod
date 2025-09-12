@@ -7,8 +7,8 @@
 (** Module with math function operation on `REAL` type. *)
 MODULE Math;
 
-CONST pi* = 3.14159265358979323846;
-      e*  = 2.71828182845904523536;
+CONST pi* = 3.1415927410125732421875;
+      e*  = 2.7182818284590450907956;
 
 
 (* Declare `float sqrtf(float)` from C <math.h> library. *)
