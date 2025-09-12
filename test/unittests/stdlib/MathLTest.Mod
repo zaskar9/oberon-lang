@@ -103,6 +103,24 @@ BEGIN
   AssertEqual(2.5, M.exp(M.ln(2.5)), "exp(ln(2.5))")
 END TestExponentialAndLog;
 
+PROCEDURE TestPowerLogIdentities;
+VAR
+  x, y, base: LONGREAL;
+BEGIN
+  (* --- log(power(b, x), b) = x --- *)
+  x := 2.5; base := 5.0;
+  AssertEqual(x, M.log(M.power(base, x), base), "log(power(5, 2.5), 5) = 2.5");
+  (* --- power(log(x, b), b) = x --- *)
+  x := 9.0; base := 3.0;
+  AssertEqual(x, M.power(base, M.log(x, base)), "power(3, log(9, 3)) = 9");
+  (* --- log(x, b) = ln(x) / ln(b) --- *)
+  x := 42.0; base := 2.0;
+  AssertEqual(M.ln(x) / M.ln(base), M.log(x, base), "log(42, 2) = ln(42) / ln(2)");
+  (* power(x + y, b) = b^x * b^y *)
+  x := 1.5; y := 2.0; base := 2.0;
+  AssertEqual(M.power(base, x) * M.power(base, y), M.power(base, x + y), "power(2, 1.5 + 2.0) = power(2, 1.5) * power(2, 2.0)");
+END TestPowerLogIdentities;
+
 BEGIN
   errors := 0;
   TestSqrtAndPower;
@@ -110,5 +128,6 @@ BEGIN
   TestHyperbolic;
   TestConversions;
   TestExponentialAndLog;
+  TestPowerLogIdentities;
   ASSERT(errors = 0)
 END MathLTest.
