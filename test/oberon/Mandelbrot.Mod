@@ -1,66 +1,92 @@
 MODULE Mandelbrot;
-IMPORT Out, SYSTEM;
+IMPORT Out, SYSTEM, Files, M := MathL;
 
-TYPE INT32 = INTEGER;
-     F64 = LONGREAL;
+CONST Size = 5000;
+      Name = "mandelbrot.pgm";
+      Max = 255;  (* maximum number of iterations *)
+      EscapeRadius = 2.0;
 
-PROCEDURE DoMandelbrot(size: INT32): INT32;
+VAR f: Files.File;
+    r: Files.Rider;
+    res: INTEGER;
+    pos: LONGINT;
+    str: ARRAY 32 OF CHAR;
+
+PROCEDURE WriteNum(VAR r: Files.Rider; x: INTEGER);
+VAR i: INTEGER;
+    a: ARRAY 20 OF CHAR;
+BEGIN
+  ASSERT(x >= 0);
+  ASSERT(LEN(str) > 20);
+  i := 0;
+  REPEAT
+    a[i] := CHR(SHORT(x MOD 10) + 30H); x := x DIV 10; INC(i)
+  UNTIL x = 0;
+  REPEAT DEC(i); Files.WriteChar(r, a[i]) UNTIL i = 0
+END WriteNum;
+
+PROCEDURE DoMandelbrot*(VAR r: Files.Rider; size: INTEGER);
   VAR
-    sum, byteAcc, bitNum: INT32;
-    y, x, z: INT32;
-    ci, cr: F64;
-    zr, zi, zrzr, zizi: F64;
-    notDone: BOOLEAN;
-    escape: INT32;
-BEGIN
-  sum := 0; byteAcc := 0; bitNum := 0;
+    x, y, count, color: INTEGER;
+    zx, zy, zx2, zy2, cx, cy, mag, nu: LONGREAL;
+    scale: REAL;
 
-  y := 0;
-  WHILE y < size DO
-    ci := (2.0E64 *1.0E-64 * y / size) - 1.0;
-    x := 0;
-    WHILE x < size DO
-      zr := 0.0; zrzr := 0.0;
-      zi := 0.0; zizi := 0.0;
-      cr := (2.0E64 *1.0E-64 * x / size) - 1.5;
+  BEGIN
+    scale := 3.0 / size;  (* maps pixel coordinates to [-2..1] × [-1.5..1.5] *)
 
-      z := 0; notDone := TRUE; escape := 0;
-      WHILE notDone & (z < 50) DO
-        zr := zrzr - zizi + cr;
-        zi := 2.0 * zr * zi + ci;
+    FOR y := 0 TO size - 1 DO
+      cy := (y - size / 2.0) * scale;
+      FOR x := 0 TO size - 1 DO
+        cx := (x - size / 2.0) * scale;
 
-        zrzr := zr * zr;
-        zizi := zi * zi;
+        zx := 0.0; zy := 0.0;
+        zx2 := 0.0; zy2 := 0.0;
 
-        IF (zrzr + zizi) > 4.0 THEN
-          notDone := FALSE;
-          escape := 1
+        count := 0;
+        WHILE (zx2 + zy2 <= EscapeRadius * EscapeRadius) & (count < Max) DO
+          zy := 2.0 * zx * zy + cy;
+          zx := zx2 - zy2 + cx;
+          zx2 := zx * zx;
+          zy2 := zy * zy;
+          INC(count)
         END;
-        INC(z)
-      END;
 
-      (* Out.String("> "); Out.Int(byteAcc, 0); Out.String(" | "); Out.Int(LSL(byteAcc, 1), 0);
-      Out.String(" | "); Out.Int(escape, 0); Out.Ln; *)
-
-      byteAcc := (* SYSTEM.LSH *) LSL(byteAcc, 1) + escape; (* byte_acc << 1 *)
-      INC(bitNum);
-      IF bitNum = 8 THEN
-        sum := SYSTEM.VAL(INT32, SYSTEM.VAL(SET, sum) / SYSTEM.VAL(SET, byteAcc)); (* sum XOR byte_acc *)
-        byteAcc := 0; bitNum := 0
-      ELSIF x = size - 1 THEN
-        byteAcc := (* SYSTEM.LSH *) LSL(byteAcc, 8 - bitNum);
-        sum := SYSTEM.VAL(INT32, SYSTEM.VAL(SET, sum) / SYSTEM.VAL(SET, byteAcc)); (* sum XOR byte_acc *)
-        byteAcc := 0; bitNum := 0
-      END;
-      INC(x)
-    END;
-    Out.Int(sum, 0); Out.Ln;
-    INC(y)
-  END;
-  Out.Ln; Out.Int(sum, 0); Out.Ln;
-  RETURN sum
-END DoMandelbrot;
+        IF count = Max THEN
+          color := 0
+        ELSE
+          mag := M.sqrt(zx2 + zy2);
+          nu := count + 1 - M.ln(M.ln(mag)) / M.ln(2.0);
+          color := SHORT(ENTIER(255.0 * M.sqrt(nu / Max)));
+          IF color > 255 THEN
+            color := 255
+          ELSIF color < 1 THEN
+            color := 1
+          END;
+          color := color
+        END;
+        WriteNum(r, color); Files.WriteChar(r, 20X)
+      END
+    END
+  END DoMandelbrot;
 
 BEGIN
-  DoMandelbrot(50)
+  f := Files.Old(Name);
+  res := 0;
+  IF (f = NIL) THEN
+      f := Files.New(Name);
+      Files.Register(f);
+      DISPOSE(f);
+      f := Files.Old(Name)
+  END;
+  ASSERT(f # NIL);
+  Files.Set(r, f, 0);
+  Files.WriteChar(r, "P");
+  Files.WriteChar(r, "2");
+  Files.WriteChar(r, 0AX);
+  WriteNum(r, Size); Files.WriteChar(r, 20X);
+  WriteNum(r, Size); Files.WriteChar(r, 0AX);
+  WriteNum(r, 255); Files.WriteChar(r, 0AX);
+  DoMandelbrot(r, Size);
+  Files.Close(f);
+  DISPOSE(f)
 END Mandelbrot.

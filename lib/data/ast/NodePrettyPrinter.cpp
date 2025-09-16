@@ -265,7 +265,7 @@ void NodePrettyPrinter::visit(IntegerLiteralNode &node) {
 }
 
 void NodePrettyPrinter::visit(RealLiteralNode &node) {
-    stream_ << node.value() << (node.isLong() ? "(*D*)" : "(*F*)");
+    stream_ << std::format("{:.5e}", node.value()) << (node.isLong() ? "(*D*)" : "(*F*)");
 }
 
 void NodePrettyPrinter::visit(StringLiteralNode &node) {

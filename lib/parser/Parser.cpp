@@ -12,7 +12,8 @@
 #include <string>
 #include <vector>
 
-#include "../scanner/IdentToken.h"
+#include "scanner/IdentToken.h"
+#include "scanner/LiteralToken.h"
 
 using std::make_unique;
 using std::unique_ptr;
