@@ -1664,12 +1664,12 @@ bool Sema::isType(QualIdent *ident) const {
     return sym && sym->getNodeType() == NodeType::type;
 }
 
-bool Sema::isVariable(QualIdent *ident) {
+bool Sema::isVariable(QualIdent *ident) const {
     auto sym = symbols_->lookup(ident);
     return sym && sym->getNodeType() == NodeType::variable;
 }
 
-bool Sema::isProcedure(QualIdent *ident) {
+bool Sema::isProcedure(QualIdent *ident) const {
     auto sym = symbols_->lookup(ident);
     return sym && sym->getNodeType() == NodeType::procedure;
 }

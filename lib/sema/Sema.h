@@ -158,8 +158,8 @@ public:
     bool isDefined(Ident *) const;
     bool isConstant(QualIdent *) const;
     bool isType(QualIdent *) const;
-    bool isVariable(QualIdent *);
-    bool isProcedure(QualIdent *);
+    bool isVariable(QualIdent *) const;
+    bool isProcedure(QualIdent *) const;
 
 private:
     [[maybe_unused]] CompilerConfig &config_;
