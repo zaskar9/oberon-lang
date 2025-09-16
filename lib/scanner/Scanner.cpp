@@ -341,9 +341,14 @@ unique_ptr<const Token> Scanner::scanNumber() {
             if (const size_t index = num.find_last_of('D'); index != string::npos) {
                 num.replace(index, 1, "E");
             } else if (auto result = boost::convert<float>(num, ccnv(std::dec)(std::scientific))) {
-                if (result.is_initialized()) {
-                    return make_unique<FloatLiteralToken>(pos, current(), result.value());
+                // Check whether value was too small to represent as float and has been rounded to zero
+                if (result.value() == 0) {
+                    value = boost::convert<double>(num, ccnv(std::dec)(std::scientific)).value();
+                    if (value != 0) {
+                        return make_unique<DoubleLiteralToken>(pos, current(), value);
+                    }
                 }
+                return make_unique<FloatLiteralToken>(pos, current(), result.value());
             }
             value = boost::convert<double>(num, ccnv(std::dec)(std::scientific)).value();
             return make_unique<DoubleLiteralToken>(pos, current(), value);

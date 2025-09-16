@@ -6,6 +6,7 @@
 
 #include "NodePrettyPrinter.h"
 
+#include <format>
 #include <memory>
 #include <string>
 #include <vector>
