@@ -40,10 +40,10 @@ jobs:
         -DCMAKE_CXX_COMPILER=/opt/homebrew/opt/llvm@17/bin/clang++
         -DCMAKE_C_COMPILER=/opt/homebrew/opt/llvm@17/bin/clang
 
-    - name: Build
+    - name: Build Compiler
       run: cmake --build ${{ github.workspace }}/build --config ${{ env.build_type }}
 
-    - name: Build docs
+    - name: Build Documentation
       run: cmake --build ${{ github.workspace }}/build --target docs
 
     - name: Install
@@ -52,13 +52,13 @@ jobs:
     - name: Test
       run: cmake --build ${{ github.workspace }}/build --target test | tee ${{ github.workspace }}/build/test_report_macos.txt
 
-    - name: Upload build
+    - name: Upload Build
       uses: actions/upload-artifact@v4
       with:
         name: binary-macos-release
         path: ${{ github.workspace }}/install/**/*
 
-    - name: Upload report
+    - name: Upload Report
       uses: actions/upload-artifact@v4
       with:
         name: test_report_macos.txt

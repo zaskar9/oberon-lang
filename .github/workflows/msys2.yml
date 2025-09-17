@@ -44,10 +44,10 @@ jobs:
         cmake -B "$GITHUB_WORKSPACE"/build
         -S "$GITHUB_WORKSPACE" -G "MSYS Makefiles"
 
-    - name: Build
+    - name: Build Compiler
       run: cmake --build "$GITHUB_WORKSPACE"/build --config ${{ env.build_type }}
 
-    - name: Build docs
+    - name: Build Documentation
       run: cmake --build "$GITHUB_WORKSPACE"/build --target docs
 
     - name: Install
@@ -56,13 +56,13 @@ jobs:
     - name: Test
       run: cmake --build "$GITHUB_WORKSPACE"/build --target test  | tee "$GITHUB_WORKSPACE"/build/test_report_msys2.txt
 
-    - name: Upload build
+    - name: Upload Build
       uses: actions/upload-artifact@v4
       with:
         name: binary-msys2-release
         path: ${{ github.workspace }}/install/**/*
 
-    - name: Upload report
+    - name: Upload Report
       uses: actions/upload-artifact@v4
       with:
         name: test_report_msys2.txt

@@ -5,8 +5,7 @@ on:
     branches: [ $default-branch ]
     paths:
       - 'docs/**'
-
-  workflow_dispatch :
+  workflow_dispatch:
 
 concurrency:
   group: "pages"
