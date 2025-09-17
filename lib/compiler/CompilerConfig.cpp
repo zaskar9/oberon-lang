@@ -92,12 +92,20 @@ const vector<string> &CompilerConfig::getLibraries() const {
     return libs_;
 }
 
-void CompilerConfig::setFlag(Flag flag) {
-    flags_ |= static_cast<unsigned>(flag);
+void CompilerConfig::setFlag(const Flag flag) {
+    toggleFlag(flag, true);
 }
 
-bool CompilerConfig::hasFlag(Flag flag) const {
-    return flags_ & static_cast<unsigned>(flag);
+void CompilerConfig::toggleFlag(const Flag flag, const bool active) {
+    if (active) {
+        flags_.insert(flag);
+    } else {
+        flags_.erase(flag);
+    }
+}
+
+bool CompilerConfig::hasFlag(const Flag flag) const {
+    return flags_.contains(flag);
 }
 
 void CompilerConfig::toggleSanitize(const Trap trap, const bool active) {

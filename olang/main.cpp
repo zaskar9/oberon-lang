@@ -154,7 +154,6 @@ int main(const int argc, const char **argv) {
         }
         if (vm.count("-f")) {
             auto params = vm["-f"].as<vector<string>>();
-            regex pattern{"^(no-)?sanitize=(.*)$"};
             for (const auto& flag : params) {
                 if (flag == "enable-extern") {
                     config.setFlag(Flag::ENABLE_EXTERN);
@@ -163,10 +162,19 @@ int main(const int argc, const char **argv) {
                 } else if (flag == "enable-main") {
                     config.setFlag(Flag::ENABLE_MAIN);
                 } else if (flag == "no-stack-protector") {
-                    config.setFlag(Flag::NO_STACK_PROTECT);
-                } else if (smatch matches; regex_search(flag, matches, pattern)) {
-                    bool active = flag[0] != 'n';
-                    const string opt = matches.str(2);
+                    config.toggleFlag(Flag::STACK_PROTECT, false);
+                } else if (smatch zinit; regex_search(flag, zinit, regex("^(no-)?init-(local|global)-zero$"))) {
+                    const bool active = zinit.str(1).empty();
+                    const string scope = zinit.str(2);
+                    if (scope == "local") {
+                        config.toggleFlag(Flag::INIT_LOCAL_ZERO, active);
+                    } else {
+                        config.toggleFlag(Flag::INIT_GLOBAL_ZERO, active);
+                        logger.warning(PROGRAM_NAME, "argument unused during compilation: '-f" + flag + "'.");
+                    }
+                } else if (smatch ubsan; regex_search(flag, ubsan, regex("^(no-)?sanitize=(.*)$"))) {
+                    const bool active = flag[0] != 'n';
+                    const string opt = ubsan.str(2);
                     if (opt == "array-bounds" || opt == "bounds") {
                         // Out of bounds array indexing.
                         config.toggleSanitize(Trap::OUT_OF_BOUNDS, active);
@@ -215,10 +223,10 @@ int main(const int argc, const char **argv) {
                             config.setSanitizeNone();
                         }
                     } else {
-                        logger.warning(PROGRAM_NAME, "ignoring unrecognized option -f" + flag + ".");
+                        logger.warning(PROGRAM_NAME, "ignoring unrecognized argument: '-f" + flag + "'.");
                     }
                 } else {
-                    logger.warning(PROGRAM_NAME, "ignoring unrecognized option -f" + flag + ".");
+                    logger.warning(PROGRAM_NAME, "ignoring unrecognized argument: '-f" + flag + "'.");
                 }
             }
         }
@@ -237,7 +245,7 @@ int main(const int argc, const char **argv) {
                     config.setOptimizationLevel(OptimizationLevel::O3);
                     break;
                 default:
-                    logger.error(PROGRAM_NAME, "unsupported optimization level: " + to_string(level) + ".");
+                    logger.error(PROGRAM_NAME, "unsupported optimization level: '-O" + to_string(level) + "'.");
                     return EXIT_FAILURE;
             }
         }
@@ -251,7 +259,7 @@ int main(const int argc, const char **argv) {
                     config.setWarning(Warning::ERROR);
                     logger.setWarnAsError(true);
                 } else {
-                    logger.warning(PROGRAM_NAME, "ignoring unrecognized warning -W" + warn + ".");
+                    logger.warning(PROGRAM_NAME, "ignoring unrecognized warning: '-W" + warn + "'.");
                 }
             }
         }
@@ -271,14 +279,14 @@ int main(const int argc, const char **argv) {
             }
         } else {
             if (vm.count("emit-llvm")) {
-                logger.error(PROGRAM_NAME, "--emit-llvm cannot be used when linking.");
+                logger.error(PROGRAM_NAME, "argument '--emit-llvm' cannot be used when linking.");
             }
             logger.error(PROGRAM_NAME, "linking not yet supported.");
             return EXIT_FAILURE;
         }
         if (vm.count("reloc")) {
             if (config.isJit()) {
-                logger.error(PROGRAM_NAME, "--reloc not compatible with --run.");
+                logger.error(PROGRAM_NAME, "argument '--reloc' is not compatible with argument '--run'.");
                 return EXIT_FAILURE;
             }
             const auto model = vm["reloc"].as<string>();
@@ -294,12 +302,12 @@ int main(const int argc, const char **argv) {
             config.setSymDir(vm["sym-dir"].as<string>());
             const auto path = std::filesystem::path(config.getSymDir());
             if (!std::filesystem::is_directory(path)) {
-                logger.error(PROGRAM_NAME, "--sym-dir path not valid.");
+                logger.error(PROGRAM_NAME, "path specified by argument '--sym-dir' is not valid.");
             }
         }
         if (vm.count("target")) {
             if (config.isJit()) {
-                logger.error(PROGRAM_NAME, "--target not supported in JIT mode.");
+                logger.error(PROGRAM_NAME, "argument '--target' is not supported in JIT mode.");
                 return EXIT_FAILURE;
             }
             config.setTargetTriple(vm["target"].as<string>());
@@ -312,7 +320,7 @@ int main(const int argc, const char **argv) {
         if (config.isJit()) {
 #ifndef _LLVM_LEGACY
             if (inputs.size() != 1) {
-                logger.error(PROGRAM_NAME, "--run requires exactly one input module.");
+                logger.error(PROGRAM_NAME, "argument '--run' requires exactly one input module.");
                 return EXIT_FAILURE;
             }
             auto path = std::filesystem::path(inputs[0]);

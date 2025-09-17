@@ -10,6 +10,8 @@
 const int SIZE = 5000;
 const int MAXVAL = 10 * SIZE;
 
+const int TEST[10];
+
 int a[5000];
 
 typedef struct {
@@ -17,6 +19,13 @@ typedef struct {
     float vec[10];
     int test;
 } Array;
+
+const Array A;
+
+typedef struct {
+    double x;
+    float y;
+} Point;
 
 //void print(int value[]) {
 //    for (int i = 0; i < SIZE; i++) {
@@ -33,6 +42,12 @@ typedef struct {
 void test(Array *rec) {
     int test = *((int*)(((char*)rec) + (offsetof(Array, test) - offsetof(Array, dim))));
     printf("%d\n", test);
+}
+
+void init() {
+   Point array[10] = { 0 };
+   Point p = { 0 };
+   Array a[100] = { 0 };
 }
 
 int main(int argc, const char* argv[]) {
