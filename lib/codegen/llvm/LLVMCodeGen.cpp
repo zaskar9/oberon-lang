@@ -386,7 +386,7 @@ void LLVMCodeGen::emit(Module *module, path path, OutputFileType type) const {
             ext = "ll";
             break;
         default:
-#if (defined(_WIN32) || defined(_WIN64)) && !defined(__MINGW32__)
+#if (defined(_WIN32) || defined(_WIN64)) && !(defined(__MINGW32__) || defined(__MINGW64__))
             ext = "obj";
 #else
             ext = "o";

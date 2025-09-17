@@ -1,12 +1,12 @@
-name: MSYS2 build (Clang)
+name: MSYS2 (CLANG64)
 
 on:
   push:
     branches:
-      - inactive
+      - master
   pull_request:
     branches:
-      - inactive
+      - master
   workflow_dispatch:
 
 env:
@@ -28,7 +28,7 @@ jobs:
     - name: Install package dependencies
       run: |
         pacman --noconfirm -S git
-        pacman --noconfirm -S make
+        pacman --noconfirm -S ninja
         pacman --noconfirm -S mingw-w64-clang-x86_64-python-pip
         pacman --noconfirm -S mingw-w64-clang-x86_64-toolchain
         pacman --noconfirm -S mingw-w64-clang-x86_64-boost
@@ -43,8 +43,7 @@ jobs:
 
     - name: Configure CMake
       run: >
-        cmake -B "$GITHUB_WORKSPACE"/build
-        -S "$GITHUB_WORKSPACE" -G "MSYS Makefiles"
+        cmake -B "$GITHUB_WORKSPACE"/build -S "$GITHUB_WORKSPACE" -G "Ninja"
 
     - name: Build compiler
       run: cmake --build "$GITHUB_WORKSPACE"/build --config ${{ env.build_type }}

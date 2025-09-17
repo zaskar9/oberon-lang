@@ -1,4 +1,4 @@
-name: macOS build (Apple Clang)
+name: macOS (arm64)
 
 on:
   push:
