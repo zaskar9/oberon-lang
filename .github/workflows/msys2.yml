@@ -23,7 +23,7 @@ jobs:
         msystem: CLANG64
         update: true
 
-    - name: Install packages
+    - name: Install package dependencies
       run: |
         pacman --noconfirm -S git
         pacman --noconfirm -S make
@@ -32,7 +32,7 @@ jobs:
         pacman --noconfirm -S mingw-w64-clang-x86_64-boost
         pacman --noconfirm -S mingw-w64-clang-x86_64-cmake
 
-    - name: Install python dependency
+    - name: Install Python dependencies
       run: |
         pip3 install lit
         pip3 install filecheck
@@ -41,28 +41,28 @@ jobs:
 
     - name: Configure CMake
       run: >
-        cmake -B "$GITHUB_WORKSPACE"/build
-        -S "$GITHUB_WORKSPACE" -G "MSYS Makefiles"
+        cmake -B ${{ github.workspace }}/build
+        -S ${{ github.workspace }} -G "MSYS Makefiles"
 
-    - name: Build Compiler
-      run: cmake --build "$GITHUB_WORKSPACE"/build --config ${{ env.build_type }}
+    - name: Build compiler
+      run: cmake --build ${{ github.workspace }}/build --config ${{ env.build_type }}
 
-    - name: Build Documentation
-      run: cmake --build "$GITHUB_WORKSPACE"/build --target docs
+    - name: Build documentation
+      run: cmake --build ${{ github.workspace }}/build --target docs
 
-    - name: Install
-      run: cmake --install "$GITHUB_WORKSPACE"/build --prefix install
+    - name: Install compiler
+      run: cmake --install ${{ github.workspace }}/build --prefix install
 
-    - name: Test
-      run: cmake --build "$GITHUB_WORKSPACE"/build --target test  | tee "$GITHUB_WORKSPACE"/build/test_report_msys2.txt
+    - name: Run unit tests
+      run: cmake --build ${{ github.workspace }}/build --target test  | tee ${{ github.workspace }}/build/test_report_msys2.txt
 
-    - name: Upload Build
+    - name: Upload build
       uses: actions/upload-artifact@v4
       with:
         name: binary-msys2-release
         path: ${{ github.workspace }}/install/**/*
 
-    - name: Upload Report
+    - name: Upload report
       uses: actions/upload-artifact@v4
       with:
         name: test_report_msys2.txt

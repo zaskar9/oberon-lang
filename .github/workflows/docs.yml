@@ -23,17 +23,17 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Install packages
+    - name: Install package dependencies
       run: |
         sudo apt-get update &&
         sudo apt-get install python3-pip
 
-    - name: Install sphinx
+    - name: Install Sphinx dependencies
       run: |
         sudo pip3 install sphinx
         sudo pip3 install sphinx_rtd_theme
 
-    - name: API build
+    - name: Build API documentation
       run: |
         python ${{ github.workspace }}/utils/docgen/docgen.py ${{ github.workspace }}/stdlib/Files.Mod >${{ github.workspace }}/docs/src/Files.rst
         python ${{ github.workspace }}/utils/docgen/docgen.py ${{ github.workspace }}/stdlib/In.Mod >${{ github.workspace }}/docs/src/In.rst
