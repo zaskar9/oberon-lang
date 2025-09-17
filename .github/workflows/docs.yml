@@ -1,9 +1,9 @@
-name: Docs CI Build
+name: Build and deploy documentation
 
 on:
   push:
     branches:
-      - inactive
+      - master
     paths:
       - 'docs/**'
   workflow_dispatch:

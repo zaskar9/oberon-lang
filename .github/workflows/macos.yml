@@ -1,4 +1,4 @@
-name: MacOS CI Build
+name: macOS build (Apple Clang)
 
 on:
   push:

@@ -1,12 +1,12 @@
-name: Linux CI Build
+name: Linux build (GCC/Clang)
 
 on:
   push:
     branches:
-      - inactive
+      - master
   pull_request:
     branches:
-      - inactive
+      - master
   workflow_dispatch:
 
 env:
