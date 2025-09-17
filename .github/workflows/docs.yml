@@ -36,14 +36,14 @@ jobs:
 
     - name: API build
       run: |
-        python ${{ github.workspace }}/utils/docgen/docgen.py ${{ github.workspace }}/stdlib/Files.Mod >${{ github.workspace }}/docs/src/api/Files.rst
-        python ${{ github.workspace }}/utils/docgen/docgen.py ${{ github.workspace }}/stdlib/In.Mod >${{ github.workspace }}/docs/src/api/In.rst
-        python ${{ github.workspace }}/utils/docgen/docgen.py ${{ github.workspace }}/stdlib/Math.Mod >${{ github.workspace }}/docs/src/api/Math.rst
-        python ${{ github.workspace }}/utils/docgen/docgen.py ${{ github.workspace }}/stdlib/MathL.Mod >${{ github.workspace }}/docs/src/api/MathL.rst
-        python ${{ github.workspace }}/utils/docgen/docgen.py ${{ github.workspace }}/stdlib/Oberon.Mod >${{ github.workspace }}/docs/src/api/Oberon.rst
-        python ${{ github.workspace }}/utils/docgen/docgen.py ${{ github.workspace }}/stdlib/Out.Mod >${{ github.workspace }}/docs/src/api/Out.rst
-        python ${{ github.workspace }}/utils/docgen/docgen.py ${{ github.workspace }}/stdlib/Random.Mod >${{ github.workspace }}/docs/src/api/Random.rst
-        python ${{ github.workspace }}/utils/docgen/docgen.py ${{ github.workspace }}/stdlib/Strings.Mod >${{ github.workspace }}/docs/src/api/Strings.rst
+        python ${{ github.workspace }}/utils/docgen/docgen.py ${{ github.workspace }}/stdlib/Files.Mod >${{ github.workspace }}/docs/src/Files.rst
+        python ${{ github.workspace }}/utils/docgen/docgen.py ${{ github.workspace }}/stdlib/In.Mod >${{ github.workspace }}/docs/src/In.rst
+        python ${{ github.workspace }}/utils/docgen/docgen.py ${{ github.workspace }}/stdlib/Math.Mod >${{ github.workspace }}/docs/src/Math.rst
+        python ${{ github.workspace }}/utils/docgen/docgen.py ${{ github.workspace }}/stdlib/MathL.Mod >${{ github.workspace }}/docs/src/MathL.rst
+        python ${{ github.workspace }}/utils/docgen/docgen.py ${{ github.workspace }}/stdlib/Oberon.Mod >${{ github.workspace }}/docs/src/Oberon.rst
+        python ${{ github.workspace }}/utils/docgen/docgen.py ${{ github.workspace }}/stdlib/Out.Mod >${{ github.workspace }}/docs/src/Out.rst
+        python ${{ github.workspace }}/utils/docgen/docgen.py ${{ github.workspace }}/stdlib/Random.Mod >${{ github.workspace }}/docs/src/Random.rst
+        python ${{ github.workspace }}/utils/docgen/docgen.py ${{ github.workspace }}/stdlib/Strings.Mod >${{ github.workspace }}/docs/src/Strings.rst
 
     - name: Sphinx build
       run: sphinx-build ${{ github.workspace }}/docs ${{ github.workspace }}/build/

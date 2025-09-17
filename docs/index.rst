@@ -24,14 +24,14 @@ for basic usage specific features.
    src/Installation
    src/GettingStarted
    src/CommandLineInterface
-   src/api/Files.rst
-   src/api/In.rst
-   src/api/Math.rst
-   src/api/MathL.rst
-   src/api/Oberon.rst
-   src/api/Out.rst
-   src/api/Random.rst
-   src/api/Strings.rst
+   src/Files.rst
+   src/In.rst
+   src/Math.rst
+   src/MathL.rst
+   src/Oberon.rst
+   src/Out.rst
+   src/Random.rst
+   src/Strings.rst
    src/FAQ
 
 ##################
