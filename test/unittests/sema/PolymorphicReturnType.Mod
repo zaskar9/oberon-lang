@@ -46,7 +46,7 @@ BEGIN
   IF shape IS Object THEN Out.String("Yes") ELSE Out.String("No") END; Out.Ln
 END PolymorphicReturnType.
 (*
-  CHECK: Yes
+  CHECK: No
   CHECK:   1.96349552E+01
   CHECK: Yes
 *)

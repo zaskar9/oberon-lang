@@ -106,7 +106,7 @@ private:
     void trapNILPtr(Value *);
     void trapIntDivByZero(Value *);
     void trapAssert(Value *);
-    Value *trapIntOverflow(Intrinsic::IndependentIntrinsics, Value*, Value*);
+    Value *trapIntOverflow(Intrinsic::ID, Value*, Value*);
     void trapFltDivByZero(Value *);
     void trapSignConversion(Value *);
 
