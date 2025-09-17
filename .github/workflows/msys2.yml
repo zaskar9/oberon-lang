@@ -3,10 +3,10 @@ name: MSYS2 CI Build
 on:
   push:
     branches:
-      - master
+      - inactive
   pull_request:
     branches:
-      - master
+      - inactive
   workflow_dispatch:
 
 env:
