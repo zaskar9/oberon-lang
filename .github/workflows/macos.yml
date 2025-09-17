@@ -21,9 +21,9 @@ jobs:
 
     - name: Install package dependencies
       run: |
-        brew install git
-        brew install ninja
-        brew install cmake
+#        brew install git
+#        brew install ninja
+#        brew install cmake
         brew install llvm@17
         brew install boost
         brew install python
