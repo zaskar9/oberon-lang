@@ -6,6 +6,7 @@
 
 #include "Loader.h"
 #include "IdentToken.h"
+#include "LiteralToken.h"
 
 std::unique_ptr<Grammar> Loader::load() {
     auto grammar = std::make_unique<Grammar>();
@@ -18,9 +19,9 @@ std::unique_ptr<Grammar> Loader::load() {
 // production = non_terminal [ "*" ] "=" alternation .
 void Loader::production(Grammar *grammar) {
     logger_.debug("production");
-    auto head = non_terminal(grammar);
+    const auto head = non_terminal(grammar);
     if (scanner_.peek()->type() == TokenType::op_times) {
-        auto token = scanner_.next();
+        const auto token = scanner_.next();
         if (grammar->getStart()) {
             logger_.error(token->start(), "duplicate start symbol: " + head->getName() + ".");
         } else {
@@ -32,7 +33,7 @@ void Loader::production(Grammar *grammar) {
         alternation(grammar, head, { TokenType::period });
         scanner_.next();
     } else {
-        auto token = scanner_.next();
+        const auto token = scanner_.next();
         logger_.error(token->start(), "unexpected token (production): " + to_string(token->type()) + ".");
     }
 }
@@ -40,25 +41,29 @@ void Loader::production(Grammar *grammar) {
 // symbol = non_terminal | terminal | "(" alternation ")" | "[" alternation "]" | "{" alternation "}" .
 Symbol * Loader::symbol(Grammar *grammar) {
     logger_.debug("symbol");
-    auto token = scanner_.peek();
+    const auto token = scanner_.peek();
     if (token->type() == TokenType::const_ident) {
         return non_terminal(grammar);
-    } else if (token->type() == TokenType::string_literal || token->type() == TokenType::char_literal) {
+    }
+    if (token->type() == TokenType::string_literal || token->type() == TokenType::char_literal) {
         return terminal(grammar);
-    } else if (token->type() == TokenType::lparen) {
+    }
+    if (token->type() == TokenType::lparen) {
         scanner_.next();
-        auto head = grammar->createNonTerminal(getNextId());
+        const auto head = grammar->createNonTerminal(getNextId());
         alternation(grammar, head, { TokenType::rparen });
         scanner_.next();
         return head;
-    } else if (token->type() == TokenType::lbrack) {
+    }
+    if (token->type() == TokenType::lbrack) {
         scanner_.next();
-        auto head = grammar->createNonTerminal(getNextId());
+        const auto head = grammar->createNonTerminal(getNextId());
         alternation(grammar, head, { TokenType::rbrack });
         grammar->createProduction(head, { grammar->getEpsilon() });
         scanner_.next();
         return head;
-    } else if (token->type() == TokenType::lbrace) {
+    }
+    if (token->type() == TokenType::lbrace) {
         scanner_.next();
         auto head = grammar->createNonTerminal(getNextId());
         auto body = grammar->createNonTerminal(getNextId());
@@ -76,7 +81,7 @@ Symbol * Loader::symbol(Grammar *grammar) {
 void Loader::symbol_list(Grammar *grammar, std::vector<Symbol*> &symbols, const std::unordered_set<TokenType>& follows) {
     logger_.debug("symbol_list");
     auto token = scanner_.peek();
-    while (follows.count(token->type()) == 0) {
+    while (!follows.contains(token->type())) {
         symbols.push_back(symbol(grammar));
         token = scanner_.peek();
     }
@@ -85,11 +90,11 @@ void Loader::symbol_list(Grammar *grammar, std::vector<Symbol*> &symbols, const 
 // non_terminal = ident .
 NonTerminal * Loader::non_terminal(Grammar *grammar) {
     logger_.debug("non_terminal");
-    auto token = scanner_.next();
+    const auto token = scanner_.next();
     if (token->type() == TokenType::const_ident) {
-        auto ident = dynamic_cast<const IdentToken*>(token.get());
-        auto nonterminal = grammar->lookupNonTerminal(ident->value());
-        return (nonterminal ? nonterminal : grammar->createNonTerminal(ident->value()));
+        const auto ident = dynamic_cast<const IdentToken*>(token.get());
+        const auto nonterminal = grammar->lookupNonTerminal(ident->value());
+        return nonterminal ? nonterminal : grammar->createNonTerminal(ident->value());
     }
     logger_.error(token->start(), "unexpected token (non-terminal): " + to_string(token->type()) + ".");
     return nullptr;
@@ -98,21 +103,21 @@ NonTerminal * Loader::non_terminal(Grammar *grammar) {
 // terminal = string_literal .
 Terminal * Loader::terminal(Grammar *grammar) {
     logger_.debug("terminal");
-    auto token = scanner_.next();
+    const auto token = scanner_.next();
     if (token->type() != TokenType::string_literal && token->type() != TokenType::char_literal) {
         logger_.error(token->start(), "unexpected token (terminal): " + to_string(token->type()) + ".");
         return nullptr;
     }
     std::string val;
     if (token->type() == TokenType::string_literal) {
-        auto literal = dynamic_cast<const StringLiteralToken*>(token.get());
+        const auto literal = dynamic_cast<const StringLiteralToken*>(token.get());
         val = literal->value();
     } else if (token->type() == TokenType::char_literal) {
-        auto literal = dynamic_cast<const CharLiteralToken*>(token.get());
-        val.push_back((char) literal->value());
+        const auto literal = dynamic_cast<const CharLiteralToken*>(token.get());
+        val.push_back(static_cast<char>(literal->value()));
     }
-    auto terminal = grammar->lookupTerminal(val);
-    return (terminal ? terminal : grammar->createTerminal(val));
+    const auto terminal = grammar->lookupTerminal(val);
+    return terminal ? terminal : grammar->createTerminal(val);
 }
 
 // alternation = symbol_list { "|" symbol_list } .
@@ -130,7 +135,7 @@ void Loader::alternation(Grammar *grammar, NonTerminal *head, std::unordered_set
         if (token->type() == TokenType::pipe) {
             scanner_.next();
         }
-    } while (follows.count(token->type()) == 0);
+    } while (!follows.contains(token->type()));
 }
 
 std::string Loader::getNextId() {

@@ -5,41 +5,41 @@
  * Created by Michael Grossniklaus on 3/11/20.
  */
 
+#include "Validator.h"
 #include <algorithm>
 #include <iterator>
-#include "Validator.h"
 
 first_sets Validator::computeFirstSets() const {
     first_sets firstSets;
     for (auto &&it = grammar_->terminals_begin(); it != grammar_->terminals_end(); ++it) {
-        auto terminal = (*it).get();
+        auto terminal = it->get();
         auto firstSet = std::unordered_set<Terminal *>();
         firstSet.insert(terminal);
         firstSets[terminal] = firstSet;
     }
     for (auto &&it = grammar_->nonterminals_begin(); it != grammar_->nonterminals_end(); ++it) {
-        auto nonTerminal = (*it).get();
-        auto firstSet = std::unordered_set<Terminal *>();
+        const auto nonTerminal = it->get();
+        const auto firstSet = std::unordered_set<Terminal *>();
         firstSets[nonTerminal] = firstSet;
     }
     bool changes = true;
     while (changes) {
         changes = false;
         for (auto &&it = grammar_->productions_begin(); it != grammar_->productions_end(); ++it) {
-            auto production = (*it).get();
+            const auto production = it->get();
             auto rhs = std::unordered_set<Terminal *>();
             auto firstSet = firstSets[production->getSymbol(0)];
             rhs.insert(firstSet.begin(), firstSet.end());
             rhs.erase(grammar_->getEpsilon());
             size_t i = 1;
-            size_t k = production->getSymbolCount();
-            while (firstSet.count(grammar_->getEpsilon()) && i < production->getSymbolCount()) {
+            const size_t k = production->getSymbolCount();
+            while (firstSet.contains(grammar_->getEpsilon()) && i < production->getSymbolCount()) {
                 firstSet = firstSets[production->getSymbol(i)];
                 rhs.insert(firstSet.begin(), firstSet.end());
                 rhs.erase(grammar_->getEpsilon());
                 i++;
             }
-            if ((i == k) && firstSet.count(grammar_->getEpsilon())) {
+            if ((i == k) && firstSet.contains(grammar_->getEpsilon())) {
                 rhs.insert(grammar_->getEpsilon());
             }
             firstSet = firstSets[production->getHead()];
@@ -56,7 +56,7 @@ first_sets Validator::computeFirstSets() const {
 follow_sets Validator::computeFollowSets(first_sets firstSets) const {
     follow_sets followSets;
     for (auto &&it = grammar_->nonterminals_begin(); it != grammar_->nonterminals_end(); ++it) {
-        auto nonterminal = (*it).get();
+        auto nonterminal = it->get();
         auto firstSet = std::unordered_set<Terminal *>();
         followSets[nonterminal] = firstSet;
     }
@@ -83,7 +83,7 @@ follow_sets Validator::computeFollowSets(first_sets firstSets) const {
                     }
                     auto firstSet = firstSets[nonterminal];
                     lhs.insert(firstSet.begin(), firstSet.end());
-                    if (firstSet.count(grammar_->getEpsilon())) {
+                    if (firstSet.contains(grammar_->getEpsilon())) {
                         lhs.erase(grammar_->getEpsilon());
                     }
                 } else {
@@ -100,7 +100,7 @@ follow_sets Validator::computeFollowSets(first_sets firstSets) const {
 first_plus_sets Validator::computeFirstPlusSets(first_sets firstSets, follow_sets followSets) const {
     first_plus_sets firstPlusSets;
     for (auto &&it = grammar_->productions_begin(); it != grammar_->productions_end(); ++it) {
-        auto production = (*it).get();
+        auto production = it->get();
         auto firstPlusSet = std::unordered_set<Terminal*>();
         size_t i = 0;
         size_t k = production->getSymbolCount();
@@ -109,7 +109,7 @@ first_plus_sets Validator::computeFirstPlusSets(first_sets firstSets, follow_set
             auto symbol = production->getSymbol(i);
             auto firstSet = firstSets[symbol];
             firstPlusSet.insert(firstSet.begin(), firstSet.end());
-            if (firstSet.count(grammar_->getEpsilon())) {
+            if (firstSet.contains(grammar_->getEpsilon())) {
                 firstPlusSet.emplace(grammar_->getEpsilon());
                 epsilon = true;
             } else {

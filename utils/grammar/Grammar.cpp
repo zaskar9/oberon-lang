@@ -34,7 +34,7 @@ size_t Production::getSymbolCount() const {
     return symbols_.size();
 }
 
-Symbol * Production::getSymbol(size_t num) const {
+Symbol * Production::getSymbol(const size_t num) const {
     return symbols_.at(num);
 }
 
@@ -47,7 +47,7 @@ std::ostream& operator<<(std::ostream &stream, const Production &production) {
     return stream << ss.str();
 }
 
-Grammar::Grammar() : terminals_(), nonterminals_(), productions_(), start_(), terminalsIdx_(), nonterminalsIdx_() {
+Grammar::Grammar() : start_() {
     epsilon_ = createTerminal("\u03B5");
     eof_ = createTerminal("\u2205");
 }
@@ -68,13 +68,13 @@ Terminal * Grammar::getEof() const {
     return eof_;
 }
 
-Terminal * Grammar::lookupTerminal(std::string name) {
+Terminal * Grammar::lookupTerminal(const std::string& name) {
     return terminalsIdx_[name];
 }
 
 Terminal * Grammar::createTerminal(std::string name) {
     auto symbol = std::make_unique<Terminal>(std::move(name));
-    auto result = symbol.get();
+    const auto result = symbol.get();
     terminals_.insert(std::move(symbol));
     terminalsIdx_[result->getName()] = result;
     return result;
@@ -88,13 +88,13 @@ Terminals::const_iterator Grammar::terminals_end() const {
     return terminals_.end();
 }
 
-NonTerminal * Grammar::lookupNonTerminal(std::string name) {
+NonTerminal * Grammar::lookupNonTerminal(const std::string& name) {
     return nonterminalsIdx_[name];
 }
 
-NonTerminal * Grammar::createNonTerminal(std::string name, bool isStart) {
+NonTerminal * Grammar::createNonTerminal(std::string name, const bool isStart) {
     auto symbol = std::make_unique<NonTerminal>(std::move(name));
-    auto result = symbol.get();
+    const auto result = symbol.get();
     if (isStart) {
         start_ = result;
     }
@@ -113,7 +113,7 @@ NonTerminals::const_iterator Grammar::nonterminals_end() const {
 
 Production * Grammar::createProduction(NonTerminal *lhs, std::vector<Symbol *> rhs) {
     auto production = std::make_unique<Production>(lhs, std::move(rhs));
-    auto result = production.get();
+    const auto result = production.get();
     productions_.insert(std::move(production));
     return result;
 }
@@ -129,7 +129,7 @@ Productions::const_iterator Grammar::productions_end() const {
 std::ostream& operator<<(std::ostream &stream, const Grammar &grammar) {
     std::stringstream ss;
     for (auto &&it = grammar.productions_begin(); it != grammar.productions_end(); ++it) {
-        auto production = (*it).get();
+        const auto production = it->get();
         ss << *production << std::endl;
     }
     return stream << ss.str();

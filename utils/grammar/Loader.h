@@ -10,12 +10,18 @@
 
 #include <filesystem>
 
-#include "Scanner.h"
 #include "Grammar.h"
+#include "Scanner.h"
 
 namespace fs = std::filesystem;
 
 class Loader {
+
+public:
+    Loader(Logger &logger, const path& path) : logger_(logger), scanner_(logger, path), id_(0) {}
+    ~Loader() = default;
+
+    [[nodiscard]] std::unique_ptr<Grammar> load();
 
 private:
     Logger &logger_;
@@ -29,13 +35,8 @@ private:
     [[nodiscard]] NonTerminal * non_terminal(Grammar *grammar);
     [[nodiscard]] Terminal * terminal(Grammar *grammar);
     void alternation(Grammar *grammar, NonTerminal *head, std::unordered_set<TokenType> follows);
-    [[nodiscard]] NonTerminal * optional(Grammar *grammar);
+    // [[nodiscard]] NonTerminal * optional(Grammar *grammar);
 
-public:
-    Loader(Logger &logger, fs::path path) : logger_(logger), scanner_(logger, path), id_(0) {};
-    ~Loader() = default;
-
-    [[nodiscard]] std::unique_ptr<Grammar> load();
 };
 
 

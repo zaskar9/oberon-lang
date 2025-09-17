@@ -8,19 +8,16 @@
 #define OBERON_LLVM_GRAMMAR_H
 
 
-#include "Token.h"
 #include <memory>
-#include <vector>
-#include <unordered_set>
 #include <unordered_map>
+#include <unordered_set>
+#include <vector>
+#include "Token.h"
 
 class Symbol {
 
-private:
-    std::string name_;
-
 public:
-    explicit Symbol(std::string name) : name_(std::move(name)) { };
+    explicit Symbol(std::string name) : name_(std::move(name)) {}
     virtual ~Symbol();
 
     [[nodiscard]] std::string getName() const;
@@ -28,13 +25,16 @@ public:
     [[nodiscard]] virtual std::string toString() const = 0;
     friend std::ostream& operator<<(std::ostream &stream, const Symbol &symbol);
 
+private:
+    std::string name_;
+
 };
 
 
 class NonTerminal final : public Symbol {
 
 public:
-    explicit NonTerminal(std::string name) : Symbol(std::move(name)) { };
+    explicit NonTerminal(std::string name) : Symbol(std::move(name)) {}
     ~NonTerminal() override = default;
 
     [[nodiscard]] std::string toString() const override;
@@ -45,7 +45,7 @@ public:
 class Terminal final : public Symbol {
 
 public:
-    explicit Terminal(std::string name) : Symbol(std::move(name)) { };
+    explicit Terminal(std::string name) : Symbol(std::move(name)) {}
     ~Terminal() override = default;
 
     [[nodiscard]] std::string toString() const override;
@@ -55,12 +55,8 @@ public:
 
 class Production {
 
-private:
-    NonTerminal *head_;
-    std::vector<Symbol*> symbols_;
-
 public:
-    explicit Production(NonTerminal *head, std::vector<Symbol*> symbols) : head_(head), symbols_(std::move(symbols)) { };
+    Production(NonTerminal *head, std::vector<Symbol*> symbols) : head_(head), symbols_(std::move(symbols)) {}
     ~Production() = default;
 
     [[nodiscard]] NonTerminal * getHead() const;
@@ -69,6 +65,10 @@ public:
     [[nodiscard]] Symbol * getSymbol(size_t num) const;
 
     friend std::ostream& operator<<(std::ostream &stream, const Production &production);
+
+private:
+    NonTerminal *head_;
+    std::vector<Symbol*> symbols_;
 
 };
 
@@ -79,15 +79,6 @@ typedef std::unordered_set<std::unique_ptr<Production>> Productions;
 
 class Grammar {
 
-private:
-    Terminals terminals_;
-    NonTerminals nonterminals_;
-    Productions productions_;
-    NonTerminal *start_;
-    Terminal *epsilon_, *eof_;
-    std::unordered_map<std::string, Terminal*> terminalsIdx_;
-    std::unordered_map<std::string, NonTerminal*> nonterminalsIdx_;
-
 public:
     explicit Grammar();
     ~Grammar() = default;
@@ -97,12 +88,12 @@ public:
     [[nodiscard]] Terminal * getEpsilon() const;
     [[nodiscard]] Terminal * getEof() const;
 
-    [[nodiscard]] Terminal * lookupTerminal(std::string name);
+    [[nodiscard]] Terminal * lookupTerminal(const std::string& name);
     [[nodiscard]] Terminal * createTerminal(std::string name);
     [[nodiscard]] Terminals::const_iterator terminals_begin() const;
     [[nodiscard]] Terminals::const_iterator terminals_end() const;
 
-    [[nodiscard]] NonTerminal * lookupNonTerminal(std::string name);
+    [[nodiscard]] NonTerminal * lookupNonTerminal(const std::string& name);
     [[nodiscard]] NonTerminal * createNonTerminal(std::string name, bool isStart = false);
     [[nodiscard]] NonTerminals::const_iterator nonterminals_begin() const;
     [[nodiscard]] NonTerminals::const_iterator nonterminals_end() const;
@@ -112,6 +103,15 @@ public:
     [[nodiscard]] Productions::const_iterator productions_end() const;
 
     friend std::ostream& operator<<(std::ostream &stream, const Grammar &grammar);
+
+private:
+    Terminals terminals_;
+    NonTerminals nonterminals_;
+    Productions productions_;
+    NonTerminal *start_;
+    Terminal *epsilon_, *eof_;
+    std::unordered_map<std::string, Terminal*> terminalsIdx_;
+    std::unordered_map<std::string, NonTerminal*> nonterminalsIdx_;
 
 };
 
