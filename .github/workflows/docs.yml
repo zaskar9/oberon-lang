@@ -36,10 +36,14 @@ jobs:
 
     - name: API build
       run: |
-        python ${{ github.workspace }}/tools/docgen.py ${{ github.workspace }}/liboberon/Math.Mod >${{ github.workspace }}/docs/src/API_Math.rst
-        python ${{ github.workspace }}/tools/docgen.py ${{ github.workspace }}/liboberon/Oberon.Mod >${{ github.workspace }}/docs/src/API_Oberon.rst
-        python ${{ github.workspace }}/tools/docgen.py ${{ github.workspace }}/liboberon/Out.Mod >${{ github.workspace }}/docs/src/API_Out.rst
-        python ${{ github.workspace }}/tools/docgen.py ${{ github.workspace }}/liboberon/Random.Mod >${{ github.workspace }}/docs/src/API_Random.rst
+        python ${{ github.workspace }}/utils/docgen/docgen.py ${{ github.workspace }}/stdlib/Files.Mod >${{ github.workspace }}/docs/src/api/Files.rst
+        python ${{ github.workspace }}/utils/docgen/docgen.py ${{ github.workspace }}/stdlib/In.Mod >${{ github.workspace }}/docs/src/api/In.rst
+        python ${{ github.workspace }}/utils/docgen/docgen.py ${{ github.workspace }}/stdlib/Math.Mod >${{ github.workspace }}/docs/src/api/Math.rst
+        python ${{ github.workspace }}/utils/docgen/docgen.py ${{ github.workspace }}/stdlib/MathL.Mod >${{ github.workspace }}/docs/src/api/MathL.rst
+        python ${{ github.workspace }}/utils/docgen/docgen.py ${{ github.workspace }}/stdlib/Oberon.Mod >${{ github.workspace }}/docs/src/api/Oberon.rst
+        python ${{ github.workspace }}/utils/docgen/docgen.py ${{ github.workspace }}/stdlib/Out.Mod >${{ github.workspace }}/docs/src/api/Out.rst
+        python ${{ github.workspace }}/utils/docgen/docgen.py ${{ github.workspace }}/stdlib/Random.Mod >${{ github.workspace }}/docs/src/api/Random.rst
+        python ${{ github.workspace }}/utils/docgen/docgen.py ${{ github.workspace }}/stdlib/Strings.Mod >${{ github.workspace }}/docs/src/api/Strings.rst
 
     - name: Sphinx build
       run: sphinx-build ${{ github.workspace }}/docs ${{ github.workspace }}/build/

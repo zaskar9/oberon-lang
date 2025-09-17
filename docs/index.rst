@@ -10,14 +10,6 @@ oberon-lang
 infrastructure to target at wide variety of platforms. In general the the compiler should
 be portable to host platforms supported by the *LLVM* project.
 
-The current status is that it is very close to support the whole of *Oberon-07* language with
-some notable missing parts:
-
-* **BYTE** type.
-* **CASE** statement.
-* **PROCEDURE** type.
-* **RECORD** extensions.
-
 The exact status can be checked by inspecting the failing tests in the unittests.
 
 There are some examples in the project test folder and the unit tests can be inspected
@@ -32,10 +24,14 @@ for basic usage specific features.
    src/Installation
    src/GettingStarted
    src/CommandLineInterface
-   src/API_Math.rst
-   src/API_Oberon.rst
-   src/API_Out.rst
-   src/API_Random.rst
+   src/api/Files.rst
+   src/api/In.rst
+   src/api/Math.rst
+   src/api/MathL.rst
+   src/api/Oberon.rst
+   src/api/Out.rst
+   src/api/Random.rst
+   src/api/Strings.rst
    src/FAQ
 
 ##################
