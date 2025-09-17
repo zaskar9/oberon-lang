@@ -9,6 +9,7 @@
 
 
 #include <bitset>
+#include <cstddef>
 #include <memory>
 #include <string>
 #include <vector>
@@ -273,10 +274,10 @@ public:
 };
 
 
-class NilLiteralNode final : public LiteralNode<nullptr_t> {
+class NilLiteralNode final : public LiteralNode<std::nullptr_t> {
 
 public:
-    NilLiteralNode(const FilePos &pos, TypeNode *type = nullptr) :
+    explicit NilLiteralNode(const FilePos &pos, TypeNode *type = nullptr) :
             LiteralNode(NodeType::pointer, pos, TypeKind::POINTER, nullptr, type, nullptr) {};
 
     void accept(NodeVisitor &visitor) final;
