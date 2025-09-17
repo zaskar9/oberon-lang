@@ -43,10 +43,10 @@ jobs:
 
     - name: Configure CMake
       run: >
-        cmake -B "$GITHUB_WORKSPACE"/build -S "$GITHUB_WORKSPACE" -G "Ninja"
+        cmake -B "$GITHUB_WORKSPACE"/build -S "$GITHUB_WORKSPACE" -G "Ninja" -DCMAKE_BUILD_TYPE=${{ env.build_type }} 
 
     - name: Build compiler
-      run: cmake --build "$GITHUB_WORKSPACE"/build --config ${{ env.build_type }}
+      run: cmake --build "$GITHUB_WORKSPACE"/build --parallel
 
     - name: Build documentation
       run: cmake --build "$GITHUB_WORKSPACE"/build --target docs
