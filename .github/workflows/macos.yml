@@ -22,7 +22,7 @@ jobs:
     - name: Install package dependencies
       run: |
         brew install git
-        brew install make
+        brew install ninja
         brew install cmake
         brew install llvm@17
         brew install boost
@@ -37,10 +37,10 @@ jobs:
 
     - name: Configure CMake
       run: >
-        cmake -B ${{ github.workspace }}/build -S ${{ github.workspace }} -G "Unix Makefiles"  
-        -DLLVM_DIR=/opt/homebrew/opt/llvm@17/lib/cmake/llvm/
-        -DCMAKE_CXX_COMPILER=/opt/homebrew/opt/llvm@17/bin/clang++
-        -DCMAKE_C_COMPILER=/opt/homebrew/opt/llvm@17/bin/clang
+        cmake -B ${{ github.workspace }}/build -S ${{ github.workspace }} -G "Ninja"   
+        -DLLVM_DIR=/opt/homebrew/opt/llvm@17
+#        -DCMAKE_CXX_COMPILER=/opt/homebrew/opt/llvm@17/bin/clang++
+#        -DCMAKE_C_COMPILER=/opt/homebrew/opt/llvm@17/bin/clang
 
     - name: Build compiler
       run: cmake --build ${{ github.workspace }}/build --config ${{ env.build_type }}

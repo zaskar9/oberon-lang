@@ -43,20 +43,20 @@ jobs:
 
     - name: Configure CMake
       run: >
-        cmake -B ${{ github.workspace }}/build
-        -S ${{ github.workspace }} -G "MSYS Makefiles"
+        cmake -B "$GITHUB_WORKSPACE"/build
+        -S "$GITHUB_WORKSPACE" -G "MSYS Makefiles"
 
     - name: Build compiler
-      run: cmake --build ${{ github.workspace }}/build --config ${{ env.build_type }}
+      run: cmake --build "$GITHUB_WORKSPACE"/build --config ${{ env.build_type }}
 
     - name: Build documentation
-      run: cmake --build ${{ github.workspace }}/build --target docs
+      run: cmake --build "$GITHUB_WORKSPACE"/build --target docs
 
     - name: Install compiler
-      run: cmake --install ${{ github.workspace }}/build --prefix install
+      run: cmake --install "$GITHUB_WORKSPACE"/build --prefix install
 
     - name: Run unit tests
-      run: cmake --build ${{ github.workspace }}/build --target test  | tee ${{ github.workspace }}/build/test_report_msys2.txt
+      run: cmake --build "$GITHUB_WORKSPACE"/build --target test  | tee "$GITHUB_WORKSPACE"/build/test_report_msys2.txt
 
     - name: Upload build
       uses: actions/upload-artifact@v4

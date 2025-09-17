@@ -3,7 +3,7 @@ name: Docs CI Build
 on:
   push:
     branches:
-      - master
+      - inactive
     paths:
       - 'docs/**'
   workflow_dispatch:
