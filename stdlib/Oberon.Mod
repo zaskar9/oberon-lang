@@ -21,7 +21,7 @@ VAR ts*: TimeSpec;
 (* Declare `long time(long)` from C <time.h> library. *)
 PROCEDURE [ "C" ] GetTime(t: LONGINT): LONGINT; EXTERNAL [ "time" ];
 
-(* Declare `longtimespec_get(struct timespec*, int)` from C <time.h> library. *)
+(* Declare `long timespec_get(struct timespec*, int)` from C <time.h> library. *)
 PROCEDURE [ "C" ] GetTimespec(VAR ts: TimeSpec; base: INTEGER); EXTERNAL [ "timespec_get" ];
 
 
