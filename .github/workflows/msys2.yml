@@ -1,10 +1,12 @@
-name: MSYS2 CI Build
+name: MSYS2 (CLANG64)
 
 on:
   push:
-    branches: [ $default-branch ]
+    branches:
+      - master
   pull_request:
-    branches: [ $default-branch ]
+    branches:
+      - master
   workflow_dispatch:
 
 env:
@@ -23,16 +25,16 @@ jobs:
         msystem: CLANG64
         update: true
 
-    - name: Install packages
+    - name: Install package dependencies
       run: |
         pacman --noconfirm -S git
-        pacman --noconfirm -S make
+        pacman --noconfirm -S ninja
         pacman --noconfirm -S mingw-w64-clang-x86_64-python-pip
         pacman --noconfirm -S mingw-w64-clang-x86_64-toolchain
         pacman --noconfirm -S mingw-w64-clang-x86_64-boost
         pacman --noconfirm -S mingw-w64-clang-x86_64-cmake
 
-    - name: Install python dependency
+    - name: Install Python dependencies
       run: |
         pip3 install lit
         pip3 install filecheck
@@ -41,19 +43,18 @@ jobs:
 
     - name: Configure CMake
       run: >
-        cmake -B "$GITHUB_WORKSPACE"/build
-        -S "$GITHUB_WORKSPACE" -G "MSYS Makefiles"
+        cmake -B "$GITHUB_WORKSPACE"/build -S "$GITHUB_WORKSPACE" -G "Ninja" -DCMAKE_BUILD_TYPE=${{ env.build_type }} 
 
-    - name: Build
-      run: cmake --build "$GITHUB_WORKSPACE"/build --config ${{ env.build_type }}
+    - name: Build compiler
+      run: cmake --build "$GITHUB_WORKSPACE"/build --parallel
 
-    - name: Build docs
+    - name: Build documentation
       run: cmake --build "$GITHUB_WORKSPACE"/build --target docs
 
-    - name: Install
+    - name: Install compiler
       run: cmake --install "$GITHUB_WORKSPACE"/build --prefix install
 
-    - name: Test
+    - name: Run unit tests
       run: cmake --build "$GITHUB_WORKSPACE"/build --target test  | tee "$GITHUB_WORKSPACE"/build/test_report_msys2.txt
 
     - name: Upload build

@@ -6,8 +6,8 @@
 
 
 #include <filesystem>
-#include <iostream>
 #include <iomanip>
+#include <iostream>
 
 #include <config.h>
 #include "Loader.h"
@@ -23,16 +23,16 @@ int main(const int argc, const char *argv[]) {
         logger.error(PROGRAM_NAME, "Too few arguments.");
         exit(1);
     }
-    Loader loader(logger, fs::path(argv[1]));
+    Loader loader(logger, path(argv[1]));
     auto grammar = loader.load();
     std::cout << *grammar << std::endl;
 
     Validator util(grammar.get());
     auto firsts = util.computeFirstSets();
-    for (auto &entry: firsts) {
-        std::cout << std::left << std::setw(25) << *entry.first << " | [";
+    for (auto &[fst, snd]: firsts) {
+        std::cout << std::left << std::setw(25) << *fst << " | [";
         std::string sep;
-        for (auto &symbol: entry.second) {
+        for (auto &symbol: snd) {
             std::cout << sep << *symbol;
             sep = ", ";
         }
@@ -40,10 +40,10 @@ int main(const int argc, const char *argv[]) {
     }
     std::cout << std::endl;
     auto follows = util.computeFollowSets(firsts);
-    for (auto &entry: follows) {
-        std::cout << std::left << std::setw(25) << *entry.first << " | [";
+    for (auto &[fst, snd]: follows) {
+        std::cout << std::left << std::setw(25) << *fst << " | [";
         std::string sep;
-        for (auto &symbol: entry.second) {
+        for (auto &symbol: snd) {
             std::cout << sep << *symbol;
             sep = ", ";
         }
@@ -51,10 +51,10 @@ int main(const int argc, const char *argv[]) {
     }
     std::cout << std::endl;
     auto first_pluses = util.computeFirstPlusSets(firsts, follows);
-    for (auto &entry: first_pluses) {
-        std::cout << std::left << std::setw(50) << *entry.first << " | [";
+    for (auto &[fst, snd]: first_pluses) {
+        std::cout << std::left << std::setw(50) << *fst << " | [";
         std::string sep;
-        for (auto &symbol: entry.second) {
+        for (auto &symbol: snd) {
             std::cout << sep << *symbol;
             sep = ", ";
         }

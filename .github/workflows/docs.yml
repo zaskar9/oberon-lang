@@ -1,12 +1,12 @@
-name: Docs CI Build
+name: Documentation (Sphinx)
 
 on:
   push:
-    branches: [ $default-branch ]
+    branches:
+      - master
     paths:
       - 'docs/**'
-
-  workflow_dispatch :
+  workflow_dispatch:
 
 concurrency:
   group: "pages"
@@ -24,22 +24,26 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Install packages
+    - name: Install package dependencies
       run: |
         sudo apt-get update &&
         sudo apt-get install python3-pip
 
-    - name: Install sphinx
+    - name: Install Sphinx dependencies
       run: |
         sudo pip3 install sphinx
         sudo pip3 install sphinx_rtd_theme
 
-    - name: API build
+    - name: Build API documentation
       run: |
-        python ${{ github.workspace }}/tools/docgen.py ${{ github.workspace }}/liboberon/Math.Mod >${{ github.workspace }}/docs/src/API_Math.rst
-        python ${{ github.workspace }}/tools/docgen.py ${{ github.workspace }}/liboberon/Oberon.Mod >${{ github.workspace }}/docs/src/API_Oberon.rst
-        python ${{ github.workspace }}/tools/docgen.py ${{ github.workspace }}/liboberon/Out.Mod >${{ github.workspace }}/docs/src/API_Out.rst
-        python ${{ github.workspace }}/tools/docgen.py ${{ github.workspace }}/liboberon/Random.Mod >${{ github.workspace }}/docs/src/API_Random.rst
+        python ${{ github.workspace }}/utils/docgen/docgen.py ${{ github.workspace }}/stdlib/Files.Mod >${{ github.workspace }}/docs/src/Files.rst
+        python ${{ github.workspace }}/utils/docgen/docgen.py ${{ github.workspace }}/stdlib/In.Mod >${{ github.workspace }}/docs/src/In.rst
+        python ${{ github.workspace }}/utils/docgen/docgen.py ${{ github.workspace }}/stdlib/Math.Mod >${{ github.workspace }}/docs/src/Math.rst
+        python ${{ github.workspace }}/utils/docgen/docgen.py ${{ github.workspace }}/stdlib/MathL.Mod >${{ github.workspace }}/docs/src/MathL.rst
+        python ${{ github.workspace }}/utils/docgen/docgen.py ${{ github.workspace }}/stdlib/Oberon.Mod >${{ github.workspace }}/docs/src/Oberon.rst
+        python ${{ github.workspace }}/utils/docgen/docgen.py ${{ github.workspace }}/stdlib/Out.Mod >${{ github.workspace }}/docs/src/Out.rst
+        python ${{ github.workspace }}/utils/docgen/docgen.py ${{ github.workspace }}/stdlib/Random.Mod >${{ github.workspace }}/docs/src/Random.rst
+        python ${{ github.workspace }}/utils/docgen/docgen.py ${{ github.workspace }}/stdlib/Strings.Mod >${{ github.workspace }}/docs/src/Strings.rst
 
     - name: Sphinx build
       run: sphinx-build ${{ github.workspace }}/docs ${{ github.workspace }}/build/

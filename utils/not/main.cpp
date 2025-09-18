@@ -2,7 +2,7 @@
 #include <vector>
 #include <string>
 
-#if (defined(_WIN32) || defined(_WIN64)) && !(defined(__MINGW32__) || defined(__MINGW64__))
+#if defined(_WIN32) || defined(_WIN64) || defined(__MINGW32__) || defined(__MINGW64__)
 #include <windows.h>
 #define _WINAPI
 #else

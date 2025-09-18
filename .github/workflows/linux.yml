@@ -1,11 +1,13 @@
-name: Linux CI Build
+name: Ubuntu Linux (x64)
 
 on:
   push:
-    branches: [ $default-branch ]
+    branches:
+      - master
   pull_request:
-    branches: [ $default-branch ]
-  workflow_dispatch :
+    branches:
+      - master
+  workflow_dispatch:
 
 env:
     build_type: Release
@@ -21,18 +23,18 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Install packages
+    - name: Install package dependencies
       run: |
         sudo apt-get update &&
-        sudo apt-get install libboost-all-dev libboost-filesystem-dev python3-pip
+        sudo apt-get install ninja-build libboost-all-dev python3-pip
 
-    - name: Install Clang 17
+    - name: Install LLVM 17
       run: |
         wget https://apt.llvm.org/llvm.sh
         chmod +x ./llvm.sh
         sudo ./llvm.sh 17 all
 
-    - name: Install python dependency
+    - name: Install Python dependencies
       run: |
         sudo pip3 install lit
         sudo pip3 install filecheck
@@ -43,21 +45,21 @@ jobs:
       run: |
         if ["$MATRIX_CC" == "gcc"]
         then
-        cmake -B ${{ github.workspace }}/build -S ${{ github.workspace }} -DLLVM_ROOT=/usr/lib/llvm-17 -DBoost_NO_BOOST_CMAKE=ON
+        cmake -B ${{ github.workspace }}/build -S ${{ github.workspace }} -G "Ninja" -DCMAKE_BUILD_TYPE=${{ env.build_type }} -DLLVM_ROOT=/usr/lib/llvm-17 -DBoost_NO_BOOST_CMAKE=ON
         else
-        cmake -B ${{ github.workspace }}/build -S ${{ github.workspace }} -DLLVM_ROOT=/usr/lib/llvm-17 -DBoost_NO_BOOST_CMAKE=ON -DCMAKE_CXX_COMPILER=clang++-17 -DCMAKE_C_COMPILER=clang-17
+        cmake -B ${{ github.workspace }}/build -S ${{ github.workspace }} -G "Ninja" -DCMAKE_BUILD_TYPE=${{ env.build_type }} -DLLVM_ROOT=/usr/lib/llvm-17 -DBoost_NO_BOOST_CMAKE=ON -DCMAKE_CXX_COMPILER=clang++-17 -DCMAKE_C_COMPILER=clang-17
         fi
 
-    - name: Build
-      run: cmake --build ${{ github.workspace }}/build --config ${{ env.build_type }}
+    - name: Build compiler
+      run: cmake --build ${{ github.workspace }}/build --parallel
 
-    - name: Build docs
+    - name: Build documentation
       run: cmake --build ${{ github.workspace }}/build --target docs
 
-    - name: Install
+    - name: Install compiler
       run: cmake --install ${{ github.workspace }}/build --prefix install
 
-    - name: Test
+    - name: Run unit tests
       run: cmake --build ${{ github.workspace }}/build --target test | tee ${{ github.workspace }}/build/test_report_linux_${{ matrix.cc }}.txt
 
     - name: Upload build
