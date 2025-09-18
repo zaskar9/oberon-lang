@@ -1,4 +1,4 @@
-name: Linux (Ubuntu)
+name: Ubuntu Linux (x64)
 
 on:
   push:

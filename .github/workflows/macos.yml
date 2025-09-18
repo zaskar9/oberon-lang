@@ -47,7 +47,7 @@ jobs:
     - name: Install compiler
       run: cmake --install ${{ github.workspace }}/build --prefix install
 
-    - name: Run unit test
+    - name: Run unit tests
       run: cmake --build ${{ github.workspace }}/build --target test | tee ${{ github.workspace }}/build/test_report_macos.txt
 
     - name: Upload build
