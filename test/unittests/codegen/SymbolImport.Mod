@@ -7,11 +7,13 @@ IMPORT SymbolExport, Oberon, M := Math, O := Out, S := SYSTEM;
 
 VAR t: Oberon.TimeSpec;
     n: SymbolExport.Node;
+    x, y: SymbolExport.BinTreeNode;
 
 BEGIN
     t.secs := 0;
     t.nsecs := 0;
     SymbolExport.SetTime(t);
+    SymbolExport.Swap(x, y);
     O.Real(M.pi, 10); O.Ln;
     O.Long(S.SIZE(INTEGER), 0); O.Ln;
     NEW(n);

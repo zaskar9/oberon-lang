@@ -78,7 +78,7 @@ void LLVMIRBuilder::visit(ModuleNode &node) {
     // Generate code for body.
     auto body = module_->getOrInsertFunction(node.getIdentifier()->name(), builder_.getInt32Ty());
     function_ = dyn_cast<Function>(body.getCallee());
-    if (triple_.isOSWindows() && !config_.hasFlag(Flag::ENABLE_MAIN)) {
+    if (triple_.isOSWindows() && !triple_.isOSCygMing() && !config_.hasFlag(Flag::ENABLE_MAIN)) {
         function_->setDLLStorageClass(GlobalValue::DLLStorageClassTypes::DLLExportStorageClass);
     }
     auto entry = BasicBlock::Create(builder_.getContext(), "entry", function_);
@@ -1307,7 +1307,8 @@ void LLVMIRBuilder::visit(RecordTypeNode &node) {
                                      name + "_td");
         td->setAlignment(module_->getDataLayout().getABITypeAlign(recordTdTy_));
         recTypeTds_[&node] = td;
-        if (triple_.isOSWindows() && !node.isAnonymous() && node.getIdentifier()->isExported() && !config_.hasFlag(Flag::ENABLE_MAIN)) {
+        if (triple_.isOSWindows() && !triple_.isOSCygMing() &&
+            !node.isAnonymous() && node.getIdentifier()->isExported() && !config_.hasFlag(Flag::ENABLE_MAIN)) {
             id->setDLLStorageClass(GlobalValue::DLLStorageClassTypes::DLLExportStorageClass);
             td->setDLLStorageClass(GlobalValue::DLLStorageClassTypes::DLLExportStorageClass);
         }
@@ -2354,7 +2355,8 @@ void LLVMIRBuilder::createFunction(ProcedureNode &node, const CallingConvention 
     const auto funType = createFunctionType(*node.getType(), cnv);
     auto callee = module_->getOrInsertFunction(name, funType);
     const auto function = dyn_cast<Function>(callee.getCallee());
-    if (triple_.isOSWindows() && node.getIdentifier()->isExported() && !config_.hasFlag(Flag::ENABLE_MAIN)) {
+    if (triple_.isOSWindows() && !triple_.isOSCygMing() &&
+        node.getIdentifier()->isExported() && !config_.hasFlag(Flag::ENABLE_MAIN)) {
         function->setDLLStorageClass(GlobalValue::DLLStorageClassTypes::DLLExportStorageClass);
     }
 }
