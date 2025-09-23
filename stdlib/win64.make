@@ -1,5 +1,5 @@
 # Compiler settings
-O7C = ..\build\olang\Release\oberon-lang.exe
+O7C = ..\msvc-x64-build\olang\Release\oberon-lang.exe
 CXX = cl.exe
 LIBX = lib.exe
 # LINK = link.exe
@@ -29,19 +29,21 @@ clean:
 .smb.Mod:
 	@$(O7C) $(O7CFLAGS) $<
 
-lib: runtime.obj Oberon.obj Math.obj MathL.obj Reals.obj Texts.obj Random.obj Out.obj Files.obj
-	@$(CXX) /nologo /D_USRDLL /D_WINDLL runtime.obj Oberon.obj Math.obj MathL.obj Reals.obj Texts.obj Random.obj Out.obj Files.obj /MT /link /DLL /out:oberon.dll
+lib: runtime.obj Files.obj In.obj Math.obj MathL.obj Oberon.obj Reals.obj Texts.obj Out.obj Random.obj Strings.obj
+	@$(CXX) /nologo /D_USRDLL /D_WINDLL runtime.obj Files.obj In.obj Math.obj MathL.obj Oberon.obj Reals.obj Texts.obj Out.obj Random.obj Strings.obj /MT /link /DLL /out:oberon.dll
 	@move oberon.dll $(LIB_DIR) >nul
 	@move oberon.lib $(LIB_DIR) >nul
-	@$(LIBX) /nologo runtime.obj Oberon.obj Math.obj MathL.obj Reals.obj Texts.obj Random.obj Out.obj Files.obj /out:oberon-static.lib
+	@$(LIBX) /nologo runtime.obj Files.obj In.obj Math.obj MathL.obj Oberon.obj Reals.obj Texts.obj Out.obj Random.obj Strings.obj /out:oberon-static.lib
 	@move oberon-static.lib $(LIB_DIR) >nul
 
 inc:
+	@move Files.smb $(INC_DIR) >nul
+	@move In.smb $(INC_DIR) >nul
 	@move Math.smb $(INC_DIR) >nul
 	@move MathL.smb $(INC_DIR) >nul
 	@move Oberon.smb $(INC_DIR) >nul
 	@move Out.smb $(INC_DIR) >nul
 	@move Random.smb $(INC_DIR) >nul
 	@move Reals.smb $(INC_DIR) >nul
+	@move Strings.smb $(INC_DIR) >nul
 	@move Texts.smb $(INC_DIR) >nul
-	@move Files.smb $(INC_DIR) >nul

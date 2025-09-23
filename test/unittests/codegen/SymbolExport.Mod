@@ -2,7 +2,7 @@
   RUN: %oberon -I "%S%{pathsep}%inc" -L "%S%{pathsep}%lib" -l oberon -r %s
 *)
 MODULE SymbolExport;
-IMPORT Oberon;
+IMPORT Files;
 
 CONST BOOLFALSE* = FALSE;
       BOOLTRUE* = TRUE;
@@ -16,8 +16,8 @@ CONST BOOLFALSE* = FALSE;
       LONGMAX* = 9223372036854775807;
       FLOATMIN* = 1.17549435E-38;
       FLOATMAX* = 3.40282347E+38;
-      DOUBLEMIN* = 2.22507385850720138E-308;
-      DOUBLEMAX* = 1.79769313486231571E+308;
+      DOUBLEMIN* = 2.22507385850720138D-308;
+      DOUBLEMAX* = 1.79769313486231571D+308;
       STRING* = "Hello World";
       SETMIN* = {};
       SETMAX* = { 0 .. 31 };
@@ -53,7 +53,7 @@ TYPE Vector* = ARRAY 10 OF INTEGER;
      END;
      (*Elem* = POINTER TO RECORD val*: INTEGER; next*: Elem END;*)
      BinTreeNode* = RECORD val*: INTEGER; left*, right*: POINTER TO BinTreeNode END;
-     TimeSpec* = POINTER TO Oberon.TimeSpec;
+     Rider* = POINTER TO Files.Rider;
 
 VAR s: SHORTINT;
     i: INTEGER;
@@ -61,8 +61,8 @@ VAR s: SHORTINT;
     f: REAL;
     d: LONGREAL;
 
-PROCEDURE SetTime*(time: Oberon.TimeSpec);
-END SetTime;
+PROCEDURE SetRider*(r: Rider);
+END SetRider;
 
 PROCEDURE Swap*(VAR left, right: BinTreeNode);
 END Swap;

@@ -57,6 +57,9 @@ void LLVMIRBuilder::visit(ModuleNode &node) {
                                               expo ? GlobalValue::ExternalLinkage : GlobalValue::InternalLinkage,
                                               Constant::getNullValue(type), name);
         value->setAlignment(module_->getDataLayout().getABITypeAlign(type));
+        if (expo && triple_.isOSWindows() && !triple_.isOSCygMing() && !config_.hasFlag(Flag::ENABLE_MAIN)) {
+            value->setDLLStorageClass(GlobalValue::DLLStorageClassTypes::DLLExportStorageClass);
+        }
         values_[variable] = value;
     }
     // Create declarations for imported external procedure.
@@ -428,12 +431,12 @@ TypeNode *LLVMIRBuilder::selectors(const NodeReference *ref, TypeNode *base, con
                 // Create an out-of-bounds check and trap for the current array index.
                 if (config_.isSanitized(Trap::OUT_OF_BOUNDS) && (array_t->isOpen() || !index->isLiteral())) {
                     Value *lower = builder_.getInt64(0);
-                    Value *upper = getOrLoadArrayLength(lengths, dopeV, array_t, i);
+                    Value *upper = getOrLoadArrayLength(lengths, dopeV, array_t, static_cast<uint32_t>(i));
                     trapOutOfBounds(builder_.CreateSExt(value_, builder_.getInt64Ty()), lower, upper);
                 }
                 Value *addr = builder_.CreateSExt(value_, builder_.getInt64Ty());
                 for (size_t j = i; j < array_t->dimensions() - 1; ++j) {
-                    Value *length = getOrLoadArrayLength(lengths, dopeV, array_t, j + 1);
+                    Value *length = getOrLoadArrayLength(lengths, dopeV, array_t, static_cast<uint32_t>(j) + 1);
                     if (j == i) {
                         addr = builder_.CreateNSWMul(addr, length);
                     } else {
@@ -585,7 +588,7 @@ LLVMIRBuilder::parameters(ProcedureTypeNode *type, ActualParameters *actuals, ve
 TypeNode *LLVMIRBuilder::createStaticCall(NodeReference &node, const QualIdent *ident, Selectors &selectors) {
     const auto proc = dynamic_cast<ProcedureNode *>(node.dereference());
     vector<Value*> values;
-    ActualParameters *sel;
+    ActualParameters *sel = nullptr;
     bool args;
     if (selectors.empty() || selectors[0].get()->getNodeType() != NodeType::parameter) {
         args = false;
@@ -597,7 +600,7 @@ TypeNode *LLVMIRBuilder::createStaticCall(NodeReference &node, const QualIdent *
         args = true;
     }
     if (proc->isPredefined()) {
-        constexpr vector<unique_ptr<ExpressionNode>> params;
+        const vector<unique_ptr<ExpressionNode>> params;
         const auto callee = dynamic_cast<PredefinedProcedure *>(proc);
         value_ = createPredefinedCall(callee, ident, args ? sel->parameters() : params, values);
     } else {

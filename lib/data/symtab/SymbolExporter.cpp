@@ -72,16 +72,16 @@ void SymbolExporter::writeDeclaration(SymbolFile *file, DeclarationNode *decl) {
                     file->writeChar(dynamic_cast<BooleanLiteralNode *>(con->getValue())->value() ? 1 : 0);
                     break;
                 case TypeKind::CHAR:
-                    file->writeChar(static_cast<signed char>(dynamic_cast<CharLiteralNode *>(con->getValue())->value()));
+                    file->writeChar(static_cast<int8_t>(dynamic_cast<CharLiteralNode *>(con->getValue())->value()));
                     break;
                 case TypeKind::SHORTINT:
-                    file->writeShort(static_cast<short>(dynamic_cast<IntegerLiteralNode *>(con->getValue())->value()));
+                    file->writeShort(static_cast<int16_t>(dynamic_cast<IntegerLiteralNode *>(con->getValue())->value()));
                     break;
                 case TypeKind::INTEGER:
-                    file->writeInt(static_cast<int>(dynamic_cast<IntegerLiteralNode *>(con->getValue())->value()));
+                    file->writeInt(static_cast<int32_t>(dynamic_cast<IntegerLiteralNode *>(con->getValue())->value()));
                     break;
                 case TypeKind::LONGINT:
-                    file->writeLong(static_cast<long>(dynamic_cast<IntegerLiteralNode *>(con->getValue())->value()));
+                    file->writeLong(dynamic_cast<IntegerLiteralNode *>(con->getValue())->value());
                     break;
                 case TypeKind::REAL:
                     file->writeFloat(static_cast<float>(dynamic_cast<RealLiteralNode *>(con->getValue())->value()));
@@ -115,7 +115,7 @@ void SymbolExporter::writeType(SymbolFile *file, TypeNode *type) {
     }
     // declaration already serialized to file
     if (xrefs_.contains(type)) {
-        file->writeChar(static_cast<signed char>(-xrefs_[type]));
+        file->writeChar(-static_cast<uint8_t>(xrefs_[type]));
         return;
     }
     // actual type that needs exporting
@@ -177,7 +177,7 @@ void SymbolExporter::writePointerType(SymbolFile *file, const PointerTypeNode *t
     const auto base = type->getBase();
     if (!base->isAnonymous() && !xrefs_.contains(base)) {
         // create forward reference
-        file->writeChar(static_cast<signed char>(-xref_));
+        file->writeChar(-static_cast<int8_t>(xref_));
         fwds_[base] = xref_;
         xref_++;
     } else {

@@ -52,7 +52,7 @@ int64_t olang_files_flength(FILE *file) {
 }
 
 bool olang_files_fseek(FILE *file, const int64_t offset) {
-    return fseek(file, offset, SEEK_SET) == 0;
+    return fseek(file, (long) offset, SEEK_SET) == 0;
 }
 
 void olang_files_fdate(const char *name, int64_t *t, int64_t *d) {
@@ -113,6 +113,10 @@ double olang_mathL_real(const int64_t x) {
 
 int64_t olang_mathL_entier(const double x) {
     return (int64_t) floor(x);
+}
+
+int32_t olang_oberon_timespec_get(struct timespec* ts) {
+    return timespec_get(ts, TIME_UTC);
 }
 
 int32_t olang_reals_expo(const float x) {

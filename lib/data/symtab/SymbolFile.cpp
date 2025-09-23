@@ -14,24 +14,24 @@ std::string SymbolFile::path() const {
     return path_;
 }
 
-signed char SymbolFile::readChar() {
-    signed char val = 0;
+int8_t SymbolFile::readChar() {
+    int8_t val = 0;
     file_.read(reinterpret_cast<char *>(&val), sizeof(val));
 #ifdef _DEBUG
-    std::cout << (int) val << "c|";
+    std::cout << static_cast<int>(val) << "c|";
 #endif
     return val;
 }
 
-void SymbolFile::writeChar(signed char val) {
+void SymbolFile::writeChar(const int8_t val) {
 #ifdef _DEBUG
-    std::cout << (int) val << "c|";
+    std::cout << static_cast<int>(val) << "c|";
 #endif
     file_.write(reinterpret_cast<const char *>(&val), sizeof(val));
 }
 
-short SymbolFile::readShort() {
-    short val = 0;
+int16_t SymbolFile::readShort() {
+    int16_t val = 0;
     file_.read(reinterpret_cast<char *>(&val), sizeof(val));
 #ifdef _DEBUG
     std::cout << val << "s|";
@@ -39,15 +39,15 @@ short SymbolFile::readShort() {
     return val;
 }
 
-void SymbolFile::writeShort(short val) {
+void SymbolFile::writeShort(const int16_t val) {
 #ifdef _DEBUG
     std::cout << val << "s|";
 #endif
     file_.write(reinterpret_cast<const char *>(&val), sizeof(val));
 }
 
-int SymbolFile::readInt() {
-    int val = 0;
+int32_t SymbolFile::readInt() {
+    int32_t val = 0;
     file_.read(reinterpret_cast<char *>(&val), sizeof(val));
 #ifdef _DEBUG
     std::cout << val << "i|";
@@ -55,15 +55,15 @@ int SymbolFile::readInt() {
     return val;
 }
 
-void SymbolFile::writeInt(int val) {
+void SymbolFile::writeInt(const int32_t val) {
 #ifdef _DEBUG
     std::cout << val << "i|";
 #endif
     file_.write(reinterpret_cast<const char *>(&val), sizeof(val));
 }
 
-long SymbolFile::readLong() {
-    long val = 0;
+int64_t SymbolFile::readLong() {
+    int64_t val = 0;
     file_.read(reinterpret_cast<char *>(&val), sizeof(val));
 #ifdef _DEBUG
     std::cout << val << "l|";
@@ -71,7 +71,7 @@ long SymbolFile::readLong() {
     return val;
 }
 
-void SymbolFile::writeLong(long val) {
+void SymbolFile::writeLong(const int64_t val) {
 #ifdef _DEBUG
     std::cout << val << "l|";
 #endif
@@ -87,7 +87,7 @@ float SymbolFile::readFloat() {
     return val;
 }
 
-void SymbolFile::writeFloat(float val) {
+void SymbolFile::writeFloat(const float val) {
 #ifdef _DEBUG
     std::cout << val << "f|";
 #endif
@@ -103,7 +103,7 @@ double SymbolFile::readDouble() {
     return val;
 }
 
-void SymbolFile::writeDouble(double val) {
+void SymbolFile::writeDouble(const double val) {
 #ifdef _DEBUG
     std::cout << val << "d|";
 #endif
@@ -116,8 +116,8 @@ std::string SymbolFile::readString() {
 #ifdef _DEBUG
     std::cout << len << ":";
 #endif
-    char *buffer = new char[len];
-    file_.read(buffer, (long) len);
+    const auto buffer = new char[len];
+    file_.read(buffer, static_cast<long>(len));
     auto val = std::string(buffer, len);
     delete[] buffer;
 #ifdef _DEBUG
@@ -127,7 +127,7 @@ std::string SymbolFile::readString() {
 }
 
 void SymbolFile::writeString(const std::string &val) {
-    unsigned long len = static_cast<unsigned long>(val.length());
+    const auto len = static_cast<unsigned long>(val.length());
 #ifdef _DEBUG
     std::cout << len << ":";
 #endif
@@ -135,7 +135,7 @@ void SymbolFile::writeString(const std::string &val) {
 #ifdef _DEBUG
     std::cout << (val.empty() ? "0X" : val) << "|";
 #endif
-    file_.write(val.c_str(), (long) len);
+    file_.write(val.c_str(), static_cast<long>(len));
 }
 
 bool SymbolFile::eof() const {

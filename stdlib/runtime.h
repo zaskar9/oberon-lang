@@ -35,7 +35,7 @@ double olang_mathL_real(int64_t);
 int64_t olang_mathL_entier(double);
 
 // Module `Oberon`
-int32_t olang_oberon_timespec_get(struct timespec *, const void *, int32_t);
+int32_t olang_oberon_timespec_get(struct timespec*);
 
 // Module `Reals`
 int32_t olang_reals_expo(float);

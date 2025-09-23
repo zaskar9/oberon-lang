@@ -60,7 +60,6 @@ RelocationModel CompilerConfig::getRelocationModel() const {
 optional<path> CompilerConfig::find(const path &name, const vector<path> &directories) {
     for (auto const &directory : directories) {
         auto path = directory / name;
-        // std::cerr << path << std::endl;
         if (std::filesystem::exists(path)) {
             return { path };
         }
