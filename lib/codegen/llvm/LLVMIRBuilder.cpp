@@ -50,13 +50,19 @@ void LLVMIRBuilder::visit(ModuleNode &node) {
     const string prefix = node.getIdentifier()->name() + "_";
     for (size_t i = 0; i < node.getVariableCount(); ++i) {
         const auto variable = node.getVariable(i);
-        const auto type = getLLVMType(variable->getType());
+        const auto type = variable->getType();
+        if (const auto decl = type->getDeclaration()) {
+            if (decl->getModule() != ast_->getTranslationUnit()) {
+                decl->accept(*this);
+            }
+        }
+        const auto varTy = getLLVMType(type);
         const bool expo = variable->getIdentifier()->isExported();
         const string name = expo ? prefix + variable->getIdentifier()->name() : variable->getIdentifier()->name();
-        const auto value = new GlobalVariable(*module_, type, false,
+        const auto value = new GlobalVariable(*module_, varTy, false,
                                               expo ? GlobalValue::ExternalLinkage : GlobalValue::InternalLinkage,
-                                              Constant::getNullValue(type), name);
-        value->setAlignment(module_->getDataLayout().getABITypeAlign(type));
+                                              Constant::getNullValue(varTy), name);
+        value->setAlignment(module_->getDataLayout().getABITypeAlign(varTy));
         if (expo && triple_.isOSWindows() && !triple_.isOSCygMing() && !config_.hasFlag(Flag::ENABLE_MAIN)) {
             value->setDLLStorageClass(GlobalValue::DLLStorageClassTypes::DLLExportStorageClass);
         }
@@ -1269,6 +1275,7 @@ void LLVMIRBuilder::visit(RecordTypeNode &node) {
     // Create an empty struct and add it to the lookup table immediately to support recursive records
     const auto structTy = StructType::create(builder_.getContext());
     string name = createScopedName(&node);
+    // std::cerr << name << std::endl;
     structTy->setName("record." + name);
     types_[&node] = structTy;
     vector<Type *> elemTys;
@@ -1315,7 +1322,7 @@ void LLVMIRBuilder::visit(RecordTypeNode &node) {
             id->setDLLStorageClass(GlobalValue::DLLStorageClassTypes::DLLExportStorageClass);
             td->setDLLStorageClass(GlobalValue::DLLStorageClassTypes::DLLExportStorageClass);
         }
-    } else if (!node.isAnonymous()){
+    } else if (!node.isAnonymous()) {
         name = node.getModule()->getIdentifier()->name() + "__" + name;
         // Create an external constant to be used as the id of the imported record type
         const auto idType = builder_.getInt32Ty();

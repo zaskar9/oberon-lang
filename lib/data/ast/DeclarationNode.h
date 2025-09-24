@@ -33,7 +33,7 @@ private:
     void setScope(unsigned int);
 
 public:
-    DeclarationNode(const NodeType nodeType, const FilePos &pos, unique_ptr<IdentDef> ident, TypeNode *type, unsigned seqId = 0) :
+    DeclarationNode(const NodeType nodeType, const FilePos &pos, unique_ptr<IdentDef> ident, TypeNode *type, const unsigned seqId = 0) :
             Node(nodeType, pos), module_(), ident_(std::move(ident)), type_(type), seqId_(seqId), scope_() {};
     ~DeclarationNode() override = default;
 
