@@ -19,7 +19,7 @@ endif
 LIB = ../test/oberon/lib
 INC = ../test/oberon/include
 ifeq ($(OS), windows)
-	O7C = ../build/olang/oberon-lang.exe
+	O7C = ../clang64-build-x64/olang/oberon-lang.exe
 else
 	O7C = ../build/olang/oberon-lang
 endif

@@ -24,18 +24,19 @@ BEGIN
     (* Out.String("File created."); Out.Ln; *)
 
     Files.Register(f);
+    (* DISPOSE(f); *)
     (* Out.String("File registered."); Out.Ln; *)
-    DISPOSE(f);
 
     f := Files.Old("test.tmp");
     ASSERT(f # NIL);
+    (* Out.String("File opened."); Out.Ln; *)
     Files.GetName(f, str);
     ASSERT(str = "test.tmp");
-    (* Out.String("File opened."); Out.Ln; *)
+    (* Out.String("File name checked."); Out.Ln; *)
 
     Files.Close(f);
+    (* DISPOSE(f); *)
     (* Out.String("File closed."); Out.Ln; *)
-    DISPOSE(f);
 
     res := 0;
     Files.Rename("test.tmp", "test.txt", res);
@@ -152,8 +153,8 @@ BEGIN
     Out.Long(t DIV 4096, 0); Out.Char(":"); Out.Long(t DIV 64 MOD 64, 0); Out.Char(":"); Out.Long(t MOD 64, 0); Out.Ln;
 
     Files.Close(f);
+    (* DISPOSE(f); *)
     (* Out.String("Renamed file closed."); Out.Ln; *)
-    DISPOSE(f);
 
     res := 0;
     Files.Delete("test.txt", res);

@@ -147,7 +147,11 @@ VAR
         The file buffers are written back. Any existing mapping of this name to another file is overwritten. *)
     PROCEDURE Register*(f: File);
     BEGIN
-        IF ~f.registered THEN fregister(f.handle, f.name) END
+        IF ~f.registered THEN
+            fregister(f.handle, f.name);
+            f.handle := NIL;
+            Remove(f)
+        END
     END Register;
 
     (** Flushes the changes made to a file to disk. Register will automatically Close a file. *)

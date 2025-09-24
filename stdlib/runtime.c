@@ -11,7 +11,7 @@
 #include <time.h>
 #include <sys/stat.h>
 
-#if (defined(_WIN32) || defined(_WIN64)) && !(defined(__MINGW32__) || defined(__MINGW64__))
+#if defined(_WIN32) || defined(_WIN64)
   #include <io.h>
   #include <windows.h>
 #else
@@ -23,7 +23,7 @@
 #define UNUSED(x) (void)(x)
 
 bool olang_files_fexists(const char *name) {
-#if (defined(_WIN32) || defined(_WIN64)) && !(defined(__MINGW32__) || defined(__MINGW64__))
+#if defined(_WIN32) || defined(_WIN64)
     return _access(name, 0) == 0;
 #else
     return access(name, F_OK) == 0;
