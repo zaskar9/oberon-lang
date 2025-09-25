@@ -5,8 +5,17 @@
 #include "PointerTypeNode.h"
 #include "NodeVisitor.h"
 
+
+PointerTypeNode::PointerTypeNode(const FilePos &pos, TypeNode *base) :
+        TypeNode(NodeType::pointer_type, pos, TypeKind::POINTER, 8) {
+    setBase(base);
+}
+
 void PointerTypeNode::setBase(TypeNode *base) {
     base_ = base;
+    if (const auto record = dynamic_cast<RecordTypeNode*>(base)) {
+        record->setParent(this);
+    }
 }
 
 TypeNode *PointerTypeNode::getBase() const {
@@ -14,7 +23,7 @@ TypeNode *PointerTypeNode::getBase() const {
 }
 
 bool PointerTypeNode::extends(TypeNode *base) const {
-    if (auto ptr = dynamic_cast<PointerTypeNode *>(base)) {
+    if (const auto ptr = dynamic_cast<PointerTypeNode *>(base)) {
         return base_ ? base_->extends(ptr->getBase()) : false;
     }
     return false;

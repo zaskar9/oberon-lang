@@ -1,6 +1,7 @@
 MODULE DisposeTest;
 IMPORT Files, Out;
 
+(*
 TYPE
     Handle = POINTER TO RECORD END;  (* Declare FILE* data type from C <stdio.h> library. *)
     File* = POINTER TO RECORD
@@ -9,13 +10,17 @@ TYPE
                 registered, modified: BOOLEAN;
                 next: File
             END;
-
+*)
 VAR f: Files.File;
-    l: File;
+    (* l: File; *)
+
+  PROCEDURE Test;
+  TYPE File = POINTER TO RECORD END;
+  END Test;
 
 BEGIN
-    NEW(l);
+    NEW(f);
     Out.String("File handle created."); Out.Ln;
-    DISPOSE(l);
+    DISPOSE(f);
     Out.String("File handle disposed."); Out.Ln
 END DisposeTest.

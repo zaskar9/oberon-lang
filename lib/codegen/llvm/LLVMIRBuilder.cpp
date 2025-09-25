@@ -51,11 +51,6 @@ void LLVMIRBuilder::visit(ModuleNode &node) {
     for (size_t i = 0; i < node.getVariableCount(); ++i) {
         const auto variable = node.getVariable(i);
         const auto type = variable->getType();
-        if (const auto decl = type->getDeclaration()) {
-            if (decl->getModule() != ast_->getTranslationUnit()) {
-                decl->accept(*this);
-            }
-        }
         const auto varTy = getLLVMType(type);
         const bool expo = variable->getIdentifier()->isExported();
         const string name = expo ? prefix + variable->getIdentifier()->name() : variable->getIdentifier()->name();
@@ -1275,7 +1270,8 @@ void LLVMIRBuilder::visit(RecordTypeNode &node) {
     // Create an empty struct and add it to the lookup table immediately to support recursive records
     const auto structTy = StructType::create(builder_.getContext());
     string name = createScopedName(&node);
-    // std::cerr << name << std::endl;
+    [[maybe_unused]] auto ppttrr = &node;
+    std::cerr << node.getModule()->getIdentifier()->name() << "." << name << std::endl;
     structTy->setName("record." + name);
     types_[&node] = structTy;
     vector<Type *> elemTys;
@@ -1322,7 +1318,7 @@ void LLVMIRBuilder::visit(RecordTypeNode &node) {
             id->setDLLStorageClass(GlobalValue::DLLStorageClassTypes::DLLExportStorageClass);
             td->setDLLStorageClass(GlobalValue::DLLStorageClassTypes::DLLExportStorageClass);
         }
-    } else if (!node.isAnonymous()) {
+    } else if (!node.isAnonymous() || !name.empty()) {
         name = node.getModule()->getIdentifier()->name() + "__" + name;
         // Create an external constant to be used as the id of the imported record type
         const auto idType = builder_.getInt32Ty();
@@ -2410,9 +2406,11 @@ Value *LLVMIRBuilder::processGEP(Type *base, Value *value, vector<Value *> &indi
 }
 
 Type* LLVMIRBuilder::getLLVMType(TypeNode *type) {
+    // Null type is mapped to void.
     if (type == nullptr) {
         return builder_.getVoidTy();
     }
+    // Check the type cache to avoid duplicate work.
     if (!types_[type]) {
         type->accept(*this);
     }

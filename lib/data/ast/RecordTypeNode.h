@@ -12,27 +12,23 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "TypeNode.h"
 #include "DeclarationNode.h"
+#include "TypeNode.h"
 
 using std::ostream;
 using std::string;
 using std::unique_ptr;
 using std::vector;
 
+class PointerTypeNode;
 
 class RecordTypeNode final : public TypeNode {
 
-private:
-    vector<unique_ptr<FieldNode>> fields_;
-    RecordTypeNode *base_;
-    unsigned short level_;
-
 public:
     RecordTypeNode(const FilePos &pos, RecordTypeNode *base, vector<unique_ptr<FieldNode>> fields);
-    ~RecordTypeNode() final = default;
+    ~RecordTypeNode() override = default;
 
-    [[nodiscard]] unsigned int getSize() const final;
+    [[nodiscard]] unsigned int getSize() const override;
 
     [[nodiscard]] FieldNode *getField(const string &name) const;
     [[nodiscard]] FieldNode *getField(size_t num) const;
@@ -42,10 +38,22 @@ public:
     [[nodiscard]] bool isExtended() const;
     [[nodiscard]] bool extends(TypeNode *) const override;
 
+    [[nodiscard]] PointerTypeNode *getParent() const;
+
     [[nodiscard]] unsigned short getLevel() const;
 
-    void accept(NodeVisitor &visitor) final;
-    void print(ostream &out) const final;
+    void accept(NodeVisitor &visitor) override;
+    void print(ostream &out) const override;
+
+private:
+    vector<unique_ptr<FieldNode>> fields_;
+    RecordTypeNode *base_;
+    PointerTypeNode *parent_{};
+    unsigned short level_;
+
+    void setParent(PointerTypeNode *);
+
+    friend class PointerTypeNode;
 
 };
 
