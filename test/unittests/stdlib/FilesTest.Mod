@@ -24,7 +24,7 @@ BEGIN
     (* Out.String("File created."); Out.Ln; *)
 
     Files.Register(f);
-    (* DISPOSE(f); *)
+    DISPOSE(f);
     (* Out.String("File registered."); Out.Ln; *)
 
     f := Files.Old("test.tmp");
@@ -35,7 +35,7 @@ BEGIN
     (* Out.String("File name checked."); Out.Ln; *)
 
     Files.Close(f);
-    (* DISPOSE(f); *)
+    DISPOSE(f);
     (* Out.String("File closed."); Out.Ln; *)
 
     res := 0;
@@ -153,7 +153,7 @@ BEGIN
     Out.Long(t DIV 4096, 0); Out.Char(":"); Out.Long(t DIV 64 MOD 64, 0); Out.Char(":"); Out.Long(t MOD 64, 0); Out.Ln;
 
     Files.Close(f);
-    (* DISPOSE(f); *)
+    DISPOSE(f);
     (* Out.String("Renamed file closed."); Out.Ln; *)
 
     res := 0;
