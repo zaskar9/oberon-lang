@@ -81,7 +81,7 @@ private:
     Value *getTypeDescriptor(Value *, const NodeReference *, TypeNode *);
 
     string qualifiedName(DeclarationNode *) const;
-    string createScopedName(const TypeNode *) const;
+    string createScopedName(const RecordTypeNode *) const;
 
     void setRefMode(bool deref);
     void restoreRefMode();

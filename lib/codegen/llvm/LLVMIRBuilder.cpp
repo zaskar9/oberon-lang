@@ -1209,9 +1209,7 @@ void LLVMIRBuilder::visit(SetExpressionNode &node) {
 
 void LLVMIRBuilder::visit(TypeDeclarationNode &node) {
     const string name = node.getIdentifier()->name();
-    scopes_.push_back(name);
     getLLVMType(node.getType());
-    scopes_.pop_back();
 }
 
 void LLVMIRBuilder::visit(ArrayTypeNode &node) {
@@ -1269,9 +1267,7 @@ void LLVMIRBuilder::visit(ProcedureTypeNode &node) {
 void LLVMIRBuilder::visit(RecordTypeNode &node) {
     // Create an empty struct and add it to the lookup table immediately to support recursive records
     const auto structTy = StructType::create(builder_.getContext());
-    string name = createScopedName(&node);
-    [[maybe_unused]] auto ppttrr = &node;
-    std::cerr << node.getModule()->getIdentifier()->name() << "." << name << std::endl;
+    const string name = createScopedName(&node);
     structTy->setName("record." + name);
     types_[&node] = structTy;
     vector<Type *> elemTys;
@@ -1286,7 +1282,6 @@ void LLVMIRBuilder::visit(RecordTypeNode &node) {
     }
     structTy->setBody(elemTys);
     if (node.getModule() == ast_->getTranslationUnit()) {
-        name = module_->getModuleIdentifier() + "__" + name;
         // Create an id for the record type by defining a global int32 variable and using its address
         const auto idType = builder_.getInt32Ty();
         const auto id = new GlobalVariable(*module_, idType, true, GlobalValue::ExternalLinkage,
@@ -1318,8 +1313,7 @@ void LLVMIRBuilder::visit(RecordTypeNode &node) {
             id->setDLLStorageClass(GlobalValue::DLLStorageClassTypes::DLLExportStorageClass);
             td->setDLLStorageClass(GlobalValue::DLLStorageClassTypes::DLLExportStorageClass);
         }
-    } else if (!node.isAnonymous() || !name.empty()) {
-        name = node.getModule()->getIdentifier()->name() + "__" + name;
+    } else if (!node.isAnonymous() || !node.getParent()->isAnonymous()) {
         // Create an external constant to be used as the id of the imported record type
         const auto idType = builder_.getInt32Ty();
         const auto id = new GlobalVariable(*module_, idType, true, GlobalValue::ExternalLinkage,
@@ -1341,7 +1335,8 @@ void LLVMIRBuilder::visit(PointerTypeNode &node) {
         auto ptrType = ptrTypes_[&node];
         if (!ptrType) {
             ptrType = StructType::create(builder_.getContext(), {builder_.getPtrTy(), type});
-            ptrType->setName("record." + createScopedName(&node) + ".ptr");
+            const auto record = dynamic_cast<RecordTypeNode *>(base);
+            ptrType->setName("record." + createScopedName(record) + ".ptr");
             ptrTypes_[&node] = ptrType;
         }
 #if defined(_LLVM_21)
@@ -2378,20 +2373,24 @@ string LLVMIRBuilder::qualifiedName(DeclarationNode *node) const {
     return node->getModule()->getIdentifier()->name() + "_" + node->getIdentifier()->name();
 }
 
-string LLVMIRBuilder::createScopedName(const TypeNode *type) const {
-    if (!type->isAnonymous() && scopes_.size() <= 1) {
-        return type->getIdentifier()->name();
+string LLVMIRBuilder::createScopedName(const RecordTypeNode *type) const {
+    string name = "anon";
+    if (type->isAnonymous()) {
+        if (const auto parent = type->getParent(); parent && !parent->isAnonymous()) {
+            name = parent->getIdentifier()->name();
+        }
+    } else {
+        name = type->getIdentifier()->name();
     }
     ostringstream oss;
+    oss << type->getModule()->getIdentifier()->name() << "__";
     size_t i = 0;
     string sep;
     while (i < scopes_.size()) {
         oss << sep << scopes_[i++];
         sep = "_";
-        if (!type->isAnonymous() && i == scopes_.size() - 1) {
-            return oss.str() + sep + type->getIdentifier()->name();
-        }
     }
+    oss << sep << name;
     return oss.str();
 }
 

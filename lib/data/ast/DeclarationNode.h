@@ -93,13 +93,13 @@ class TypeDeclarationNode final : public DeclarationNode {
 
 public:
     TypeDeclarationNode(const FilePos &pos, unique_ptr<IdentDef> ident, TypeNode *type);
-    ~TypeDeclarationNode() final = default;
+    ~TypeDeclarationNode() override = default;
 
     void setModule(ModuleNode *) override;
 
     void accept(NodeVisitor& visitor) override;
 
-    void print(std::ostream &stream) const final;
+    void print(std::ostream &stream) const override;
 
 };
 
