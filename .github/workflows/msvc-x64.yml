@@ -18,5 +18,8 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - name: Find LLVM
+      run: ls C:\Program Files\LLVM\bin
+
     - name: Configure CMake
       run: cmake -B ${{ github.workspace }}\build -S ${{ github.workspace }} -G "Visual Studio 17 2022"
