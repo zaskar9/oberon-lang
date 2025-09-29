@@ -1,0 +1,22 @@
+name: MSVC (x64)
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+env:
+  build_type: Release
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Configure CMake
+      run: cmake -B "$GITHUB_WORKSPACE"\build -S "$GITHUB_WORKSPACE" -G "Visual Studio 17 2022"
