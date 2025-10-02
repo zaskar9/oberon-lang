@@ -70,7 +70,7 @@ unsigned int TypeNode::getSize() const {
 }
 
 bool TypeNode::isAnonymous() const {
-    return decl_ == nullptr && !isBasic();
+    return decl_ == nullptr && !isBasic() && !isVirtual();
 }
 
 bool TypeNode::isArray() const {
@@ -136,10 +136,12 @@ bool TypeNode::isByte() const {
 bool TypeNode::isVirtual() const {
     return kind_ == TypeKind::ANYTYPE ||
            kind_ == TypeKind::NOTYPE ||
+           kind_ == TypeKind::NILTYPE ||
            kind_ == TypeKind::TYPE ||
            kind_ == TypeKind::NUMERIC ||
            kind_ == TypeKind::ENTIRE ||
-           kind_ == TypeKind::FLOATING;
+           kind_ == TypeKind::FLOATING ||
+           kind_ == TypeKind::STRING;
 }
 
 bool TypeNode::isBasic() const {

@@ -72,16 +72,16 @@ void SymbolExporter::writeDeclaration(SymbolFile *file, DeclarationNode *decl) {
                     file->writeChar(dynamic_cast<BooleanLiteralNode *>(con->getValue())->value() ? 1 : 0);
                     break;
                 case TypeKind::CHAR:
-                    file->writeChar(static_cast<signed char>(dynamic_cast<CharLiteralNode *>(con->getValue())->value()));
+                    file->writeChar(static_cast<int8_t>(dynamic_cast<CharLiteralNode *>(con->getValue())->value()));
                     break;
                 case TypeKind::SHORTINT:
-                    file->writeShort(static_cast<short>(dynamic_cast<IntegerLiteralNode *>(con->getValue())->value()));
+                    file->writeShort(static_cast<int16_t>(dynamic_cast<IntegerLiteralNode *>(con->getValue())->value()));
                     break;
                 case TypeKind::INTEGER:
-                    file->writeInt(static_cast<int>(dynamic_cast<IntegerLiteralNode *>(con->getValue())->value()));
+                    file->writeInt(static_cast<int32_t>(dynamic_cast<IntegerLiteralNode *>(con->getValue())->value()));
                     break;
                 case TypeKind::LONGINT:
-                    file->writeLong(static_cast<long>(dynamic_cast<IntegerLiteralNode *>(con->getValue())->value()));
+                    file->writeLong(dynamic_cast<IntegerLiteralNode *>(con->getValue())->value());
                     break;
                 case TypeKind::REAL:
                     file->writeFloat(static_cast<float>(dynamic_cast<RealLiteralNode *>(con->getValue())->value()));
@@ -108,14 +108,14 @@ void SymbolExporter::writeType(SymbolFile *file, TypeNode *type) {
         file->writeChar(-static_cast<char>(TypeKind::NOTYPE));
         return;
     }
-    // basic non-virtual type
-    if ((type->isBasic() || type->isString()) && !type->isVirtual()) {
+    // non-virtual basic type or string
+    if ((type->isBasic() && !type->isVirtual()) || type->isString()) {
         file->writeChar(-static_cast<char>(type->kind()));
         return;
     }
     // declaration already serialized to file
     if (xrefs_.contains(type)) {
-        file->writeChar(static_cast<signed char>(-xrefs_[type]));
+        file->writeChar(-static_cast<uint8_t>(xrefs_[type]));
         return;
     }
     // actual type that needs exporting
@@ -134,7 +134,7 @@ void SymbolExporter::writeType(SymbolFile *file, TypeNode *type) {
             xrefs_[type] = xref_;
             xref_++;
         }
-        if (type->getDeclaration()->getModule() != context_.getTranslationUnit()) {
+        if (isExternal(type)) {
             const auto decl = type->getDeclaration();
             file->writeString(decl->getModule()->getIdentifier()->name());
             file->writeString(decl->getIdentifier()->name());
@@ -175,9 +175,10 @@ void SymbolExporter::writeArrayType(SymbolFile *file, const ArrayTypeNode *type)
 
 void SymbolExporter::writePointerType(SymbolFile *file, const PointerTypeNode *type) {
     const auto base = type->getBase();
-    if (!base->isAnonymous() && !xrefs_.contains(base)) {
+    // Note: call to isExternal() relies on short-circuiting based on the nullptr-check in isAnonymous().
+    if (!base->isAnonymous() && !isExternal(base) && !xrefs_.contains(base)) {
         // create forward reference
-        file->writeChar(static_cast<signed char>(-xref_));
+        file->writeChar(-static_cast<int8_t>(xref_));
         fwds_[base] = xref_;
         xref_++;
     } else {
@@ -245,4 +246,8 @@ void SymbolExporter::writeParameter(SymbolFile *file, const ParameterNode *param
     // write out parameter type: if successive parameters have the same type,
     // only write it out the first time and write `NOTYPE` for following parameters
     writeType(file, param->seqId() == 0 ? param->getType() : nullptr);
+}
+
+bool SymbolExporter::isExternal(const TypeNode *type) const {
+    return type->getDeclaration()->getModule() != context_.getTranslationUnit();
 }

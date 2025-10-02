@@ -10,7 +10,7 @@
 #include <sstream>
 #include <string>
 
-#if defined(_WIN32) || defined(_WIN64) || defined(__MINGW64__) || defined(__MINGW32__)
+#if defined(_WIN32) || defined(_WIN64)
 #define _WINAPI
 #else
 #undef _WINAPI

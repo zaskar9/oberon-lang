@@ -65,7 +65,6 @@ optional<path> CompilerConfig::find(const path &name, const vector<path> &direct
         }
     }
     return std::nullopt;
-
 }
 
 void CompilerConfig::addIncludeDirectory(const path &directory) {

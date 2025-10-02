@@ -10,22 +10,21 @@
 
 class PointerTypeNode final : public TypeNode {
 
-private:
-    TypeNode *base_;
-
 public:
-    explicit PointerTypeNode(const FilePos &pos, TypeNode *base) :
-            TypeNode(NodeType::pointer_type, pos, TypeKind::POINTER, 8), base_(base) {};
-    ~PointerTypeNode() final = default;
+    PointerTypeNode(const FilePos &pos, TypeNode *base);
+    ~PointerTypeNode() override = default;
 
     void setBase(TypeNode *base);
     [[nodiscard]] TypeNode *getBase() const;
 
     [[nodiscard]] bool extends(TypeNode *) const override;
 
-    void accept(NodeVisitor &visitor) final;
+    void accept(NodeVisitor &visitor) override;
 
-    void print(std::ostream &stream) const final;
+    void print(std::ostream &stream) const override;
+
+private:
+    TypeNode *base_;
 
 };
 

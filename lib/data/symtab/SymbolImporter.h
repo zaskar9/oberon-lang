@@ -50,7 +50,7 @@ private:
     void readDeclaration(SymbolFile *, NodeType);
     TypeNode *readType(SymbolFile *, const TypeDeclarationNode * = nullptr, PointerTypeNode * = nullptr);
     TypeNode *readArrayType(SymbolFile *);
-    TypeNode *readPointerType(SymbolFile *);
+    TypeNode *readPointerType(SymbolFile *, unsigned);
     TypeNode *readProcedureType(SymbolFile *);
     TypeNode *readRecordType(SymbolFile *);
 

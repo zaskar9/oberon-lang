@@ -370,7 +370,7 @@ unique_ptr<const Token> Scanner::scanNumber() {
         return make_unique<CharLiteralToken>(pos, current(), value);
     }
     bool isLong = true;
-    bool isInt;
+    bool isInt = true;
     int64_t value;
     try {
         if (isHex) {

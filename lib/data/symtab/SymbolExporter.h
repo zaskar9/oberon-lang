@@ -46,6 +46,8 @@ private:
     void writeRecordType(SymbolFile *, const RecordTypeNode *);
     void writeParameter(SymbolFile *, const ParameterNode *);
 
+    bool isExternal(const TypeNode *) const;
+
 };
 
 

@@ -11,7 +11,7 @@ RecordTypeNode::RecordTypeNode(const FilePos &pos, RecordTypeNode *base, vector<
         TypeNode(NodeType::record_type, pos, TypeKind::RECORD, 0),
         fields_(std::move(fields)), base_(base), level_(base ? base->getLevel() + 1 : 0) {
     unsigned index = 0;
-    for (auto& field : fields_) {
+    for (const auto& field : fields_) {
         field->setRecordType(this);
         field->setIndex(index++);
     }
@@ -37,7 +37,7 @@ FieldNode *RecordTypeNode::getField(const std::string &name) const {
     return nullptr;
 }
 
-FieldNode *RecordTypeNode::getField(size_t num) const {
+FieldNode *RecordTypeNode::getField(const size_t num) const {
     return fields_.at(num).get();
 }
 
@@ -59,6 +59,16 @@ bool RecordTypeNode::extends(TypeNode *base) const {
     }
     return this == base;
 }
+
+PointerTypeNode *RecordTypeNode::getParent() const {
+    return parent_;
+}
+
+void RecordTypeNode::setParent(PointerTypeNode *parent) {
+    parent_ = parent;
+}
+
+
 
 unsigned short RecordTypeNode::getLevel() const {
     return level_;

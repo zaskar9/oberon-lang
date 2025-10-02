@@ -64,7 +64,7 @@ ModuleNode *SymbolImporter::read(const string &name) {
 #endif
     xrefs_.clear();
     if (!fwds_.empty()) {
-        logger_.error(fp.string(), "Unresolved forward references during import.");
+        logger_.error(fp.string(), "Unresolved forward type references during import.");
         fwds_.clear();
     }
     file->flush();
@@ -172,7 +172,9 @@ TypeNode *SymbolImporter::readType(SymbolFile *file, const TypeDeclarationNode *
         // referenced type has not yet been imported, create a forward reference
         if (ptr) {
             fwds_[ref] = ptr;
+            return nullptr;
         }
+        logger_.error(file->path(), "Unresolved type reference during import: " + to_string(ref) + ".");
         return nullptr;
     }
     // handle re-exported types
@@ -191,7 +193,7 @@ TypeNode *SymbolImporter::readType(SymbolFile *file, const TypeDeclarationNode *
     if (kind == TypeKind::ARRAY) {
         type = readArrayType(file);
     } else if (kind == TypeKind::POINTER) {
-        type = readPointerType(file);
+        type = readPointerType(file, ref);
     } else if (kind == TypeKind::PROCEDURE) {
         type = readProcedureType(file);
     } else if (kind == TypeKind::RECORD) {
@@ -245,9 +247,10 @@ TypeNode *SymbolImporter::readArrayType(SymbolFile *file) {
     return res;
 }
 
-TypeNode *SymbolImporter::readPointerType(SymbolFile *file) {
+TypeNode *SymbolImporter::readPointerType(SymbolFile *file, const unsigned ref) {
     // create a pointer type with null base type
     const auto ptr = context_.getOrInsertPointerType(EMPTY_POS, EMPTY_POS, nullptr, module_);
+    this->setXRef(ref, ptr);
     // try to read and set the base type
     if (const auto base = readType(file, nullptr, ptr)) {
         ptr->setBase(base);

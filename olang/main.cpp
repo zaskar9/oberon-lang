@@ -22,7 +22,7 @@
 // are not loaded into the JIT environment by default, running these modules in JIT 
 // mode will fail. As a work-around, the following pragma directives tell the linker to
 // re-export these symbols.
-#if (defined(_WIN32) || defined(_WIN64)) 
+#if defined(_WIN32) || defined(_WIN64)
     #if defined(__clang__)
     #pragma comment(linker, "/export:___chkstk_ms")
     #elif defined(__GNUC__) || defined(__GNUG__)
@@ -117,11 +117,11 @@ int main(const int argc, const char **argv) {
         if (vm.count("verbose")) {
             logger.setLevel(LogLevel::DEBUG);
         }
-#if (defined(_WIN32) || defined(_WIN64)) && !(defined(__MINGW32__) || defined(__MINGW64__))
+#if defined(_WIN32) || defined(_WIN64)
         // Windows uses a semicolon to separate multiple paths
-        std::string separator = ";";
+        string separator = ";";
 #else
-        std::string separator = ":";
+        string separator = ":";
 #endif
         if (vm.count("-I")) {
             auto params = vm["-I"].as<vector<string>>();

@@ -276,7 +276,7 @@ std::string LLVMCodeGen::getObjName(const std::string &name, const Triple &tripl
 void LLVMCodeGen::loadObjects(const ASTContext *ast) const {
     const auto module = ast->getTranslationUnit();
     for (const auto& imp: module->imports()) {
-        auto name = imp->getModule()->name();
+        const auto name = imp->getModule()->name();
         logger_.debug("Searching object file for module: '" + name + "'.");
         if (const auto obj = config_.findLibrary(getObjName(name, jit_->getTargetTriple()))) {
             // Load the object file from a file

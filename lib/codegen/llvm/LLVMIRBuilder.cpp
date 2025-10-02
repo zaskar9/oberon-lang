@@ -50,13 +50,17 @@ void LLVMIRBuilder::visit(ModuleNode &node) {
     const string prefix = node.getIdentifier()->name() + "_";
     for (size_t i = 0; i < node.getVariableCount(); ++i) {
         const auto variable = node.getVariable(i);
-        const auto type = getLLVMType(variable->getType());
+        const auto type = variable->getType();
+        const auto varTy = getLLVMType(type);
         const bool expo = variable->getIdentifier()->isExported();
         const string name = expo ? prefix + variable->getIdentifier()->name() : variable->getIdentifier()->name();
-        const auto value = new GlobalVariable(*module_, type, false,
+        const auto value = new GlobalVariable(*module_, varTy, false,
                                               expo ? GlobalValue::ExternalLinkage : GlobalValue::InternalLinkage,
-                                              Constant::getNullValue(type), name);
-        value->setAlignment(module_->getDataLayout().getABITypeAlign(type));
+                                              Constant::getNullValue(varTy), name);
+        value->setAlignment(module_->getDataLayout().getABITypeAlign(varTy));
+        if (expo && triple_.isOSWindows() && !triple_.isOSCygMing() && !config_.hasFlag(Flag::ENABLE_MAIN)) {
+            value->setDLLStorageClass(GlobalValue::DLLStorageClassTypes::DLLExportStorageClass);
+        }
         values_[variable] = value;
     }
     // Create declarations for imported external procedure.
@@ -78,7 +82,7 @@ void LLVMIRBuilder::visit(ModuleNode &node) {
     // Generate code for body.
     auto body = module_->getOrInsertFunction(node.getIdentifier()->name(), builder_.getInt32Ty());
     function_ = dyn_cast<Function>(body.getCallee());
-    if (triple_.isOSWindows() && !config_.hasFlag(Flag::ENABLE_MAIN)) {
+    if (triple_.isOSWindows() && !triple_.isOSCygMing() && !config_.hasFlag(Flag::ENABLE_MAIN)) {
         function_->setDLLStorageClass(GlobalValue::DLLStorageClassTypes::DLLExportStorageClass);
     }
     auto entry = BasicBlock::Create(builder_.getContext(), "entry", function_);
@@ -428,12 +432,12 @@ TypeNode *LLVMIRBuilder::selectors(const NodeReference *ref, TypeNode *base, con
                 // Create an out-of-bounds check and trap for the current array index.
                 if (config_.isSanitized(Trap::OUT_OF_BOUNDS) && (array_t->isOpen() || !index->isLiteral())) {
                     Value *lower = builder_.getInt64(0);
-                    Value *upper = getOrLoadArrayLength(lengths, dopeV, array_t, i);
+                    Value *upper = getOrLoadArrayLength(lengths, dopeV, array_t, static_cast<uint32_t>(i));
                     trapOutOfBounds(builder_.CreateSExt(value_, builder_.getInt64Ty()), lower, upper);
                 }
                 Value *addr = builder_.CreateSExt(value_, builder_.getInt64Ty());
                 for (size_t j = i; j < array_t->dimensions() - 1; ++j) {
-                    Value *length = getOrLoadArrayLength(lengths, dopeV, array_t, j + 1);
+                    Value *length = getOrLoadArrayLength(lengths, dopeV, array_t, static_cast<uint32_t>(j) + 1);
                     if (j == i) {
                         addr = builder_.CreateNSWMul(addr, length);
                     } else {
@@ -585,7 +589,7 @@ LLVMIRBuilder::parameters(ProcedureTypeNode *type, ActualParameters *actuals, ve
 TypeNode *LLVMIRBuilder::createStaticCall(NodeReference &node, const QualIdent *ident, Selectors &selectors) {
     const auto proc = dynamic_cast<ProcedureNode *>(node.dereference());
     vector<Value*> values;
-    ActualParameters *sel;
+    ActualParameters *sel = nullptr;
     bool args;
     if (selectors.empty() || selectors[0].get()->getNodeType() != NodeType::parameter) {
         args = false;
@@ -597,7 +601,7 @@ TypeNode *LLVMIRBuilder::createStaticCall(NodeReference &node, const QualIdent *
         args = true;
     }
     if (proc->isPredefined()) {
-        constexpr vector<unique_ptr<ExpressionNode>> params;
+        const vector<unique_ptr<ExpressionNode>> params;
         const auto callee = dynamic_cast<PredefinedProcedure *>(proc);
         value_ = createPredefinedCall(callee, ident, args ? sel->parameters() : params, values);
     } else {
@@ -1205,9 +1209,7 @@ void LLVMIRBuilder::visit(SetExpressionNode &node) {
 
 void LLVMIRBuilder::visit(TypeDeclarationNode &node) {
     const string name = node.getIdentifier()->name();
-    scopes_.push_back(name);
     getLLVMType(node.getType());
-    scopes_.pop_back();
 }
 
 void LLVMIRBuilder::visit(ArrayTypeNode &node) {
@@ -1265,7 +1267,7 @@ void LLVMIRBuilder::visit(ProcedureTypeNode &node) {
 void LLVMIRBuilder::visit(RecordTypeNode &node) {
     // Create an empty struct and add it to the lookup table immediately to support recursive records
     const auto structTy = StructType::create(builder_.getContext());
-    string name = createScopedName(&node);
+    const string name = createScopedName(&node);
     structTy->setName("record." + name);
     types_[&node] = structTy;
     vector<Type *> elemTys;
@@ -1280,7 +1282,6 @@ void LLVMIRBuilder::visit(RecordTypeNode &node) {
     }
     structTy->setBody(elemTys);
     if (node.getModule() == ast_->getTranslationUnit()) {
-        name = module_->getModuleIdentifier() + "__" + name;
         // Create an id for the record type by defining a global int32 variable and using its address
         const auto idType = builder_.getInt32Ty();
         const auto id = new GlobalVariable(*module_, idType, true, GlobalValue::ExternalLinkage,
@@ -1307,12 +1308,12 @@ void LLVMIRBuilder::visit(RecordTypeNode &node) {
                                      name + "_td");
         td->setAlignment(module_->getDataLayout().getABITypeAlign(recordTdTy_));
         recTypeTds_[&node] = td;
-        if (triple_.isOSWindows() && !node.isAnonymous() && node.getIdentifier()->isExported() && !config_.hasFlag(Flag::ENABLE_MAIN)) {
+        if (triple_.isOSWindows() && !triple_.isOSCygMing() &&
+            !node.isAnonymous() && node.getIdentifier()->isExported() && !config_.hasFlag(Flag::ENABLE_MAIN)) {
             id->setDLLStorageClass(GlobalValue::DLLStorageClassTypes::DLLExportStorageClass);
             td->setDLLStorageClass(GlobalValue::DLLStorageClassTypes::DLLExportStorageClass);
         }
-    } else if (!node.isAnonymous()){
-        name = node.getModule()->getIdentifier()->name() + "__" + name;
+    } else if (!node.isAnonymous() || !node.getParent()->isAnonymous()) {
         // Create an external constant to be used as the id of the imported record type
         const auto idType = builder_.getInt32Ty();
         const auto id = new GlobalVariable(*module_, idType, true, GlobalValue::ExternalLinkage,
@@ -1334,7 +1335,8 @@ void LLVMIRBuilder::visit(PointerTypeNode &node) {
         auto ptrType = ptrTypes_[&node];
         if (!ptrType) {
             ptrType = StructType::create(builder_.getContext(), {builder_.getPtrTy(), type});
-            ptrType->setName("record." + createScopedName(&node) + ".ptr");
+            const auto record = dynamic_cast<RecordTypeNode *>(base);
+            ptrType->setName("record." + createScopedName(record) + ".ptr");
             ptrTypes_[&node] = ptrType;
         }
 #if defined(_LLVM_21)
@@ -2354,7 +2356,8 @@ void LLVMIRBuilder::createFunction(ProcedureNode &node, const CallingConvention 
     const auto funType = createFunctionType(*node.getType(), cnv);
     auto callee = module_->getOrInsertFunction(name, funType);
     const auto function = dyn_cast<Function>(callee.getCallee());
-    if (triple_.isOSWindows() && node.getIdentifier()->isExported() && !config_.hasFlag(Flag::ENABLE_MAIN)) {
+    if (triple_.isOSWindows() && !triple_.isOSCygMing() &&
+        node.getIdentifier()->isExported() && !config_.hasFlag(Flag::ENABLE_MAIN)) {
         function->setDLLStorageClass(GlobalValue::DLLStorageClassTypes::DLLExportStorageClass);
     }
 }
@@ -2370,20 +2373,24 @@ string LLVMIRBuilder::qualifiedName(DeclarationNode *node) const {
     return node->getModule()->getIdentifier()->name() + "_" + node->getIdentifier()->name();
 }
 
-string LLVMIRBuilder::createScopedName(const TypeNode *type) const {
-    if (!type->isAnonymous() && scopes_.size() <= 1) {
-        return type->getIdentifier()->name();
+string LLVMIRBuilder::createScopedName(const RecordTypeNode *type) const {
+    string name = "anon";
+    if (type->isAnonymous()) {
+        if (const auto parent = type->getParent(); parent && !parent->isAnonymous()) {
+            name = parent->getIdentifier()->name();
+        }
+    } else {
+        name = type->getIdentifier()->name();
     }
     ostringstream oss;
+    oss << type->getModule()->getIdentifier()->name() << "__";
     size_t i = 0;
     string sep;
     while (i < scopes_.size()) {
         oss << sep << scopes_[i++];
         sep = "_";
-        if (!type->isAnonymous() && i == scopes_.size() - 1) {
-            return oss.str() + sep + type->getIdentifier()->name();
-        }
     }
+    oss << sep << name;
     return oss.str();
 }
 
@@ -2398,9 +2405,11 @@ Value *LLVMIRBuilder::processGEP(Type *base, Value *value, vector<Value *> &indi
 }
 
 Type* LLVMIRBuilder::getLLVMType(TypeNode *type) {
+    // Null type is mapped to void.
     if (type == nullptr) {
         return builder_.getVoidTy();
     }
+    // Check the type cache to avoid duplicate work.
     if (!types_[type]) {
         type->accept(*this);
     }

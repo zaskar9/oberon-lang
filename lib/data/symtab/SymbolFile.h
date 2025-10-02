@@ -15,29 +15,25 @@ using std::string;
 
 class SymbolFile {
 
-private:
-    fstream file_;
-    string path_;
-
 public:
-    explicit SymbolFile() {}
+    SymbolFile() = default;
     ~SymbolFile() = default;
 
     void open(const string &path, std::ios::openmode mode);
     [[nodiscard]] string path() const;
 
-    [[nodiscard]] signed char readChar();
-    [[nodiscard]] short readShort();
-    [[nodiscard]] int readInt();
-    [[nodiscard]] long readLong();
+    [[nodiscard]] int8_t readChar();
+    [[nodiscard]] int16_t readShort();
+    [[nodiscard]] int32_t readInt();
+    [[nodiscard]] int64_t readLong();
     [[nodiscard]] float readFloat();
     [[nodiscard]] double readDouble();
     [[nodiscard]] std::string readString();
 
-    void writeChar(signed char val);
-    void writeShort(short val);
-    void writeInt(int val);
-    void writeLong(long val);
+    void writeChar(int8_t val);
+    void writeShort(int16_t val);
+    void writeInt(int32_t val);
+    void writeLong(int64_t val);
     void writeFloat(float val);
     void writeDouble(double val);
     void writeString(const std::string &val);
@@ -47,6 +43,10 @@ public:
     void close();
 
     static constexpr uint32_t VERSION = 5;
+
+private:
+    fstream file_;
+    string path_;
 
 };
 

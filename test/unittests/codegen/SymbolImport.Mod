@@ -3,15 +3,16 @@
   RUN: %oberon -I "%S%{pathsep}%inc" -L "%S%{pathsep}%lib" -l oberon --run %s | filecheck %s
 *)
 MODULE SymbolImport;
-IMPORT SymbolExport, Oberon, M := Math, O := Out, S := SYSTEM;
+IMPORT SymbolExport, Files, M := Math, O := Out, S := SYSTEM;
 
-VAR t: Oberon.TimeSpec;
+VAR r: Files.Rider;
     n: SymbolExport.Node;
+    x, y: SymbolExport.BinTreeNode;
 
 BEGIN
-    t.secs := 0;
-    t.nsecs := 0;
-    SymbolExport.SetTime(t);
+    SymbolExport.SetRider(r);
+    ASSERT(~r.eof);
+    SymbolExport.Swap(x, y);
     O.Real(M.pi, 10); O.Ln;
     O.Long(S.SIZE(INTEGER), 0); O.Ln;
     NEW(n);

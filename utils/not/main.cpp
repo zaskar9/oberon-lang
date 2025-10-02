@@ -2,7 +2,7 @@
 #include <vector>
 #include <string>
 
-#if defined(_WIN32) || defined(_WIN64) || defined(__MINGW32__) || defined(__MINGW64__)
+#if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
 #define _WINAPI
 #else
@@ -71,8 +71,8 @@ int run(const vector<string>& args) {
 }
 #endif
 
-int main(int argc, char* argv[]) {
-    vector<string> args(argv + 1, argv + argc);
+int main(const int argc, char* argv[]) {
+    const vector<string> args(argv + 1, argv + argc);
     if (args.empty()) {
         cerr << "Usage: not <command> [arguments...]\n";
         return 1;

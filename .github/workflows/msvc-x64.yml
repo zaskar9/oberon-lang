@@ -1,0 +1,43 @@
+name: MSVC (x64)
+
+on:
+  push:
+    branches:
+      - inactive
+  pull_request:
+    branches:
+      - inactive
+  workflow_dispatch:
+
+env:
+  build_type: Release
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: powershell
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install LLVM libraries
+      run: |
+        Invoke-WebRequest -Uri "https://github.com/llvm/llvm-project/releases/download/llvmorg-21.1.0/clang+llvm-21.1.0-x86_64-pc-windows-msvc.tar.xz" -OutFile clang+llvm-21.1.0-x86_64-pc-windows-msvc.tar.xz
+        tar -xzf .\clang+llvm-21.1.0-x86_64-pc-windows-msvc.tar.xz -C ${{ runner.temp }}
+
+    - name: Install Boost libraries
+      run: |
+        Invoke-WebRequest -Uri "https://archives.boost.io/release/1.89.0/binaries/boost_1_89_0-bin-msvc-all-32-64.7z" -OutFile boost_1_89_0-bin-msvc-all-32-64.7z
+        7z x boost_1_89_0-bin-msvc-all-32-64.7z -o${{ runner.temp }} -r
+#        ls ${{ runner.temp }}\boost_1_89_0\tools\cmake\config
+
+    - name: Install Python dependencies
+      run: |
+        pip3 install lit
+        pip3 install filecheck
+        pip3 install sphinx
+        pip3 install sphinx_rtd_theme
+
+    - name: Configure CMake
+      run: cmake -B ${{ github.workspace }}\build -S ${{ github.workspace }} -G "Visual Studio 17 2022" -DCMAKE_PREFIX_PATH="${{ runner.temp }}\clang+llvm-21.1.0-x86_64-pc-windows-msvc;${{ runner.temp }}\boost_1_89_0\tools\cmake\config"
