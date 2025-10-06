@@ -23,6 +23,10 @@ using std::string;
 using std::unordered_set;
 using std::vector;
 
+enum class LanguageStandard {
+    Oberon90, Oberon2, Oberon07, TurboOberon
+};
+
 enum class OutputFileType {
     AssemblyFile, BitCodeFile, LLVMIRFile, ObjectFile
 };
@@ -64,8 +68,9 @@ enum class Warning : unsigned {
 class CompilerConfig {
 
 public:
-    CompilerConfig() : logger_(LogLevel::INFO, cout), type_(OutputFileType::ObjectFile),
-            level_(OptimizationLevel::O0), model_(RelocationModel::DEFAULT), warn_(0), jit_(false) {
+    CompilerConfig() : logger_(LogLevel::INFO, cout), std_(LanguageStandard::TurboOberon),
+            type_(OutputFileType::ObjectFile), level_(OptimizationLevel::O0), model_(RelocationModel::DEFAULT),
+            warn_(0), jit_(false) {
         // Activate default compiler flags
         setSanitizeAll();
         setFlag(Flag::INIT_GLOBAL_ZERO);
@@ -83,6 +88,9 @@ public:
 
     void addInputFile(path file);
     [[nodiscard]] vector<path> &inputFiles();
+
+    void setLanguageStandard(LanguageStandard);
+    [[nodiscard]] LanguageStandard getLanguageStandard() const;
 
     void setOutputFile(const string &);
     [[nodiscard]] string getOutputFile() const;
@@ -132,6 +140,7 @@ private:
     string outfile_;
     string target_;
     string symdir_;
+    LanguageStandard std_;
     OutputFileType type_;
     OptimizationLevel level_;
     RelocationModel model_;

@@ -56,11 +56,11 @@ Sema::onTranslationUnitEnd(const string &name) {
     }
 }
 
-void Sema::onBlockStart() {
+void Sema::onBlockStart() const {
     symbols_->openScope();
 }
 
-void Sema::onBlockEnd() {
+void Sema::onBlockEnd() const {
     symbols_->closeScope();
 }
 
@@ -2181,8 +2181,8 @@ Sema::assertCompatible(const FilePos &pos, TypeNode *expected, TypeNode *actual,
         return true;
     }
     // Check declared types
-    auto expectedId = expected->getIdentifier();
-    auto actualId = actual->getIdentifier();
+    const auto expectedId = expected->getIdentifier();
+    const auto actualId = actual->getIdentifier();
     if (assertEqual(expectedId, actualId)) {
         // the two types are the same type
         return true;

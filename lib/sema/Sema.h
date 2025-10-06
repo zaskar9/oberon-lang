@@ -42,8 +42,8 @@ public:
     Sema(const Sema&) = delete;
     Sema& operator=(const Sema&) = delete;
 
-    void onBlockStart();
-    void onBlockEnd();
+    void onBlockStart() const;
+    void onBlockEnd() const;
 
     void onTranslationUnitStart(const FilePos &, const FilePos &, const unique_ptr<Ident> &) const;
     void onTranslationUnitEnd(const string &);

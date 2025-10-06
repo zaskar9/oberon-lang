@@ -66,12 +66,13 @@ int main(const int argc, const char **argv) {
             (",O", po::value<int>()->value_name("<level>"), "Optimization level. [O0, O1, O2, O3]")
             (",o", po::value<string>()->value_name("<filename>"), "Name of the output file.")
             (",W", po::value<vector<string>>()->value_name("<option>"), "Warning configuration.")
-            ("sym-dir", po::value<string>()->value_name("<directory>"), "Set output path for generated .smb files.")
             // ("filetype", po::value<string>()->value_name("<type>"), "Set type of output file. [asm, bc, obj, ll]")
             ("reloc", po::value<string>()->value_name("<model>"), "Set relocation model. [default, static, pic]")
-            ("target", po::value<string>()->value_name("<triple>"), "Target triple for cross compilation.")
             ("run,r", "Run with LLVM JIT.")
+            ("sym-dir", po::value<string>()->value_name("<directory>"), "Set output path for generated .smb files.")
             (",S", "Only run compilation steps.")
+            ("std", "Language standard to compile for.")
+            ("target", po::value<string>()->value_name("<triple>"), "Target triple for cross compilation.")
             ("verbose,v", "Enable debugging outputs.")
             ("quiet,q", "Suppress all compiler outputs.");
     auto hidden = po::options_description("HIDDEN");
@@ -93,13 +94,13 @@ int main(const int argc, const char **argv) {
         return EXIT_FAILURE;
     }
     po::notify(vm);
-    if (vm.count("help")) {
+    if (vm.contains("help")) {
         cout << "OVERVIEW: " << PROGRAM_NAME << " LLVM compiler\n" << endl;
         cout << "USAGE: " << PROGRAM_NAME << " [options] file...\n" << endl;
         cout << visible << endl;
         return EXIT_SUCCESS;
     }
-    if (vm.count("version")) {
+    if (vm.contains("version")) {
         cout << PROGRAM_NAME << " version " << PROJECT_VERSION;
         cout << " (build " << GIT_COMMIT << "@" << GIT_BRANCH << ")" << endl;
         cout << "Target:   " << codegen->getDescription() << endl;
@@ -110,11 +111,11 @@ int main(const int argc, const char **argv) {
         cout << "LLVM " << LLVM_VERSION << endl;
         return EXIT_SUCCESS;
     }
-    if (vm.count("inputs")) {
-        if (vm.count("quiet")) {
+    if (vm.contains("inputs")) {
+        if (vm.contains("quiet")) {
             logger.setLevel(LogLevel::QUIET);
         }
-        if (vm.count("verbose")) {
+        if (vm.contains("verbose")) {
             logger.setLevel(LogLevel::DEBUG);
         }
 #if defined(_WIN32) || defined(_WIN64)
@@ -123,7 +124,7 @@ int main(const int argc, const char **argv) {
 #else
         string separator = ":";
 #endif
-        if (vm.count("-I")) {
+        if (vm.contains("-I")) {
             auto params = vm["-I"].as<vector<string>>();
             vector<string> includes;
             for (const auto& param : params) {
@@ -134,7 +135,7 @@ int main(const int argc, const char **argv) {
                 }
             }
         }
-        if (vm.count("-L")) {
+        if (vm.contains("-L")) {
             auto params = vm["-L"].as<vector<string>>();
             vector<string> libraries;
             for (const auto& param : params) {
@@ -145,14 +146,14 @@ int main(const int argc, const char **argv) {
                 }
             }
         }
-        if (vm.count("-l")) {
+        if (vm.contains("-l")) {
             const auto params = vm["-l"].as<vector<string>>();
             for (const auto& lib : params) {
                 config.addLibrary(lib);
                 logger.debug("Library: '" + lib + "'.");
             }
         }
-        if (vm.count("-f")) {
+        if (vm.contains("-f")) {
             auto params = vm["-f"].as<vector<string>>();
             for (const auto& flag : params) {
                 if (flag == "enable-extern") {
@@ -163,18 +164,18 @@ int main(const int argc, const char **argv) {
                     config.setFlag(Flag::ENABLE_MAIN);
                 } else if (flag == "no-stack-protector") {
                     config.toggleFlag(Flag::STACK_PROTECT, false);
-                } else if (smatch zinit; regex_search(flag, zinit, regex("^(no-)?init-(local|global)-zero$"))) {
-                    const bool active = zinit.str(1).empty();
-                    const string scope = zinit.str(2);
+                } else if (smatch matches; regex_search(flag, matches, regex("^(no-)?init-(local|global)-zero$"))) {
+                    const bool active = matches.str(1).empty();
+                    const string scope = matches.str(2);
                     if (scope == "local") {
                         config.toggleFlag(Flag::INIT_LOCAL_ZERO, active);
                     } else {
                         config.toggleFlag(Flag::INIT_GLOBAL_ZERO, active);
                         logger.warning(PROGRAM_NAME, "argument unused during compilation: '-f" + flag + "'.");
                     }
-                } else if (smatch ubsan; regex_search(flag, ubsan, regex("^(no-)?sanitize=(.*)$"))) {
+                } else if (regex_search(flag, matches, regex("^(no-)?sanitize=(.*)$"))) {
                     const bool active = flag[0] != 'n';
-                    const string opt = ubsan.str(2);
+                    const string opt = matches.str(2);
                     if (opt == "array-bounds" || opt == "bounds") {
                         // Out of bounds array indexing.
                         config.toggleSanitize(Trap::OUT_OF_BOUNDS, active);
@@ -230,7 +231,7 @@ int main(const int argc, const char **argv) {
                 }
             }
         }
-        if (vm.count("-O")) {
+        if (vm.contains("-O")) {
             switch (int level = vm["-O"].as<int>()) {
                 case 0:
                     config.setOptimizationLevel(OptimizationLevel::O0);
@@ -249,10 +250,10 @@ int main(const int argc, const char **argv) {
                     return EXIT_FAILURE;
             }
         }
-        if (vm.count("-o")) {
+        if (vm.contains("-o")) {
             config.setOutputFile(vm["-o"].as<string>());
         }
-        if (vm.count("-W")) {
+        if (vm.contains("-W")) {
             const auto params = vm["-W"].as<vector<string>>();
             for (const auto& warn : params) {
                 if (warn == "error") {
@@ -263,28 +264,28 @@ int main(const int argc, const char **argv) {
                 }
             }
         }
-        if (vm.count("run")) {  // run
+        if (vm.contains("run")) {  // run
             config.setJit(true);
-        } else if (vm.count("-c")) {  // compile and assemble
-            if (vm.count("emit-llvm")) {
+        } else if (vm.contains("-c")) {  // compile and assemble
+            if (vm.contains("emit-llvm")) {
                 config.setFileType(OutputFileType::BitCodeFile);
             } else {
                 config.setFileType(OutputFileType::ObjectFile);
             }
-        } else if (vm.count("-S")) {  // assemble
-            if (vm.count("emit-llvm")) {
+        } else if (vm.contains("-S")) {  // assemble
+            if (vm.contains("emit-llvm")) {
                 config.setFileType(OutputFileType::LLVMIRFile);
             } else {
                 config.setFileType(OutputFileType::AssemblyFile);
             }
         } else {
-            if (vm.count("emit-llvm")) {
+            if (vm.contains("emit-llvm")) {
                 logger.error(PROGRAM_NAME, "argument '--emit-llvm' cannot be used when linking.");
             }
             logger.error(PROGRAM_NAME, "linking not yet supported.");
             return EXIT_FAILURE;
         }
-        if (vm.count("reloc")) {
+        if (vm.contains("reloc")) {
             if (config.isJit()) {
                 logger.error(PROGRAM_NAME, "argument '--reloc' is not compatible with argument '--run'.");
                 return EXIT_FAILURE;
@@ -298,14 +299,26 @@ int main(const int argc, const char **argv) {
                 config.setRelocationModel(RelocationModel::DEFAULT);
             }
         }
-        if (vm.count("sym-dir")) {
+        if (vm.contains("std")) {
+            const auto std = vm["std"].as<string>();
+            if (smatch matches; regex_search(std, matches, regex("^(O|o)(beron)?(87|90)$"))) {
+                config.setLanguageStandard(LanguageStandard::Oberon90);
+            } else if (regex_search(std, matches, regex("^(O|o)(beron)?2$"))) {
+                config.setLanguageStandard(LanguageStandard::Oberon2);
+            } else if (regex_search(std, matches, regex("^(O|o)(beron)?(07|16)$"))) {
+                config.setLanguageStandard(LanguageStandard::Oberon07);
+            } else {
+                logger.warning(PROGRAM_NAME, "ignoring unrecognized argument: '--std=" + std + "'.");
+            }
+        }
+        if (vm.contains("sym-dir")) {
             config.setSymDir(vm["sym-dir"].as<string>());
             const auto path = std::filesystem::path(config.getSymDir());
             if (!std::filesystem::is_directory(path)) {
                 logger.error(PROGRAM_NAME, "path specified by argument '--sym-dir' is not valid.");
             }
         }
-        if (vm.count("target")) {
+        if (vm.contains("target")) {
             if (config.isJit()) {
                 logger.error(PROGRAM_NAME, "argument '--target' is not supported in JIT mode.");
                 return EXIT_FAILURE;
