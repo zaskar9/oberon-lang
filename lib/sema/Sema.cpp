@@ -250,16 +250,20 @@ Sema::onPointerTypeEnd(const FilePos &start, const FilePos &, PointerTypeNode *t
 ProcedureTypeNode *
 Sema::onProcedureType(const FilePos &start, const FilePos &end,
                       vector<unique_ptr<ParameterNode>> params, const bool varargs, TypeNode *ret) const {
-    if (ret && (ret->isArray() || ret->isRecord())) {
-        // O07.10.1: The result type of a procedure can be neither a record nor an array.
-        logger_.error(start, "result type of a procedure can neither be a record nor an array.");
+    if (ret) {
+        if (ret->isArray() || ret->isRecord()) {
+            // O07.10.1: The result type of a procedure can be neither a record nor an array.
+            logger_.error(start, "result type of a procedure can neither be a record nor an array.");
+        }
+    } else {
+        ret = noTy_;
     }
     return context_->getOrInsertProcedureType(start, end, std::move(params), varargs, ret);
 }
 
 unique_ptr<ParameterNode>
 Sema::onParameter(const FilePos &start, const FilePos &,
-                  unique_ptr<Ident> ident, TypeNode *type, bool is_var, unsigned index) {
+                  unique_ptr<Ident> ident, TypeNode *type, bool is_var, unsigned index) const {
     if (!type) {
         logger_.error(start, "undefined parameter type.");
         type = noTy_;
@@ -408,7 +412,7 @@ Sema::onProcedureDefinitionEnd(const FilePos &, const unique_ptr<Ident> &ident) 
     onBlockEnd();
     auto proc = std::move(procs_.top());
     procs_.pop();
-    if (proc->getType()->getReturnType() && !proc->statements()->isReturn()) {
+    if (proc->getType()->isFunction() && !proc->statements()->isReturn()) {
         logger_.error(proc->pos(), "not all control flow paths of the procedure return a result.");
     }
     if (*proc->getIdentifier() != *ident) {
@@ -793,14 +797,14 @@ Sema::onReturn(const FilePos &start, const FilePos &, unique_ptr<ExpressionNode>
     } else {
         auto proc = procs_.top().get();
         if (expr) {
-            if (!proc->getType()->getReturnType()) {
+            if (proc->getType()->isProper()) {
                 logger_.error(expr->pos(), "procedure cannot return a value.");
             }
             if (assertCompatible(expr->pos(), proc->getType()->getReturnType(), expr->getType())) {
                 cast(expr, proc->getType()->getReturnType());
             }
         } else {
-            if (proc->getType()->getReturnType()) {
+            if (proc->getType()->isFunction()) {
                 logger_.error(proc->pos(), "function must return value.");
             }
         }
@@ -833,7 +837,7 @@ Sema::onQualifiedStatement(const FilePos &start, const FilePos &,
     const auto type = onSelectors(ident->start(), ident->end(), sym, sym->getType(), selectors);
     if (const auto procTy = dynamic_cast<ProcedureTypeNode *>(type)) {
         // Looks like a procedure reference that needs to be treated as a procedure call
-        if (procTy->getReturnType()) {
+        if (procTy->isFunction()) {
             logger_.error(ident->start(), "function procedure call must be followed by parameter list.");
         }
         // For uniformity, add an empty parameter list to the procedure call if none is present
@@ -1037,7 +1041,7 @@ Sema::handleMissingParameters(const FilePos &start, const FilePos &end,
             found = true;
         }
         const auto proc = dynamic_cast<ProcedureTypeNode *>(base);
-        if (found && proc->getReturnType()) {
+        if (found && proc->isFunction()) {
             logger_.error(start, "function procedure call must be followed by parameter list.");
         }
     }
@@ -2118,7 +2122,7 @@ Sema::fold(const FilePos &start, const FilePos &end,
 }
 
 bool
-Sema::assertEqual(Ident *aIdent, Ident *bIdent) {
+Sema::isSameIdent(Ident *aIdent, Ident *bIdent) {
     if (!aIdent || !bIdent) {
         return false;
     }
@@ -2167,6 +2171,87 @@ Sema::checkExport(DeclarationNode *node) const {
     }
 }
 
+bool Sema::isSameType(const TypeNode *t1, const TypeNode *t2) {
+    if (!t1 || !t2) {
+        return false;
+    }
+    if (t1 == t2) {
+        return !isOpenArray(t1);
+    }
+    if (isSameIdent(t1->getIdentifier(), t2->getIdentifier())) {
+        return true;
+    }
+    return false;
+}
+
+bool Sema::isEqualType(TypeNode *t1, TypeNode *t2, string &err) {
+    if (!t1 || !t2) {
+        err = "type mismatch.";
+        return false;
+    }
+    if (isSameType(t1, t2)) {
+        return true;
+    }
+    if (t1->isArray() && t2->isArray()) {
+        const auto at1 = dynamic_cast<ArrayTypeNode *>(t1);
+        const auto at2 = dynamic_cast<ArrayTypeNode *>(t2);
+        if (at1->isOpen() && at2->isOpen()) {
+            return isEqualType(at1->getMemberType(), at2->getMemberType(), err);
+        }
+        err = "type mismatch: incompatible array types.";
+        return false;
+    }
+    if (t1->isProcedure() && t2->isProcedure()) {
+        const auto pt1 = dynamic_cast<ProcedureTypeNode *>(t1);
+        const auto pt2 = dynamic_cast<ProcedureTypeNode *>(t2);
+        return isParameterListMatching(pt1, pt2, err);
+    }
+    err = "type mismatch";
+    return false;
+}
+
+bool Sema::isParameterListMatching(ProcedureTypeNode *pt1, ProcedureTypeNode *pt2, string &err) {
+    if (pt1->hasVarArgs() || pt2->hasVarArgs()) {
+        err = "type mismatch: procedure types with variadic arguments are incompatible.";
+        return false;
+    }
+    if (pt1->parameters().size() != pt2->parameters().size()) {
+        err = "type mismatch: procedure types have different number of parameters.";
+        return false;
+    }
+    if (!isSameType(pt1->getReturnType(), pt2->getReturnType())) {
+        err = "type mismatch: procedure types have different return types.";
+        return false;
+    }
+    for (size_t i = 0; i < pt1->parameters().size(); ++i) {
+        const auto& param1 = pt1->parameters()[i];
+        const auto& param2 = pt2->parameters()[i];
+        if (param1->isVar() != param2->isVar()) {
+            err = "type mismatch: procedure types have incompatible variable parameters.";
+            break;
+        }
+        const auto t1 = param1->getType();
+        const auto t2 = param2->getType();
+        if (!isEqualType(t1, t2, err)) {
+            err = "type mismatch: procedure types have different parameter types.";
+            return false;
+        }
+        // if (t1->isArray() && t2->isArray()) {
+        //     const auto array1 = dynamic_cast<ArrayTypeNode *>(t1);
+        //     const auto array2 = dynamic_cast<ArrayTypeNode *>(t2);
+        //     if (!array1->isOpen() || !array2->isOpen()) {
+        //         match = false;
+        //         break;
+        //     }
+        // } else if (t1 != t2) {
+        //     match = false;
+        //     break;
+        // }
+    }
+    return true;
+}
+
+
 bool
 Sema::assertCompatible(const FilePos &pos, TypeNode *expected, TypeNode *actual, const bool isPtr) {
     if (!expected || !actual) {
@@ -2183,7 +2268,7 @@ Sema::assertCompatible(const FilePos &pos, TypeNode *expected, TypeNode *actual,
     // Check declared types
     const auto expectedId = expected->getIdentifier();
     const auto actualId = actual->getIdentifier();
-    if (assertEqual(expectedId, actualId)) {
+    if (isSameIdent(expectedId, actualId)) {
         // the two types are the same type
         return true;
     }
@@ -2276,44 +2361,11 @@ Sema::assertCompatible(const FilePos &pos, TypeNode *expected, TypeNode *actual,
         if (actual->isProcedure()) {
             const auto exp_proc = dynamic_cast<ProcedureTypeNode *>(expected);
             const auto act_proc = dynamic_cast<ProcedureTypeNode *>(actual);
-            if (exp_proc->hasVarArgs() || act_proc->hasVarArgs()) {
-                logger_.error(pos, "procedure types with variadic arguments cannot be used here.");
-                return false;
-            }
-            if (exp_proc->getReturnType() != act_proc->getReturnType()) {
-                logger_.error(pos, "type mismatch: procedure types have different return types.");
-                return false;
-            }
-            if (exp_proc->parameters().size() == act_proc->parameters().size()) {
-                bool match = true;
-                for (size_t i = 0; i < exp_proc->parameters().size(); ++i) {
-                    const auto& exp = exp_proc->parameters()[i];
-                    const auto& act = act_proc->parameters()[i];
-                    if (exp->isVar() != act->isVar()) {
-                        match = false;
-                        break;
-                    }
-                    const auto exp_param = exp->getType();
-                    const auto act_param = act->getType();
-                    if (exp_param->isArray() && act_param->isArray()) {
-                        const auto exp_array = dynamic_cast<ArrayTypeNode *>(exp_param);
-                        const auto act_array = dynamic_cast<ArrayTypeNode *>(act_param);
-                        if (!exp_array->isOpen() || !act_array->isOpen()) {
-                            match = false;
-                            break;
-                        }
-                    } else if (exp_param != act_param) {
-                        match = false;
-                        break;
-                    }
-                }
-                if (!match) {
-                    logger_.error(pos, "type mismatch: procedure types have different parameters.");
-                    return false;
-                }
+            string err;
+            if (isParameterListMatching(exp_proc, act_proc, err)) {
                 return true;
             }
-            logger_.error(pos, "type mismatch: procedure types have different number of parameters.");
+            logger_.error(pos, err);
             return false;
         }
         if (actual->kind() == TypeKind::NILTYPE) {
@@ -2329,7 +2381,7 @@ Sema::commonType(const FilePos &pos, TypeNode *lhsType, TypeNode *rhsType) const
     if (lhsType == rhsType) {
         return lhsType;
     }
-    if (assertEqual(lhsType->getIdentifier(), rhsType->getIdentifier())) {
+    if (isSameIdent(lhsType->getIdentifier(), rhsType->getIdentifier())) {
         return lhsType;
     }
     // Numeric types
@@ -2364,12 +2416,20 @@ Sema::commonType(const FilePos &pos, TypeNode *lhsType, TypeNode *rhsType) const
     return noTy_;
 }
 
-bool Sema::isArrayOfChar(TypeNode *type) {
-    if (const auto array = dynamic_cast<ArrayTypeNode *>(type)) {
+bool Sema::isArrayOfChar(const TypeNode *type) {
+    if (const auto array = dynamic_cast<const ArrayTypeNode *>(type)) {
         return array->dimensions() == 1 && array->getMemberType()->kind() == TypeKind::CHAR;
     }
     return false;
 }
+
+bool Sema::isOpenArray(const TypeNode *type) {
+    if (const auto array = dynamic_cast<const ArrayTypeNode *>(type)) {
+        return array->isOpen();
+    }
+    return false;
+}
+
 
 
 string

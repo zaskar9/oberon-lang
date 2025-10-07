@@ -59,17 +59,18 @@ public:
     unique_ptr<TypeDeclarationNode> onType(const FilePos &, const FilePos &,
                                            unique_ptr<IdentDef>, TypeNode *);
     ArrayTypeNode *onArrayType(const FilePos &, const FilePos &, const vector<unique_ptr<ExpressionNode>> &, TypeNode *) const;
-    PointerTypeNode *onPointerTypeStart(const FilePos &, const FilePos &) const;
+    [[nodiscard]] PointerTypeNode *onPointerTypeStart(const FilePos &, const FilePos &) const;
     void onPointerTypeEnd(const FilePos &, const FilePos &, PointerTypeNode *, unique_ptr<QualIdent>);
     void onPointerTypeEnd(const FilePos &, const FilePos &, PointerTypeNode *, TypeNode *) const;
     ProcedureTypeNode *onProcedureType(const FilePos &, const FilePos &,
                                        vector<unique_ptr<ParameterNode>>, bool varargs, TypeNode *) const;
     unique_ptr<ParameterNode> onParameter(const FilePos &, const FilePos &,
-                                          unique_ptr<Ident>, TypeNode *, bool, unsigned = 0);
-    RecordTypeNode *onRecordType(const FilePos &, const FilePos &, const unique_ptr<QualIdent> &, vector<unique_ptr<FieldNode>>) const;
+                                          unique_ptr<Ident>, TypeNode *, bool, unsigned = 0) const;
+    [[nodiscard]] RecordTypeNode *onRecordType(const FilePos &, const FilePos &, const unique_ptr<QualIdent> &,
+                                               vector<unique_ptr<FieldNode>>) const;
     unique_ptr<FieldNode> onField(const FilePos&, const FilePos&, unique_ptr<IdentDef>, TypeNode*, unsigned = 0) const;
 
-    TypeNode *onTypeReference(const FilePos &, const FilePos &, const unique_ptr<QualIdent> &, unsigned = 0) const;
+    [[nodiscard]] TypeNode *onTypeReference(const FilePos &, const FilePos &, const unique_ptr<QualIdent> &, unsigned = 0) const;
 
     unique_ptr<VariableDeclarationNode> onVariable(const FilePos &, const FilePos &,
                                                    unique_ptr<IdentDef>, TypeNode*, int = 0) const;
@@ -86,14 +87,14 @@ public:
 
     unique_ptr<AssignmentNode> onAssignment(const FilePos &, const FilePos &,
                                             unique_ptr<QualifiedExpression>, unique_ptr<ExpressionNode>);
-    unique_ptr<IfThenElseNode> onIf(const FilePos &, const FilePos &,
-                                    unique_ptr<ExpressionNode>,
-                                    unique_ptr<StatementSequenceNode>,
-                                    vector<unique_ptr<ElseIfNode>>,
-                                    unique_ptr<StatementSequenceNode>) const;
-    unique_ptr<ElseIfNode> onElseIf(const FilePos &, const FilePos &,
-                                    unique_ptr<ExpressionNode>,
-                                    unique_ptr<StatementSequenceNode>) const;
+    [[nodiscard]] unique_ptr<IfThenElseNode> onIf(const FilePos &, const FilePos &,
+                                                  unique_ptr<ExpressionNode>,
+                                                  unique_ptr<StatementSequenceNode>,
+                                                  vector<unique_ptr<ElseIfNode>>,
+                                                  unique_ptr<StatementSequenceNode>) const;
+    [[nodiscard]] unique_ptr<ElseIfNode> onElseIf(const FilePos &, const FilePos &,
+                                                  unique_ptr<ExpressionNode>,
+                                                  unique_ptr<StatementSequenceNode>) const;
 
     void onLoopStart(const FilePos &);
     unique_ptr<LoopNode> onLoop(const FilePos &, const FilePos &,
@@ -125,7 +126,7 @@ public:
                                 unique_ptr<CaseLabelNode>,
                                 unique_ptr<StatementSequenceNode>);
     unique_ptr<ReturnNode> onReturn(const FilePos &, const FilePos &, unique_ptr<ExpressionNode>);
-    unique_ptr<ExitNode> onExit(const FilePos &, const FilePos &) const;
+    [[nodiscard]] unique_ptr<ExitNode> onExit(const FilePos &, const FilePos &) const;
 
     unique_ptr<StatementNode> onQualifiedStatement(const FilePos &, const FilePos &,
                                                    unique_ptr<QualIdent>, vector<unique_ptr<Selector>>);
@@ -148,11 +149,11 @@ public:
                                                vector<unique_ptr<ExpressionNode>>);
 
     unique_ptr<BooleanLiteralNode> onBooleanLiteral(const FilePos &, const FilePos &, bool);
-    unique_ptr<IntegerLiteralNode> onIntegerLiteral(const FilePos &, const FilePos &, int64_t, TypeKind = TypeKind::INTEGER) const;
-    unique_ptr<RealLiteralNode> onRealLiteral(const FilePos &, const FilePos &, double, TypeKind = TypeKind::REAL) const;
+    [[nodiscard]] unique_ptr<IntegerLiteralNode> onIntegerLiteral(const FilePos &, const FilePos &, int64_t, TypeKind = TypeKind::INTEGER) const;
+    [[nodiscard]] unique_ptr<RealLiteralNode> onRealLiteral(const FilePos &, const FilePos &, double, TypeKind = TypeKind::REAL) const;
     unique_ptr<StringLiteralNode> onStringLiteral(const FilePos &, const FilePos &, const string &);
     unique_ptr<CharLiteralNode> onCharLiteral(const FilePos &, const FilePos &, uint8_t);
-    unique_ptr<NilLiteralNode> onNilLiteral(const FilePos &, const FilePos &) const;
+    [[nodiscard]] unique_ptr<NilLiteralNode> onNilLiteral(const FilePos &, const FilePos &) const;
     unique_ptr<SetLiteralNode> onSetLiteral(const FilePos &, const FilePos &, bitset<32>);
 
     bool isDefined(Ident *) const;
@@ -177,7 +178,7 @@ private:
     TypeNode *boolTy_, *byteTy_, *charTy_, *shortIntTy_, *integerTy_, *longIntTy_, *realTy_, *longRealTy_,
              *stringTy_, *setTy_, *anyTy_, *noTy_, *typeTy_;
 
-    static bool assertEqual(Ident *, Ident *) ;
+    static bool isSameIdent(Ident *, Ident *) ;
     void assertUnique(const IdentDef *, DeclarationNode *) const;
     int64_t assertInBounds(const IntegerLiteralNode *, int64_t , int64_t) const;
     bool assertAssignable(const ExpressionNode *, string &) const;
@@ -188,9 +189,39 @@ private:
 
     void checkExport(DeclarationNode *) const;
 
+    /**
+     * Two variables a and b with types Ta and Tb are of the same type if
+     * 1. Ta and Ta are both denoted by the same type identifier, or
+     * 2. Ta is declared to equal Ta in a type declaration of the form Ta = Ta, or
+     * 3. a and b appear in the same identifier list in a variable, record field,
+     * or formal parameter declaration and are not open arrays.
+     * @return true, if Ta and Ta are the same type, false otherwise
+     */
+    static bool isSameType(const TypeNode *, const TypeNode *);
+
+    /**
+     * Two types Ta and Tb are equal if
+     * 1. Ta and Tb are the same type, or
+     * 2. Ta and Tb are open array types with equal element types, or
+     * 3. Ta and Tb are procedure types whose formal parameter lists match.
+     * @return true, if Ta and Ta are equal types, false otherwise
+     */
+    static bool isEqualType(TypeNode *, TypeNode *, string &);
+
+    /**
+     * Two formal parameter lists match if
+     * 1. they have the same number of parameters, and
+     * 2. they have either the same function result type or none, and
+     * 3. parameters at corresponding positions have equal types, and
+     * 4. parameters at corresponding positions are both either value or variable parameters.
+     * @return true, if the parameter lists match, false otherwise
+     */
+    static bool isParameterListMatching(ProcedureTypeNode*, ProcedureTypeNode *, string &);
+
     bool assertCompatible(const FilePos &, TypeNode *, TypeNode *, bool = false);
     TypeNode *commonType(const FilePos &, TypeNode *, TypeNode *) const;
-    static bool isArrayOfChar(TypeNode *) ;
+    static bool isArrayOfChar(const TypeNode *);
+    static bool isOpenArray(const TypeNode *);
 
     static string format(const TypeNode *, bool = false);
 
@@ -226,7 +257,7 @@ private:
 
     optional<unique_ptr<ExpressionNode>> fold(const FilePos &, const FilePos &, ExpressionNode *);
 
-    optional<unique_ptr<ExpressionNode>> fold(const FilePos &, const FilePos &,
+    [[nodiscard]] optional<unique_ptr<ExpressionNode>> fold(const FilePos &, const FilePos &,
             OperatorType, const unique_ptr<ExpressionNode> &) const;
 
     optional<unique_ptr<ExpressionNode>> fold(const FilePos &, const FilePos &,

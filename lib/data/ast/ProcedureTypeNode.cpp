@@ -22,6 +22,15 @@ TypeNode *ProcedureTypeNode::getReturnType() const {
     return type_;
 }
 
+bool ProcedureTypeNode::isProper() const {
+    return !isFunction();
+}
+
+bool ProcedureTypeNode::isFunction() const {
+    return type_ && type_->kind() != TypeKind::NOTYPE;
+}
+
+
 void ProcedureTypeNode::accept(NodeVisitor &visitor) {
     visitor.visit(*this);
 }

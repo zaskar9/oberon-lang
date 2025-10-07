@@ -198,14 +198,13 @@ void LLVMIRBuilder::visit(ProcedureDefinitionNode &node) {
     scope_ = node.getScope() + 1;
     node.statements()->accept(*this);
     // If necessary, terminate the block
-    if (node.getType()->getReturnType() == nullptr) {
+    if (node.getType()->isProper()) {
         builder_.CreateRetVoid();
     }
     const auto block = builder_.GetInsertBlock();
     if (block->getTerminator() == nullptr) {
-        if (node.getType()->getReturnType() != nullptr && !block->empty()) {
-            logger_.error(node.pos(),
-                          "function \"" + to_string(node.getIdentifier()) + "\" has no return statement.");
+        if (node.getType()->isFunction() && !block->empty()) {
+            logger_.error(node.pos(), "function \"" + to_string(node.getIdentifier()) + "\" has no return statement.");
         } else {
             builder_.CreateUnreachable();
         }
@@ -2406,7 +2405,7 @@ Value *LLVMIRBuilder::processGEP(Type *base, Value *value, vector<Value *> &indi
 
 Type* LLVMIRBuilder::getLLVMType(TypeNode *type) {
     // Null type is mapped to void.
-    if (type == nullptr) {
+    if (type == nullptr || type->kind() == TypeKind::NOTYPE) {
         return builder_.getVoidTy();
     }
     // Check the type cache to avoid duplicate work.
