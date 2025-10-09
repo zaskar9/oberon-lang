@@ -366,7 +366,7 @@ void NodePrettyPrinter::visit(ArrayTypeNode &node) {
             }
             stream_ << " OF ";
         }
-        node.getMemberType()->accept(*this);
+        node.getElementType()->accept(*this);
     } else {
         qualident(node.getDeclaration());
     }

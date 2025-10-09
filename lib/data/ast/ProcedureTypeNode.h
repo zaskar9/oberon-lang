@@ -22,7 +22,7 @@ class ProcedureTypeNode final : public TypeNode {
 public:
     ProcedureTypeNode(const FilePos &pos, vector<unique_ptr<ParameterNode>> params, const bool varargs, TypeNode *type) :
             TypeNode(NodeType::procedure_type, pos, TypeKind::PROCEDURE, 0),
-            parameters_(std::move(params)), varargs_(varargs), type_(type) {};
+            parameters_(std::move(params)), varargs_(varargs), type_(type) {}
     ~ProcedureTypeNode() override = default;
 
     [[nodiscard]] vector<unique_ptr<ParameterNode>> &parameters();

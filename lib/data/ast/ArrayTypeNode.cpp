@@ -19,7 +19,7 @@ const vector<TypeNode *> &ArrayTypeNode::types() const {
     return types_;
 }
 
-TypeNode *ArrayTypeNode::getMemberType() const {
+TypeNode *ArrayTypeNode::getElementType() const {
     if (!types_.empty()) {
         return types_[types_.size() - 1];
     }

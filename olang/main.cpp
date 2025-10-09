@@ -71,7 +71,7 @@ int main(const int argc, const char **argv) {
             ("run,r", "Run with LLVM JIT.")
             ("sym-dir", po::value<string>()->value_name("<directory>"), "Set output path for generated .smb files.")
             (",S", "Only run compilation steps.")
-            ("std", "Language standard to compile for.")
+            ("std", po::value<string>()->value_name("<language>"), "Language standard to compile for.")
             ("target", po::value<string>()->value_name("<triple>"), "Target triple for cross compilation.")
             ("verbose,v", "Enable debugging outputs.")
             ("quiet,q", "Suppress all compiler outputs.");

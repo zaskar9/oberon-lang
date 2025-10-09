@@ -197,7 +197,9 @@ private:
      * or formal parameter declaration and are not open arrays.
      * @return true, if Ta and Ta are the same type, false otherwise
      */
-    static bool isSameType(const TypeNode *, const TypeNode *);
+    static bool isSameType(const TypeNode *, const TypeNode *, string &);
+
+    static bool isSameVirtualType(const TypeNode *, const TypeNode *, string &);
 
     /**
      * Two types Ta and Tb are equal if
@@ -218,12 +220,54 @@ private:
      */
     static bool isParameterListMatching(ProcedureTypeNode*, ProcedureTypeNode *, string &);
 
+    /**
+     * Numeric types include (the values of) smaller numeric types according to the following
+     * hierarchy: LONGREAL ⊇ REAL ⊇ LONGINT ⊇ INTEGER ⊇ SHORTINT
+     * @return true, if Ta is included in Tb
+     */
+    bool isTypeIncluded(const TypeNode *, const TypeNode *, string &) const;
+
+    /**
+     * An expression e of type Te is assignment compatible with a variable v of type Tv if one of the
+     * following conditions hold:
+     * 1. Te and Tv are the same type;
+     * 2. Te and Tv are numeric types and Tv includes Te;
+     * 3. Te and Tv are record types and Te is an extension of Tv and the dynamic type of e is Tv ;
+     * 4. Te and Tv are pointer types and Te is an extension of Tv;
+     * 5. Tv is a pointer or a procedure type and e is NIL;
+     * 6. Tv is ARRAY n OF CHAR, e is a string constant with m characters, and m < n;
+     * 7. Tv is a procedure type and e is the name of a procedure whose formal parameters match those of Tv.
+     * @return true, if the expression e can be assigned to the variable v, false otherwise
+     */
+    static bool isAssigmentCompatible(unique_ptr<QualifiedExpression> &, unique_ptr<ExpressionNode> &, string &);
+
+    /**
+     * An actual parameter a of type Ta is array compatible with a formal parameter f of type Tf if
+     * 1. Tf and Ta are the same type, or
+     * 2. Tf is an open array, Ta is any array, and their element types are array compatible, or
+     * 3. f is a value parameter of type ARRAY OF CHAR and a is a string.
+     * @return true, if the actual array parameter a is compatible to the formal array parameter f, false otherwise
+     */
+    bool isArrayCompatible(unique_ptr<ParameterNode> &, unique_ptr<ExpressionNode> &, string &) const;
+
+    /**
+     * Let Tf be the type of a formal parameter f (not an open array) and Ta the type of the corresponding actual
+     * parameter a. For variable parameters, Ta must be the same as Tf, or Tf must be a record type and Ta an
+     * extension of Tf. For value parameters, a must be assignment compatible with f. If Tf is an open array,
+     * then a must be array compatible with f.
+     * @return true, if the actual parameter is compatible to the formal parameter, false otherwiese
+     */
+    bool isParameterCompatible(unique_ptr<ParameterNode> &, unique_ptr<ExpressionNode> &, string &);
+
+
     bool assertCompatible(const FilePos &, TypeNode *, TypeNode *, bool = false);
     TypeNode *commonType(const FilePos &, TypeNode *, TypeNode *) const;
     static bool isArrayOfChar(const TypeNode *);
     static bool isOpenArray(const TypeNode *);
+    static bool isVariableRecord(const unique_ptr<QualifiedExpression> &);
 
-    static string format(const TypeNode *, bool = false);
+
+    static string formatType(const TypeNode *, bool = false);
 
     static int64_t euclidean_mod(int64_t, int64_t);
     static int64_t floor_div(int64_t, int64_t);

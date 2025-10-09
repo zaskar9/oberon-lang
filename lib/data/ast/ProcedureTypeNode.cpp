@@ -4,7 +4,6 @@
 
 #include "ProcedureTypeNode.h"
 #include "NodeVisitor.h"
-#include <algorithm>
 
 vector<unique_ptr<ParameterNode>> &ProcedureTypeNode::parameters() {
     return parameters_;
