@@ -1004,8 +1004,7 @@ Sema::assertAssignable(const ExpressionNode *expr, string &err) const {
     if (expr->getNodeType() == NodeType::qualified_expression) {
         if (const auto decl = dynamic_cast<const QualifiedExpression *>(expr)->dereference()) {
             if (decl->getNodeType() == NodeType::parameter) {
-                const auto type = decl->getType();
-                if (type->isStructured()) {
+                if (const auto type = decl->getType(); type->isStructured()) {
                     // O07.9.1: If a value parameter is structured (of array or record type),
                     // no assignment to it or to its elements are permitted.
                     const auto param = dynamic_cast<const ParameterNode *>(decl);
@@ -2224,16 +2223,12 @@ bool Sema::isParameterListMatching(ProcedureTypeNode *pt1, ProcedureTypeNode *pt
         err = "type mismatch: procedure types have different number of parameters.";
         return false;
     }
-    if (!isSameType(pt1->getReturnType(), pt2->getReturnType(), err)) {
-        err = "type mismatch: procedure types have different return types.";
-        return false;
-    }
     for (size_t i = 0; i < pt1->parameters().size(); ++i) {
         const auto& param1 = pt1->parameters()[i];
         const auto& param2 = pt2->parameters()[i];
         if (param1->isVar() != param2->isVar()) {
             err = "type mismatch: procedure types have incompatible variable parameters.";
-            break;
+            return false;
         }
         const auto t1 = param1->getType();
         const auto t2 = param2->getType();
@@ -2241,6 +2236,10 @@ bool Sema::isParameterListMatching(ProcedureTypeNode *pt1, ProcedureTypeNode *pt
             err = "type mismatch: procedure types have different parameter types.";
             return false;
         }
+    }
+    if (!isSameType(pt1->getReturnType(), pt2->getReturnType(), err)) {
+        err = "type mismatch: procedure types have different return types.";
+        return false;
     }
     return true;
 }
@@ -2324,10 +2323,6 @@ bool Sema::isArrayCompatible(unique_ptr<ParameterNode> &param, unique_ptr<Expres
                 err = "type mismatch: cannot assign string to multi-dimensional array.";
                 return false;
             }
-            if (param->isVar() && expr->isLiteral()) {
-                err = "illegal actual parameter: cannot pass literal by reference.";
-                return false;
-            }
             return true;
         }
     }
@@ -2337,6 +2332,12 @@ bool Sema::isArrayCompatible(unique_ptr<ParameterNode> &param, unique_ptr<Expres
 
 
 bool Sema::isParameterCompatible(unique_ptr<ParameterNode> &param, unique_ptr<ExpressionNode> &expr, string &err) {
+    if (param->isVar()) {
+        if (!assertAssignable(expr.get(), err)) {
+            err = std::format("illegal actual parameter: cannot pass {} by reference.", err);
+            return false;
+        }
+    }
     if (isOpenArray(param->getType()) ||
         (param->getType()->isArray() && config_.getLanguageStandard() == LanguageStandard::TurboOberon)) {
         if (!isArrayCompatible(param, expr, err)) {
@@ -2346,10 +2347,6 @@ bool Sema::isParameterCompatible(unique_ptr<ParameterNode> &param, unique_ptr<Ex
         const auto formalTy = param->getType();
         const auto actualTy = expr->getCast() ? expr->getCast() : expr->getType();
         if (param->isVar()) {
-            if (!assertAssignable(expr.get(), err)) {
-                err = std::format("illegal actual parameter: cannot pass {} by reference.", err);
-                return false;
-            }
             // TODO: This condition is possible already captured by the more general third clause of the if-statement
             if (formalTy->isNumeric() && actualTy->isNumeric()) {
                 // The types of variable parameters need to be an exact match as they are read-write parameters

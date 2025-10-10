@@ -4,6 +4,8 @@
 MODULE CharCast1;
 IMPORT Out;
 
+  CONST LetterZ = "Z";
+
   PROCEDURE WriteLn(str: ARRAY OF CHAR);
   BEGIN
     Out.String(str); Out.Ln
@@ -12,10 +14,12 @@ IMPORT Out;
 BEGIN
   WriteLn("X");
   WriteLn(41X);
+  WriteLn(LetterZ);
   WriteLn("Hello!")
 END CharCast1.
 (*
   CHECK: X
   CHECK: A
+  CHECK: Z
   CHECK: Hello!
 *)

@@ -4,6 +4,8 @@
 MODULE CharCast1;
 IMPORT Out;
 
+  CONST LetterZ = "Z";
+
   PROCEDURE WriteLn(VAR str: ARRAY OF CHAR);
   BEGIN
     Out.String(str); Out.Ln
@@ -12,10 +14,12 @@ IMPORT Out;
 BEGIN
   WriteLn("X");
   WriteLn(41X);
+  WriteLn(LetterZ);
   WriteLn("Hello!")
 END CharCast1.
 (*
-  CHECK: {{.*}}:13:11:{{.*}}error:{{.*}}illegal actual parameter: cannot pass literal by reference.
-  CHECK: {{.*}}:14:11:{{.*}}error:{{.*}}illegal actual parameter: cannot pass literal by reference.
-  CHECK: {{.*}}:15:11:{{.*}}error:{{.*}}illegal actual parameter: cannot pass literal by reference.
+  CHECK: {{.*}}:15:11:{{.*}}error:{{.*}}illegal actual parameter: cannot pass a constant value by reference.
+  CHECK: {{.*}}:16:11:{{.*}}error:{{.*}}illegal actual parameter: cannot pass a constant value by reference.
+  CHECK: {{.*}}:17:11:{{.*}}error:{{.*}}illegal actual parameter: cannot pass a constant value by reference.
+  CHECK: {{.*}}:18:11:{{.*}}error:{{.*}}illegal actual parameter: cannot pass a constant value by reference.
 *)
