@@ -36,7 +36,7 @@ public:
 
     [[nodiscard]] RecordTypeNode *getBaseType() const;
     [[nodiscard]] bool isExtended() const;
-    [[nodiscard]] bool extends(TypeNode *) const override;
+    [[nodiscard]] bool extends(const TypeNode *) const override;
 
     [[nodiscard]] PointerTypeNode *getParent() const;
 

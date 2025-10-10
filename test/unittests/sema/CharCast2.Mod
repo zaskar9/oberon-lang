@@ -6,6 +6,9 @@ IMPORT Out;
 
   CONST LetterZ = "Z";
 
+  VAR
+    ch: CHAR;
+
   PROCEDURE WriteLn(VAR str: ARRAY OF CHAR);
   BEGIN
     Out.String(str); Out.Ln
@@ -15,11 +18,13 @@ BEGIN
   WriteLn("X");
   WriteLn(41X);
   WriteLn(LetterZ);
+  WriteLn(ch);
   WriteLn("Hello!")
 END CharCast1.
 (*
-  CHECK: {{.*}}:15:11:{{.*}}error:{{.*}}illegal actual parameter: cannot pass a constant value by reference.
-  CHECK: {{.*}}:16:11:{{.*}}error:{{.*}}illegal actual parameter: cannot pass a constant value by reference.
-  CHECK: {{.*}}:17:11:{{.*}}error:{{.*}}illegal actual parameter: cannot pass a constant value by reference.
   CHECK: {{.*}}:18:11:{{.*}}error:{{.*}}illegal actual parameter: cannot pass a constant value by reference.
+  CHECK: {{.*}}:19:11:{{.*}}error:{{.*}}illegal actual parameter: cannot pass a constant value by reference.
+  CHECK: {{.*}}:20:11:{{.*}}error:{{.*}}illegal actual parameter: cannot pass a constant value by reference.
+  CHECK: {{.*}}:21:11:{{.*}}error:{{.*}}type mismatch: a non-constant character expression is not compatible with string.
+  CHECK: {{.*}}:22:11:{{.*}}error:{{.*}}illegal actual parameter: cannot pass a constant value by reference.
 *)
