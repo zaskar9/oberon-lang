@@ -148,6 +148,6 @@ bool TypeNode::isBasic() const {
     return isBoolean() || isNumeric() || isChar() || isSet();
 }
 
-bool TypeNode::extends(TypeNode *) const {
+bool TypeNode::extends(const TypeNode *) const {
     return false;
 }

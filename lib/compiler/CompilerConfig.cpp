@@ -9,6 +9,15 @@ Logger &CompilerConfig::logger() {
     return logger_;
 }
 
+void CompilerConfig::setLanguageStandard(const LanguageStandard std) {
+    std_ = std;
+}
+
+LanguageStandard CompilerConfig::getLanguageStandard() const {
+    return std_;
+}
+
+
 void CompilerConfig::setOutputFile(const string &file) {
     outfile_ = file;
 }

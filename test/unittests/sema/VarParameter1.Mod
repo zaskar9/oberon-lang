@@ -1,7 +1,7 @@
 (*
   RUN: not %oberon -I "%S%{pathsep}%inc" -L "%S%{pathsep}%lib" -l oberon --run %s 2>&1 | filecheck %s
 *)
-MODULE VarParameter;
+MODULE VarParameter1;
 
 TYPE Point2D = RECORD x, y: INTEGER END;
      Vector = ARRAY 10 OF INTEGER;
@@ -29,7 +29,7 @@ END Test2;
 BEGIN
     Test1(p);
     Test2(v)
-END VarParameter.
+END VarParameter1.
 (*
   CHECK: {{.*}}:17:5:{{.*}}error:{{.*}}cannot assign to a non-variable structured parameter.
   CHECK: {{.*}}:18:5:{{.*}}error:{{.*}}cannot assign to a non-variable structured parameter.

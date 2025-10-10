@@ -53,7 +53,7 @@ bool RecordTypeNode::isExtended() const {
     return base_ != nullptr;
 }
 
-bool RecordTypeNode::extends(TypeNode *base) const {
+bool RecordTypeNode::extends(const TypeNode *base) const {
     if (this != base && base_) {
         return base_->extends(base);
     }

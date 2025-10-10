@@ -115,8 +115,7 @@ void NodePrettyPrinter::signature(const string& ident, ProcedureTypeNode *type) 
     if (!ident.empty()) {
         stream_ << " " + ident;
     }
-    if (!type->parameters().empty() ||
-            (type->getReturnType() && type->getReturnType()->kind() != TypeKind::NOTYPE)) {
+    if (!type->parameters().empty() || type->isFunction()) {
         stream_ << "(";
         string sep;
         for (const auto &param: type->parameters()) {
@@ -128,7 +127,7 @@ void NodePrettyPrinter::signature(const string& ident, ProcedureTypeNode *type) 
             stream_ << "; ...";
         }
         stream_ << ")";
-        if (type->getReturnType() != nullptr) {
+        if (type->isFunction()) {
             stream_ << ": ";
             type->getReturnType()->accept(*this);
         }
@@ -367,7 +366,7 @@ void NodePrettyPrinter::visit(ArrayTypeNode &node) {
             }
             stream_ << " OF ";
         }
-        node.getMemberType()->accept(*this);
+        node.getElementType()->accept(*this);
     } else {
         qualident(node.getDeclaration());
     }

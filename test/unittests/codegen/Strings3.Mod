@@ -9,6 +9,7 @@ CONST Len = 10;
 
 TYPE String = ARRAY StrLen OF CHAR;
      StringList = ARRAY Len, StrLen OF CHAR;
+     (* StringList = ARRAY Len OF String; *)
      CharList = ARRAY Len * StrLen OF CHAR;
 
 VAR list: StringList;
