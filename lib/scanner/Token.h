@@ -4,8 +4,8 @@
  * Created by Michael Grossniklaus on 2/23/18.
  */
 
-#ifndef OBERON0C_TOKEN_H
-#define OBERON0C_TOKEN_H
+#ifndef OBERON_LANG_TOKEN_H
+#define OBERON_LANG_TOKEN_H
 
 
 #include "global.h"
@@ -34,10 +34,6 @@ std::ostream& operator<<(std::ostream &stream, const TokenType &type);
 
 class Token {
 
-private:
-    TokenType type_;
-    FilePos start_, end_;
-
 public:
     explicit Token(const TokenType type, const FilePos &start) :
             Token(type, start, { start.fileName, start.lineNo, start.charNo + 1, start.offset }) { };
@@ -52,7 +48,11 @@ public:
     virtual void print(std::ostream &stream) const;
     friend std::ostream& operator<<(std::ostream &stream, const Token &symbol);
 
+private:
+    TokenType type_;
+    FilePos start_, end_;
+
 };
 
 
-#endif //OBERON0C_TOKEN_H
+#endif //OBERON_LANG_TOKEN_H
