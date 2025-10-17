@@ -4,8 +4,8 @@
  * Created by Michael Grossniklaus on 12/15/17.
  */
 
-#ifndef OBERON0C_SCANNER_H
-#define OBERON0C_SCANNER_H
+#ifndef OBERON_LANG_SCANNER_H
+#define OBERON_LANG_SCANNER_H
 
 
 #include <filesystem>
@@ -62,4 +62,4 @@ private:
 };
 
 
-#endif //OBERON0C_SCANNER_H
+#endif //OBERON_LANG_SCANNER_H

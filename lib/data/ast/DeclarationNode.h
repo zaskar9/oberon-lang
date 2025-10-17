@@ -143,19 +143,19 @@ public:
 
 class ParameterNode final : public DeclarationNode {
 
-private:
-    bool var_;
-
 public:
-    ParameterNode(const FilePos &pos, unique_ptr<Ident> ident, TypeNode *type, bool var, unsigned seqId = 0) :
+    ParameterNode(const FilePos &pos, const unique_ptr<Ident> &ident, TypeNode *type, const bool var, const unsigned seqId = 0) :
             DeclarationNode(NodeType::parameter, pos, make_unique<IdentDef>(ident->start(), ident->end(), ident->name()), type, seqId), var_(var) {};
-    ~ParameterNode() final = default;
+    ~ParameterNode() override = default;
 
     [[nodiscard]] bool isVar() const;
 
-    void accept(NodeVisitor& visitor) final;
+    void accept(NodeVisitor& visitor) override;
 
-    void print(std::ostream &stream) const final;
+    void print(std::ostream &stream) const override;
+
+private:
+    bool var_;
 
 };
 

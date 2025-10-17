@@ -26,7 +26,7 @@ BEGIN
     RETURN res
 END CheckRec;
 
-PROCEDURE CheckPtr(VAR p: P0): INTEGER;
+PROCEDURE CheckPtr(p: P0): INTEGER;
 VAR res: INTEGER;
 BEGIN
     CASE p OF

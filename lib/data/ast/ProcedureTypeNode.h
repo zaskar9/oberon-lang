@@ -19,15 +19,10 @@ using std::vector;
 
 class ProcedureTypeNode final : public TypeNode {
 
-private:
-    vector<unique_ptr<ParameterNode>> parameters_;
-    bool varargs_;
-    TypeNode *type_;
-
 public:
-    ProcedureTypeNode(const FilePos &pos, vector<unique_ptr<ParameterNode>> params, bool vararags, TypeNode *type) :
+    ProcedureTypeNode(const FilePos &pos, vector<unique_ptr<ParameterNode>> params, const bool varargs, TypeNode *type) :
             TypeNode(NodeType::procedure_type, pos, TypeKind::PROCEDURE, 0),
-            parameters_(std::move(params)), varargs_(vararags), type_(type) {};
+            parameters_(std::move(params)), varargs_(varargs), type_(type) {}
     ~ProcedureTypeNode() override = default;
 
     [[nodiscard]] vector<unique_ptr<ParameterNode>> &parameters();
@@ -36,10 +31,17 @@ public:
 
     void setReturnType(TypeNode *);
     [[nodiscard]] TypeNode *getReturnType() const;
+    [[nodiscard]] bool isProper() const;
+    [[nodiscard]] bool isFunction() const;
 
-    void accept(NodeVisitor &visitor) final;
+    void accept(NodeVisitor &visitor) override;
 
-    void print(std::ostream &out) const final;
+    void print(std::ostream &out) const override;
+
+private:
+    vector<unique_ptr<ParameterNode>> parameters_;
+    bool varargs_;
+    TypeNode *type_;
 
 };
 

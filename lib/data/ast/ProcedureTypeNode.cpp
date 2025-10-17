@@ -4,7 +4,6 @@
 
 #include "ProcedureTypeNode.h"
 #include "NodeVisitor.h"
-#include <algorithm>
 
 vector<unique_ptr<ParameterNode>> &ProcedureTypeNode::parameters() {
     return parameters_;
@@ -21,6 +20,15 @@ void ProcedureTypeNode::setReturnType(TypeNode *type) {
 TypeNode *ProcedureTypeNode::getReturnType() const {
     return type_;
 }
+
+bool ProcedureTypeNode::isProper() const {
+    return !isFunction();
+}
+
+bool ProcedureTypeNode::isFunction() const {
+    return type_ && type_->kind() != TypeKind::NOTYPE;
+}
+
 
 void ProcedureTypeNode::accept(NodeVisitor &visitor) {
     visitor.visit(*this);

@@ -4,16 +4,13 @@
  * Created by Michael Grossniklaus on 2/27/18.
  */
 
-#ifndef OBERON0C_IDENTTOKEN_H
-#define OBERON0C_IDENTTOKEN_H
+#ifndef OBERON_LANG_IDENTTOKEN_H
+#define OBERON_LANG_IDENTTOKEN_H
 
 
 #include "Token.h"
 
 class IdentToken final : public Token {
-
-private:
-    std::string value_;
 
 public:
     explicit IdentToken(const FilePos &start, const FilePos &end, std::string value) :
@@ -24,7 +21,10 @@ public:
 
     void print(std::ostream &stream) const override;
 
+private:
+    std::string value_;
+
 };
 
 
-#endif //OBERON0C_IDENTTOKEN_H
+#endif //OBERON_LANG_IDENTTOKEN_H

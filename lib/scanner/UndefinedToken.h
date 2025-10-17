@@ -4,16 +4,13 @@
  * Created by Michael Grossniklaus on 12/28/18.
  */
 
-#ifndef OBERON0C_UNDEFINEDTOKEN_H
-#define OBERON0C_UNDEFINEDTOKEN_H
+#ifndef OBERON_LANG_UNDEFINEDTOKEN_H
+#define OBERON_LANG_UNDEFINEDTOKEN_H
 
 
 #include "Token.h"
 
-class UndefinedToken : public Token {
-
-private:
-    const char value_;
+class UndefinedToken final : public Token {
 
 public:
     explicit UndefinedToken(const FilePos &pos, char value) :
@@ -24,7 +21,10 @@ public:
 
     void print(std::ostream &stream) const override;
 
+private:
+    const char value_;
+
 };
 
 
-#endif //OBERON0C_UNDEFINEDTOKEN_H
+#endif //OBERON_LANG_UNDEFINEDTOKEN_H

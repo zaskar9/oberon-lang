@@ -17,7 +17,7 @@ public:
     void setBase(TypeNode *base);
     [[nodiscard]] TypeNode *getBase() const;
 
-    [[nodiscard]] bool extends(TypeNode *) const override;
+    [[nodiscard]] bool extends(const TypeNode *) const override;
 
     void accept(NodeVisitor &visitor) override;
 

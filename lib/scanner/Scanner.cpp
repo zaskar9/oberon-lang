@@ -72,12 +72,11 @@ const Token* Scanner::peek(const bool advance) {
         return tokens_.back().get();
     }
     if (advance) {
-        auto token = tokens_.back().get();
+        const auto token = tokens_.back().get();
         tokens_.push(scanToken());
         return token;
-    } else {
-        return tokens_.front().get();
     }
+    return tokens_.front().get();
 }
 
 unique_ptr<const Token> Scanner::next() {

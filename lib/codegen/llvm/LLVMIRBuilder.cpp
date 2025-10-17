@@ -198,14 +198,13 @@ void LLVMIRBuilder::visit(ProcedureDefinitionNode &node) {
     scope_ = node.getScope() + 1;
     node.statements()->accept(*this);
     // If necessary, terminate the block
-    if (node.getType()->getReturnType() == nullptr) {
+    if (node.getType()->isProper()) {
         builder_.CreateRetVoid();
     }
     const auto block = builder_.GetInsertBlock();
     if (block->getTerminator() == nullptr) {
-        if (node.getType()->getReturnType() != nullptr && !block->empty()) {
-            logger_.error(node.pos(),
-                          "function \"" + to_string(node.getIdentifier()) + "\" has no return statement.");
+        if (node.getType()->isFunction() && !block->empty()) {
+            logger_.error(node.pos(), "function \"" + to_string(node.getIdentifier()) + "\" has no return statement.");
         } else {
             builder_.CreateUnreachable();
         }
@@ -454,7 +453,7 @@ TypeNode *LLVMIRBuilder::selectors(const NodeReference *ref, TypeNode *base, con
             selector_t = array_t->types()[array->indices().size() - 1];
             baseTy = getLLVMType(selector_t);
             // Output the final GEP for the array access.
-            value = builder_.CreateInBoundsGEP(getLLVMType(array_t->getMemberType()), value, {value_});
+            value = builder_.CreateInBoundsGEP(getLLVMType(array_t->getElementType()), value, {value_});
         } else if (sel->getNodeType() == NodeType::pointer_type) {
             // Output the GEP up to the pointer.
             value = processGEP(baseTy, value, indices);
@@ -570,7 +569,7 @@ LLVMIRBuilder::parameters(ProcedureTypeNode *type, ActualParameters *actuals, ve
                         }
                         const auto frmArrType = dynamic_cast<ArrayTypeNode *>(formalType);
                         if (actArrType->isOpen() &&
-                            (frmArrType->getMemberType()->kind() == TypeKind::ANYTYPE ||
+                            (frmArrType->getElementType()->kind() == TypeKind::ANYTYPE ||
                              actArrType->getBase()->dimensions() == frmArrType->dimensions())) {
                             // It looks like an open array is passed from one procedure to the next
                             dopeV = builder_.CreateLoad(builder_.getPtrTy(), dopeV);
@@ -1217,7 +1216,7 @@ void LLVMIRBuilder::visit(ArrayTypeNode &node) {
     for (size_t i = 1; i < node.lengths().size(); ++i) {
         length *= node.lengths()[i];
     }
-    types_[&node] = ArrayType::get(getLLVMType(node.getMemberType()), length);
+    types_[&node] = ArrayType::get(getLLVMType(node.getElementType()), length);
     // If necessary, create dope vector
     if (node.getBase() == &node && !node.isOpen()) {
         vector<Constant *> dims;
@@ -1254,6 +1253,8 @@ void LLVMIRBuilder::visit(BasicTypeNode &node) {
             types_[&node] = builder_.getPtrTy(); break;
         case TypeKind::SET:
             types_[&node] = builder_.getInt32Ty(); break;
+        case TypeKind::NOTYPE:
+            types_[&node] = builder_.getVoidTy(); break;
         default:
             logger_.error(node.pos(), "cannot map type " + to_string(node.kind()) + " to LLVM intermediate representation.");
             types_[&node] = builder_.getVoidTy();
@@ -1381,7 +1382,7 @@ void LLVMIRBuilder::visit(AssignmentNode &node) {
         const auto rLen = rArray->isOpen() ? 0 : rArray->lengths()[0];
         const auto len = std::min(lLen, rLen);
         const auto layout = module_->getDataLayout();
-        const auto elemSize = layout.getTypeAllocSize(getLLVMType(lArray->getMemberType()));
+        const auto elemSize = layout.getTypeAllocSize(getLLVMType(lArray->getElementType()));
         Value *size;
         if (len == 0) {
             Value *lSize = getArrayLength(node.getLvalue(), 0);
@@ -1647,7 +1648,7 @@ void LLVMIRBuilder::cast(const ExpressionNode &node) {
             }
         } else if (source->isArray() && target->isString()) {
             const auto type = dynamic_cast<ArrayTypeNode *>(source);
-            if (type->getMemberType()->kind() != TypeKind::CHAR) {
+            if (type->getElementType()->kind() != TypeKind::CHAR) {
                 logger_.error(node.pos(), "cannot cast " + to_string(*source->getIdentifier()) + " to " +
                                            to_string(*target->getIdentifier()) + ".");
             }
@@ -2187,7 +2188,7 @@ LLVMIRBuilder::createSystemAdrCall(const vector<unique_ptr<ExpressionNode>> &act
             // indices.push_back(builder_.getInt32(0));
         } else {
             const auto atype = dynamic_cast<ArrayTypeNode *>(type);
-            if (!atype->getMemberType()->isBasic()) {
+            if (!atype->getElementType()->isBasic()) {
                 logger_.error(actual->pos(), "expected array of basic type");
                 return value_;
             }
@@ -2421,7 +2422,7 @@ MaybeAlign LLVMIRBuilder::getLLVMAlign(TypeNode *type) {
     if (type->getNodeType() == NodeType::array_type) {
         const auto array_t = dynamic_cast<ArrayTypeNode*>(type);
         const auto int_align = layout.getABITypeAlign(builder_.getInt64Ty());
-        const auto mem_align = getLLVMAlign(array_t->getMemberType());
+        const auto mem_align = getLLVMAlign(array_t->getElementType());
         if (int_align.value() > mem_align->value()) {
             return int_align;
         }
