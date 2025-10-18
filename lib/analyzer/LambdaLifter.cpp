@@ -220,7 +220,7 @@ void LambdaLifter::selectors(TypeNode *base, vector<unique_ptr<Selector>> &selec
             for (auto &index : indices->indices()) {
                 index->accept(*this);
             }
-            base = type->getMemberType();
+            base = type->getElementType();
         } else if (selector->getNodeType() == NodeType::pointer_type) {
             auto type = dynamic_cast<PointerTypeNode *>(base);
             base = type->getBase();

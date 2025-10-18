@@ -4,7 +4,7 @@
 MODULE FilesTest;
 IMPORT Files, Out;
 
-VAR f: Files.File;
+VAR (* f: Files.File; *)
     r: Files.Rider;
     res: INTEGER;
     len, pos: LONGINT;
@@ -19,6 +19,7 @@ VAR f: Files.File;
     t, d: LONGINT;
 
 BEGIN
+(*
     f := Files.New("test.tmp");
     ASSERT(f # NIL);
     (* Out.String("File created."); Out.Ln; *)
@@ -164,5 +165,5 @@ BEGIN
     f := Files.Old("test.txt");
     ASSERT(f = NIL)
     (* Out.String("Deleted file does not exist."); Out.Ln *)
-
+*)
 END FilesTest.

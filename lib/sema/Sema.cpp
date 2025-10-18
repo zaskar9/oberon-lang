@@ -5,6 +5,7 @@
 #include "Sema.h"
 
 #include <bitset>
+#include <format>
 #include <memory>
 #include <set>
 #include <string>
@@ -56,11 +57,11 @@ Sema::onTranslationUnitEnd(const string &name) {
     }
 }
 
-void Sema::onBlockStart() {
+void Sema::onBlockStart() const {
     symbols_->openScope();
 }
 
-void Sema::onBlockEnd() {
+void Sema::onBlockEnd() const {
     symbols_->closeScope();
 }
 
@@ -212,7 +213,9 @@ Sema::onArrayType(const FilePos &start, const FilePos &end, const vector<unique_
         const auto array_t = dynamic_cast<ArrayTypeNode *>(type);
         lengths.insert(lengths.begin(), array_t->lengths().begin(), array_t->lengths().end());
         types.insert(types.begin(), array_t->types().begin(), array_t->types().end());
-        logger_.warning(start, "nested array found, use multi-dimensional array instead.");
+        if (type->isAnonymous()) {
+            logger_.warning(type->pos(), "nested array found, use multi-dimensional array instead.");
+        }
     }
     for (size_t i = values.size(); i > 0; --i) {
         lengths.insert(lengths.begin(), values[i - 1]);
@@ -250,16 +253,20 @@ Sema::onPointerTypeEnd(const FilePos &start, const FilePos &, PointerTypeNode *t
 ProcedureTypeNode *
 Sema::onProcedureType(const FilePos &start, const FilePos &end,
                       vector<unique_ptr<ParameterNode>> params, const bool varargs, TypeNode *ret) const {
-    if (ret && (ret->isArray() || ret->isRecord())) {
-        // O07.10.1: The result type of a procedure can be neither a record nor an array.
-        logger_.error(start, "result type of a procedure can neither be a record nor an array.");
+    if (ret) {
+        if (ret->isArray() || ret->isRecord()) {
+            // O07.10.1: The result type of a procedure can be neither a record nor an array.
+            logger_.error(start, "result type of a procedure can neither be a record nor an array.");
+        }
+    } else {
+        ret = noTy_;
     }
     return context_->getOrInsertProcedureType(start, end, std::move(params), varargs, ret);
 }
 
 unique_ptr<ParameterNode>
 Sema::onParameter(const FilePos &start, const FilePos &,
-                  unique_ptr<Ident> ident, TypeNode *type, bool is_var, unsigned index) {
+                  unique_ptr<Ident> ident, TypeNode *type, bool is_var, unsigned index) const {
     if (!type) {
         logger_.error(start, "undefined parameter type.");
         type = noTy_;
@@ -408,7 +415,7 @@ Sema::onProcedureDefinitionEnd(const FilePos &, const unique_ptr<Ident> &ident) 
     onBlockEnd();
     auto proc = std::move(procs_.top());
     procs_.pop();
-    if (proc->getType()->getReturnType() && !proc->statements()->isReturn()) {
+    if (proc->getType()->isFunction() && !proc->statements()->isReturn()) {
         logger_.error(proc->pos(), "not all control flow paths of the procedure return a result.");
     }
     if (*proc->getIdentifier() != *ident) {
@@ -441,18 +448,12 @@ Sema::onAssignment(const FilePos &start, const FilePos &,
     }
     if (lvalue && rvalue) {
         // Type inference: check that types are compatible
-        if (assertCompatible(rvalue->pos(), lvalue->getType(), rvalue->getType())) {
+        if (string err; isAssigmentCompatible(lvalue->getType(), lvalue->isVarParameter(), rvalue, err)) {
             if (lvalue->getType() != rvalue->getType()) {
-                if (rvalue->isLiteral()) {
-                    castLiteral(rvalue, lvalue->getType());
-                } else {
-                    // Type inference: compatibility does not check if the `CHAR` value is a literal
-                    if (lvalue->getType()->isArray() && rvalue->getType()->isChar()) {
-                        logger_.error(lvalue->pos(), "type mismatch: cannot assign a non-constant character value to a string variable.");
-                    }
-                    cast(rvalue, lvalue->getType());
-                }
+                cast(rvalue, lvalue->getType());
             }
+        } else {
+            logger_.error(rvalue->pos(), err);
         }
     }
     return make_unique<AssignmentNode>(start, std::move(lvalue), std::move(rvalue));
@@ -460,15 +461,15 @@ Sema::onAssignment(const FilePos &start, const FilePos &,
 
 unique_ptr<IfThenElseNode>
 Sema::onIf(const FilePos &start, const FilePos &,
-                    unique_ptr<ExpressionNode> condition,
-                    unique_ptr<StatementSequenceNode> thenStmts,
-                    vector<unique_ptr<ElseIfNode>> elseIfs,
-                    unique_ptr<StatementSequenceNode> elseStmts) const {
+           unique_ptr<ExpressionNode> condition,
+           unique_ptr<StatementSequenceNode> thenStmts,
+           vector<unique_ptr<ElseIfNode>> elseIfs,
+           unique_ptr<StatementSequenceNode> elseStmts) const {
     if (!condition) {
         logger_.error(start, "undefined condition in if-statement.");
         return nullptr;
     }
-    auto type = condition->getType();
+    const auto type = condition->getType();
     if (type && type->kind() != TypeKind::BOOLEAN) {
         logger_.error(condition->pos(), "Boolean expression expected.");
     }
@@ -556,20 +557,20 @@ Sema::onForLoop(const FilePos &start, const FilePos &,
         }
         type = decl->getType();
         if (type && !type->isInteger()) {
-            logger_.error(ident->start(), "type mismatch: integer type expected, found " + format(type) + ".");
+            logger_.error(ident->start(), "type mismatch: integer type expected, found " + formatType(type) + ".");
         }
     } else {
         logger_.error(ident->start(), to_string(*ident) + " cannot be used as a loop counter.");
     }
     if (low) {
-        if (type && assertCompatible(low->pos(), type, low->getType())) {
+        if (type && assertTypeIncluded(low->pos(), low->getType(), type)) {
             cast(low, type);
         }
     } else {
         logger_.error(start, "undefined low value in for-loop.");
     }
     if (high) {
-        if (type && assertCompatible(high->pos(), type, high->getType())) {
+        if (type && assertTypeIncluded(high->pos(), high->getType(), type)) {
             cast(high, type);
         }
     } else {
@@ -577,7 +578,7 @@ Sema::onForLoop(const FilePos &start, const FilePos &,
     }
     if (step) {
         if (step->isLiteral()) {
-            if (type && assertCompatible(step->pos(), type, step->getType())) {
+            if (type && assertTypeIncluded(step->pos(), step->getType(), type)) {
                 const auto val = dynamic_cast<IntegerLiteralNode *>(step.get())->value();
                 if (val == 0) {
                     logger_.error(step->pos(), "step value cannot be zero.");
@@ -747,15 +748,15 @@ Sema::onCaseLabel(const FilePos &start, const FilePos &,
                 const auto eType = expr->getType();
                 if ((eType->isPointer() && pType->isPointer()) || (eType->isRecord() && pType->isRecord())) {
                     if (!pType->extends(eType)) {
-                        logger_.error(label->pos(), "type mismatch: " + format(pType) +
-                                                    " is not an extension of " + format(eType) + ".");
+                        logger_.error(label->pos(), "type mismatch: " + formatType(pType) +
+                                                    " is not an extension of " + formatType(eType) + ".");
                     } else if (auto qExpr = dynamic_cast<QualifiedExpression *>(expr.get())) {
                         // Change the declaration of the case expression to reflect its dynamic type
                         qExpr->dereference()->setType(pType);
                     }
                 } else {
-                    logger_.error(label->pos(), "type mismatch: case label type " + format(pType) +
-                                                " is incompatible with case expression type "+ format(eType) + ".");
+                    logger_.error(label->pos(), "type mismatch: case label type " + formatType(pType) +
+                                                " is incompatible with case expression type "+ formatType(eType) + ".");
                 }
             }
         } else {
@@ -791,16 +792,16 @@ Sema::onReturn(const FilePos &start, const FilePos &, unique_ptr<ExpressionNode>
             logger_.error(expr->pos(), "module cannot return a value.");
         }
     } else {
-        auto proc = procs_.top().get();
+        const auto proc = procs_.top().get();
         if (expr) {
-            if (!proc->getType()->getReturnType()) {
+            if (proc->getType()->isProper()) {
                 logger_.error(expr->pos(), "procedure cannot return a value.");
             }
-            if (assertCompatible(expr->pos(), proc->getType()->getReturnType(), expr->getType())) {
+            if (assertAssignmentCompatible(expr->pos(), proc->getType()->getReturnType(), expr)) {
                 cast(expr, proc->getType()->getReturnType());
             }
         } else {
-            if (proc->getType()->getReturnType()) {
+            if (proc->getType()->isFunction()) {
                 logger_.error(proc->pos(), "function must return value.");
             }
         }
@@ -833,8 +834,11 @@ Sema::onQualifiedStatement(const FilePos &start, const FilePos &,
     const auto type = onSelectors(ident->start(), ident->end(), sym, sym->getType(), selectors);
     if (const auto procTy = dynamic_cast<ProcedureTypeNode *>(type)) {
         // Looks like a procedure reference that needs to be treated as a procedure call
-        if (procTy->getReturnType()) {
+        if (procTy->isFunction()) {
             logger_.error(ident->start(), "function procedure call must be followed by parameter list.");
+        }
+        if (!procTy->parameters().empty()) {
+            logger_.error(ident->start(), "fewer actual than formal parameters.");
         }
         // For uniformity, add an empty parameter list to the procedure call if none is present
         selectors.insert(selectors.end(), make_unique<ActualParameters>(ident->end()));
@@ -998,8 +1002,7 @@ Sema::assertAssignable(const ExpressionNode *expr, string &err) const {
     if (expr->getNodeType() == NodeType::qualified_expression) {
         if (const auto decl = dynamic_cast<const QualifiedExpression *>(expr)->dereference()) {
             if (decl->getNodeType() == NodeType::parameter) {
-                const auto type = decl->getType();
-                if (type->isStructured()) {
+                if (const auto type = decl->getType(); type->isStructured()) {
                     // O07.9.1: If a value parameter is structured (of array or record type),
                     // no assignment to it or to its elements are permitted.
                     const auto param = dynamic_cast<const ParameterNode *>(decl);
@@ -1037,7 +1040,7 @@ Sema::handleMissingParameters(const FilePos &start, const FilePos &end,
             found = true;
         }
         const auto proc = dynamic_cast<ProcedureTypeNode *>(base);
-        if (found && proc->getReturnType()) {
+        if (found && proc->isFunction()) {
             logger_.error(start, "function procedure call must be followed by parameter list.");
         }
     }
@@ -1091,36 +1094,10 @@ Sema::onActualParameters(DeclarationNode *context, TypeNode *base, ActualParamet
         if (expr == nullptr) {
             continue;
         }
-        const auto exprTy = expr->getCast() ? expr->getCast() : expr->getType();
         if (cnt < proc->parameters().size()) {
-            const auto& param = proc->parameters()[cnt];
-            const auto paramTy = param->getType();
-            if (assertCompatible(expr->pos(), paramTy, exprTy)) {
-                if (param->isVar()) {
-                    string err;
-                    if (!assertAssignable(expr.get(), err)) {
-                        logger_.error(expr->pos(), "illegal actual parameter: cannot pass " + err + " by reference.");
-                    } else if (exprTy->isNumeric() && paramTy->isNumeric()) {
-                        // The types of variable parameters need to be an exact match as they are read-write parameters
-                        if (!paramTy->isVirtual() && paramTy->kind() != exprTy->kind()) {
-                            logger_.error(expr->pos(), "type mismatch: cannot pass " + to_string(*exprTy->getIdentifier()) +
-                                               " to " + to_string(*paramTy->getIdentifier()) + " by reference.");
-                        }
-                    }
-                } else {
-                    if (param->getType() != expr->getType()) {
-                        if (expr->isLiteral()) {
-                            castLiteral(sel->parameters()[cnt], param->getType());
-                        } else {
-                            // Type inference: compatibility does not check if the `CHAR` value is a literal
-                            if (param->getType()->isArray() && expr->getType()->isChar()) {
-                                logger_.error(expr->pos(), "type mismatch: cannot pass a non-constant character value to a string parameter.");
-                            }
-                            cast(expr, param->getType());
-                        }
-                    }
-                }
-                types.push_back(sel->parameters()[cnt]->getType());
+            auto& param = proc->parameters()[cnt];
+            if (string err; isParameterCompatible(param, expr, err)) {
+                types.push_back(expr->getType());
                 if (param->getType()->kind() == TypeKind::TYPE)  {
                     if (expr->getNodeType() == NodeType::qualified_expression) {
                         const auto decl = dynamic_cast<QualifiedExpression *>(expr.get())->dereference();
@@ -1128,6 +1105,7 @@ Sema::onActualParameters(DeclarationNode *context, TypeNode *base, ActualParamet
                     }
                 }
             } else {
+                logger_.error(expr->pos(), err);
                 types.push_back(noTy_);
             }
         } else if (!proc->hasVarArgs()) {
@@ -1160,7 +1138,7 @@ Sema::onActualParameters(DeclarationNode *context, TypeNode *base, ActualParamet
 
 TypeNode *Sema::onArrayIndex(TypeNode *base, ArrayIndex *sel) const {
     if (!base->isArray()) {
-        logger_.error(sel->pos(), format(base) + " is not an array.");
+        logger_.error(sel->pos(), formatType(base) + " is not an array.");
         return noTy_;
     }
     const auto array = dynamic_cast<ArrayTypeNode *>(base);
@@ -1229,8 +1207,8 @@ TypeNode *Sema::onTypeguard(DeclarationNode *sym, TypeNode *base, Typeguard *sel
                 const auto guard = dynamic_cast<TypeDeclarationNode *>(decl)->getType();
                 if (guard->isPointer() || guard->isRecord()) {
                     if (!guard->extends(actual)) {
-                        logger_.error(start, "type mismatch: " + format(guard) + " is not an extension of "
-                                             + format(actual) + ".");
+                        logger_.error(start, "type mismatch: " + formatType(guard) + " is not an extension of "
+                                             + formatType(actual) + ".");
                     } else if (actual->extends(guard)) {
                         logger_.warning(start, "type check is always true.");
                     }
@@ -1333,7 +1311,7 @@ Sema::onBinaryExpression(const FilePos &start, const FilePos &end,
                     const auto type = lhsType->isArray() ? lhsType : rhsType;
                     const auto &literal = lhs->isLiteral() ? lhs : rhs;
                     if (const auto array = dynamic_cast<ArrayTypeNode *>(type)) {
-                        if (array->dimensions() == 1 && array->getMemberType()->isChar()) {
+                        if (array->dimensions() == 1 && array->getElementType()->isChar()) {
                             if (!array->isOpen() && literal->getType()->isString()) {
                                 const auto str = dynamic_cast<StringLiteralNode *>(literal.get());
                                 if (str->value().size() + 1 > array->lengths()[0]) {
@@ -1355,7 +1333,7 @@ Sema::onBinaryExpression(const FilePos &start, const FilePos &end,
                 const auto lhsArray = dynamic_cast<ArrayTypeNode *>(lhsType);
                 const auto rhsArray = dynamic_cast<ArrayTypeNode *>(rhsType);
                 if (lhsArray->dimensions() == 1 && rhsArray->dimensions() == 1 &&
-                     lhsArray->getMemberType()->isChar() && rhsArray->getMemberType()->isChar()) {
+                     lhsArray->getElementType()->isChar() && rhsArray->getElementType()->isChar()) {
                      result = boolTy_;
                 } else {
                     logger_.error(lhs->pos(), "comparison operator " + to_string(op) +
@@ -1365,11 +1343,11 @@ Sema::onBinaryExpression(const FilePos &start, const FilePos &end,
             }
             if (lhsType == rhsType) {
                 logger_.error(lhs->pos(), "comparison operator " + to_string(op) +
-                                          " is not defined for operands of type " + format(lhsType) + ".");
+                                          " is not defined for operands of type " + formatType(lhsType) + ".");
             } else {
                 logger_.error(lhs->pos(), "comparison operator " + to_string(op) +
-                                          " is not defined for operands of types " + format(lhsType) +
-                                          " and " + format(rhsType) + ".");
+                                          " is not defined for operands of types " + formatType(lhsType) +
+                                          " and " + formatType(rhsType) + ".");
             }
             break;
         case OperatorType::IN:
@@ -1450,8 +1428,8 @@ Sema::onBinaryExpression(const FilePos &start, const FilePos &end,
                         if (lhsType->extends(type)) {
                             logger_.warning(start, "type check is always true.");
                         } else if (!type->extends(lhsType)) {
-                            logger_.error(rhs->pos(), "type mismatch: " + format(type) + " is not an extension of " +
-                                                      format(lhsType) + ".");
+                            logger_.error(rhs->pos(), "type mismatch: " + formatType(type) + " is not an extension of " +
+                                                      formatType(lhsType) + ".");
                         }
                     } else {
                         logger_.error(rhs->pos(), "type mismatch: record type or pointer to record type expected.");
@@ -2118,7 +2096,7 @@ Sema::fold(const FilePos &start, const FilePos &end,
 }
 
 bool
-Sema::assertEqual(Ident *aIdent, Ident *bIdent) {
+Sema::isSameIdent(Ident *aIdent, Ident *bIdent) {
     if (!aIdent || !bIdent) {
         return false;
     }
@@ -2153,11 +2131,11 @@ Sema::checkExport(DeclarationNode *node) const {
         }
     } else {
         if (node->getNodeType() == NodeType::type) {
-            auto decl = dynamic_cast<TypeDeclarationNode *>(node);
+            const auto decl = dynamic_cast<TypeDeclarationNode *>(node);
             if (decl->getType()->kind() == TypeKind::RECORD) {
                 const auto type = dynamic_cast<RecordTypeNode *>(decl->getType());
                 for (size_t i = 0; i < type->getFieldCount(); i++) {
-                    auto field = type->getField(i);
+                    const auto field = type->getField(i);
                     if (field->getIdentifier()->isExported()) {
                         logger_.error(field->pos(), "cannot export fields of non-exported record type.");
                     }
@@ -2167,161 +2145,342 @@ Sema::checkExport(DeclarationNode *node) const {
     }
 }
 
-bool
-Sema::assertCompatible(const FilePos &pos, TypeNode *expected, TypeNode *actual, const bool isPtr) {
-    if (!expected || !actual) {
-        logger_.error(pos, "type mismatch.");
+bool Sema::isSameType(const TypeNode *lhsTy, const TypeNode *rhsTy, string &err) {
+    if (!lhsTy || !rhsTy) {
+        err = "type mismatch.";
         return false;
     }
-    if (expected == actual) {
-        return true;
-    }
-    // Check `ANYTYPE`
-    if (expected->kind() == TypeKind::ANYTYPE) {
-        return true;
-    }
-    // Check declared types
-    auto expectedId = expected->getIdentifier();
-    auto actualId = actual->getIdentifier();
-    if (assertEqual(expectedId, actualId)) {
-        // the two types are the same type
-        return true;
-    }
-    // Check numeric types
-    if (expected->isNumeric() && actual->isNumeric()) {
-        // Check virtual numeric compound types
-        if ((expected->kind() == TypeKind::ENTIRE && actual->isInteger()) ||
-            (expected->kind() == TypeKind::FLOATING && actual->isReal()) ||
-            (expected->kind() == TypeKind::NUMERIC)) {
-            return true;
+    if (lhsTy == rhsTy) {
+        if (isOpenArray(lhsTy)) {
+            err = "type mismatch: open arrays are incompatible.";
+            return false;
         }
-        // Both expected and actual type are concrete types: assure legal conversion and promotion
-        if ((expected->isInteger() && actual->isInteger()) ||
-            (expected->isReal() && actual->isReal())) {
-            if (expected->getSize() < actual->getSize()) {
-                logger_.error(pos, "type mismatch: converting from " + to_string(*actualId) +
-                                   " to " + to_string(*expectedId) + " may lose data.");
+        return true;
+    }
+    if (!isSameIdent(lhsTy->getIdentifier(), rhsTy->getIdentifier())) {
+        err = std::format("type mismatch: type {} is incompatible with type {}.", formatType(lhsTy), formatType(rhsTy));
+        return false;
+    }
+    return true;
+}
+
+bool Sema::isSameVirtualType(const TypeNode *formal, const TypeNode *actual, string &err) {
+    if (isSameType(formal, actual, err)) {
+        return true;
+    }
+    if (formal->kind() == TypeKind::ANYTYPE) {
+        return true;
+    }
+    // Check virtual numeric compound types.
+    if ((formal->kind() == TypeKind::ENTIRE && actual->isInteger()) ||
+        (formal->kind() == TypeKind::FLOATING && actual->isReal()) ||
+        (formal->kind() == TypeKind::NUMERIC)) {
+        return true;
+        }
+    if (formal->isPointer() && actual->isPointer()) {
+        const auto formalPtr = dynamic_cast<const PointerTypeNode *>(formal);
+        const auto actualPtr = dynamic_cast<const PointerTypeNode *>(actual);
+        return isSameVirtualType(formalPtr->getBase(), actualPtr->getBase(), err);
+    }
+    return false;
+}
+
+bool Sema::isEqualType(TypeNode *lhsTy, TypeNode *rhsTy, string &err) {
+    if (isSameType(lhsTy, rhsTy, err)) {
+        return true;
+    }
+    if (lhsTy->isArray() && rhsTy->isArray()) {
+        const auto at1 = dynamic_cast<ArrayTypeNode *>(lhsTy);
+        const auto at2 = dynamic_cast<ArrayTypeNode *>(rhsTy);
+        if (at1->isOpen() && at2->isOpen()) {
+            if (at1->dimensions() != at2->dimensions()) {
+                err = std::format("type mismatch: incompatible array dimensions, expected {}, found {}.",
+                                  to_string(at1->dimensions()), to_string(at2->dimensions()));
                 return false;
             }
-            return true;
+            return isEqualType(at1->getElementType(), at2->getElementType(), err);
         }
-        if (expected->isReal() && actual->isInteger()) {
-            return true;
+        err = "type mismatch: incompatible array types.";
+        return false;
+    }
+    if (lhsTy->isProcedure() && rhsTy->isProcedure()) {
+        const auto pt1 = dynamic_cast<ProcedureTypeNode *>(lhsTy);
+        const auto pt2 = dynamic_cast<ProcedureTypeNode *>(rhsTy);
+        return isParameterListMatching(pt1, pt2, err);
+    }
+    err = "type mismatch";
+    return false;
+}
+
+bool Sema::isEqualArrayType(const ArrayTypeNode *formal, const ArrayTypeNode *actual, string &err) const {
+    if (formal->dimensions() < actual->dimensions()) {
+        err = std::format("type mismatch: incompatible array dimensions: expected {}, found {}.",
+                          formal->dimensions(), actual->dimensions());
+        return false;
+    }
+    if (config_.getLanguageStandard() != LanguageStandard::TurboOberon) {
+        if (!formal->isOpen() && actual->isOpen()) {
+            err = std::format("type mismatch: incompatible array types: expected {}, found {}.",
+                              formatType(formal), formatType(actual));
+            return false;
         }
-        if ((expected->isByte() && actual->isInteger()) ||
-            (expected->isInteger() && actual->isByte())) {
+    }
+    for (size_t i = 0; i < formal->dimensions(); ++i) {
+        if (!isSameType(formal->types()[i], actual->types()[i], err)) {
+            return false;
+        }
+        if (!formal->isOpen() && formal->lengths()[i] < actual->lengths()[i]) {
+            err = std::format("type mismatch: incompatible array lengths found {} > {}.",
+                              to_string(actual->lengths()[i]), to_string(formal->lengths()[i]));
+            return false;
+        }
+    }
+    return true;
+}
+
+bool Sema::isParameterListMatching(ProcedureTypeNode *lhsTy, ProcedureTypeNode *rhsTy, string &err) {
+    // 0. Formal parameter lists with variadic arguments are always incompatible.
+    if (lhsTy->hasVarArgs() || rhsTy->hasVarArgs()) {
+        err = "type mismatch: procedure types with variadic arguments are incompatible.";
+        return false;
+    }
+    // 1. They have the same number of parameters.
+    if (lhsTy->parameters().size() != rhsTy->parameters().size()) {
+        err = "type mismatch: procedure types have different number of parameters.";
+        return false;
+    }
+    // 2. They have either the same function result type or none.
+    if (!isSameType(lhsTy->getReturnType(), rhsTy->getReturnType(), err)) {
+        err = "type mismatch: procedure types have different return types.";
+        return false;
+    }
+    for (size_t i = 0; i < lhsTy->parameters().size(); ++i) {
+        const auto& param1 = lhsTy->parameters()[i];
+        const auto& param2 = rhsTy->parameters()[i];
+        // 3. Parameters at corresponding positions have equal types.
+        if (!isEqualType(param1->getType(), param2->getType(), err)) {
+            err = "type mismatch: procedure types have different parameter types.";
+            return false;
+        }
+        // 4. Parameters at corresponding positions are both either value or variable parameters.
+        if (param1->isVar() != param2->isVar()) {
+            err = "type mismatch: procedure types have incompatible variable parameters.";
+            return false;
+        }
+    }
+    return true;
+}
+
+bool Sema::isTypeIncluded(const TypeNode *subTy, const TypeNode *superTy, string &err) const {
+    if (!subTy->isNumeric() || !superTy->isNumeric()) {
+        err = "type mismatch: type inclusion only applies to numeric types.";
+        return false;
+    }
+    // Check virtual numeric compound types.
+    if ((superTy->kind() == TypeKind::ENTIRE && subTy->isInteger()) ||
+        (superTy->kind() == TypeKind::FLOATING && subTy->isReal()) ||
+        (superTy->kind() == TypeKind::NUMERIC)) {
+        return true;
+    }
+    // Both expected and actual type are concrete types: check equality or valid promotion.
+    if ((superTy->isInteger() && subTy->isInteger()) || (superTy->isReal() && subTy->isReal())) {
+        if (superTy->getSize() < subTy->getSize()) {
+            err = std::format("type mismatch: converting from {} to {} may lose data.",
+                              to_string(subTy->getIdentifier()), to_string(superTy->getIdentifier()));
+            return false;
+        }
+        return true;
+    }
+    // Check valid conversion from integer to real type.
+    if (superTy->isReal() && subTy->isInteger()) {
+        return true;
+    }
+    // Check compatibility of integer and byte type.
+    if (config_.getLanguageStandard() == LanguageStandard::Oberon07 ||
+        config_.getLanguageStandard() == LanguageStandard::TurboOberon) {
+        if ((superTy->isByte() && subTy->isInteger()) || (superTy->isInteger() && subTy->isByte())) {
             return true;
         }
     }
-    // Check array type
-    if (expected->isArray()) {
-        const auto exp_array = dynamic_cast<ArrayTypeNode *>(expected);
-        if (actual->isArray()) {
-            if (exp_array->getMemberType()->kind() == TypeKind::ANYTYPE) {
+    err = std::format("type mismatch: type {} is not included in type {}.",
+                      to_string(subTy->getIdentifier()), to_string(superTy->getIdentifier()));
+    return false;
+}
+
+bool Sema::assertTypeIncluded(const FilePos &pos, const TypeNode *subTy, const TypeNode *superTy) const {
+    if (string err; !isTypeIncluded(subTy, superTy, err)) {
+        logger_.error(pos, err);
+        return false;
+    }
+    return true;
+}
+
+bool Sema::isTypeExtended(const TypeNode *subTy, const TypeNode *superTy, string &err) {
+    if (!subTy->extends(superTy)) {
+        err = std::format("type mismatch: {} is not an extension of {}.",
+                          formatType(subTy), formatType(superTy));
+        return false;
+    }
+    return true;
+}
+
+bool Sema::isArrayCompatible(const unique_ptr<ParameterNode> &param, const unique_ptr<ExpressionNode> &expr, string &err) const {
+    const auto paramTy = param->getType();
+    const auto exprTy = expr->getCast() ? expr->getCast() : expr->getType();
+    // 1. `paramTy` and `exprTy` are the same type.
+    if (isSameType(paramTy, exprTy, err)) {
+        return true;
+    }
+    if (paramTy->isArray()) {
+        const auto paramArrayTy = dynamic_cast<ArrayTypeNode *>(paramTy);
+        if (exprTy->isArray()) {
+            if (paramArrayTy->getElementType()->kind() == TypeKind::ANYTYPE) {
                 // If the expected member type is `ANYTYPE`, as for example with the LEN procedure,
                 // the dimensions cannot be checked as `ANYTYPE` can also be a nested ARRAY type.
                 return true;
             }
-            const auto act_array = dynamic_cast<ArrayTypeNode *>(actual);
-            if (exp_array->dimensions() >= act_array->dimensions()) {
-                if (exp_array->isOpen()) {
-                    return assertCompatible(pos, exp_array->getMemberType(), act_array->getMemberType());
-                }
-                for (size_t i = 0; i < exp_array->dimensions(); ++i) {
-                    if (!assertCompatible(pos, exp_array->types()[i], act_array->types()[i])) {
-                        return false;
-                    }
-                    if (exp_array->lengths()[i] < act_array->lengths()[i]) {
-                        logger_.error(pos, "type mismatch: incompatible array lengths found " +
-                                           to_string(act_array->lengths()[i]) + " > " +
-                                           to_string(exp_array->lengths()[i]) + ".");
-                        return false;
-                    }
-                }
-                return true;
-            }
-            logger_.error(pos, "type mismatch: incompatible array dimensions, expected " +
-                               to_string(exp_array->dimensions()) + ", found " +
-                               to_string(act_array->dimensions()) + ".");
-            return false;
-        }
-        if ((actual->isString() || actual->isChar()) &&
-            (exp_array->getMemberType()->isChar() || exp_array->getMemberType()->kind() == TypeKind::ANYTYPE)) {
-            if (exp_array->dimensions() == 1) {
-                return true;
-            }
-            logger_.error(pos, "type mismatch: cannot assign string to multi-dimensional array.");
-            return false;
-        }
-    }
-    // Check record type
-    if (expected->isRecord() && actual->isRecord() && actual->extends(expected)) {
-        return true;
-    }
-    // Check pointer type
-    if (expected->isPointer()) {
-        if (actual->isPointer()) {
-            if (actual->extends(expected)) {
-                return true;
-            }
-            const auto exp_ptr = dynamic_cast<PointerTypeNode *>(expected);
-            const auto act_ptr = dynamic_cast<PointerTypeNode *>(actual);
-            return assertCompatible(pos, exp_ptr->getBase(), act_ptr->getBase(), true);
-        }
-        if (actual->kind() == TypeKind::NILTYPE) {
-            return true;
-        }
-    }
-    if (expected->isProcedure()) {
-        if (actual->isProcedure()) {
-            const auto exp_proc = dynamic_cast<ProcedureTypeNode *>(expected);
-            const auto act_proc = dynamic_cast<ProcedureTypeNode *>(actual);
-            if (exp_proc->hasVarArgs() || act_proc->hasVarArgs()) {
-                logger_.error(pos, "procedure types with variadic arguments cannot be used here.");
-                return false;
-            }
-            if (exp_proc->getReturnType() != act_proc->getReturnType()) {
-                logger_.error(pos, "type mismatch: procedure types have different return types.");
-                return false;
-            }
-            if (exp_proc->parameters().size() == act_proc->parameters().size()) {
-                bool match = true;
-                for (size_t i = 0; i < exp_proc->parameters().size(); ++i) {
-                    const auto& exp = exp_proc->parameters()[i];
-                    const auto& act = act_proc->parameters()[i];
-                    if (exp->isVar() != act->isVar()) {
-                        match = false;
-                        break;
-                    }
-                    const auto exp_param = exp->getType();
-                    const auto act_param = act->getType();
-                    if (exp_param->isArray() && act_param->isArray()) {
-                        const auto exp_array = dynamic_cast<ArrayTypeNode *>(exp_param);
-                        const auto act_array = dynamic_cast<ArrayTypeNode *>(act_param);
-                        if (!exp_array->isOpen() || !act_array->isOpen()) {
-                            match = false;
-                            break;
-                        }
-                    } else if (exp_param != act_param) {
-                        match = false;
-                        break;
-                    }
-                }
-                if (!match) {
-                    logger_.error(pos, "type mismatch: procedure types have different parameters.");
+            const auto exprArrayTy = dynamic_cast<ArrayTypeNode *>(exprTy);
+            // 2. `paramTy` is an open array, `exprTy` is any array, and their element types are array compatible.
+            if (paramArrayTy->isOpen()) {
+                if (paramArrayTy->dimensions() != exprArrayTy->dimensions()) {
+                    err = std::format("type mismatch: incompatible array dimensions, expected {}, found {}.",
+                                      paramArrayTy->dimensions(), exprArrayTy->dimensions());
                     return false;
                 }
-                return true;
+                return isSameType(paramArrayTy->getElementType(), exprArrayTy->getElementType(), err);
             }
-            logger_.error(pos, "type mismatch: procedure types have different number of parameters.");
-            return false;
-        }
-        if (actual->kind() == TypeKind::NILTYPE) {
-            return true;
+            if (config_.getLanguageStandard() == LanguageStandard::TurboOberon) {
+                return isEqualArrayType(paramArrayTy, exprArrayTy, err);
+            }
+        } else {
+            // 3. `param` is a value parameter of type `ARRAY OF CHAR` and `expr` is a string.
+            //    The check for value parameter happens at he start of `isParameterCompatible`.
+            return isStringCompatible(paramArrayTy, expr, err);
         }
     }
-    logger_.error(pos, "type mismatch: expected " + format(expected, isPtr) + ", found " + format(actual, isPtr) + ".");
+    err = std::format("type mismatch: expected {}, found {}.", formatType(paramTy), formatType(exprTy));
     return false;
+}
+
+bool Sema::isStringCompatible(const ArrayTypeNode *type, const unique_ptr<ExpressionNode> &expr, string &err) {
+    const auto exprTy = expr->getCast() ? expr->getCast() : expr->getType();
+    if (type->getElementType()->isChar() || type->getElementType()->kind() == TypeKind::ANYTYPE) {
+        if (exprTy->isString() || exprTy->isChar()) {
+            if (type->dimensions() != 1) {
+                err = "type mismatch: string is not compatible with a multi-dimensional array.";
+                return false;
+            }
+            if (exprTy->isChar() && !expr->isLiteral()) {
+                err = "type mismatch: a non-constant character expression is not compatible with string.";
+                return false;
+            }
+            if (!type->isOpen() && expr->isLiteral()) {
+                const auto exprLen = exprTy->isString() ? dynamic_cast<StringLiteralNode *>(expr.get())->value().size() : 1;
+                if (exprLen >=  type->lengths()[0]) {
+                    err = "string literal exceeds length of character array.";
+                    return false;
+                }
+            }
+        }
+    }
+    return true;
+}
+
+bool Sema::isParameterCompatible(const unique_ptr<ParameterNode> &param, unique_ptr<ExpressionNode> &expr, string &err) {
+    if (param->isVar()) {
+        if (!assertAssignable(expr.get(), err)) {
+            err = std::format("illegal actual parameter: cannot pass {} by reference.", err);
+            return false;
+        }
+    }
+    if (isOpenArray(param->getType()) ||
+        (param->getType()->isArray() && config_.getLanguageStandard() == LanguageStandard::TurboOberon)) {
+        if (!isArrayCompatible(param, expr, err)) {
+            return false;
+        }
+    } else {
+        const auto formalTy = param->getType();
+        const auto actualTy = expr->getCast() ? expr->getCast() : expr->getType();
+        if (param->isVar()) {
+            if (formalTy->isRecord() && actualTy->isRecord()) {
+                if (!actualTy->extends(formalTy)) {
+                    err = std::format("type mismatch: {} is not an extension of {}.",
+                                      formatType(actualTy), formatType(formalTy));
+                    return false;
+                }
+            } else if (!isSameVirtualType(formalTy, actualTy, err)) {
+                err = std::format("type mismatch: cannot pass an expression of type {} to variable parameter of type {}.",
+                                  formatType(actualTy), formatType(formalTy));
+                return false;
+            }
+        } else if (!isAssigmentCompatible(formalTy, param->isVar(), expr, err)) {
+            return false;
+        }
+    }
+    if (param->getType() != expr->getType()) {
+        cast(expr, param->getType());
+    }
+    return true;
+}
+
+bool Sema::isAssigmentCompatible(TypeNode *varTy, const bool isVarParam, const unique_ptr<ExpressionNode> &expr, string &err) const {
+    const auto exprTy = expr->getCast() ? expr->getCast() : expr->getType();
+    // 0. ANYTYPE is compatible with all types.
+    if (varTy->kind() == TypeKind::ANYTYPE) {
+        return true;
+    }
+    // 1. `exprTy` and `varTy` are the same type.
+    if (isSameType(varTy, exprTy, err)) {
+        return true;
+    }
+    // 2. `exprTy` and `varTy` are numeric types and `varTy` includes `exprTy`.
+    if (varTy->isNumeric() && exprTy->isNumeric()) {
+        return isTypeIncluded(exprTy, varTy, err);
+    }
+    // 3. `exprTy` and `varTy` are record types and `exprTy` is an extension of `varTy` and
+    //    the dynamic type of `var` is `exprTy` (requires run-time check).
+    if (varTy->isRecord() && exprTy->isRecord()) {
+        if (isVarParam) {
+            return isTypeExtended(exprTy, varTy, err);
+        }
+    }
+    // 4. `exprTy` and `varTy` are pointer types and `exprTy` is an extension of `varTy`.
+    if (varTy->isPointer() && exprTy->isPointer()) {
+        return isTypeExtended(exprTy, varTy, err);
+    }
+    // 5. `varTy` is a pointer or a procedure type and `expr` is `NIL`.
+    if ((varTy->isPointer() || varTy->isProcedure()) && expr->getType()->kind() == TypeKind::NILTYPE) {
+        return true;
+    }
+    // 6. `varTy` is `ARRAY n OF CHAR`, `expr` is a string constant with m characters, and m < n.
+    if (varTy->isArray()) {
+        const auto varArrayTy = dynamic_cast<const ArrayTypeNode *>(varTy);
+        if (exprTy->isArray()) {
+            if (config_.getLanguageStandard() == LanguageStandard::TurboOberon) {
+                const auto exprArrayTy = dynamic_cast<const ArrayTypeNode *>(exprTy);
+                return isEqualArrayType(varArrayTy, exprArrayTy, err);
+            }
+        } else if (isStringCompatible(varArrayTy, expr, err)) {
+            return true;
+        }
+        return false;
+    }
+    // 7. `varTy` is a procedure type and `expr` is the name of a procedure whose formal parameters match those of `varTy`.
+    if (varTy->isProcedure() && exprTy->isProcedure()) {
+        const auto varProcTy = dynamic_cast<ProcedureTypeNode *>(varTy);
+        const auto exprProcTy = dynamic_cast<ProcedureTypeNode *>(exprTy);
+        return isParameterListMatching(varProcTy, exprProcTy, err);
+    }
+    err = std::format("type mismatch: expected {}, found {}.", formatType(varTy), formatType(exprTy));
+    return false;
+}
+
+bool Sema::assertAssignmentCompatible(const FilePos &pos, TypeNode *expected, const unique_ptr<ExpressionNode> &expr) const {
+    if (string err; !isAssigmentCompatible(expected, false, expr, err)) {
+        logger_.error(pos, err);
+        return false;
+    }
+    return true;
 }
 
 TypeNode *
@@ -2329,7 +2488,7 @@ Sema::commonType(const FilePos &pos, TypeNode *lhsType, TypeNode *rhsType) const
     if (lhsType == rhsType) {
         return lhsType;
     }
-    if (assertEqual(lhsType->getIdentifier(), rhsType->getIdentifier())) {
+    if (isSameIdent(lhsType->getIdentifier(), rhsType->getIdentifier())) {
         return lhsType;
     }
     // Numeric types
@@ -2360,20 +2519,29 @@ Sema::commonType(const FilePos &pos, TypeNode *lhsType, TypeNode *rhsType) const
     if (rhsType->kind() == TypeKind::NILTYPE) {
         return lhsType;
     }
-    logger_.error(pos, "incompatible or illegal operand types (" + format(lhsType) + ", " + format(rhsType) + ")");
+    logger_.error(pos, "incompatible or illegal operand types (" + formatType(lhsType) + ", " + formatType(rhsType) + ")");
     return noTy_;
 }
 
-bool Sema::isArrayOfChar(TypeNode *type) {
-    if (const auto array = dynamic_cast<ArrayTypeNode *>(type)) {
-        return array->dimensions() == 1 && array->getMemberType()->kind() == TypeKind::CHAR;
+bool Sema::isArrayOfChar(const TypeNode *type) {
+    if (const auto array = dynamic_cast<const ArrayTypeNode *>(type)) {
+        return array->dimensions() == 1 && array->getElementType()->kind() == TypeKind::CHAR;
     }
     return false;
 }
 
+bool Sema::isOpenArray(const TypeNode *type) {
+    if (const auto array = dynamic_cast<const ArrayTypeNode *>(type)) {
+        return array->isOpen();
+    }
+    return false;
+}
 
 string
-Sema::format(const TypeNode *type, const bool isPtr) {
+Sema::formatType(const TypeNode *type, const bool isPtr) {
+    if (type->getIdentifier()) {
+        return type->getIdentifier()->name();
+    }
     std::stringstream stream;
     if (isPtr) {
         stream << "POINTER TO ";
@@ -2388,12 +2556,12 @@ Sema::format(const TypeNode *type, const bool isPtr) {
                 sep = ", ";
             }
         }
-        stream << " OF " << format(array->getMemberType());
+        stream << " OF " << formatType(array->getElementType());
     } else if (type->kind() == TypeKind::RECORD) {
         stream << "RECORD ... END";
     } else if (type->kind() == TypeKind::POINTER) {
         const auto pointer = dynamic_cast<const PointerTypeNode *>(type);
-        stream << format(pointer->getBase(), true);
+        stream << formatType(pointer->getBase(), true);
     } else if (type->kind() == TypeKind::NOTYPE) {
         stream << "undefined type";
     } else {
@@ -2405,7 +2573,7 @@ Sema::format(const TypeNode *type, const bool isPtr) {
 void Sema::cast(unique_ptr<ExpressionNode> &expr, TypeNode *expected) {
     if (expr->isLiteral()) {
         castLiteral(expr, expected);
-    } else  if (expr->getType() != expected && !expected->isVirtual()) {
+    } else if (expr->getType() != expected && !expected->isVirtual()) {
         expr->setCast(expected);
     }
 }

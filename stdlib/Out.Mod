@@ -60,11 +60,23 @@ MODULE Out;
     Texts.WriteReal(W, x, n)
   END Real;
 
+  (** Write the real `x` in `n` field positions in fixed point notation with `f` fraction digits. *)
+  PROCEDURE RealFix* (x: REAL; n, f: INTEGER);
+  BEGIN
+  	Texts.WriteRealFix(W, x, n, f, 0)
+  END RealFix;
+
   (** Writes the long real `x` in `n` field positions. *)
   PROCEDURE LongReal* (x: LONGREAL; n: INTEGER);
   BEGIN
     Texts.WriteLongReal(W, x, n)
   END LongReal;
+
+  (** Write the long real `x` in `n` field positions in fixed point notation with `f` fraction digits. *)
+  PROCEDURE LongRealFix*(x: LONGREAL; n, f: INTEGER);
+  BEGIN
+  	Texts.WriteLongRealFix(W, x, n, f, 0)
+  END LongRealFix;
 
   (** Writes the set `set` to the output. *)
   PROCEDURE Set* (set: SET);
@@ -78,5 +90,11 @@ MODULE Out;
     END;
     Texts.Write(W, "}")
   END Set;
+
+  PROCEDURE Open*;
+  END Open;
+
+  PROCEDURE Close*;
+  END Close;
 
 END Out.

@@ -22,8 +22,8 @@ TypeNode *PointerTypeNode::getBase() const {
     return base_;
 }
 
-bool PointerTypeNode::extends(TypeNode *base) const {
-    if (const auto ptr = dynamic_cast<PointerTypeNode *>(base)) {
+bool PointerTypeNode::extends(const TypeNode *base) const {
+    if (const auto ptr = dynamic_cast<const PointerTypeNode *>(base)) {
         return base_ ? base_->extends(ptr->getBase()) : false;
     }
     return false;

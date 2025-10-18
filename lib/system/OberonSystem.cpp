@@ -80,7 +80,7 @@ ArrayTypeNode *OberonSystem::createArrayType(const vector<unsigned> &dimensions,
 
 PredefinedProcedure*
 OberonSystem::createProcedure(ProcKind kind, const string& name, const vector<pair<TypeNode *, bool>>& params,
-                              TypeNode *ret, bool varargs, bool toSymbols) {
+                              TypeNode *ret, bool varargs, const bool toSymbols) {
     auto proc = make_unique<PredefinedProcedure>(kind, name, params, varargs, ret);
     const auto ptr = proc.get();
     decls_.push_back(std::move(proc));

@@ -81,7 +81,7 @@ public:
 
     [[nodiscard]] bool isVirtual() const;
 
-    [[nodiscard]] virtual bool extends(TypeNode *) const;
+    [[nodiscard]] virtual bool extends(const TypeNode *) const;
 
     void accept(NodeVisitor &) override = 0;
 

@@ -104,7 +104,7 @@ void SymbolExporter::writeDeclaration(SymbolFile *file, DeclarationNode *decl) {
 
 void SymbolExporter::writeType(SymbolFile *file, TypeNode *type) {
     // unknown type
-    if (!type) {
+    if (!type || type->kind() == TypeKind::NOTYPE) {
         file->writeChar(-static_cast<char>(TypeKind::NOTYPE));
         return;
     }

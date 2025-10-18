@@ -21,6 +21,19 @@ DeclarationNode *NodeReference::dereference() const {
 
 QualifiedExpression::~QualifiedExpression() = default;
 
+bool QualifiedExpression::isVarParameter() {
+    if (selectors().empty()) {
+        if (const auto decl = dereference()) {
+            if (decl->getNodeType() == NodeType::parameter) {
+                const auto param = dynamic_cast<const ParameterNode *>(decl);
+                return param->isVar();
+            }
+        }
+    }
+    return false;
+}
+
+
 FilePos QualifiedExpression::pos() const {
     return ExpressionNode::pos();
 }
@@ -35,12 +48,7 @@ int QualifiedExpression::getPrecedence() const {
 }
 
 TypeNode *QualifiedExpression::getType() const {
-    auto type = ExpressionNode::getType();
-//    if (type && type->kind() == TypeKind::PROCEDURE) {
-//        auto proc = dynamic_cast<ProcedureTypeNode *>(type);
-//        return proc->getReturnType();
-//    }
-    return type;
+    return ExpressionNode::getType();;
 }
 
 void QualifiedExpression::resolve(DeclarationNode *node) {

@@ -198,14 +198,13 @@ void LLVMIRBuilder::visit(ProcedureDefinitionNode &node) {
     scope_ = node.getScope() + 1;
     node.statements()->accept(*this);
     // If necessary, terminate the block
-    if (node.getType()->getReturnType() == nullptr) {
+    if (node.getType()->isProper()) {
         builder_.CreateRetVoid();
     }
     const auto block = builder_.GetInsertBlock();
     if (block->getTerminator() == nullptr) {
-        if (node.getType()->getReturnType() != nullptr && !block->empty()) {
-            logger_.error(node.pos(),
-                          "function \"" + to_string(node.getIdentifier()) + "\" has no return statement.");
+        if (node.getType()->isFunction() && !block->empty()) {
+            logger_.error(node.pos(), "function \"" + to_string(node.getIdentifier()) + "\" has no return statement.");
         } else {
             builder_.CreateUnreachable();
         }
@@ -454,7 +453,7 @@ TypeNode *LLVMIRBuilder::selectors(const NodeReference *ref, TypeNode *base, con
             selector_t = array_t->types()[array->indices().size() - 1];
             baseTy = getLLVMType(selector_t);
             // Output the final GEP for the array access.
-            value = builder_.CreateInBoundsGEP(getLLVMType(array_t->getMemberType()), value, {value_});
+            value = builder_.CreateInBoundsGEP(getLLVMType(array_t->getElementType()), value, {value_});
         } else if (sel->getNodeType() == NodeType::pointer_type) {
             // Output the GEP up to the pointer.
             value = processGEP(baseTy, value, indices);
@@ -570,7 +569,7 @@ LLVMIRBuilder::parameters(ProcedureTypeNode *type, ActualParameters *actuals, ve
                         }
                         const auto frmArrType = dynamic_cast<ArrayTypeNode *>(formalType);
                         if (actArrType->isOpen() &&
-                            (frmArrType->getMemberType()->kind() == TypeKind::ANYTYPE ||
+                            (frmArrType->getElementType()->kind() == TypeKind::ANYTYPE ||
                              actArrType->getBase()->dimensions() == frmArrType->dimensions())) {
                             // It looks like an open array is passed from one procedure to the next
                             dopeV = builder_.CreateLoad(builder_.getPtrTy(), dopeV);
@@ -703,7 +702,6 @@ void LLVMIRBuilder::trapOutOfBounds(Value *value, Value *lower, Value *upper) {
 }
 
 void LLVMIRBuilder::trapTypeGuard(Value *cond) {
-    // auto value = builder_.CreateNot(cond);
     installTrap(cond, static_cast<uint8_t>(Trap::TYPE_GUARD));
 }
 
@@ -779,10 +777,10 @@ Value *LLVMIRBuilder::createTypeTest(Value *td, TypeNode *type) {
     const auto skip = BasicBlock::Create(builder_.getContext(), "skip", function_);
     builder_.CreateCondBr(cond, test, skip);
     builder_.SetInsertPoint(test);
-    const auto tds = builder_.CreateInBoundsGEP(recordTdTy_, value, {builder_.getInt32(0), builder_.getInt32(0)});
-    value = builder_.CreateLoad(builder_.getPtrTy(), tds);
-    const auto rid = builder_.CreateInBoundsGEP(builder_.getPtrTy(), value, {level});
-    value = builder_.CreateLoad(builder_.getPtrTy(), rid);
+    const auto ids = builder_.CreateInBoundsGEP(recordTdTy_, value, {builder_.getInt32(0), builder_.getInt32(0)});
+    value = builder_.CreateLoad(builder_.getPtrTy(), ids);
+    const auto id = builder_.CreateInBoundsGEP(builder_.getPtrTy(), value, {level});
+    value = builder_.CreateLoad(builder_.getPtrTy(), id);
     cond = builder_.CreateICmpEQ(recTypeIds_[record_t], value);
     builder_.CreateBr(skip);
     builder_.SetInsertPoint(skip);
@@ -1217,7 +1215,7 @@ void LLVMIRBuilder::visit(ArrayTypeNode &node) {
     for (size_t i = 1; i < node.lengths().size(); ++i) {
         length *= node.lengths()[i];
     }
-    types_[&node] = ArrayType::get(getLLVMType(node.getMemberType()), length);
+    types_[&node] = ArrayType::get(getLLVMType(node.getElementType()), length);
     // If necessary, create dope vector
     if (node.getBase() == &node && !node.isOpen()) {
         vector<Constant *> dims;
@@ -1254,6 +1252,8 @@ void LLVMIRBuilder::visit(BasicTypeNode &node) {
             types_[&node] = builder_.getPtrTy(); break;
         case TypeKind::SET:
             types_[&node] = builder_.getInt32Ty(); break;
+        case TypeKind::NOTYPE:
+            types_[&node] = builder_.getVoidTy(); break;
         default:
             logger_.error(node.pos(), "cannot map type " + to_string(node.kind()) + " to LLVM intermediate representation.");
             types_[&node] = builder_.getVoidTy();
@@ -1283,9 +1283,10 @@ void LLVMIRBuilder::visit(RecordTypeNode &node) {
     structTy->setBody(elemTys);
     if (node.getModule() == ast_->getTranslationUnit()) {
         // Create an id for the record type by defining a global int32 variable and using its address
-        const auto idType = builder_.getInt32Ty();
+        const auto idType = builder_.getInt64Ty();
+        const auto init = ConstantInt::get(idType, module_->getDataLayout().getTypeAllocSize(structTy));
         const auto id = new GlobalVariable(*module_, idType, true, GlobalValue::ExternalLinkage,
-                                     Constant::getNullValue(idType), name + "_id");
+                                     init, name + "_id");
         id->setAlignment(module_->getDataLayout().getABITypeAlign(idType));
         recTypeIds_[&node] = id;
         // Collect the ids of the record types from which this type is extended
@@ -1299,13 +1300,12 @@ void LLVMIRBuilder::visit(RecordTypeNode &node) {
         typeIds.insert(typeIds.begin(), recTypeIds_[cur] ? recTypeIds_[cur] : nil);
         const auto idsType = ArrayType::get(builder_.getPtrTy(), typeIds.size());
         auto ids = new GlobalVariable(*module_, idsType, true, GlobalValue::ExternalLinkage,
-                                      ConstantArray::get(idsType, typeIds), name + "_ids");
+                ConstantArray::get(idsType, typeIds), name + "_ids");
         ids->setAlignment(module_->getDataLayout().getABITypeAlign(idsType));
         // Create the type descriptor
         const auto td = new GlobalVariable(*module_, recordTdTy_, true, GlobalValue::ExternalLinkage,
-                                     ConstantStruct::get(recordTdTy_, {ids, ConstantInt::get(builder_.getInt32Ty(),
-                                                                                             node.getLevel())}),
-                                     name + "_td");
+                ConstantStruct::get(recordTdTy_, {ids, ConstantInt::get(builder_.getInt32Ty(), node.getLevel())}),
+                name + "_td");
         td->setAlignment(module_->getDataLayout().getABITypeAlign(recordTdTy_));
         recTypeTds_[&node] = td;
         if (triple_.isOSWindows() && !triple_.isOSCygMing() &&
@@ -1381,7 +1381,7 @@ void LLVMIRBuilder::visit(AssignmentNode &node) {
         const auto rLen = rArray->isOpen() ? 0 : rArray->lengths()[0];
         const auto len = std::min(lLen, rLen);
         const auto layout = module_->getDataLayout();
-        const auto elemSize = layout.getTypeAllocSize(getLLVMType(lArray->getMemberType()));
+        const auto elemSize = layout.getTypeAllocSize(getLLVMType(lArray->getElementType()));
         Value *size;
         if (len == 0) {
             Value *lSize = getArrayLength(node.getLvalue(), 0);
@@ -1396,9 +1396,34 @@ void LLVMIRBuilder::visit(AssignmentNode &node) {
         }
         value_ = builder_.CreateMemCpy(lValue, {}, rValue, {}, size);
     } else if (rType->isRecord()) {
+        // Calculate default size as the size of the right-hand size
         const auto layout = module_->getDataLayout();
-        const auto size = layout.getTypeAllocSize(getLLVMType(lType));
-        value_ = builder_.CreateMemCpy(lValue, {}, rValue, {}, builder_.getInt64(size));
+        Value *size = builder_.getInt64(layout.getTypeAllocSize(getLLVMType(rType)));
+        if (config_.isSanitized(Trap::TYPE_MISMATCH)) {
+            // Check whether the left-hand side can have a dynamic type
+            if (const auto lhs = node.getLvalue(); lhs->isVarParameter()) {
+                Value *rhsTd = nullptr;
+                const auto lhsTd = builder_.CreateLoad(builder_.getPtrTy(), valueTds_[lhs->dereference()]);
+                // Check whether the right hand side can have a dynamic type
+                if (const auto rhs = dynamic_cast<QualifiedExpression *>(node.getRvalue()); rhs->isVarParameter()) {
+                    rhsTd = builder_.CreateLoad(builder_.getPtrTy(), valueTds_[rhs->dereference()]);
+                    // Look up the dynamic size of the right-hand size
+                    auto pos = builder_.CreateInBoundsGEP(recordTdTy_, rhsTd, {builder_.getInt32(0), builder_.getInt32(1)});
+                    pos = builder_.CreateLoad(builder_.getInt32Ty(), pos);
+                    const auto ids = builder_.CreateInBoundsGEP(recordTdTy_, rhsTd, {{builder_.getInt32(0), builder_.getInt32(0)}});
+                    Value *value = builder_.CreateLoad(builder_.getPtrTy(), ids);
+                    const auto id = builder_.CreateInBoundsGEP(builder_.getPtrTy(), value, {pos});
+                    value = builder_.CreateLoad(builder_.getPtrTy(), id);
+                    size = builder_.CreateLoad(builder_.getInt64Ty(), value);
+                } else {
+                    const auto recordTy = dynamic_cast<RecordTypeNode *>(rType);
+                    rhsTd = recTypeTds_[recordTy];
+                }
+                Value *cond = builder_.CreateICmpEQ(lhsTd, rhsTd);
+                installTrap(cond, static_cast<uint8_t>(Trap::TYPE_MISMATCH));
+            }
+        }
+        value_ = builder_.CreateMemCpy(lValue, {}, rValue, {}, size);
     } else if (rType->isString()) {
         const auto str = dynamic_cast<StringLiteralNode *>(node.getRvalue());
         const auto value = str->value();
@@ -1647,7 +1672,7 @@ void LLVMIRBuilder::cast(const ExpressionNode &node) {
             }
         } else if (source->isArray() && target->isString()) {
             const auto type = dynamic_cast<ArrayTypeNode *>(source);
-            if (type->getMemberType()->kind() != TypeKind::CHAR) {
+            if (type->getElementType()->kind() != TypeKind::CHAR) {
                 logger_.error(node.pos(), "cannot cast " + to_string(*source->getIdentifier()) + " to " +
                                            to_string(*target->getIdentifier()) + ".");
             }
@@ -2187,7 +2212,7 @@ LLVMIRBuilder::createSystemAdrCall(const vector<unique_ptr<ExpressionNode>> &act
             // indices.push_back(builder_.getInt32(0));
         } else {
             const auto atype = dynamic_cast<ArrayTypeNode *>(type);
-            if (!atype->getMemberType()->isBasic()) {
+            if (!atype->getElementType()->isBasic()) {
                 logger_.error(actual->pos(), "expected array of basic type");
                 return value_;
             }
@@ -2421,7 +2446,7 @@ MaybeAlign LLVMIRBuilder::getLLVMAlign(TypeNode *type) {
     if (type->getNodeType() == NodeType::array_type) {
         const auto array_t = dynamic_cast<ArrayTypeNode*>(type);
         const auto int_align = layout.getABITypeAlign(builder_.getInt64Ty());
-        const auto mem_align = getLLVMAlign(array_t->getMemberType());
+        const auto mem_align = getLLVMAlign(array_t->getElementType());
         if (int_align.value() > mem_align->value()) {
             return int_align;
         }

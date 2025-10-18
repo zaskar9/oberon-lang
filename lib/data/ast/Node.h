@@ -40,7 +40,7 @@ public:
     virtual ~Node();
 
     [[nodiscard]] NodeType getNodeType() const;
-    [[nodiscard]] FilePos pos() const;
+    [[nodiscard]] virtual FilePos pos() const;
 
     virtual void accept(NodeVisitor &visitor) = 0;
 

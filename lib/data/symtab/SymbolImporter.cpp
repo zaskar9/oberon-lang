@@ -162,7 +162,7 @@ TypeNode *SymbolImporter::readType(SymbolFile *file, const TypeDeclarationNode *
     if (ch < 0) {
         ref = static_cast<unsigned char>(-ch);
         if (ref == static_cast<char>(TypeKind::NOTYPE)) {
-            return nullptr;
+            return system_.getBasicType(TypeKind::NOTYPE);
         }
         // check whether the referenced type has already been imported
         type = this->getXRef(ref);
@@ -267,9 +267,8 @@ TypeNode *SymbolImporter::readProcedureType(SymbolFile *file) {
     unsigned index = 0;
     auto ch = file->readChar();
     while (ch != 0) {
-        auto var = file->readChar();
-        auto cur = readType(file);
-        if (cur) {
+        const auto var = file->readChar();
+        if (const auto cur = readType(file); cur && cur->kind() != TypeKind::NOTYPE) {
             index = 0;
             type = cur;
         } else {
@@ -305,7 +304,7 @@ TypeNode *SymbolImporter::readRecordType(SymbolFile *file) {
         // read field name
         auto name = file->readString();
         // read field res
-        if (auto cur = readType(file)) {
+        if (auto cur = readType(file); cur->kind() != TypeKind::NOTYPE) {
             index = 0;
             type = cur;
         } else {
