@@ -1,5 +1,5 @@
 MODULE Floats;
-IMPORT Out, Math;
+IMPORT Out, Math, MathL;
 
 CONST MAXINTEGER = 2147483647;
       MININTEGER = -2147483648;
@@ -36,5 +36,7 @@ BEGIN
     Out.Real(f1 + f2, 15); Out.Ln;
     Out.Real(9 / 5, 15); Out.Ln;
     Out.String("["); Out.Int(MININTEGER, 0); Out.String(", "); Out.Int(MAXINTEGER, 0); Out.String("]"); Out.Ln;
-    Out.String("["); Out.Real(MINREAL, 0); Out.String(", "); Out.Real(MAXREAL, 0); Out.String("]"); Out.Ln
+    Out.String("["); Out.Real(MINREAL, 0); Out.String(", "); Out.Real(MAXREAL, 0); Out.String("]"); Out.Ln;
+    Out.RealFix(Math.pi, 15, 14); Out.Ln;
+    Out.LongRealFix(MathL.pi, 15, 14);
 END Floats.

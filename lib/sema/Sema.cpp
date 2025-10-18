@@ -448,20 +448,7 @@ Sema::onAssignment(const FilePos &start, const FilePos &,
     }
     if (lvalue && rvalue) {
         // Type inference: check that types are compatible
-        // if (assertCompatible(rvalue->pos(), lvalue->getType(), rvalue->getType(), isVariableRecord(lvalue))) {
-        //     if (lvalue->getType() != rvalue->getType()) {
-        //         if (rvalue->isLiteral()) {
-        //             castLiteral(rvalue, lvalue->getType());
-        //         } else {
-        //             // Type inference: compatibility does not check if the `CHAR` value is a literal
-        //             if (lvalue->getType()->isArray() && rvalue->getType()->isChar()) {
-        //                 logger_.error(lvalue->pos(), "type mismatch: cannot assign a non-constant character value to a string variable.");
-        //             }
-        //             cast(rvalue, lvalue->getType());
-        //         }
-        //     }
-        // }
-        if (string err; isAssigmentCompatible(lvalue->getType(), isVariableParameter(lvalue), rvalue, err)) {
+        if (string err; isAssigmentCompatible(lvalue->getType(), lvalue->isVarParameter(), rvalue, err)) {
             if (lvalue->getType() != rvalue->getType()) {
                 cast(rvalue, lvalue->getType());
             }
@@ -482,7 +469,7 @@ Sema::onIf(const FilePos &start, const FilePos &,
         logger_.error(start, "undefined condition in if-statement.");
         return nullptr;
     }
-    auto type = condition->getType();
+    const auto type = condition->getType();
     if (type && type->kind() != TypeKind::BOOLEAN) {
         logger_.error(condition->pos(), "Boolean expression expected.");
     }
@@ -849,6 +836,9 @@ Sema::onQualifiedStatement(const FilePos &start, const FilePos &,
         // Looks like a procedure reference that needs to be treated as a procedure call
         if (procTy->isFunction()) {
             logger_.error(ident->start(), "function procedure call must be followed by parameter list.");
+        }
+        if (!procTy->parameters().empty()) {
+            logger_.error(ident->start(), "fewer actual than formal parameters.");
         }
         // For uniformity, add an empty parameter list to the procedure call if none is present
         selectors.insert(selectors.end(), make_unique<ActualParameters>(ident->end()));
@@ -2448,7 +2438,7 @@ bool Sema::isAssigmentCompatible(TypeNode *varTy, const bool isVarParam, const u
         return isTypeIncluded(exprTy, varTy, err);
     }
     // 3. `exprTy` and `varTy` are record types and `exprTy` is an extension of `varTy` and
-    //    the dynamic type of `expr` is `varTy` (requires run-time check).
+    //    the dynamic type of `var` is `exprTy` (requires run-time check).
     if (varTy->isRecord() && exprTy->isRecord()) {
         if (isVarParam) {
             return isTypeExtended(exprTy, varTy, err);
@@ -2543,26 +2533,6 @@ bool Sema::isArrayOfChar(const TypeNode *type) {
 bool Sema::isOpenArray(const TypeNode *type) {
     if (const auto array = dynamic_cast<const ArrayTypeNode *>(type)) {
         return array->isOpen();
-    }
-    return false;
-}
-
-bool Sema::isVariableRecord(const unique_ptr<QualifiedExpression> &expr) {
-    if (const auto decl = expr->dereference()) {
-        if (decl->getNodeType() == NodeType::parameter && decl->getType()->isRecord()) {
-            const auto param = dynamic_cast<const ParameterNode *>(decl);
-            return param->isVar();
-        }
-    }
-    return false;
-}
-
-bool Sema::isVariableParameter(const unique_ptr<QualifiedExpression> &expr) {
-    if (const auto decl = expr->dereference()) {
-        if (decl->getNodeType() == NodeType::parameter) {
-            const auto param = dynamic_cast<const ParameterNode *>(decl);
-            return param->isVar();
-        }
     }
     return false;
 }

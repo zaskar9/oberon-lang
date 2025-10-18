@@ -2,6 +2,7 @@
  * The original source code is used and distributed under the ETH Oberon License, see LICENSE file
  * for details. The modules have been adapted from the original source code to work with the LLVM
  * Oberon compiler and leverage its capabilities in interfacing with the host operating system.
+ * This module is based on the Oberon A2 version of Texts.Mod.
  *)
 
 MODULE Texts; (*JG 21.11.90 / NW 11.7.90 / 24.12.95 / 22.11.10 / 18.11.2014 / 10.1.2019 / AP 15.9.20 / MG 28.3.2024 *)
@@ -84,6 +85,7 @@ VAR
     WriteHexHelper(W, x, 2 * SHORT(SYSTEM.SIZE(LONGINT)))
   END WriteLongHex;
 
+  (** Write REAL value x to W's buffer using n character positions. *)
   PROCEDURE WriteReal* (VAR W: Writer; x: REAL; n: INTEGER);
     CONST maxD = 9;
     VAR e: INTEGER;
@@ -126,6 +128,71 @@ VAR
     END
   END WriteReal;
 
+  (** Write REAL value x in a fixed point notation, where  n is the overall minimal length for the output field,
+      f the number of fraction digits following the decimal point, and E the fixed exponent (printed iff E # 0). *)
+  PROCEDURE WriteRealFix* (VAR W: Writer; x: REAL; n, f, E: INTEGER);
+    (* BM 1993.4.22. Do not simplify rounding! / JG formatting adjusted *)
+    VAR e, i: INTEGER;
+        h: LONGINT;
+        r, y: LONGREAL;
+        z: REAL;
+        s: CHAR;
+        d: ARRAY 8 OF CHAR;
+  BEGIN
+    e := Reals.Expo(x);
+    IF (e = 255) OR (ABS(E) > 38) THEN
+      WHILE n > 8 DO Write(W, " "); DEC(n) END;
+      h := Reals.NaNCode(x);
+      IF h # 0 THEN WriteString(W, "     NaN")
+      ELSIF x < 0 THEN WriteString(W, "    -INF")
+      ELSE WriteString(W, "      INF")
+      END
+    ELSE
+      IF E = 0 THEN DEC(n, 2) ELSE DEC(n, 6) END;
+      IF f < 0 THEN f := 0 END;
+      IF n < f + 2 THEN n := f + 2 END;
+      DEC(n, f);
+      IF (e # 0) & (x < 0) THEN s:= "-"; x:= - x ELSE s:= " " END;
+      IF e = 0 THEN h := 0; DEC(e, E-1) (* no denormals *)
+      ELSE
+        e := (e - 127) * 301 DIV 1000; (* ln(2)/ln(10) = 0.301029996 *)
+        IF e < 38 THEN z := Reals.Ten(e+1);
+          IF x >= z THEN y := LONG(x)/LONG(z); INC(e) ELSE y := x * Reals.Ten(-e) END
+        ELSE y := x * Reals.Ten(-38) END;
+        DEC(e, E-1); i := -(e+f);
+        IF i <= 0 THEN r := 5 * Reals.Ten(i) ELSE r := 0 END;
+        IF y >= 10 THEN y := y * Reals.Ten(-1) + r; INC(e)
+        ELSE y := y + r;
+          IF y >= 10 THEN y := y * Reals.Ten(-1); INC(e) END
+        END;
+        y := y * Reals.Ten(7); h := ENTIER(y)
+      END;
+      i := 7;
+      WHILE i >= 0 DO d[i] := CHR(h MOD 10 + ORD("0")); h := h DIV 10; DEC(i) END;
+      IF n <= e THEN n := e + 1 END;
+      IF e > 0 THEN WHILE n > e DO Write(W, " "); DEC(n) END;
+        Write(W, s); e := 0;
+        WHILE n > 0 DO DEC(n);
+          IF e < 8 THEN Write(W, d[e]); INC(e) ELSE Write(W, "0") END
+        END;
+        Write(W, ".")
+      ELSE
+        WHILE n > 1 DO Write(W, " "); DEC(n) END;
+        Write(W, s); Write(W, "0"); Write(W, ".");
+        WHILE (0 < f) & (e < 0) DO Write(W, "0"); DEC(f); INC(e) END
+      END;
+      WHILE f > 0 DO DEC(f);
+        IF e < 8 THEN Write(W, d[e]); INC(e) ELSE Write(W, "0") END
+      END;
+      IF E # 0 THEN
+        IF E < 0 THEN WriteString(W, "E-"); E := - E ELSE WriteString(W, "E+") END;
+        Write(W, CHR(E DIV 10 + 30H));
+        Write(W, CHR(E MOD 10 + 30H))
+      END
+    END
+  END WriteRealFix;
+
+  (** Write LONGREAL value x to W's buffer using n character positions. *)
   PROCEDURE WriteLongReal* (VAR W: Writer; x: LONGREAL; n: INTEGER);
     CONST maxD = 16;
     VAR e, i: INTEGER;
@@ -156,8 +223,8 @@ VAR
       ELSE e := (e - 1023) * 301029 DIV 1000000; (* ln(2)/ln(10) = 0.301029996 *)
         z := Reals.TenL(e+1);
         IF x >= z THEN x := x / z; INC(e) ELSE x := x * Reals.TenL(-e) END;
-        IF x >= 10 THEN x := x * Reals.TenL(-1) + 0.5E0 / Reals.TenL(n); INC(e)
-        ELSE x := x + 0.5E0 / Reals.TenL(n);
+        IF x >= 10 THEN x := x * Reals.TenL(-1) + 0.5D0 / Reals.TenL(n); INC(e)
+        ELSE x := x + 0.5D0 / Reals.TenL(n);
           IF x >= 10 THEN x := x * Reals.TenL(-1); INC(e) END
         END;
         x := x * Reals.TenL(7); h := ENTIER(x); x := (x - h) * Reals.TenL(8); l := ENTIER(x)
@@ -173,5 +240,71 @@ VAR
       Write(W, CHR(e MOD 10 + 30H))
     END
   END WriteLongReal;
+
+  (** Write LONGREAL value x in a fixed point notation, where n is the overall minimal length for the output field,
+      f the number of fraction digits following the decimal point, and D the fixed exponent (printed iff D # 0). *)
+  PROCEDURE WriteLongRealFix* (VAR W: Writer; x: LONGREAL; n, f, D: INTEGER);
+    (* BM 1993.4.22. Do not simplify rounding! / JG formatting adjusted *)
+    CONST maxD = 16;
+    VAR e, i: INTEGER;
+        h, l: LONGINT;
+        r, z: LONGREAL;
+        d: ARRAY maxD OF CHAR;
+        s: CHAR;
+  BEGIN
+    e := Reals.ExpoL(x);
+    IF (e = 2047) OR (ABS(D) > 308) THEN
+      WHILE n > 9 DO Write(W, " "); DEC(n) END;
+      Reals.NaNCodeL(x, h, l);
+      IF (h # 0) OR (l # 0) THEN WriteString(W, "      NaN")
+      ELSIF x < 0 THEN WriteString(W, "     -INF")
+      ELSE WriteString(W, "      INF")
+      END
+    ELSE
+      IF D = 0 THEN DEC(n, 2) ELSE DEC(n, 7) END;
+      IF n < 2 THEN n := 2 END;
+      IF f < 0 THEN f := 0 END;
+      IF n < f + 2 THEN n := f + 2 END;
+      DEC(n, f);
+      IF (e # 0) & (x < 0) THEN s := "-"; x := - x ELSE s := " " END;
+      IF e = 0 THEN h := 0; l := 0; DEC(e, D-1) (* no denormals *)
+      ELSE
+        e := (e - 1023) * 301029 DIV 1000000; (* ln(2)/ln(10) = 0.301029996 *)
+        z := Reals.Ten(e+1);
+        IF x >= z THEN x := x/z; INC(e) ELSE x:= x * Reals.Ten(-e) END;
+        DEC(e, D-1); i := -(e+f);
+        IF i <= 0 THEN r := 5 * Reals.Ten(i) ELSE r := 0 END;
+        IF x >= 10 THEN x := x * Reals.Ten(-1) + r; INC(e)
+        ELSE x := x + r;
+          IF x >= 10 THEN x := x * Reals.Ten(-1); INC(e) END
+        END;
+        x := x * Reals.Ten(7); h:= ENTIER(x); x := (x-h) * Reals.Ten(8); l := ENTIER(x)
+      END;
+      i := 15;
+      WHILE i > 7 DO d[i] := CHR(l MOD 10 + ORD("0")); l := l DIV 10; DEC(i) END;
+      WHILE i >= 0 DO d[i] := CHR(h MOD 10 + ORD("0")); h := h DIV 10; DEC(i) END;
+      IF n <= e THEN n := e + 1 END;
+      IF e > 0 THEN WHILE n > e DO Write(W, " "); DEC(n) END;
+        Write(W, s); e:= 0;
+        WHILE n > 0 DO DEC(n);
+          IF e < maxD THEN Write(W, d[e]); INC(e) ELSE Write(W, "0") END
+        END;
+        Write(W, ".")
+      ELSE
+        WHILE n > 1 DO Write(W, " "); DEC(n) END;
+        Write(W, s); Write(W, "0"); Write(W, ".");
+        WHILE (0 < f) & (e < 0) DO Write(W, "0"); DEC(f); INC(e) END
+      END;
+      WHILE f > 0 DO DEC(f);
+        IF e < maxD THEN Write(W, d[e]); INC(e) ELSE Write(W, "0") END
+      END;
+      IF D # 0 THEN
+        IF D < 0 THEN WriteString(W, "D-"); D := - D ELSE WriteString(W, "D+") END;
+        Write(W, CHR(D DIV 100 + 30H)); D := D MOD 100;
+        Write(W, CHR(D DIV 10 + 30H));
+        Write(W, CHR(D MOD 10 + 30H))
+      END
+    END
+  END WriteLongRealFix;
 
 END Texts.

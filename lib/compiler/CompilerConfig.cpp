@@ -127,7 +127,7 @@ void CompilerConfig::toggleSanitize(const Trap trap, const bool active) {
 void CompilerConfig::setSanitizeAll() {
     traps_.insert({Trap::OUT_OF_BOUNDS, Trap::TYPE_GUARD, Trap::COPY_OVERFLOW, Trap::NIL_POINTER,
                    Trap::PROCEDURE_CALL, Trap::INT_DIVISION, Trap::ASSERT, Trap::INT_OVERFLOW,
-                   Trap::FLT_DIVISION, Trap::SIGN_CONVERSION});
+                   Trap::FLT_DIVISION, Trap::SIGN_CONVERSION, Trap::TYPE_MISMATCH});
 }
 
 void CompilerConfig::setSanitizeNone() {

@@ -87,10 +87,10 @@ MODULE Temperatur;
       In.Open;
       In.Int(von); In.Int(nach);
       IF von > nach THEN
-        Out.String("Gib mir doch eine Eingabe, die Sinn m«chl!"); Out.Ln;
+        Out.String("Gib mir doch eine Eingabe, die Sinn macht!"); Out.Ln;
       ELSE
         FOR i := von TO nach BY 10 DO
-          Out.Int(i,5); Out.String(" - > ");
+          Out.Int(i,5); Out.String(" -> ");
           Out.RealFix(CtoF(i),3,2); Out.Ln;
         END;
       END;
@@ -98,6 +98,7 @@ MODULE Temperatur;
 
   BEGIN
     Out.Open;
+    TabelleFor;
   END Temperatur.
 
   Temperatur.Tabelle 0 100 10

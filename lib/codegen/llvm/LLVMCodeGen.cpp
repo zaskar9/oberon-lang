@@ -49,6 +49,7 @@ int mingw_noop_main() {
         case  8: std::cerr << " (integer overflow)"; break;
         case  9: std::cerr << " (floating point division by zero)"; break;
         case 10: std::cerr << " (implicit sign conversion)"; break;
+        case 11: std::cerr << " (dynamic type mismatch)"; break;
         default: break;
     }
     std::cerr << std::endl;

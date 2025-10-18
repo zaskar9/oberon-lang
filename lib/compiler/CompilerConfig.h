@@ -58,7 +58,8 @@ enum class Trap : uint8_t {
     ASSERT = 7,
     INT_OVERFLOW = 8,
     FLT_DIVISION = 9,
-    SIGN_CONVERSION = 10
+    SIGN_CONVERSION = 10,
+    TYPE_MISMATCH = 11
 };
 
 enum class Warning : unsigned {

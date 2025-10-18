@@ -284,8 +284,6 @@ private:
     TypeNode *commonType(const FilePos &, TypeNode *, TypeNode *) const;
     static bool isArrayOfChar(const TypeNode *);
     static bool isOpenArray(const TypeNode *);
-    static bool isVariableRecord(const unique_ptr<QualifiedExpression> &);
-    static bool isVariableParameter(const unique_ptr<QualifiedExpression> &);
 
     static int64_t euclidean_mod(int64_t, int64_t);
     static int64_t floor_div(int64_t, int64_t);

@@ -186,9 +186,9 @@ int main(const int argc, const char **argv) {
                         // Assignment of an array or a string to a variable that is not large enough to
                         // hold the value.
                         config.toggleSanitize(Trap::COPY_OVERFLOW, active);
-                    } else if (opt == "float-divide-by-zero") {
-                        // Floating point division by zero.
-                        config.toggleSanitize(Trap::FLT_DIVISION, active);
+                    } else if (opt == "null" || opt == "nil") {
+                        // Use of a null pointer or creation of a null reference.
+                        config.toggleSanitize(Trap::NIL_POINTER, active);
                     } else if (opt == "function" || opt == "procedure") {
                         // Indirect call of a procedure through a pointer of the wrong type.
                         config.toggleSanitize(Trap::PROCEDURE_CALL, active);
@@ -198,25 +198,30 @@ int main(const int argc, const char **argv) {
                     } else if (opt == "assert") {
                         // Toggle whether assert leads to a trap or to a crash.
                         config.toggleSanitize(Trap::ASSERT, active);
-                    } else if (opt == "null" || opt == "nil") {
-                        // Use of a null pointer or creation of a null reference.
-                        config.toggleSanitize(Trap::NIL_POINTER, active);
                     } else if (opt == "signed-integer-overflow") {
                         // Signed integer overflow, where the result of a signed integer computation
                         // cannot be represented in its type.
                         config.toggleSanitize(Trap::INT_OVERFLOW, active);
+                    } else if (opt == "float-divide-by-zero") {
+                        // Floating point division by zero.
+                        config.toggleSanitize(Trap::FLT_DIVISION, active);
                     } else if (opt == "sign-conversion") {
                         // Implicit conversions of signed to unsigned integers can lead to undefined behavior.
                         config.toggleSanitize(Trap::SIGN_CONVERSION, active);
+                    } else if (opt == "type-errors") {
+                        // Dynamic type errors
+                        config.toggleSanitize(Trap::TYPE_MISMATCH, active);
                     } else if (opt == "undefined") {
                         config.toggleSanitize(Trap::OUT_OF_BOUNDS, active);
+                        config.toggleSanitize(Trap::TYPE_GUARD, active);
                         config.toggleSanitize(Trap::COPY_OVERFLOW, active);
-                        config.toggleSanitize(Trap::FLT_DIVISION, active);
+                        config.toggleSanitize(Trap::NIL_POINTER, active);
+                        config.toggleSanitize(Trap::PROCEDURE_CALL, active);
                         config.toggleSanitize(Trap::INT_DIVISION, active);
                         config.toggleSanitize(Trap::INT_OVERFLOW, active);
+                        config.toggleSanitize(Trap::FLT_DIVISION, active);
                         config.toggleSanitize(Trap::SIGN_CONVERSION, active);
-                        config.toggleSanitize(Trap::TYPE_GUARD, active);
-                        config.toggleSanitize(Trap::PROCEDURE_CALL, active);
+                        config.toggleSanitize(Trap::TYPE_MISMATCH, active);
                     } else if (opt == "all") {
                         if (active) {
                             config.setSanitizeAll();

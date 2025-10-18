@@ -21,12 +21,9 @@ using std::vector;
 
 class NodeReference {
 
-private:
-    DeclarationNode* node_;
-
 public:
-    NodeReference() : node_() {};
-    explicit NodeReference(DeclarationNode *node) : node_(node) {};
+    NodeReference() : node_() {}
+    explicit NodeReference(DeclarationNode *node) : node_(node) {}
     virtual ~NodeReference();
 
     [[nodiscard]] virtual FilePos pos() const = 0;
@@ -34,22 +31,27 @@ public:
     virtual void resolve(DeclarationNode *node);
     [[nodiscard]] virtual DeclarationNode *dereference() const;
 
+private:
+    DeclarationNode* node_;
+
 };
 
 
-class QualifiedExpression : public ExpressionNode, public Designator, public NodeReference {
+class QualifiedExpression final : public ExpressionNode, public Designator, public NodeReference {
 
 public:
     QualifiedExpression(const FilePos &pos, unique_ptr<QualIdent> ident, vector<unique_ptr<Selector>> selectors,
                         DeclarationNode *decl, TypeNode *type) :
             ExpressionNode(NodeType::qualified_expression, pos, type),
             Designator(std::move(ident), std::move(selectors)),
-            NodeReference(decl) {};
+            NodeReference(decl) {}
     explicit QualifiedExpression(DeclarationNode *decl) :
             ExpressionNode(NodeType::qualified_expression, EMPTY_POS, decl->getType()),
             Designator(make_unique<QualIdent>(decl->getIdentifier())),
-            NodeReference(decl) {};
+            NodeReference(decl) {}
     ~QualifiedExpression() override;
+
+    bool isVarParameter();
 
     [[nodiscard]] FilePos pos() const override;
 
@@ -65,14 +67,14 @@ public:
 };
 
 
-class QualifiedStatement : public StatementNode, public Designator, public NodeReference {
+class QualifiedStatement final : public StatementNode, public Designator, public NodeReference {
 
 public:
     QualifiedStatement(const FilePos &pos, unique_ptr<QualIdent> ident, vector<unique_ptr<Selector>> selectors,
                        DeclarationNode *decl) :
             StatementNode(NodeType::qualified_statement, pos),
             Designator(std::move(ident), std::move(selectors)),
-            NodeReference(decl) {};
+            NodeReference(decl) {}
     ~QualifiedStatement() override;
 
     [[nodiscard]] FilePos pos() const override;
