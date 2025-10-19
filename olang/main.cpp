@@ -94,13 +94,13 @@ int main(const int argc, const char **argv) {
         return EXIT_FAILURE;
     }
     po::notify(vm);
-    if (vm.contains("help")) {
+    if (vm.count("help")) {
         cout << "OVERVIEW: " << PROGRAM_NAME << " LLVM compiler\n" << endl;
         cout << "USAGE: " << PROGRAM_NAME << " [options] file...\n" << endl;
         cout << visible << endl;
         return EXIT_SUCCESS;
     }
-    if (vm.contains("version")) {
+    if (vm.count("version")) {
         cout << PROGRAM_NAME << " version " << PROJECT_VERSION;
         cout << " (build " << GIT_COMMIT << "@" << GIT_BRANCH << ")" << endl;
         cout << "Target:   " << codegen->getDescription() << endl;
@@ -111,11 +111,11 @@ int main(const int argc, const char **argv) {
         cout << "LLVM " << LLVM_VERSION << endl;
         return EXIT_SUCCESS;
     }
-    if (vm.contains("inputs")) {
-        if (vm.contains("quiet")) {
+    if (vm.count("inputs")) {
+        if (vm.count("quiet")) {
             logger.setLevel(LogLevel::QUIET);
         }
-        if (vm.contains("verbose")) {
+        if (vm.count("verbose")) {
             logger.setLevel(LogLevel::DEBUG);
         }
 #if defined(_WIN32) || defined(_WIN64)
@@ -124,7 +124,7 @@ int main(const int argc, const char **argv) {
 #else
         string separator = ":";
 #endif
-        if (vm.contains("-I")) {
+        if (vm.count("-I")) {
             auto params = vm["-I"].as<vector<string>>();
             vector<string> includes;
             for (const auto& param : params) {
@@ -135,7 +135,7 @@ int main(const int argc, const char **argv) {
                 }
             }
         }
-        if (vm.contains("-L")) {
+        if (vm.count("-L")) {
             auto params = vm["-L"].as<vector<string>>();
             vector<string> libraries;
             for (const auto& param : params) {
@@ -146,14 +146,14 @@ int main(const int argc, const char **argv) {
                 }
             }
         }
-        if (vm.contains("-l")) {
+        if (vm.count("-l")) {
             const auto params = vm["-l"].as<vector<string>>();
             for (const auto& lib : params) {
                 config.addLibrary(lib);
                 logger.debug("Library: '" + lib + "'.");
             }
         }
-        if (vm.contains("-f")) {
+        if (vm.count("-f")) {
             auto params = vm["-f"].as<vector<string>>();
             for (const auto& flag : params) {
                 if (flag == "enable-extern") {
@@ -236,7 +236,7 @@ int main(const int argc, const char **argv) {
                 }
             }
         }
-        if (vm.contains("-O")) {
+        if (vm.count("-O")) {
             switch (int level = vm["-O"].as<int>()) {
                 case 0:
                     config.setOptimizationLevel(OptimizationLevel::O0);
@@ -255,10 +255,10 @@ int main(const int argc, const char **argv) {
                     return EXIT_FAILURE;
             }
         }
-        if (vm.contains("-o")) {
+        if (vm.count("-o")) {
             config.setOutputFile(vm["-o"].as<string>());
         }
-        if (vm.contains("-W")) {
+        if (vm.count("-W")) {
             const auto params = vm["-W"].as<vector<string>>();
             for (const auto& warn : params) {
                 if (warn == "error") {
@@ -269,28 +269,28 @@ int main(const int argc, const char **argv) {
                 }
             }
         }
-        if (vm.contains("run")) {  // run
+        if (vm.count("run")) {  // run
             config.setJit(true);
-        } else if (vm.contains("-c")) {  // compile and assemble
-            if (vm.contains("emit-llvm")) {
+        } else if (vm.count("-c")) {  // compile and assemble
+            if (vm.count("emit-llvm")) {
                 config.setFileType(OutputFileType::BitCodeFile);
             } else {
                 config.setFileType(OutputFileType::ObjectFile);
             }
-        } else if (vm.contains("-S")) {  // assemble
-            if (vm.contains("emit-llvm")) {
+        } else if (vm.count("-S")) {  // assemble
+            if (vm.count("emit-llvm")) {
                 config.setFileType(OutputFileType::LLVMIRFile);
             } else {
                 config.setFileType(OutputFileType::AssemblyFile);
             }
         } else {
-            if (vm.contains("emit-llvm")) {
+            if (vm.count("emit-llvm")) {
                 logger.error(PROGRAM_NAME, "argument '--emit-llvm' cannot be used when linking.");
             }
             logger.error(PROGRAM_NAME, "linking not yet supported.");
             return EXIT_FAILURE;
         }
-        if (vm.contains("reloc")) {
+        if (vm.count("reloc")) {
             if (config.isJit()) {
                 logger.error(PROGRAM_NAME, "argument '--reloc' is not compatible with argument '--run'.");
                 return EXIT_FAILURE;
@@ -304,7 +304,7 @@ int main(const int argc, const char **argv) {
                 config.setRelocationModel(RelocationModel::DEFAULT);
             }
         }
-        if (vm.contains("std")) {
+        if (vm.count("std")) {
             const auto std = vm["std"].as<string>();
             if (smatch matches; regex_search(std, matches, regex("^(O|o)(beron)?(87|90)$"))) {
                 config.setLanguageStandard(LanguageStandard::Oberon90);
@@ -316,14 +316,14 @@ int main(const int argc, const char **argv) {
                 logger.warning(PROGRAM_NAME, "ignoring unrecognized argument: '--std=" + std + "'.");
             }
         }
-        if (vm.contains("sym-dir")) {
+        if (vm.count("sym-dir")) {
             config.setSymDir(vm["sym-dir"].as<string>());
             const auto path = std::filesystem::path(config.getSymDir());
             if (!std::filesystem::is_directory(path)) {
                 logger.error(PROGRAM_NAME, "path specified by argument '--sym-dir' is not valid.");
             }
         }
-        if (vm.contains("target")) {
+        if (vm.count("target")) {
             if (config.isJit()) {
                 logger.error(PROGRAM_NAME, "argument '--target' is not supported in JIT mode.");
                 return EXIT_FAILURE;
