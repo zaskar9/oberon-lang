@@ -98,7 +98,7 @@ Sema::onModuleStart(const FilePos &start, unique_ptr<Ident> ident) {
 }
 
 void
-Sema::onModuleEnd(const FilePos &, const unique_ptr<Ident>& ident) {
+Sema::onModuleEnd(const FilePos &, const unique_ptr<Ident>& ident) const {
     onBlockEnd();
     auto module = context_->getTranslationUnit();
     if (*module->getIdentifier() != *ident.get()) {

@@ -49,7 +49,7 @@ public:
     void onTranslationUnitEnd(const string &);
 
     unique_ptr<ModuleNode> onModuleStart(const FilePos &, unique_ptr<Ident>);
-    void onModuleEnd(const FilePos&, const unique_ptr<Ident>&);
+    void onModuleEnd(const FilePos&, const unique_ptr<Ident>&) const;
 
     unique_ptr<ImportNode> onImport(const FilePos &, const FilePos &, unique_ptr<Ident>, unique_ptr<Ident>);
 

@@ -34,6 +34,7 @@
 #endif
 
 namespace po = boost::program_options;
+namespace fs = std::filesystem;
 
 using std::cout;
 using std::cerr;
@@ -47,12 +48,26 @@ using std::to_string;
 using std::vector;
 
 int main(const int argc, const char **argv) {
-    // TODO move CodeGen into Compiler by moving corresponding config to CompilerConfig
     CompilerConfig config;
+    // Get the logger and configure it with the program name
     Logger &logger = config.logger();
     logger.setBanner(PROGRAM_NAME);
+    // Find installation directory of the compiler and add it to configuration
+    auto home = path(argv[0]);
+    while (fs::is_symlink(home)) {
+        home = fs::read_symlink(home);
+    }
+    home = fs::canonical(fs::absolute(home).parent_path());
+    logger.debug("Installed directory: '" + home.string() + "'.");
+    config.setInstallDirectory(home);
+    // Find current working directory and add it to configuration
+    auto work = fs::current_path();
+    logger.debug("Working directory: '" + work.string() + "'.");
+    config.setWorkingDirectory(work);
+    // TODO move CodeGen into Compiler by moving corresponding config to CompilerConfig
     auto codegen = make_unique<LLVMCodeGen>(config);
     Compiler compiler(config, codegen.get());
+    // Define command line options of the compiler
     auto visible = po::options_description("OPTIONS");
     visible.add_options()
             ("help,h", "Displays this help information.")
@@ -66,7 +81,6 @@ int main(const int argc, const char **argv) {
             (",O", po::value<int>()->value_name("<level>"), "Optimization level. [O0, O1, O2, O3]")
             (",o", po::value<string>()->value_name("<filename>"), "Name of the output file.")
             (",W", po::value<vector<string>>()->value_name("<option>"), "Warning configuration.")
-            // ("filetype", po::value<string>()->value_name("<type>"), "Set type of output file. [asm, bc, obj, ll]")
             ("reloc", po::value<string>()->value_name("<model>"), "Set relocation model. [default, static, pic]")
             ("run,r", "Run with LLVM JIT.")
             ("sym-dir", po::value<string>()->value_name("<directory>"), "Set output path for generated .smb files.")
@@ -94,6 +108,7 @@ int main(const int argc, const char **argv) {
         return EXIT_FAILURE;
     }
     po::notify(vm);
+    // Parse command line options
     if (vm.count("help")) {
         cout << "OVERVIEW: " << PROGRAM_NAME << " LLVM compiler\n" << endl;
         cout << "USAGE: " << PROGRAM_NAME << " [options] file...\n" << endl;
@@ -102,12 +117,13 @@ int main(const int argc, const char **argv) {
     }
     if (vm.count("version")) {
         cout << PROGRAM_NAME << " version " << PROJECT_VERSION;
-        cout << " (build " << GIT_COMMIT << "@" << GIT_BRANCH << ")" << endl;
+        cout << " (" << GIT_COMMIT << "@" << GIT_BRANCH << ")" << endl;
         cout << "Target:   " << codegen->getDescription() << endl;
+        cout << "Install:  " << config.getInstallDirectory().string() << endl;
         cout << "Includes: ";
         cout << "Boost " << BOOST_VERSION / 100000 << "."
-                << BOOST_VERSION / 100 % 1000 << "."
-                << BOOST_VERSION % 100 << ", ";
+                         << BOOST_VERSION / 100 % 1000 << "."
+                         << BOOST_VERSION % 100 << ", ";
         cout << "LLVM " << LLVM_VERSION << endl;
         return EXIT_SUCCESS;
     }
@@ -317,9 +333,9 @@ int main(const int argc, const char **argv) {
             }
         }
         if (vm.count("sym-dir")) {
-            config.setSymDir(vm["sym-dir"].as<string>());
-            const auto path = std::filesystem::path(config.getSymDir());
-            if (!std::filesystem::is_directory(path)) {
+            config.setSymbolDirectory(vm["sym-dir"].as<string>());
+            const auto path = fs::path(config.getSymbolDirectory());
+            if (!fs::is_directory(path)) {
                 logger.error(PROGRAM_NAME, "path specified by argument '--sym-dir' is not valid.");
             }
         }
@@ -341,7 +357,7 @@ int main(const int argc, const char **argv) {
                 logger.error(PROGRAM_NAME, "argument '--run' requires exactly one input module.");
                 return EXIT_FAILURE;
             }
-            auto path = std::filesystem::path(inputs[0]);
+            auto path = fs::path(inputs[0]);
             exit(compiler.jit(path));
 #else
             logger.error(PROGRAM_NAME, "linked LLVM version does not support JIT mode.");
@@ -350,7 +366,7 @@ int main(const int argc, const char **argv) {
         }
         for (auto &input : inputs) {
             logger.debug("Compiling module " + input + ".");
-            auto path = std::filesystem::path(input);
+            auto path = fs::path(input);
             compiler.compile(path);
         }
         string status = logger.getErrorCount() == 0 ? "complete" : "failed";

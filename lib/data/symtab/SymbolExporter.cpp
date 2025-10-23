@@ -9,7 +9,7 @@ using std::filesystem::path;
 void SymbolExporter::write(const std::string &name, SymbolTable *symbols) {
     xref_ = static_cast<int>(TypeKind::TYPE) + 1;
     path pth;
-    auto symdir = config_.getSymDir();
+    auto symdir = config_.getSymbolDirectory();
     if (symdir.empty()) {
         pth = context_.getSourceFileName().parent_path();
     } else {
