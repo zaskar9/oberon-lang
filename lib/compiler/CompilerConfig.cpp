@@ -26,12 +26,28 @@ string CompilerConfig::getOutputFile() const {
     return outfile_;
 }
 
-void CompilerConfig::setSymDir(const string &dir) {
-    symdir_ = dir;
+void CompilerConfig::setSymbolDirectory(const path &dir) {
+    symboldir_ = dir;
 }
 
-string CompilerConfig::getSymDir() const {
-    return symdir_;
+path CompilerConfig::getSymbolDirectory() const {
+    return symboldir_;
+}
+
+void CompilerConfig::setInstallDirectory(const path &dir) {
+    installdir_ = dir;
+}
+
+path CompilerConfig::getInstallDirectory() const {
+    return installdir_;
+}
+
+void CompilerConfig::setWorkingDirectory(const path &dir) {
+    workingdir_ = dir;
+}
+
+path CompilerConfig::getWorkingDirectory() const {
+    return workingdir_;
 }
 
 void CompilerConfig::setTargetTriple(const string &target) {
@@ -68,7 +84,7 @@ RelocationModel CompilerConfig::getRelocationModel() const {
 
 optional<path> CompilerConfig::find(const path &name, const vector<path> &directories) {
     for (auto const &directory : directories) {
-        auto path = directory / name;
+        const auto path = directory / name;
         if (std::filesystem::exists(path)) {
             return { path };
         }
@@ -76,20 +92,41 @@ optional<path> CompilerConfig::find(const path &name, const vector<path> &direct
     return std::nullopt;
 }
 
-void CompilerConfig::addIncludeDirectory(const path &directory) {
-    incpaths_.push_back(directory);
+void CompilerConfig::buildCache(vector<path> &cache, const vector<path> &directories, const path &suffix) const {
+    cache.assign(directories.begin(),directories.end());
+    cache.push_back(workingdir_);
+    cache.push_back(workingdir_ / suffix);
+    cache.push_back(installdir_);
+    cache.push_back(installdir_ / suffix);
 }
 
-optional<path> CompilerConfig::findInclude(const path &name) const {
-    return find(name, incpaths_);
+
+void CompilerConfig::addIncludeDirectory(const path &directory) {
+    if (std::filesystem::exists(directory)) {
+        incdirs_.push_back(directory);
+        inc_search_paths_.clear();
+    }
+}
+
+optional<path> CompilerConfig::findInclude(const path &name) {
+    if (inc_search_paths_.empty()) {
+        buildCache(inc_search_paths_, incdirs_, "include");
+    }
+    return find(name, inc_search_paths_);
 }
 
 void CompilerConfig::addLibraryDirectory(const path &directory) {
-    libpaths_.push_back(directory);
+    if (std::filesystem::exists(directory)) {
+        libdirs_.push_back(directory);
+        libdircache_.clear();
+    }
 }
 
-optional<path> CompilerConfig::findLibrary(const path &name) const {
-    return find(name, libpaths_);
+optional<path> CompilerConfig::findLibrary(const path &name) {
+    if (libdircache_.empty()) {
+        buildCache(libdircache_, libdirs_, "lib");
+    }
+    return find(name, libdircache_);
 }
 
 void CompilerConfig::addLibrary(const string &name) {
