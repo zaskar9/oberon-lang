@@ -99,7 +99,7 @@ BEGIN
         INC(i);
         IF i = 0 THEN RETURN ELSE EXIT END
     UNTIL i > 10;
-    Out.Int(i, 1); Out.Ln
+    ASSERT(i = 1)
 END Test5;
 
 BEGIN
@@ -112,7 +112,7 @@ BEGIN
     m := 27; n := 9;
     Test2b(m, n);
     ASSERT((m = 9) & (n = 9));
-    Test5;
+    Test5
 END While2.
 (*
     CHECK: 1 2 3 4 5 6 7 8 9 10 20 30 40 50 60 70 80 90 100 200 300 400 500 600 700 800 900 1000 Done!
