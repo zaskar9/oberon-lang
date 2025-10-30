@@ -96,9 +96,15 @@ public:
     void setOutputFile(const string &);
     [[nodiscard]] string getOutputFile() const;
 
-    void setSymDir(const string &);
-    [[nodiscard]] string getSymDir() const;
-    
+    void setSymbolDirectory(const path &);
+    [[nodiscard]] path getSymbolDirectory() const;
+
+    void setInstallDirectory(const path &);
+    [[nodiscard]] path getInstallDirectory() const;
+
+    void setWorkingDirectory(const path &);
+    [[nodiscard]] path getWorkingDirectory() const;
+
     void setTargetTriple(const string &);
     [[nodiscard]] string getTargetTriple() const;
 
@@ -112,10 +118,10 @@ public:
     [[nodiscard]] RelocationModel getRelocationModel() const;
 
     void addIncludeDirectory(const path &directory);
-    [[nodiscard]] optional<path> findInclude(const path &) const;
+    [[nodiscard]] optional<path> findInclude(const path &);
 
     void addLibraryDirectory(const path &directory);
-    [[nodiscard]] optional<path> findLibrary(const path &) const;
+    [[nodiscard]] optional<path> findLibrary(const path &);
 
     void addLibrary(const string &);
     [[nodiscard]] const vector<string>& getLibraries() const;
@@ -140,20 +146,26 @@ private:
     vector<path> infiles_;
     string outfile_;
     string target_;
-    string symdir_;
+    path symboldir_;
+    path installdir_;
+    path workingdir_;
     LanguageStandard std_;
     OutputFileType type_;
     OptimizationLevel level_;
     RelocationModel model_;
-    vector<path> incpaths_;
-    vector<path> libpaths_;
+    vector<path> incdirs_;
+    vector<path> inc_search_paths_;
+    vector<path> libdirs_;
+    vector<path> libdircache_;
     vector<string> libs_;
     unordered_set<Flag> flags_;
     unordered_set<Trap> traps_;
+
     unsigned warn_;
     bool jit_;
 
-    static std::optional<path> find(const path &name, const vector<path> &directories);
+    static std::optional<path> find(const path &, const vector<path> &);
+    void buildCache(vector<path> &, const vector<path> &, const path &) const;
 
 };
 
