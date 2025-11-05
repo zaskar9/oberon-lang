@@ -7,7 +7,7 @@ else
 		OS = macos
 	else ifeq ($(UNAME), Linux)
 		OS = linux
-		PLATFORM := $(shell uname -p)
+		PLATFORM := $(shell uname -m)
 	else
 		$(error OS not supported by this Makefile)
 	endif
@@ -59,7 +59,7 @@ clean :
 	@rm -f *.o *.smb *.$(EXT)
 
 %.o : %.c
-	@$(CXX) -c $<
+	@$(CXX) -fPIC -c $<
 
 %.o : %.Mod
 	@$(O7C) $(O7CFLAGS) $<
