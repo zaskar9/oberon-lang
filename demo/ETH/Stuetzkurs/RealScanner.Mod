@@ -24,12 +24,12 @@ IMPORT In, Out, Reals;
     ch: CHAR;
     valid: BOOLEAN;
   BEGIN
-    val := 0; i := 0; s := 0; div := 1; scale := 0; valid := TRUE;
+    val := 0; i := 0; s := 0; div := 1; scale := 0 valid := TRUE;
     WHILE valid & (i < LEN(str)) & (str[i] # 0X) DO
       ch := str[i]; INC(i);
       CASE s OF
         0 : IF isDigit(ch) THEN
-              s := 1;
+              s := 1
               val := 10 * val + ctoi(ch)
             ELSE
               valid := FALSE

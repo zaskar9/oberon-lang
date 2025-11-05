@@ -71,7 +71,7 @@ MODULE Temperatur;
       IF (von > nach) OR (schritt > (nach - von)) THEN
         Out.String("Gib mir doch eine Eingabe, die Sinn macht!"); Out.Ln;
       ELSE
-        WHILE von < nach DO
+        WHILE von <= nach DO
           Out.Int(von,5); Out.String(" -> ");
           Out.RealFix(CtoF(von),3,2); Out.Ln;
           von := von + schritt;
@@ -98,7 +98,7 @@ MODULE Temperatur;
 
   BEGIN
     Out.Open;
-    TabelleFor;
+    Tabelle;
   END Temperatur.
 
   Temperatur.Tabelle 0 100 10
