@@ -137,7 +137,7 @@ void Parser::module(ASTContext *context) {
     if (!assertToken(token_.get(), TokenType::period)) {
         resync({TokenType::eof});   // [<EOF>]
     }
-    sema_.onModuleEnd(token_->end(), std::move(identifier));
+    sema_.onModuleEnd(token_->end(), identifier);
     sema_.onTranslationUnitEnd(module->getIdentifier()->name());
 }
 
@@ -147,7 +147,7 @@ void Parser::import_list(vector<unique_ptr<ImportNode>> &imports) {
     scanner_.next();  // skip IMPORT keyword
     while (true) {
         import(imports);
-        auto token = scanner_.peek();
+        const auto token = scanner_.peek();
         if (token->type() == TokenType::comma) {
             scanner_.next();  // skip comma
         } else if (token->type() == TokenType::const_ident) {
@@ -167,7 +167,7 @@ void Parser::import_list(vector<unique_ptr<ImportNode>> &imports) {
 // import = ident [":=" ident] .
 void Parser::import(vector<unique_ptr<ImportNode>> &imports) {
     logger_.debug("import");
-    auto token = scanner_.peek();
+    const auto token = scanner_.peek();
     if (assertToken(token, TokenType::const_ident)) {
         auto identifier = ident();
         const FilePos start = identifier->start();
@@ -236,7 +236,7 @@ void Parser::const_declarations(vector<unique_ptr<ConstantDeclarationNode>> & co
             }
         }
     }
-    if (consts.size() == 0) {
+    if (consts.empty()) {
         logger_.error(pos, "empty CONST declaration");
     }
 }
@@ -354,7 +354,7 @@ RecordTypeNode* Parser::record_type() {
 // field_list = ident_list ":" type .
 void Parser::field_list(vector<unique_ptr<FieldNode>> &fields) {
     logger_.debug("field_list");
-    auto next = scanner_.peek();
+    const auto next = scanner_.peek();
     if (next->type() == TokenType::const_ident) {
         vector<unique_ptr<IdentDef>> idents;
         ident_list(idents);
@@ -474,7 +474,7 @@ void Parser::fp_section(vector<unique_ptr<ParameterNode>> &params, bool &varargs
         vector<unique_ptr<Ident>> idents;
         while(true) {
             idents.push_back(ident());
-            auto token = scanner_. peek();
+            const auto token = scanner_. peek();
             if (token->type() == TokenType::comma) {
                 scanner_.next(); // skip comma
             } else if (token->type() == TokenType::const_ident) {
@@ -486,11 +486,11 @@ void Parser::fp_section(vector<unique_ptr<ParameterNode>> &params, bool &varargs
                 break;
             }
         }
-        auto token = scanner_.next();
+        const auto token = scanner_.next();
         if (token->type() != TokenType::colon) {
             logger_.error(token->start(), ": expected, found " + to_string(token->type()) + ".");
         }
-        auto node = formal_type();
+        const auto node = formal_type();
         unsigned index = 0;
         for (auto &&ident : idents) {
             FilePos start = ident->start();
@@ -514,7 +514,7 @@ TypeNode *Parser::formal_type() {
         }
         ++dims;
     }
-    auto token = scanner_.peek();
+    const auto token = scanner_.peek();
     if (token->type() == TokenType::kw_pointer || token->type() == TokenType::kw_record) {
         logger_.error(token->start(), "formal type cannot be an anonymous record or pointer type.");
     } else if (assertToken(scanner_.peek(), TokenType::const_ident)) {
@@ -551,7 +551,7 @@ void Parser::var_declarations(vector<unique_ptr<VariableDeclarationNode>> &vars)
             }
         }
     }
-    if (vars.size() == 0) {
+    if (vars.empty()) {
         logger_.error(pos, "empty VAR declaration");
     }
 }
@@ -633,7 +633,7 @@ void Parser::procedure_definition(const FilePos &start, vector<unique_ptr<Proced
 void Parser::procedure_body(ProcedureDefinitionNode *proc) {
     logger_.debug("procedure_body");
     declarations(proc->constants(), proc->types(), proc->variables(), proc->procedures());
-    auto token = scanner_.peek();
+    const auto token = scanner_.peek();
     if (token->type() == TokenType::kw_end) {
         scanner_.next(); // skip END keyword
     } else if (assertToken(token, TokenType::kw_begin)) {
@@ -721,8 +721,8 @@ unique_ptr<StatementNode> Parser::statement() {
             return sema_.onExit(token_->start(), token_->end());
         case TokenType::kw_return: {
             token_ = scanner_.next();  // skip RETURN keyword
-            std::set follows{ TokenType::semicolon, TokenType::pipe, TokenType::kw_end,
-                              TokenType::kw_elsif, TokenType::kw_else, TokenType::kw_until };
+            const std::set follows{ TokenType::semicolon, TokenType::pipe, TokenType::kw_end,
+                                    TokenType::kw_elsif, TokenType::kw_else, TokenType::kw_until };
             if (follows.contains(scanner_.peek()->type())) {
                 return sema_.onReturn(token_->start(), token_->end(), nullptr);
             }
@@ -753,7 +753,7 @@ unique_ptr<StatementNode> Parser::statement() {
 unique_ptr<StatementNode> Parser::assignment(unique_ptr<QualifiedExpression> lvalue) {
     logger_.debug("assignment");
     scanner_.next();  // skip assign operator
-    FilePos start = lvalue->pos();
+    const FilePos start = lvalue->pos();
     auto statement = sema_.onAssignment(start, EMPTY_POS, std::move(lvalue), expression());
     // [<;>, <END>, <ELSIF>, <ELSE>, <UNTIL>]
     // resync({ TokenType::semicolon, TokenType::kw_end, TokenType::kw_elsif, TokenType::kw_else, TokenType::kw_until });
@@ -794,7 +794,7 @@ unique_ptr<StatementNode> Parser::if_statement() {
 unique_ptr<StatementNode> Parser::loop_statement() {
     logger_.debug("loop_statement");
     token_ = scanner_.next();  // skip LOOP keyword
-    FilePos start = token_->start();
+    const FilePos start = token_->start();
     sema_.onLoopStart(start);
     auto stmts = make_unique<StatementSequenceNode>(EMPTY_POS);
     statement_sequence(stmts.get());
@@ -811,7 +811,7 @@ unique_ptr<StatementNode> Parser::loop_statement() {
 unique_ptr<StatementNode> Parser::while_statement() {
     logger_.debug("while_statement");
     token_ = scanner_.next();  // skip WHILE keyword
-    FilePos start = token_->start();
+    const FilePos start = token_->start();
     sema_.onLoopStart(start);
     auto cond = expression();
     auto stmts = make_unique<StatementSequenceNode>(EMPTY_POS);
@@ -836,7 +836,7 @@ unique_ptr<StatementNode> Parser::while_statement() {
 unique_ptr<StatementNode> Parser::repeat_statement() {
     logger_.debug("repeat_statement");
     token_ = scanner_.next();  // skip REPEAT keyword
-    FilePos start = token_->start();
+    const FilePos start = token_->start();
     sema_.onLoopStart(start);
     auto stmts = make_unique<StatementSequenceNode>(EMPTY_POS);
     statement_sequence(stmts.get());
@@ -854,7 +854,7 @@ unique_ptr<StatementNode> Parser::repeat_statement() {
 unique_ptr<StatementNode> Parser::for_statement() {
     logger_.debug("for_statement");
     token_ = scanner_.next();  // skip FOR keyword
-    FilePos start = token_->start();
+    const FilePos start = token_->start();
     sema_.onLoopStart(start);
     auto var = qualident();
     token_ = scanner_.next();
@@ -932,8 +932,8 @@ unique_ptr<StatementNode> Parser::case_statement() {
     return sema_.onCaseOfEnd(start, token_->end(), std::move(expr), std::move(cases), std::move(elseStmts));
 }
 
-void Parser::elsif_clause(vector<unique_ptr<ElseIfNode>> &elseIfs, TokenType type) {
-    FilePos elseIfStart = token_->start();
+void Parser::elsif_clause(vector<unique_ptr<ElseIfNode>> &elseIfs, const TokenType type) {
+    const FilePos elseIfStart = token_->start();
     auto elseIfCond = expression();
     token_ = scanner_.next();
     if (assertToken(token_.get(), type)) {
@@ -987,7 +987,7 @@ unique_ptr<ExpressionNode> Parser::simple_expression() {
     logger_.debug("simple_expression");
     unique_ptr<ExpressionNode> expr;
     auto token = scanner_.peek();
-    auto start = token->start();
+    const auto start = token->start();
     if (token->type() == TokenType::op_plus) {
         token_ = scanner_.next();
         expr = term();
@@ -1002,7 +1002,7 @@ unique_ptr<ExpressionNode> Parser::simple_expression() {
            token->type() == TokenType::op_minus ||
            token->type() == TokenType::op_or) {
         token_ = scanner_.next();
-        OperatorType op = token_to_operator(token_->type());
+        const OperatorType op = token_to_operator(token_->type());
         expr = sema_.onBinaryExpression(start, EMPTY_POS, op, std::move(expr), term());
         token = scanner_.peek();
     }
@@ -1020,7 +1020,7 @@ unique_ptr<ExpressionNode> Parser::term() {
            || token == TokenType::op_mod
            || token == TokenType::op_and) {
         token_ = scanner_.next();
-        OperatorType op = token_to_operator(token_->type());
+        const OperatorType op = token_to_operator(token_->type());
         expr = sema_.onBinaryExpression(token_->start(), EMPTY_POS, op, std::move(expr), factor());
         token = scanner_.peek()->type();
     }
@@ -1030,14 +1030,14 @@ unique_ptr<ExpressionNode> Parser::term() {
 // factor = [ "+" | "-" | "~" ] basic_factor .
 unique_ptr<ExpressionNode> Parser::factor() {
     logger_.debug("factor");
-    auto token = scanner_.peek();
+    const auto token = scanner_.peek();
     if (token->type() == TokenType::op_plus) {
         scanner_.next();   // skip plus sign
     } else if (token->type() == TokenType::op_minus) {
-        auto op = scanner_.next();
+        const auto op = scanner_.next();
         return sema_.onUnaryExpression(op->start(), EMPTY_POS, OperatorType::NEG, basic_factor());
     } else if (token->type() == TokenType::op_not) {
-        auto op = scanner_.next();
+        const auto op = scanner_.next();
         return sema_.onUnaryExpression(op->start(), EMPTY_POS, OperatorType::NOT, basic_factor());
     }
     return basic_factor();
@@ -1048,55 +1048,64 @@ unique_ptr<ExpressionNode> Parser::basic_factor() {
     logger_.debug("basic_factor");
     auto token = scanner_.peek();
     if (token->type() == TokenType::const_ident) {
-        FilePos pos = token->start();
+        const FilePos pos = token->start();
         vector<unique_ptr<Selector>> selectors;
         auto ident = designator(selectors);
         if (sema_.isConstant(ident.get())) {
-            return sema_.onQualifiedConstant(pos, EMPTY_POS, std::move(ident), std::move(selectors));
+            return sema_.onQualifiedConstant(pos, EMPTY_POS, ident, selectors);
         }
         return sema_.onQualifiedExpression(pos, EMPTY_POS, std::move(ident), std::move(selectors));
-    } else if (token->type() == TokenType::lbrace) {
+    }
+    if (token->type() == TokenType::lbrace) {
         return set();
-    } else if (token->type() == TokenType::lparen) {
+    }
+    if (token->type() == TokenType::lparen) {
         scanner_.next();  // skip opening parenthesis
         auto expr = expression();
         token = scanner_.peek();
         if (assertToken(token, TokenType::rparen)) {
-            scanner_.next();  // skip closing parenthesis
+            token_ = scanner_.next();  // skip closing parenthesis and save token for error reporting
         }
         return expr;
     }
-    auto tmp = scanner_.next();
+    token_ = scanner_.next();
     if (token->type() == TokenType::short_literal) {
-        auto number = dynamic_cast<const ShortLiteralToken *>(tmp.get());
+        const auto number = dynamic_cast<const ShortLiteralToken *>(token_.get());
         return sema_.onIntegerLiteral(number->start(), number->end(), number->value(), TypeKind::SHORTINT);
-    } else if (token->type() == TokenType::int_literal) {
-        auto number = dynamic_cast<const IntLiteralToken *>(tmp.get());
-        return sema_.onIntegerLiteral(number->start(), number->end(), number->value(), TypeKind::INTEGER);
-    } else if (token->type() == TokenType::long_literal) {
-        auto number = dynamic_cast<const LongLiteralToken *>(tmp.get());
-        return sema_.onIntegerLiteral(number->start(), number->end(), number->value(), TypeKind::LONGINT);
-    } else if (token->type() == TokenType::float_literal) {
-        auto number = dynamic_cast<const FloatLiteralToken *>(tmp.get());
-        return sema_.onRealLiteral(number->start(), number->end(), number->value(), TypeKind::REAL);
-    } else if (token->type() == TokenType::double_literal) {
-        auto number = dynamic_cast<const DoubleLiteralToken *>(tmp.get());
-        return sema_.onRealLiteral(number->start(), number->end(), number->value(), TypeKind::LONGREAL);
-    } else if (token->type() == TokenType::string_literal) {
-        auto string = dynamic_cast<const StringLiteralToken *>(tmp.get());
-        return sema_.onStringLiteral(string->start(), string->end(), string->value());
-    } else if (token->type() == TokenType::char_literal) {
-        auto character = dynamic_cast<const CharLiteralToken *>(tmp.get());
-        return sema_.onCharLiteral(character->start(), character->end(), character->value());
-    } else if (token->type() == TokenType::boolean_literal) {
-        auto boolean = dynamic_cast<const BooleanLiteralToken *>(tmp.get());
-        return sema_.onBooleanLiteral(boolean->start(), boolean->end(), boolean->value());
-    } else if (token->type() == TokenType::kw_nil) {
-        return sema_.onNilLiteral(tmp->start(), tmp->end());
-    } else {
-        logger_.error(token->start(), "unexpected token: " + to_string(token->type()) + ".");
-        return nullptr;
     }
+    if (token->type() == TokenType::int_literal) {
+        const auto number = dynamic_cast<const IntLiteralToken *>(token_.get());
+        return sema_.onIntegerLiteral(number->start(), number->end(), number->value(), TypeKind::INTEGER);
+    }
+    if (token->type() == TokenType::long_literal) {
+        const auto number = dynamic_cast<const LongLiteralToken *>(token_.get());
+        return sema_.onIntegerLiteral(number->start(), number->end(), number->value(), TypeKind::LONGINT);
+    }
+    if (token->type() == TokenType::float_literal) {
+        const auto number = dynamic_cast<const FloatLiteralToken *>(token_.get());
+        return sema_.onRealLiteral(number->start(), number->end(), number->value(), TypeKind::REAL);
+    }
+    if (token->type() == TokenType::double_literal) {
+        const auto number = dynamic_cast<const DoubleLiteralToken *>(token_.get());
+        return sema_.onRealLiteral(number->start(), number->end(), number->value(), TypeKind::LONGREAL);
+    }
+    if (token->type() == TokenType::string_literal) {
+        const auto string = dynamic_cast<const StringLiteralToken *>(token_.get());
+        return sema_.onStringLiteral(string->start(), string->end(), string->value());
+    }
+    if (token->type() == TokenType::char_literal) {
+        const auto character = dynamic_cast<const CharLiteralToken *>(token_.get());
+        return sema_.onCharLiteral(character->start(), character->end(), character->value());
+    }
+    if (token->type() == TokenType::boolean_literal) {
+        const auto boolean = dynamic_cast<const BooleanLiteralToken *>(token_.get());
+        return sema_.onBooleanLiteral(boolean->start(), boolean->end(), boolean->value());
+    }
+    if (token->type() == TokenType::kw_nil) {
+        return sema_.onNilLiteral(token_->start(), token_->end());
+    }
+    logger_.error(token->start(), "unexpected token: " + to_string(token->type()) + ".");
+    return nullptr;
 }
 
 // designator = qualident { selector } .
@@ -1121,12 +1130,13 @@ unique_ptr<QualIdent> Parser::designator(vector<unique_ptr<Selector>> &selectors
 // selector = "." ident | "[" expression_list "]" | "^" | "(" qualident | [ expression_list ] ")" .
 unique_ptr<Selector> Parser::selector() {
     logger_.debug("selector");
-    auto token = scanner_.peek();
+    const auto token = scanner_.peek();
     if (token->type() == TokenType::period) {
         token_ = scanner_.next();
         auto pos = token_->start();
         return make_unique<RecordField>(pos, ident());
-    } else if (token->type() == TokenType::lbrack) {
+    }
+    if (token->type() == TokenType::lbrack) {
         auto pos = token->start();
         token_ = scanner_.next();
         vector<unique_ptr<ExpressionNode>> expressions;
@@ -1139,21 +1149,23 @@ unique_ptr<Selector> Parser::selector() {
             logger_.error(token_->start(), "] expected, found " + to_string(token_->type()) + ".");
         }
         return make_unique<ArrayIndex>(pos, std::move(expressions));
-    } else if (token->type() == TokenType::caret) {
+    }
+    if (token->type() == TokenType::caret) {
         token_ = scanner_.next();
         return make_unique<Dereference>(token_->start());
-    } else if (token->type() == TokenType::lparen) {
+    }
+    if (token->type() == TokenType::lparen) {
         token_ = scanner_.next();  // skip left parenthesis
         FilePos start = token_->start();
         vector<std::unique_ptr<ExpressionNode>> params;
-        auto debug = scanner_.peek()->type();
+        const auto debug = scanner_.peek()->type();
         if (debug != TokenType::rparen) {
             expression_list(params);
         }
         logger_.debug("actual_parameters");
         token_ = scanner_.next();  // skip right parenthesis
         assertToken(token_.get(), TokenType::rparen);
-        return make_unique<ActualParameters>(start, std::move(params));;
+        return make_unique<ActualParameters>(start, std::move(params));
     }
     logger_.error(token_->start(), "selector expected.");
     return nullptr;
@@ -1163,7 +1175,7 @@ unique_ptr<Selector> Parser::selector() {
 unique_ptr<ExpressionNode> Parser::set() {
     logger_.debug("set");
     vector<unique_ptr<ExpressionNode>> elements;
-    auto token = scanner_.next();   // skip opening brace
+    const auto token = scanner_.next();   // skip opening brace
     if (scanner_.peek()->type() == TokenType::rbrace) {
         token_ = scanner_.next();
         return sema_.onSetExpression(token->start(), token_->end(), std::move(elements));
@@ -1230,25 +1242,25 @@ bool Parser::assertOberonIdent(const Ident *ident) const {
     return true;
 }
 
-void Parser::resync(std::set<TokenType> types) {
+void Parser::resync(const std::set<TokenType>& types) const {
     auto type = scanner_.peek()->type();
-    while (type != TokenType::eof && types.find(type) == types.end()) {
+    while (type != TokenType::eof && !types.contains(type)) {
         scanner_.next();
         type = scanner_.peek()->type();
     }
 }
 
 // Check expected next token
-void Parser::expect(std::set<TokenType> exp) {
-    auto type = scanner_.peek()->type();
-    if (exp.find(type) == exp.end()) {
-        auto token = scanner_.peek();
+void Parser::expect(const std::set<TokenType>& exp) const {
+    const auto type = scanner_.peek()->type();
+    if (!exp.contains(type)) {
+        const auto token = scanner_.peek();
         logger_.error(token->start(), "unexpected token "+ to_string(token->type()) + ".");
         resync(exp);
     }
 }
 
-OperatorType token_to_operator(TokenType token) {
+OperatorType token_to_operator(const TokenType token) {
     switch(token) {
         case TokenType::op_eq:     return OperatorType::EQ;
         case TokenType::op_neq:    return OperatorType::NEQ;
