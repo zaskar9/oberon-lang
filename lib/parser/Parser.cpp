@@ -678,6 +678,9 @@ void Parser::statement_sequence(StatementSequenceNode *statements) {
                        token->type() == TokenType::kw_else || token->type() == TokenType::kw_until ||
                        token->type() == TokenType::pipe) {
                 break;
+            } else if (token->type() == TokenType::eof) {
+                logger_.error(token->start(), "premature end of file.");
+                break;
             } else {
                 logger_.error(token->start(), "unexpected token: " + to_string(token->type()) + ".");
                 // [<;>] and [<UNTIL>, <ELSIF>, <ELSE>, <END>, <|>]
