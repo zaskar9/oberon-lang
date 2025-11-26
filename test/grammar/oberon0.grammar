@@ -3,37 +3,41 @@
    Niklaus Wirth, May 2017
 *)
 
-letter = "a" . (* |"b"|"c"|"d"|"e"|"f"|"g"|"h"|"i"|"j"|"k"|"l"|"m"|"n"|"o"|"p"|"q"|"r"|"s"|"t"|"u"|"v"|"w"|"x"|"y"|"z"|"A"|"B"|"C"|"D"|"E"|"F"|"G"|"H"|"A"|"I"|"J"|"K"|"L"|"M"|"N"|"O"|"P"|"Q"|"R"|"S"|"T"|"U"|"V"|"W"|"X"|"Y"|"Z" .*)
-digit = "0" . (* |"1"|"2"|"3"|"4"|"5"|"6"|"7"|"8"|"9" . *)
+Letter = "a"|"b"|"c"|"d"|"e"|"f"|"g"|"h"|"i"|"j"|"k"|"l"|"m"|"n"|"o"|"p"|"q"|"r"|"s"|"t"|"u"|"v"|"w"|"x"|"y"|"z"|"A"|"B"|"C"|"D"|"E"|"F"|"G"|"H"|"I"|"J"|"K"|"L"|"M"|"N"|"O"|"P"|"Q"|"R"|"S"|"T"|"U"|"V"|"W"|"X"|"Y"|"Z" .
+Digit = "0"|"1"|"2"|"3"|"4"|"5"|"6"|"7"|"8"|"9" .
 
-ident = letter { letter | digit }.
-(* integer = digit { digit }. *)
+Ident = Letter { Letter | Digit } .
+Integer = Digit { Digit } .
 
-(* selector = {"." ident | "[" expression "]"}.
-factor = ident selector | integer | "(" expression ")" | "~" factor.
-term = factor {("*" | "DIV" | "MOD" | "&") factor}. *)
-SimpleExpression = ["+"|"-"] ident {("+"|"-"(*|"OR"*)) ident }.
-expression* = SimpleExpression [(*( *) "=" (*| "#" | "<" | "<=" | ">" | ">=")*) SimpleExpression].
+Selector = { "." Ident | "[" Expression "]" } .
+Factor = Ident Selector | Integer | "(" Expression ")" | "~" Factor .
+Term = Factor { ( "*" | "DIV" | "MOD" | "&" ) Factor } .
+SimpleExpression = [ "+" | "-" ] Ident { ( "+" | "-" | "OR" ) Ident } .
+Expression = SimpleExpression [ ( "=" | "#" | "<" | "<=" | ">" | ">=") SimpleExpression ] .
 
-(*
-assignment = ident selector ":=" expression.
-ActualParameters = "(" [expression {"," expression}] ")" .
-ProcedureCall = ident [ActualParameters | "*"].
-IfStatement = "IF" expression "THEN" StatementSequence {"ELSIF" expression "THEN" StatementSequence} ["ELSE" StatementSequence] "END".
-WhileStatement = "WHILE" expression "DO" StatementSequence "END".
-statement = [assignment | ProcedureCall | IfStatement | WhileStatement | RepeatStatement].
-StatementSequence = statement {";" statement}.
+Assignment = Ident Selector ":=" Expression .
+ActualParameters = "(" [ Expression { "," Expression } ] ")" .
+ProcedureCall = Ident [ ActualParameters ] .
+IfStatement = "IF" Expression "THEN" StatementSequence
+              { "ELSIF" Expression "THEN" StatementSequence }
+              [ "ELSE" StatementSequence ] "END" .
+WhileStatement = "WHILE" Expression "DO" StatementSequence "END" .
+Statement = [ Assignment | ProcedureCall | IfStatement | WhileStatement ] .
+StatementSequence = Statement { ";" Statement } .
 
-IdentList = ident {"," ident}.
-ArrayType = "ARRAY" expression "OF" type.
-FieldList = [IdentList ":" type].
-RecordType = "RECORD" FieldList {";" FieldList} "END".
-type = ident | ArrayType | RecordType.
-FPSection = ["VAR"] IdentList ":" type.
-FormalParameters = "(" [FPSection {";" FPSection}] ")".
-ProcedureHeading = "PROCEDURE" ident [FormalParameters].
-ProcedureBody = declarations ["BEGIN" StatementSequence] "END".
-ProcedureDeclaration = ProcedureHeading ";" ProcedureBody ident.
-declarations = ["CONST" {ident "=" expression ";"}] ["TYPE" {ident "=" type ";"}] ["VAR" {IdentList ":" type ";"}] {ProcedureDeclaration ";"}.
+IdentList = Ident { "," Ident } .
+ArrayType = "ARRAY" Expression "OF" Type .
+FieldList = [ IdentList ":" Type ] .
+RecordType = "RECORD" FieldList { ";" FieldList } "END" .
+Type = Ident | ArrayType | RecordType .
+FPSection = [ "VAR" ] IdentList ":" Type .
+FormalParameters = "(" [ FPSection { ";" FPSection } ] ")" .
+ProcedureHeading = "PROCEDURE" Ident [ FormalParameters ] .
+ProcedureBody = Declarations [ "BEGIN" StatementSequence ] "END" .
+ProcedureDeclaration = ProcedureHeading ";" ProcedureBody Ident .
+Declarations = [ "CONST" { Ident "=" Expression ";" } ]
+               [ "TYPE" { Ident "=" Type ";" } ]
+               [ "VAR" { IdentList ":" Type ";" } ]
+               { ProcedureDeclaration ";" } .
 
-module* = "MODULE" ident ";" declarations ["BEGIN" StatementSequence] "END" ident "." .*)
+Module* = "MODULE" Ident ";" Declarations [ "BEGIN" StatementSequence ] "END" Ident "." .
