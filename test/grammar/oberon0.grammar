@@ -3,15 +3,19 @@
    Niklaus Wirth, May 2017
 *)
 
-ident = letter {letter | digit}.
-integer = digit {digit}.
+letter = "a" . (* |"b"|"c"|"d"|"e"|"f"|"g"|"h"|"i"|"j"|"k"|"l"|"m"|"n"|"o"|"p"|"q"|"r"|"s"|"t"|"u"|"v"|"w"|"x"|"y"|"z"|"A"|"B"|"C"|"D"|"E"|"F"|"G"|"H"|"A"|"I"|"J"|"K"|"L"|"M"|"N"|"O"|"P"|"Q"|"R"|"S"|"T"|"U"|"V"|"W"|"X"|"Y"|"Z" .*)
+digit = "0" . (* |"1"|"2"|"3"|"4"|"5"|"6"|"7"|"8"|"9" . *)
 
-selector = {"." ident | "[" expression "]"}.
+ident = letter { letter | digit }.
+(* integer = digit { digit }. *)
+
+(* selector = {"." ident | "[" expression "]"}.
 factor = ident selector | integer | "(" expression ")" | "~" factor.
-term = factor {("*" | "DIV" | "MOD" | "&") factor}.
-SimpleExpression = ["+"|"-"] term {("+"|"-" | "OR") term}.
-expression = SimpleExpression [("=" | "#" | "<" | "<=" | ">" | ">=") SimpleExpression].
+term = factor {("*" | "DIV" | "MOD" | "&") factor}. *)
+SimpleExpression = ["+"|"-"] ident {("+"|"-"(*|"OR"*)) ident }.
+expression* = SimpleExpression [(*( *) "=" (*| "#" | "<" | "<=" | ">" | ">=")*) SimpleExpression].
 
+(*
 assignment = ident selector ":=" expression.
 ActualParameters = "(" [expression {"," expression}] ")" .
 ProcedureCall = ident [ActualParameters | "*"].
@@ -32,4 +36,4 @@ ProcedureBody = declarations ["BEGIN" StatementSequence] "END".
 ProcedureDeclaration = ProcedureHeading ";" ProcedureBody ident.
 declarations = ["CONST" {ident "=" expression ";"}] ["TYPE" {ident "=" type ";"}] ["VAR" {IdentList ":" type ";"}] {ProcedureDeclaration ";"}.
 
-module = "MODULE" ident ";" declarations ["BEGIN" StatementSequence] "END" ident "." .
+module* = "MODULE" ident ";" declarations ["BEGIN" StatementSequence] "END" ident "." .*)

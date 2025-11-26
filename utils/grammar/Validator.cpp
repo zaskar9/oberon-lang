@@ -39,7 +39,7 @@ first_sets Validator::computeFirstSets() const {
                 rhs.erase(grammar_->getEpsilon());
                 i++;
             }
-            if ((i == k) && firstSet.contains(grammar_->getEpsilon())) {
+            if (i == k && firstSet.contains(grammar_->getEpsilon())) {
                 rhs.insert(grammar_->getEpsilon());
             }
             firstSet = firstSets[production->getHead()];
@@ -67,7 +67,7 @@ follow_sets Validator::computeFollowSets(first_sets firstSets) const {
     while (changes) {
         changes = false;
         for (auto &&it = grammar_->productions_begin(); it != grammar_->productions_end(); ++it) {
-            auto production = (*it).get();
+            auto production = it->get();
             auto lhs = std::unordered_set<Terminal *>();
             auto followSet = followSets[production->getHead()];
             lhs.insert(followSet.begin(), followSet.end());
@@ -82,9 +82,12 @@ follow_sets Validator::computeFollowSets(first_sets firstSets) const {
                         followSets[nonterminal] = lhs;
                     }
                     auto firstSet = firstSets[nonterminal];
-                    lhs.insert(firstSet.begin(), firstSet.end());
                     if (firstSet.contains(grammar_->getEpsilon())) {
+                        lhs.insert(firstSet.begin(), firstSet.end());
                         lhs.erase(grammar_->getEpsilon());
+                    } else {
+                        lhs = std::unordered_set<Terminal *>();
+                        lhs.insert(firstSet.begin(), firstSet.end());
                     }
                 } else {
                     lhs = std::unordered_set<Terminal *>();
@@ -131,8 +134,8 @@ bool Validator::checkBacktrackFree(first_plus_sets firstPlusSets, std::pair<Prod
     for (auto &&outer = grammar_->productions_begin(); outer != grammar_->productions_end(); ++outer) {
         for (auto &&inner = grammar_->productions_begin(); inner != grammar_->productions_end(); ++inner) {
             if (inner != outer) {
-                auto p_outer = (*outer).get();
-                auto p_inner = (*inner).get();
+                auto p_outer = outer->get();
+                auto p_inner = inner->get();
                 if (p_outer->getHead() == p_inner->getHead()) {
                     auto fps_outer = firstPlusSets[p_outer];
                     auto fps_inner = firstPlusSets[p_inner];
