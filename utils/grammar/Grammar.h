@@ -21,6 +21,7 @@ public:
     virtual ~Symbol();
 
     [[nodiscard]] std::string getName() const;
+    [[nodiscard]] virtual bool isSynth() const { return false; }
 
     [[nodiscard]] virtual std::string toString() const = 0;
     friend std::ostream& operator<<(std::ostream &stream, const Symbol &symbol);
@@ -34,10 +35,16 @@ private:
 class NonTerminal final : public Symbol {
 
 public:
-    explicit NonTerminal(std::string name) : Symbol(std::move(name)) {}
+    explicit NonTerminal(std::string name, const bool synth = false) :
+            Symbol(std::move(name)), synth_(synth) {}
     ~NonTerminal() override = default;
 
+    [[nodiscard]] bool isSynth() const override;
+
     [[nodiscard]] std::string toString() const override;
+
+private:
+    bool synth_;
 
 };
 
@@ -80,25 +87,27 @@ typedef std::unordered_set<std::unique_ptr<Production>> Productions;
 class Grammar {
 
 public:
-    explicit Grammar();
+    Grammar();
     ~Grammar() = default;
 
-    [[nodiscard]] NonTerminal * getStart() const;
-    void setStart(NonTerminal *start);
-    [[nodiscard]] Terminal * getEpsilon() const;
-    [[nodiscard]] Terminal * getEof() const;
+    [[nodiscard]] NonTerminal* getStart() const;
+    void setStart(NonTerminal* start);
+    [[nodiscard]] Terminal* getEpsilon() const;
+    [[nodiscard]] Terminal* getEof() const;
 
-    [[nodiscard]] Terminal * lookupTerminal(const std::string& name);
-    [[nodiscard]] Terminal * createTerminal(std::string name);
+    [[nodiscard]] Terminal* lookupTerminal(const std::string& name);
+    [[nodiscard]] Terminal* createTerminal(std::string name);
     [[nodiscard]] Terminals::const_iterator terminals_begin() const;
     [[nodiscard]] Terminals::const_iterator terminals_end() const;
 
-    [[nodiscard]] NonTerminal * lookupNonTerminal(const std::string& name);
-    [[nodiscard]] NonTerminal * createNonTerminal(std::string name, bool isStart = false);
+    [[nodiscard]] NonTerminal* lookupNonTerminal(const std::string& name);
+    [[nodiscard]] NonTerminal* createNonTerminal(std::string name, bool synth = false);
+    void deleteNonTerminal(NonTerminal *);
     [[nodiscard]] NonTerminals::const_iterator nonterminals_begin() const;
     [[nodiscard]] NonTerminals::const_iterator nonterminals_end() const;
 
-    Production * createProduction(NonTerminal *lhs, std::vector<Symbol*> rhs);
+    Production* createProduction(NonTerminal *lhs, std::vector<Symbol*> rhs);
+    void deleteProduction(Production*);
     [[nodiscard]] Productions::const_iterator productions_begin() const;
     [[nodiscard]] Productions::const_iterator productions_end() const;
 
