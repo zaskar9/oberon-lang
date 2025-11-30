@@ -24,7 +24,7 @@ using std::unordered_set;
 using std::vector;
 
 enum class LanguageStandard {
-    Oberon90, Oberon2, Oberon07, TurboOberon
+    Oberon90, Oberon0, Oberon2, Oberon07, TurboOberon
 };
 
 enum class OutputFileType {

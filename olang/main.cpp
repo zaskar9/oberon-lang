@@ -324,6 +324,8 @@ int main(const int argc, const char **argv) {
             const auto std = vm["std"].as<string>();
             if (smatch matches; regex_search(std, matches, regex("^(O|o)(beron)?(87|90)$"))) {
                 config.setLanguageStandard(LanguageStandard::Oberon90);
+            } else if (regex_search(std, matches, regex("^(O|o)(beron)?0$"))) {
+                config.setLanguageStandard(LanguageStandard::Oberon0);
             } else if (regex_search(std, matches, regex("^(O|o)(beron)?2$"))) {
                 config.setLanguageStandard(LanguageStandard::Oberon2);
             } else if (regex_search(std, matches, regex("^(O|o)(beron)?(07|16)$"))) {

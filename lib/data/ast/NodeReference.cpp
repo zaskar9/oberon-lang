@@ -39,7 +39,8 @@ FilePos QualifiedExpression::pos() const {
 }
 
 bool QualifiedExpression::isConstant() const {
-    return dereference()->getNodeType() == NodeType::constant;
+    const auto node = dereference();
+    return node && node->getNodeType() == NodeType::constant;
 }
 
 int QualifiedExpression::getPrecedence() const {
