@@ -61,29 +61,7 @@ void Loader::alternation(Grammar *grammar, NonTerminal *head, unordered_set<Toke
     do {
         vector<Symbol *> symbols;
         symbol_list(grammar, symbols, followsPlus);
-        if (!head->isSynth() && symbols.size() == 1 && symbols[0]->isSynth()) {
-            // Forward substitution
-            if (const auto non_terminal = dynamic_cast<NonTerminal*>(symbols[0])) {
-                bool remove = false;
-                for (auto &&it = grammar->productions_begin(); it != grammar->productions_end(); ++it) {
-                    auto production = it->get();
-                    if (production->getHead() == non_terminal) {
-                        vector<Symbol *> syms;
-                        for (size_t i = 0; i < production->getSymbolCount(); ++i) {
-                            syms.push_back(production->getSymbol(i));
-                        }
-                        grammar->createProduction(head, syms);
-                        grammar->deleteProduction(production);
-                        remove = true;
-                    }
-                }
-                if (remove) {
-                    grammar->deleteNonTerminal(non_terminal);
-                }
-            }
-        } else {
-            grammar->createProduction(head, symbols);
-        }
+        grammar->createProduction(head, symbols);
         token = scanner_.peek();
         if (token->type() == TokenType::pipe) {
             scanner_.next();
@@ -114,14 +92,14 @@ Symbol* Loader::symbol(Grammar *grammar) {
     }
     if (token->type() == TokenType::lparen) {
         scanner_.next();
-        const auto lhs = grammar->createNonTerminal(getNextId(), true);
+        const auto lhs = grammar->createNonTerminal(getNextId());
         alternation(grammar, lhs, { TokenType::rparen });
         scanner_.next();
         return lhs;
     }
     if (token->type() == TokenType::lbrack) {
         scanner_.next();
-        const auto lhs = grammar->createNonTerminal(getNextId(), true);
+        const auto lhs = grammar->createNonTerminal(getNextId());
         alternation(grammar, lhs, { TokenType::rbrack });
         grammar->createProduction(lhs, { grammar->getEpsilon() });
         scanner_.next();
@@ -129,8 +107,8 @@ Symbol* Loader::symbol(Grammar *grammar) {
     }
     if (token->type() == TokenType::lbrace) {
         scanner_.next();
-        auto lhs =  grammar->createNonTerminal(getNextId(), true);
-        auto rhs = grammar->createNonTerminal(getNextId(), true);
+        auto lhs =  grammar->createNonTerminal(getNextId());
+        auto rhs = grammar->createNonTerminal(getNextId());
         grammar->createProduction(lhs, { rhs, lhs });
         grammar->createProduction(lhs, { grammar->getEpsilon() });
         alternation(grammar, rhs, { TokenType::rbrace });
@@ -147,8 +125,8 @@ NonTerminal* Loader::non_terminal(Grammar *grammar) {
     const auto token = scanner_.next();
     if (token->type() == TokenType::const_ident) {
         const auto ident = dynamic_cast<const IdentToken*>(token.get());
-        const auto nonterminal = grammar->lookupNonTerminal(ident->value());
-        return nonterminal ? nonterminal : grammar->createNonTerminal(ident->value());
+        const auto non_terminal = grammar->lookupNonTerminal(ident->value());
+        return non_terminal ? non_terminal : grammar->createNonTerminal(ident->value());
     }
     logger_.error(token->start(), "unexpected token (non-terminal): " + to_string(token->type()) + ".");
     return nullptr;
@@ -175,7 +153,5 @@ Terminal* Loader::terminal(Grammar *grammar) {
 }
 
 string Loader::getNextId() {
-    auto res = string(head_->toString() + to_string(id_));
-    id_++;
-    return res;
+    return string(head_->toString() + to_string(id_++));
 }

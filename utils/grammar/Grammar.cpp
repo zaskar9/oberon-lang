@@ -22,10 +22,6 @@ std::string Terminal::toString() const {
     return ss.str();
 }
 
-bool NonTerminal::isSynth() const {
-    return synth_;
-}
-
 
 std::string NonTerminal::toString() const {
     return getName();
@@ -97,8 +93,8 @@ NonTerminal * Grammar::lookupNonTerminal(const std::string& name) {
     return nonterminalsIdx_[name];
 }
 
-NonTerminal * Grammar::createNonTerminal(std::string name, bool synth) {
-    auto symbol = std::make_unique<NonTerminal>(std::move(name), synth);
+NonTerminal * Grammar::createNonTerminal(std::string name) {
+    auto symbol = std::make_unique<NonTerminal>(std::move(name));
     const auto result = symbol.get();
     nonterminals_.insert(std::move(symbol));
     nonterminalsIdx_[result->getName()] = result;
