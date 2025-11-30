@@ -9,11 +9,17 @@
 
 
 #include <filesystem>
+#include <string>
+#include <unordered_set>
+#include <vector>
 
 #include "Grammar.h"
 #include "Scanner.h"
 
-namespace fs = std::filesystem;
+using std::filesystem::path;
+using std::string;
+using std::unordered_set;
+using std::vector;
 
 class Loader {
 
@@ -27,15 +33,16 @@ private:
     Logger &logger_;
     Scanner scanner_;
     unsigned int id_;
+    NonTerminal *head_;
+
+    void production(Grammar *);
+    void alternation(Grammar *, NonTerminal *, std::unordered_set<TokenType>);
+    void symbol_list(Grammar *, std::vector<Symbol*> &, const std::unordered_set<TokenType>&);
+    [[nodiscard]] Symbol* symbol(Grammar *);
+    [[nodiscard]] NonTerminal* non_terminal(Grammar *);
+    [[nodiscard]] Terminal* terminal(Grammar *);
 
     [[nodiscard]] std::string getNextId();
-    void production(Grammar *grammar);
-    [[nodiscard]] Symbol * symbol(Grammar *grammar);
-    void symbol_list(Grammar *grammar, std::vector<Symbol*> &symbols, const std::unordered_set<TokenType>& follows);
-    [[nodiscard]] NonTerminal * non_terminal(Grammar *grammar);
-    [[nodiscard]] Terminal * terminal(Grammar *grammar);
-    void alternation(Grammar *grammar, NonTerminal *head, std::unordered_set<TokenType> follows);
-    // [[nodiscard]] NonTerminal * optional(Grammar *grammar);
 
 };
 
