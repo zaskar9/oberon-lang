@@ -52,18 +52,18 @@ int main(const int argc, const char **argv) {
     // Get the logger and configure it with the program name
     Logger &logger = config.logger();
     logger.setBanner(PROGRAM_NAME);
-    // Find installation directory of the compiler and add it to configuration
-    auto home = path(argv[0]);
-    while (fs::is_symlink(home)) {
-        home = fs::read_symlink(home);
-    }
-    home = fs::canonical(fs::absolute(home).parent_path());
-    logger.debug("Installed directory: '" + home.string() + "'.");
-    config.setInstallDirectory(home);
     // Find current working directory and add it to configuration
     auto work = fs::current_path();
     logger.debug("Working directory: '" + work.string() + "'.");
     config.setWorkingDirectory(work);
+    // Find installation directory of the compiler and add it to configuration
+    auto home = path(argv[0]);
+    if (!home.is_absolute()) {
+        home = work / home;
+    }
+    home = fs::canonical(home).parent_path();
+    logger.debug("Installed directory: '" + home.string() + "'.");
+    config.setInstallDirectory(home);
     // TODO move CodeGen into Compiler by moving corresponding config to CompilerConfig
     auto codegen = make_unique<LLVMCodeGen>(config);
     Compiler compiler(config, codegen.get());
