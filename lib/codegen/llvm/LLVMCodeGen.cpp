@@ -5,7 +5,6 @@
  */
 
 #include "LLVMCodeGen.h"
-#include "LLVMIRBuilder.h"
 #include <sstream>
 #include <unordered_set>
 #include <llvm/Bitcode/BitcodeWriter.h>
@@ -13,12 +12,13 @@
 #include <llvm/ExecutionEngine/Orc/LLJIT.h>
 #include <llvm/IR/LegacyPassManager.h>
 #include <llvm/MC/TargetRegistry.h>
-#include <llvm/Target/TargetMachine.h>
-#include <llvm/TargetParser/Host.h>
 #include <llvm/Support/ErrorOr.h>
 #include <llvm/Support/MemoryBuffer.h>
-#include <llvm/Support/TargetSelect.h>
 #include <llvm/Support/raw_ostream.h>
+#include <llvm/Support/TargetSelect.h>
+#include <llvm/Target/TargetMachine.h>
+#include <llvm/TargetParser/Host.h>
+#include "LLVMIRBuilder.h"
 
 using namespace llvm;
 
@@ -107,10 +107,10 @@ LONG WINAPI trap_handler(EXCEPTION_POINTERS* info) {
         uint16_t code = decode_trap(pc);
         ubsantrap_handler(code);
         // Handle and continue execution
-        // return EXCEPTION_EXECUTE_HANDLER;  
+        // return EXCEPTION_EXECUTE_HANDLER;
     }
 
-    return EXCEPTION_CONTINUE_SEARCH;  
+    return EXCEPTION_CONTINUE_SEARCH;
 }
 #else
 [[noreturn]] void trap_handler(int, siginfo_t* info, void*) {
@@ -163,6 +163,12 @@ void LLVMCodeGen::configure() {
             break;
         case ::OptimizationLevel::O3:
             lvl_ = llvm::OptimizationLevel::O3;
+            break;
+        case ::OptimizationLevel::Os:
+            lvl_ = llvm::OptimizationLevel::Os;
+            break;
+        case ::OptimizationLevel::Oz:
+            lvl_ = llvm::OptimizationLevel::Oz;
             break;
         default:
             lvl_ = llvm::OptimizationLevel::O0;
@@ -311,22 +317,28 @@ void LLVMCodeGen::generate(ASTContext *ast, const path path) {
     // Generate LLVM intermediate representation
     auto builder = std::make_unique<LLVMIRBuilder>(config_, ctx_, module.get());
     builder->build(ast);
-    if (lvl_ != llvm::OptimizationLevel::O0) {
-        logger_.debug("Optimizing...");
-        // Create basic analyses
-        LoopAnalysisManager lam;
-        FunctionAnalysisManager fam;
-        CGSCCAnalysisManager cgam;
-        ModuleAnalysisManager mam;
-        // Register all the basic analyses with the managers
-        pb_.registerModuleAnalyses(mam);
-        pb_.registerCGSCCAnalyses(cgam);
-        pb_.registerFunctionAnalyses(fam);
-        pb_.registerLoopAnalyses(lam);
-        pb_.crossRegisterProxies(lam, fam, cgam, mam);
-        auto mpm = pb_.buildPerModuleDefaultPipeline(lvl_);
-        mpm.run(*module, mam);
+    logger_.debug("Analyzing...");
+    // Create basic analyses
+    LoopAnalysisManager lam;
+    FunctionAnalysisManager fam;
+    CGSCCAnalysisManager cgam;
+    ModuleAnalysisManager mam;
+    // Create a new pass manager builder
+    PassBuilder pb;
+    // Register all the basic analyses with the managers
+    pb.registerModuleAnalyses(mam);
+    pb.registerCGSCCAnalyses(cgam);
+    pb.registerFunctionAnalyses(fam);
+    pb.registerLoopAnalyses(lam);
+    pb.crossRegisterProxies(lam, fam, cgam, mam);
+    ModulePassManager mpm;
+    if (lvl_ == llvm::OptimizationLevel::O0) {
+        mpm = pb.buildO0DefaultPipeline(lvl_);
+    } else {
+        mpm = pb.buildPerModuleDefaultPipeline(lvl_);
     }
+    logger_.debug("Optimizing...");
+    mpm.run(*module, mam);
     if (module && logger_.getErrorCount() == 0) {
         logger_.debug("Emitting code...");
         emit(module.get(), path, type_);

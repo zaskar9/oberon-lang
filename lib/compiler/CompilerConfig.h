@@ -32,7 +32,7 @@ enum class OutputFileType {
 };
 
 enum class OptimizationLevel {
-    O0, O1, O2, O3
+    O0, O1, O2, O3, Os, Oz
 };
 
 enum class RelocationModel {
