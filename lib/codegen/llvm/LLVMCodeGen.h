@@ -47,12 +47,24 @@ using std::string;
 
 class LLVMCodeGen final : public CodeGen {
 
+public:
+    explicit LLVMCodeGen(CompilerConfig &);
+    ~LLVMCodeGen() override = default;
+
+    [[nodiscard]] std::string getDescription() override;
+
+    void configure() override;
+
+    void generate(ASTContext *, path) override;
+#ifndef _LLVM_LEGACY
+    int jit(ASTContext *, path) override;
+#endif
+
 private:
     CompilerConfig &config_;
     Logger &logger_;
     OutputFileType type_;
     llvm::LLVMContext ctx_;
-    llvm::PassBuilder pb_;
     llvm::OptimizationLevel lvl_;
     llvm::TargetMachine *tm_;
     std::unique_ptr<llvm::orc::LLJIT> jit_;
@@ -63,19 +75,6 @@ private:
     static std::string getObjName(const string &, const llvm::Triple &);
 
     void loadObjects(const ASTContext *) const;
-
-public:
-    LLVMCodeGen(CompilerConfig &);
-    ~LLVMCodeGen() override = default;
-
-    std::string getDescription() final;
-
-    void configure() final;
-
-    void generate(ASTContext *, path) final;
-#ifndef _LLVM_LEGACY
-    int jit(ASTContext *, path) final;
-#endif
 
 };
 

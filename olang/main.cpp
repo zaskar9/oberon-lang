@@ -78,7 +78,7 @@ int main(const int argc, const char **argv) {
             (",L", po::value<vector<string>>()->value_name("<directories>"), "Search paths for libraries.")
             (",l", po::value<vector<string>>()->value_name("<library>"), "Static or dynamic library.")
             (",f", po::value<vector<string>>()->value_name("<flag>"), "Compiler configuration flags.")
-            (",O", po::value<int>()->value_name("<level>"), "Optimization level. [O0, O1, O2, O3]")
+            (",O", po::value<char>()->value_name("<level>"), "Optimization level. [O0, O1, O2, O3]")
             (",o", po::value<string>()->value_name("<filename>"), "Name of the output file.")
             (",W", po::value<vector<string>>()->value_name("<option>"), "Warning configuration.")
             ("reloc", po::value<string>()->value_name("<model>"), "Set relocation model. [default, static, pic]")
@@ -253,18 +253,26 @@ int main(const int argc, const char **argv) {
             }
         }
         if (vm.count("-O")) {
-            switch (int level = vm["-O"].as<int>()) {
-                case 0:
+            switch (auto level = vm["-O"].as<char>()) {
+                case '0':
                     config.setOptimizationLevel(OptimizationLevel::O0);
                     break;
-                case 1:
+                case '1':
                     config.setOptimizationLevel(OptimizationLevel::O1);
                     break;
-                case 2:
+                case '2':
                     config.setOptimizationLevel(OptimizationLevel::O2);
                     break;
-                case 3:
+                case '3':
                     config.setOptimizationLevel(OptimizationLevel::O3);
+                    break;
+                case 's':
+                case 'S':
+                    config.setOptimizationLevel(OptimizationLevel::Os);
+                    break;
+                case 'z':
+                case 'Z':
+                    config.setOptimizationLevel(OptimizationLevel::Oz);
                     break;
                 default:
                     logger.error(PROGRAM_NAME, "unsupported optimization level: '-O" + to_string(level) + "'.");
