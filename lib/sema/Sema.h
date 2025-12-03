@@ -48,7 +48,7 @@ public:
     void onTranslationUnitStart(const FilePos &, const FilePos &, const unique_ptr<Ident> &) const;
     void onTranslationUnitEnd(const string &);
 
-    unique_ptr<ModuleNode> onModuleStart(const FilePos &, unique_ptr<Ident>);
+    unique_ptr<ModuleNode> onModuleStart(const FilePos &, unique_ptr<Ident>) const;
     void onModuleEnd(const FilePos&, const unique_ptr<Ident>&) const;
 
     unique_ptr<ImportNode> onImport(const FilePos &, const FilePos &, unique_ptr<Ident>, unique_ptr<Ident>);
@@ -213,7 +213,7 @@ private:
      */
     static bool isEqualType(TypeNode *, TypeNode *, string &);
 
-    bool isEqualArrayType(const ArrayTypeNode *, const ArrayTypeNode *actual, string &) const;
+    static bool isEqualArrayType(const ArrayTypeNode *, const ArrayTypeNode *actual, string &) ;
 
     /**
      * Two formal parameter lists match if

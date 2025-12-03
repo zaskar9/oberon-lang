@@ -354,9 +354,8 @@ void NodePrettyPrinter::visit(ArrayTypeNode &node) {
     if (node.isAnonymous() || isDecl_) {
         isDecl_ = false;
         if (node.isOpen()) {
-            for (unsigned i = 0; i < node.dimensions(); ++i) {
-                stream_ << "ARRAY OF ";
-            }
+            stream_ << "ARRAY OF ";
+            node.types()[0]->accept(*this);
         } else {
             stream_ << "ARRAY ";
             string sep;
@@ -365,8 +364,8 @@ void NodePrettyPrinter::visit(ArrayTypeNode &node) {
                 sep = ", ";
             }
             stream_ << " OF ";
+            node.getElementType()->accept(*this);
         }
-        node.getElementType()->accept(*this);
     } else {
         qualident(node.getDeclaration());
     }

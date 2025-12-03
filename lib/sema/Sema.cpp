@@ -73,11 +73,11 @@ void Sema::onDeclarations() {
         forwards_.pop_back();
         auto start = pair.first->start();
         auto end = pair.first->end();
-        auto pointer_t = pair.second;
-        auto type = onTypeReference(start, end, std::move(pair.first));
+        const auto pointer_t = pair.second;
+        const auto type = onTypeReference(start, end, pair.first);
         if (type->kind() != TypeKind::NOTYPE) {
             logger_.debug("Resolving forward reference: " + to_string(*type->getIdentifier()));
-            if (!type->isRecord()) {
+            if (config_.getLanguageStandard() == LanguageStandard::Oberon07 && !type->isRecord()) {
                 // O07.6.4: Pointer base type must be a record type.
                 logger_.error(start, "pointer base type must be a record type.");
             }
@@ -89,7 +89,7 @@ void Sema::onDeclarations() {
 }
 
 unique_ptr<ModuleNode>
-Sema::onModuleStart(const FilePos &start, unique_ptr<Ident> ident) {
+Sema::onModuleStart(const FilePos &start, unique_ptr<Ident> ident) const {
     auto module = make_unique<ModuleNode>(start, std::move(ident));
     // assertUnique(module->getIdentifier(), module.get());
     module->setScope(symbols_->getLevel());
@@ -201,10 +201,14 @@ Sema::onArrayType(const FilePos &start, const FilePos &end, const vector<unique_
     }
     if (!type) {
         logger_.error(start, "undefined member type.");
+
         type = noTy_;
     }
     if (values.empty()) {
-        logger_.error(start, "undefined array dimension.");
+        if (config_.getLanguageStandard() == LanguageStandard::Oberon90 ||
+            config_.getLanguageStandard() == LanguageStandard::Oberon07) {
+            logger_.error(start, "undefined array dimension.");
+        }
         values.emplace_back(0);
     }
     vector<unsigned> lengths;
@@ -213,8 +217,12 @@ Sema::onArrayType(const FilePos &start, const FilePos &end, const vector<unique_
         const auto array_t = dynamic_cast<ArrayTypeNode *>(type);
         lengths.insert(lengths.begin(), array_t->lengths().begin(), array_t->lengths().end());
         types.insert(types.begin(), array_t->types().begin(), array_t->types().end());
-        if (type->isAnonymous()) {
-            logger_.warning(type->pos(), "nested array found, use multi-dimensional array instead.");
+        if (values[0] != 0) {
+            if (array_t->isOpen()) {
+                logger_.error(type->pos(), "open array type cannot be used as element type of non-open array type.");
+            } else if (type->isAnonymous()) {
+                logger_.warning(type->pos(), "nested array found, use multi-dimensional array instead.");
+            }
         }
     }
     for (size_t i = values.size(); i > 0; --i) {
@@ -241,11 +249,13 @@ Sema::onPointerTypeStart(const FilePos &start, const FilePos &end) const {
 
 void
 Sema::onPointerTypeEnd(const FilePos &start, const FilePos &, PointerTypeNode *type, TypeNode *base) const {
-    if (base && base->isRecord()) {
+    if (base) {
+        if (config_.getLanguageStandard() == LanguageStandard::Oberon07 && !base->isRecord()) {
+            // O07.6.4: Pointer base type must be a record type.
+            logger_.error(start, "pointer base type must be a record type.");
+        }
         type->setBase(base);
     } else {
-        // O07.6.4: Pointer base type must be a record type.
-        logger_.error(start, "pointer base type must be a record type.");
         type->setBase(noTy_);
     }
 }
@@ -318,6 +328,8 @@ Sema::onField(const FilePos &start, const FilePos &,
     if (!type) {
         logger_.error(start, "undefined record field type.");
         type = noTy_;
+    } else if (isOpenArray(type)) {
+        logger_.error(start, "open array type cannot be used as record field type.");
     }
     return make_unique<FieldNode>(start, std::move(ident), type, index);
 }
@@ -360,6 +372,8 @@ Sema::onVariable(const FilePos &start, const FilePos &,
     if (!type) {
         logger_.error(start, "undefined variable type.");
         type = noTy_;
+    } else if (isOpenArray(type)) {
+        logger_.error(start, "open array type cannot be used as variable type.");
     }
     auto node = make_unique<VariableDeclarationNode>(start, std::move(ident), type, index);
     assertUnique(node->getIdentifier(), node.get());
@@ -2212,30 +2226,31 @@ bool Sema::isEqualType(TypeNode *lhsTy, TypeNode *rhsTy, string &err) {
     return false;
 }
 
-bool Sema::isEqualArrayType(const ArrayTypeNode *formal, const ArrayTypeNode *actual, string &err) const {
+bool Sema::isEqualArrayType(const ArrayTypeNode *formal, const ArrayTypeNode *actual, string &err) {
     if (formal->dimensions() < actual->dimensions()) {
         err = std::format("type mismatch: incompatible array dimensions: expected {}, found {}.",
                           formal->dimensions(), actual->dimensions());
         return false;
     }
-    if (config_.getLanguageStandard() != LanguageStandard::TurboOberon) {
-        if (!formal->isOpen() && actual->isOpen()) {
-            err = std::format("type mismatch: incompatible array types: expected {}, found {}.",
-                              formatType(formal), formatType(actual));
-            return false;
-        }
-    }
+    // if (config_.getLanguageStandard() != LanguageStandard::TurboOberon) {
+    //     if (!formal->isOpen() && actual->isOpen()) {
+    //         err = std::format("type mismatch: incompatible array types: expected {}, found {}.",
+    //                           formatType(formal), formatType(actual));
+    //         return false;
+    //     }
+    // }
     for (size_t i = 0; i < formal->dimensions(); ++i) {
-        if (!isSameType(formal->types()[i], actual->types()[i], err)) {
-            return false;
-        }
-        if (!formal->isOpen() && formal->lengths()[i] < actual->lengths()[i]) {
-            err = std::format("type mismatch: incompatible array lengths found {} > {}.",
+        // if (!isSameType(formal->types()[i], actual->types()[i], err)) {
+        //     return false;
+        // }
+        if (formal->lengths()[i] > 0 && actual->lengths()[i] > 0 &&
+            formal->lengths()[i] != actual->lengths()[i]) {
+            err = std::format("type mismatch: incompatible array lengths, found {}, expected {}.",
                               to_string(actual->lengths()[i]), to_string(formal->lengths()[i]));
             return false;
         }
     }
-    return true;
+    return isSameType(formal->getElementType(), actual->getElementType(), err);
 }
 
 bool Sema::isParameterListMatching(ProcedureTypeNode *lhsTy, ProcedureTypeNode *rhsTy, string &err) {
@@ -2340,17 +2355,27 @@ bool Sema::isArrayCompatible(const unique_ptr<ParameterNode> &param, const uniqu
                 return true;
             }
             const auto exprArrayTy = dynamic_cast<ArrayTypeNode *>(exprTy);
-            // 2. `paramTy` is an open array, `exprTy` is any array, and their element types are array compatible.
-            if (paramArrayTy->isOpen()) {
-                if (paramArrayTy->dimensions() != exprArrayTy->dimensions()) {
-                    err = std::format("type mismatch: incompatible array dimensions, expected {}, found {}.",
-                                      paramArrayTy->dimensions(), exprArrayTy->dimensions());
-                    return false;
-                }
-                return isSameType(paramArrayTy->getElementType(), exprArrayTy->getElementType(), err);
-            }
+            // Language extension to accept anonymous array types that have the same dimensions and element type.
             if (config_.getLanguageStandard() == LanguageStandard::TurboOberon) {
                 return isEqualArrayType(paramArrayTy, exprArrayTy, err);
+            }
+            // 2. `paramTy` is an open array, `exprTy` is any array, and their element types are array compatible.
+            if (paramArrayTy->isOpen()) {
+                if (paramArrayTy->dimensions() == exprArrayTy->dimensions()) {
+                    for (size_t dim = 0; dim < paramArrayTy->dimensions(); ++dim) {
+                        const auto paramElemTy = paramArrayTy->types()[dim];
+                        const auto exprElemTy = exprArrayTy->types()[dim];
+                        if (!isOpenArray(paramElemTy) && !isSameType(paramElemTy, exprElemTy, err)) {
+                            err = std::format("type mismatch: incompatible array element types, expected {}, found {}",
+                                              formatType(paramElemTy), formatType(exprElemTy));
+                            return false;
+                        }
+                    }
+                    return true;
+                }
+                err = std::format("type mismatch: incompatible array dimensions, expected {}, found {}.",
+                                  paramArrayTy->dimensions(), exprArrayTy->dimensions());
+                return false;
             }
         } else {
             // 3. `param` is a value parameter of type `ARRAY OF CHAR` and `expr` is a string.

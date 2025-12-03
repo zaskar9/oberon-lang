@@ -1,5 +1,5 @@
 (*
-  RUN: not %oberon --run %s | filecheck %s
+  RUN: not %oberon --std=O07 --run %s | filecheck %s
 *)
 MODULE IllegalOpenArray;
 

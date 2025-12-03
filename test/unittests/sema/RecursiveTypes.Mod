@@ -1,5 +1,5 @@
 (*
-  RUN: not %oberon -I "%S%{pathsep}%inc" -L "%S%{pathsep}%lib" -l oberon --run %s 2>&1 | filecheck %s
+  RUN: not %oberon -I "%S%{pathsep}%inc" -L "%S%{pathsep}%lib" -l oberon --std=Oberon07 --run %s 2>&1 | filecheck %s
 *)
 MODULE RecursiveTypes;
 

@@ -301,7 +301,7 @@ TypeNode* Parser::type() {
     }
 }
 
-// array_type = "ARRAY" expression { "," expression } "OF" type .
+// array_type = "ARRAY" ( expression { "," expression } | Ɛ@<Oberon2> ) "OF" type .
 ArrayTypeNode* Parser::array_type() {
     logger_.debug("array_type");
     const FilePos pos = scanner_.next()->start();  // skip ARRAY keyword and get its position
@@ -379,7 +379,7 @@ void Parser::field_list(vector<unique_ptr<FieldNode>> &fields) {
     resync({ TokenType::semicolon, TokenType::kw_end });
 }
 
-// pointer_type = "POINTER" "TO" type .
+// pointer_type = "POINTER" "TO" ( type ) .
 void Parser::pointer_type(PointerTypeNode* ptr) {
     logger_.debug("pointer_type");
     const FilePos pos = scanner_.next()->start();  // skip POINTER keyword and get its position
@@ -456,7 +456,7 @@ TypeNode *Parser::formal_parameters(vector<unique_ptr<ParameterNode>> &params, b
     return ret;
 }
 
-// fp_section = ( [ "VAR" ] ident { "," ident } ":" formal_type | "..." ) .
+// <O90|O07> fp_section = ( [ "VAR" ] ident { "," ident } ":" ( formal_type@<O90|O07> | type@<O0|Oberon2> ) | "..." ) .
 void Parser::fp_section(vector<unique_ptr<ParameterNode>> &params, bool &varargs) {
     logger_.debug("fp_section");
     if (scanner_.peek()->type() == TokenType::varargs) {
@@ -490,7 +490,8 @@ void Parser::fp_section(vector<unique_ptr<ParameterNode>> &params, bool &varargs
         if (token->type() != TokenType::colon) {
             logger_.error(token->start(), ": expected, found " + to_string(token->type()) + ".");
         }
-        const auto node = formal_type();
+        const auto std = config_.getLanguageStandard();
+        const auto node = std == LanguageStandard::Oberon90 || std == LanguageStandard::Oberon07 ? formal_type() : type();
         unsigned index = 0;
         for (auto &&ident : idents) {
             FilePos start = ident->start();
@@ -504,6 +505,7 @@ void Parser::fp_section(vector<unique_ptr<ParameterNode>> &params, bool &varargs
 
 // formal_type = { "ARRAY" "OF" } qualident.
 TypeNode *Parser::formal_type() {
+    logger_.debug("formal_type");
     FilePos start;
     unsigned dims = 0;
     while (scanner_.peek()->type() == TokenType::kw_array) {
@@ -516,7 +518,11 @@ TypeNode *Parser::formal_type() {
     }
     const auto token = scanner_.peek();
     if (token->type() == TokenType::kw_pointer || token->type() == TokenType::kw_record) {
-        logger_.error(token->start(), "formal type cannot be an anonymous record or pointer type.");
+        if (dims > 0) {
+            logger_.error(token->start(), "element type of open array cannot be an anonymous record or pointer type.");
+        } else {
+            logger_.error(token->start(), "formal type cannot be an anonymous record or pointer type.");
+        }
     } else if (assertToken(scanner_.peek(), TokenType::const_ident)) {
         const auto ident = qualident();
         if (dims == 0) {
