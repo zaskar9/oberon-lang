@@ -58,6 +58,7 @@ set(ANALYZER_SOURCES
 
 set(CODEGEN_SOURCES
         codegen/CodeGen.cpp codegen/CodeGen.h
+        codegen/CodeGenFactory.cpp codegen/CodeGenFactory.h
         codegen/llvm/LLVMIRBuilder.cpp codegen/llvm/LLVMIRBuilder.h
         codegen/llvm/LLVMCodeGen.cpp codegen/llvm/LLVMCodeGen.h)
 
@@ -94,9 +95,11 @@ target_link_libraries(${OLANG_BULK} PRIVATE ${OLANG_LEX} ${OLANG_LOG})
 
 # Include external dependencies
 if (Boost_FOUND)
+    target_include_directories(${OLANG_BULK} SYSTEM PRIVATE ${LLVM_INCLUDE_DIRS})
     target_link_libraries(${OLANG_BULK} PRIVATE Boost::headers)
 endif ()
 if (LLVM_FOUND)
+    target_include_directories(${OLANG_BULK} SYSTEM PRIVATE ${Boost_INCLUDE_DIRS})
     target_link_libraries(${OLANG_BULK} PRIVATE ${llvm_libs})
 endif ()
 #if (BDWgc_FOUND)

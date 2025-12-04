@@ -22,6 +22,7 @@ target_link_libraries(${GRAMMAR_UTIL} PRIVATE ${OLANG_LEX} ${OLANG_LOG})
 
 # Include external dependencies
 if (Boost_FOUND)
+    target_include_directories(${GRAMMAR_UTIL} SYSTEM PRIVATE ${Boost_INCLUDE_DIRS})
     target_link_libraries(${GRAMMAR_UTIL} PRIVATE Boost::headers)
 endif ()
 
