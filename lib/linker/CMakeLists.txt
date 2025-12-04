@@ -22,5 +22,6 @@ target_link_libraries(${OLANG_LINK} PRIVATE ${OLANG_LOG})
 
 
 if (LLVM_FOUND)
+    target_include_directories(${OLANG_LINK} SYSTEM PRIVATE ${LLVM_INCLUDE_DIRS})
     target_LINK_libraries(${OLANG_LINK} PRIVATE ${llvm_libs})
 endif ()

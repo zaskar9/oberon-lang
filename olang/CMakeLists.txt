@@ -19,6 +19,7 @@ target_link_libraries(${OLANG_FRONTEND} PRIVATE ${OLANG_BULK} ${OLANG_LEX} ${OLA
 
 # Include external dependencies
 if (Boost_FOUND)
+    target_include_directories(${OLANG_FRONTEND} SYSTEM PRIVATE ${Boost_INCLUDE_DIRS})
     target_link_libraries(${OLANG_FRONTEND} PRIVATE Boost::headers Boost::program_options)
 endif ()
 
