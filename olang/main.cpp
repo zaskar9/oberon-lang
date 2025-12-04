@@ -13,7 +13,7 @@
 
 #include "config.h"
 #include "Logger.h"
-#include "codegen/llvm/LLVMCodeGen.h"
+#include "codegen/CodeGenFactory.h"
 #include "compiler/Compiler.h"
 #include "compiler/CompilerConfig.h"
 
@@ -47,6 +47,8 @@ using std::string;
 using std::to_string;
 using std::vector;
 
+int configure(CompilerConfig& config, const po::variables_map& vm);
+
 int main(const int argc, const char **argv) {
     CompilerConfig config;
     // Get the logger and configure it with the program name
@@ -64,8 +66,8 @@ int main(const int argc, const char **argv) {
     home = fs::canonical(home).parent_path();
     logger.debug("Installed directory: '" + home.string() + "'.");
     config.setInstallDirectory(home);
-    // TODO move CodeGen into Compiler by moving corresponding config to CompilerConfig
-    auto codegen = make_unique<LLVMCodeGen>(config);
+    // Create the compiler with the LLVM code generator as back-end
+    auto codegen = CodeGenFactory::GetCodeGen(CompilerBackend::LLVM, config);
     Compiler compiler(config, codegen.get());
     // Define command line options of the compiler
     auto visible = po::options_description("OPTIONS");
@@ -108,7 +110,6 @@ int main(const int argc, const char **argv) {
         return EXIT_FAILURE;
     }
     po::notify(vm);
-    // Parse command line options
     if (vm.count("help")) {
         cout << "OVERVIEW: " << PROGRAM_NAME << " LLVM compiler\n" << endl;
         cout << "USAGE: " << PROGRAM_NAME << " [options] file...\n" << endl;
@@ -127,238 +128,13 @@ int main(const int argc, const char **argv) {
         cout << "LLVM " << LLVM_VERSION << endl;
         return EXIT_SUCCESS;
     }
-    if (vm.count("inputs")) {
-        if (vm.count("quiet")) {
-            logger.setLevel(LogLevel::QUIET);
-        }
-        if (vm.count("verbose")) {
-            logger.setLevel(LogLevel::DEBUG);
-        }
-#if defined(_WIN32) || defined(_WIN64)
-        // Windows uses a semicolon to separate multiple paths
-        string separator = ";";
-#else
-        string separator = ":";
-#endif
-        if (vm.count("-I")) {
-            auto params = vm["-I"].as<vector<string>>();
-            vector<string> includes;
-            for (const auto& param : params) {
-                boost::algorithm::split(includes, param, boost::is_any_of(separator));
-                for (const auto& include: includes) {
-                    config.addIncludeDirectory(include);
-                    logger.debug("Include search path: '" + include + "'.");
-                }
-            }
-        }
-        if (vm.count("-L")) {
-            auto params = vm["-L"].as<vector<string>>();
-            vector<string> libraries;
-            for (const auto& param : params) {
-                boost::algorithm::split(libraries, param, boost::is_any_of(separator));
-                for (const auto& library: libraries) {
-                    config.addLibraryDirectory(library);
-                    logger.debug("Library search path: '" + library + "'.");
-                }
-            }
-        }
-        if (vm.count("-l")) {
-            const auto params = vm["-l"].as<vector<string>>();
-            for (const auto& lib : params) {
-                config.addLibrary(lib);
-                logger.debug("Library: '" + lib + "'.");
-            }
-        }
-        if (vm.count("-f")) {
-            auto params = vm["-f"].as<vector<string>>();
-            for (const auto& flag : params) {
-                if (flag == "enable-extern") {
-                    config.setFlag(Flag::ENABLE_EXTERN);
-                } else if (flag == "enable-varargs") {
-                    config.setFlag(Flag::ENABLE_VARARGS);
-                } else if (flag == "enable-main") {
-                    config.setFlag(Flag::ENABLE_MAIN);
-                } else if (flag == "no-stack-protector") {
-                    config.toggleFlag(Flag::STACK_PROTECT, false);
-                } else if (smatch matches; regex_search(flag, matches, regex("^(no-)?init-(local|global)-zero$"))) {
-                    const bool active = matches.str(1).empty();
-                    const string scope = matches.str(2);
-                    if (scope == "local") {
-                        config.toggleFlag(Flag::INIT_LOCAL_ZERO, active);
-                    } else {
-                        config.toggleFlag(Flag::INIT_GLOBAL_ZERO, active);
-                        logger.warning(PROGRAM_NAME, "argument unused during compilation: '-f" + flag + "'.");
-                    }
-                } else if (regex_search(flag, matches, regex("^(no-)?sanitize=(.*)$"))) {
-                    const bool active = flag[0] != 'n';
-                    const string opt = matches.str(2);
-                    if (opt == "array-bounds" || opt == "bounds") {
-                        // Out of bounds array indexing.
-                        config.toggleSanitize(Trap::OUT_OF_BOUNDS, active);
-                    } else if (opt == "type-guard") {
-                        // Using an invalid type as guard will lead to undefined behaviour.
-                        config.toggleSanitize(Trap::TYPE_GUARD, active);
-                    } else if (opt == "copy-overflow") {
-                        // Assignment of an array or a string to a variable that is not large enough to
-                        // hold the value.
-                        config.toggleSanitize(Trap::COPY_OVERFLOW, active);
-                    } else if (opt == "null" || opt == "nil") {
-                        // Use of a null pointer or creation of a null reference.
-                        config.toggleSanitize(Trap::NIL_POINTER, active);
-                    } else if (opt == "function" || opt == "procedure") {
-                        // Indirect call of a procedure through a pointer of the wrong type.
-                        config.toggleSanitize(Trap::PROCEDURE_CALL, active);
-                    } else if (opt == "integer-divide-by-zero") {
-                        // Integer division by zero.
-                        config.toggleSanitize(Trap::INT_DIVISION, active);
-                    } else if (opt == "assert") {
-                        // Toggle whether assert leads to a trap or to a crash.
-                        config.toggleSanitize(Trap::ASSERT, active);
-                    } else if (opt == "signed-integer-overflow") {
-                        // Signed integer overflow, where the result of a signed integer computation
-                        // cannot be represented in its type.
-                        config.toggleSanitize(Trap::INT_OVERFLOW, active);
-                    } else if (opt == "float-divide-by-zero") {
-                        // Floating point division by zero.
-                        config.toggleSanitize(Trap::FLT_DIVISION, active);
-                    } else if (opt == "sign-conversion") {
-                        // Implicit conversions of signed to unsigned integers can lead to undefined behavior.
-                        config.toggleSanitize(Trap::SIGN_CONVERSION, active);
-                    } else if (opt == "type-errors") {
-                        // Dynamic type errors
-                        config.toggleSanitize(Trap::TYPE_MISMATCH, active);
-                    } else if (opt == "undefined") {
-                        config.toggleSanitize(Trap::OUT_OF_BOUNDS, active);
-                        config.toggleSanitize(Trap::TYPE_GUARD, active);
-                        config.toggleSanitize(Trap::COPY_OVERFLOW, active);
-                        config.toggleSanitize(Trap::NIL_POINTER, active);
-                        config.toggleSanitize(Trap::PROCEDURE_CALL, active);
-                        config.toggleSanitize(Trap::INT_DIVISION, active);
-                        config.toggleSanitize(Trap::INT_OVERFLOW, active);
-                        config.toggleSanitize(Trap::FLT_DIVISION, active);
-                        config.toggleSanitize(Trap::SIGN_CONVERSION, active);
-                        config.toggleSanitize(Trap::TYPE_MISMATCH, active);
-                    } else if (opt == "all") {
-                        if (active) {
-                            config.setSanitizeAll();
-                        } else {
-                            config.setSanitizeNone();
-                        }
-                    } else {
-                        logger.warning(PROGRAM_NAME, "ignoring unrecognized argument: '-f" + flag + "'.");
-                    }
-                } else {
-                    logger.warning(PROGRAM_NAME, "ignoring unrecognized argument: '-f" + flag + "'.");
-                }
-            }
-        }
-        if (vm.count("-O")) {
-            switch (auto level = vm["-O"].as<char>()) {
-                case '0':
-                    config.setOptimizationLevel(OptimizationLevel::O0);
-                    break;
-                case '1':
-                    config.setOptimizationLevel(OptimizationLevel::O1);
-                    break;
-                case '2':
-                    config.setOptimizationLevel(OptimizationLevel::O2);
-                    break;
-                case '3':
-                    config.setOptimizationLevel(OptimizationLevel::O3);
-                    break;
-                case 's':
-                case 'S':
-                    config.setOptimizationLevel(OptimizationLevel::Os);
-                    break;
-                case 'z':
-                case 'Z':
-                    config.setOptimizationLevel(OptimizationLevel::Oz);
-                    break;
-                default:
-                    logger.error(PROGRAM_NAME, "unsupported optimization level: '-O" + to_string(level) + "'.");
-                    return EXIT_FAILURE;
-            }
-        }
-        if (vm.count("-o")) {
-            config.setOutputFile(vm["-o"].as<string>());
-        }
-        if (vm.count("-W")) {
-            const auto params = vm["-W"].as<vector<string>>();
-            for (const auto& warn : params) {
-                if (warn == "error") {
-                    config.setWarning(Warning::ERROR);
-                    logger.setWarnAsError(true);
-                } else {
-                    logger.warning(PROGRAM_NAME, "ignoring unrecognized warning: '-W" + warn + "'.");
-                }
-            }
-        }
-        if (vm.count("run")) {  // run
-            config.setJit(true);
-        } else if (vm.count("-c")) {  // compile and assemble
-            if (vm.count("emit-llvm")) {
-                config.setFileType(OutputFileType::BitCodeFile);
-            } else {
-                config.setFileType(OutputFileType::ObjectFile);
-            }
-        } else if (vm.count("-S")) {  // assemble
-            if (vm.count("emit-llvm")) {
-                config.setFileType(OutputFileType::LLVMIRFile);
-            } else {
-                config.setFileType(OutputFileType::AssemblyFile);
-            }
-        } else {
-            if (vm.count("emit-llvm")) {
-                logger.error(PROGRAM_NAME, "argument '--emit-llvm' cannot be used when linking.");
-            }
-            logger.error(PROGRAM_NAME, "linking not yet supported.");
-            return EXIT_FAILURE;
-        }
-        if (vm.count("reloc")) {
-            if (config.isJit()) {
-                logger.error(PROGRAM_NAME, "argument '--reloc' is not compatible with argument '--run'.");
-                return EXIT_FAILURE;
-            }
-            const auto model = vm["reloc"].as<string>();
-            if (model == "pic") {
-                config.setRelocationModel(RelocationModel::PIC);
-            } else if (model == "static") {
-                config.setRelocationModel(RelocationModel::STATIC);
-            } else {
-                config.setRelocationModel(RelocationModel::DEFAULT);
-            }
-        }
-        if (vm.count("std")) {
-            const auto std = vm["std"].as<string>();
-            if (smatch matches; regex_search(std, matches, regex("^(O|o)(beron)?(87|90)$"))) {
-                config.setLanguageStandard(LanguageStandard::Oberon90);
-            } else if (regex_search(std, matches, regex("^(O|o)(beron)?2$"))) {
-                config.setLanguageStandard(LanguageStandard::Oberon2);
-            } else if (regex_search(std, matches, regex("^(O|o)(beron)?(07|16)$"))) {
-                config.setLanguageStandard(LanguageStandard::Oberon07);
-            } else {
-                logger.warning(PROGRAM_NAME, "ignoring unrecognized argument: '--std=" + std + "'.");
-            }
-        }
-        if (vm.count("sym-dir")) {
-            config.setSymbolDirectory(vm["sym-dir"].as<string>());
-            const auto path = fs::path(config.getSymbolDirectory());
-            if (!fs::is_directory(path)) {
-                logger.error(PROGRAM_NAME, "path specified by argument '--sym-dir' is not valid.");
-            }
-        }
-        if (vm.count("target")) {
-            if (config.isJit()) {
-                logger.error(PROGRAM_NAME, "argument '--target' is not supported in JIT mode.");
-                return EXIT_FAILURE;
-            }
-            config.setTargetTriple(vm["target"].as<string>());
-        }
+    if (configure(config, vm) == EXIT_SUCCESS) {
+        // Configure the back-end
         codegen->configure();
         if (logger.getErrorCount() != 0) {
             return EXIT_FAILURE;
         }
-        auto &inputs = vm["inputs"].as<vector<string>>();
+        vector<fs::path>& inputs = config.getInputFiles();
         if (config.isJit()) {
 #ifndef _LLVM_LEGACY
             if (inputs.size() != 1) {
@@ -373,9 +149,8 @@ int main(const int argc, const char **argv) {
 #endif
         }
         for (auto &input : inputs) {
-            logger.debug("Compiling module " + input + ".");
-            auto path = fs::path(input);
-            compiler.compile(path);
+            logger.debug("Compiling module " + to_string(input) + ".");
+            compiler.compile(input);
         }
         string status = logger.getErrorCount() == 0 ? "complete" : "failed";
         logger.info("Compilation " + status + ": " +
@@ -384,6 +159,247 @@ int main(const int argc, const char **argv) {
                     to_string(logger.getInfoCount()) + " message(s).");
         exit(logger.getErrorCount() != 0);
     }
-    logger.error(PROGRAM_NAME, "no input files specified.");
     return EXIT_FAILURE;
 }
+
+int configure(CompilerConfig& config, const po::variables_map& vm) {
+    Logger& logger = config.logger();
+    // Parse command line options
+    if (vm.count("inputs")) {
+        auto &inputs = vm["inputs"].as<vector<string>>();
+        for (const auto& input: inputs) {
+            config.addInputFile(fs::path(input));
+        }
+    } else {
+        logger.error(PROGRAM_NAME, "no input files specified.");
+        return EXIT_FAILURE;
+    }
+    if (vm.count("quiet")) {
+        logger.setLevel(LogLevel::QUIET);
+    }
+    if (vm.count("verbose")) {
+        logger.setLevel(LogLevel::DEBUG);
+    }
+#if defined(_WIN32) || defined(_WIN64)
+    // Windows uses a semicolon to separate multiple paths
+    string separator = ";";
+#else
+    string separator = ":";
+#endif
+    if (vm.count("-I")) {
+        auto params = vm["-I"].as<vector<string>>();
+        vector<string> includes;
+        for (const auto& param : params) {
+            boost::algorithm::split(includes, param, boost::is_any_of(separator));
+            for (const auto& include: includes) {
+                config.addIncludeDirectory(include);
+                logger.debug("Include search path: '" + include + "'.");
+            }
+        }
+    }
+    if (vm.count("-L")) {
+        auto params = vm["-L"].as<vector<string>>();
+        vector<string> libraries;
+        for (const auto& param : params) {
+            boost::algorithm::split(libraries, param, boost::is_any_of(separator));
+            for (const auto& library: libraries) {
+                config.addLibraryDirectory(library);
+                logger.debug("Library search path: '" + library + "'.");
+            }
+        }
+    }
+    if (vm.count("-l")) {
+        const auto params = vm["-l"].as<vector<string>>();
+        for (const auto& lib : params) {
+            config.addLibrary(lib);
+            logger.debug("Library: '" + lib + "'.");
+        }
+    }
+    if (vm.count("-f")) {
+        auto params = vm["-f"].as<vector<string>>();
+        for (const auto& flag : params) {
+            if (flag == "enable-extern") {
+                config.setFlag(Flag::ENABLE_EXTERN);
+            } else if (flag == "enable-varargs") {
+                config.setFlag(Flag::ENABLE_VARARGS);
+            } else if (flag == "enable-main") {
+                config.setFlag(Flag::ENABLE_MAIN);
+            } else if (flag == "no-stack-protector") {
+                config.toggleFlag(Flag::STACK_PROTECT, false);
+            } else if (smatch matches; regex_search(flag, matches, regex("^(no-)?init-(local|global)-zero$"))) {
+                const bool active = matches.str(1).empty();
+                const string scope = matches.str(2);
+                if (scope == "local") {
+                    config.toggleFlag(Flag::INIT_LOCAL_ZERO, active);
+                } else {
+                    config.toggleFlag(Flag::INIT_GLOBAL_ZERO, active);
+                    logger.warning(PROGRAM_NAME, "argument unused during compilation: '-f" + flag + "'.");
+                }
+            } else if (regex_search(flag, matches, regex("^(no-)?sanitize=(.*)$"))) {
+                const bool active = flag[0] != 'n';
+                const string opt = matches.str(2);
+                if (opt == "array-bounds" || opt == "bounds") {
+                    // Out of bounds array indexing.
+                    config.toggleSanitize(Trap::OUT_OF_BOUNDS, active);
+                } else if (opt == "type-guard") {
+                    // Using an invalid type as guard will lead to undefined behaviour.
+                    config.toggleSanitize(Trap::TYPE_GUARD, active);
+                } else if (opt == "copy-overflow") {
+                    // Assignment of an array or a string to a variable that is not large enough to
+                    // hold the value.
+                    config.toggleSanitize(Trap::COPY_OVERFLOW, active);
+                } else if (opt == "null" || opt == "nil") {
+                    // Use of a null pointer or creation of a null reference.
+                    config.toggleSanitize(Trap::NIL_POINTER, active);
+                } else if (opt == "function" || opt == "procedure") {
+                    // Indirect call of a procedure through a pointer of the wrong type.
+                    config.toggleSanitize(Trap::PROCEDURE_CALL, active);
+                } else if (opt == "integer-divide-by-zero") {
+                    // Integer division by zero.
+                    config.toggleSanitize(Trap::INT_DIVISION, active);
+                } else if (opt == "assert") {
+                    // Toggle whether assert leads to a trap or to a crash.
+                    config.toggleSanitize(Trap::ASSERT, active);
+                } else if (opt == "signed-integer-overflow") {
+                    // Signed integer overflow, where the result of a signed integer computation
+                    // cannot be represented in its type.
+                    config.toggleSanitize(Trap::INT_OVERFLOW, active);
+                } else if (opt == "float-divide-by-zero") {
+                    // Floating point division by zero.
+                    config.toggleSanitize(Trap::FLT_DIVISION, active);
+                } else if (opt == "sign-conversion") {
+                    // Implicit conversions of signed to unsigned integers can lead to undefined behavior.
+                    config.toggleSanitize(Trap::SIGN_CONVERSION, active);
+                } else if (opt == "type-errors") {
+                    // Dynamic type errors
+                    config.toggleSanitize(Trap::TYPE_MISMATCH, active);
+                } else if (opt == "undefined") {
+                    config.toggleSanitize(Trap::OUT_OF_BOUNDS, active);
+                    config.toggleSanitize(Trap::TYPE_GUARD, active);
+                    config.toggleSanitize(Trap::COPY_OVERFLOW, active);
+                    config.toggleSanitize(Trap::NIL_POINTER, active);
+                    config.toggleSanitize(Trap::PROCEDURE_CALL, active);
+                    config.toggleSanitize(Trap::INT_DIVISION, active);
+                    config.toggleSanitize(Trap::INT_OVERFLOW, active);
+                    config.toggleSanitize(Trap::FLT_DIVISION, active);
+                    config.toggleSanitize(Trap::SIGN_CONVERSION, active);
+                    config.toggleSanitize(Trap::TYPE_MISMATCH, active);
+                } else if (opt == "all") {
+                    if (active) {
+                        config.setSanitizeAll();
+                    } else {
+                        config.setSanitizeNone();
+                    }
+                } else {
+                    logger.warning(PROGRAM_NAME, "ignoring unrecognized argument: '-f" + flag + "'.");
+                }
+            } else {
+                logger.warning(PROGRAM_NAME, "ignoring unrecognized argument: '-f" + flag + "'.");
+            }
+        }
+    }
+    if (vm.count("-O")) {
+        switch (auto level = vm["-O"].as<char>()) {
+            case '0':
+                config.setOptimizationLevel(OptimizationLevel::O0);
+                break;
+            case '1':
+                config.setOptimizationLevel(OptimizationLevel::O1);
+                break;
+            case '2':
+                config.setOptimizationLevel(OptimizationLevel::O2);
+                break;
+            case '3':
+                config.setOptimizationLevel(OptimizationLevel::O3);
+                break;
+            case 's':
+            case 'S':
+                config.setOptimizationLevel(OptimizationLevel::Os);
+                break;
+            case 'z':
+            case 'Z':
+                config.setOptimizationLevel(OptimizationLevel::Oz);
+                break;
+            default:
+                logger.error(PROGRAM_NAME, "unsupported optimization level: '-O" + to_string(level) + "'.");
+                return EXIT_FAILURE;
+        }
+    }
+    if (vm.count("-o")) {
+        config.setOutputFile(vm["-o"].as<string>());
+    }
+    if (vm.count("-W")) {
+        const auto params = vm["-W"].as<vector<string>>();
+        for (const auto& warn : params) {
+            if (warn == "error") {
+                config.setWarning(Warning::ERROR);
+                logger.setWarnAsError(true);
+            } else {
+                logger.warning(PROGRAM_NAME, "ignoring unrecognized warning: '-W" + warn + "'.");
+            }
+        }
+    }
+    if (vm.count("run")) {  // run
+        config.setJit(true);
+    } else if (vm.count("-c")) {  // compile and assemble
+        if (vm.count("emit-llvm")) {
+            config.setFileType(OutputFileType::BitCodeFile);
+        } else {
+            config.setFileType(OutputFileType::ObjectFile);
+        }
+    } else if (vm.count("-S")) {  // assemble
+        if (vm.count("emit-llvm")) {
+            config.setFileType(OutputFileType::LLVMIRFile);
+        } else {
+            config.setFileType(OutputFileType::AssemblyFile);
+        }
+    } else {
+        if (vm.count("emit-llvm")) {
+            logger.error(PROGRAM_NAME, "argument '--emit-llvm' cannot be used when linking.");
+        }
+        logger.error(PROGRAM_NAME, "linking not yet supported.");
+        return EXIT_FAILURE;
+    }
+    if (vm.count("reloc")) {
+        if (config.isJit()) {
+            logger.error(PROGRAM_NAME, "argument '--reloc' is not compatible with argument '--run'.");
+            return EXIT_FAILURE;
+        }
+        const auto model = vm["reloc"].as<string>();
+        if (model == "pic") {
+            config.setRelocationModel(RelocationModel::PIC);
+        } else if (model == "static") {
+            config.setRelocationModel(RelocationModel::STATIC);
+        } else {
+            config.setRelocationModel(RelocationModel::DEFAULT);
+        }
+    }
+    if (vm.count("std")) {
+        const auto std = vm["std"].as<string>();
+        if (smatch matches; regex_search(std, matches, regex("^(O|o)(beron)?(87|90)$"))) {
+            config.setLanguageStandard(LanguageStandard::Oberon90);
+        } else if (regex_search(std, matches, regex("^(O|o)(beron)?2$"))) {
+            config.setLanguageStandard(LanguageStandard::Oberon2);
+        } else if (regex_search(std, matches, regex("^(O|o)(beron)?(07|16)$"))) {
+            config.setLanguageStandard(LanguageStandard::Oberon07);
+        } else {
+            logger.warning(PROGRAM_NAME, "ignoring unrecognized argument: '--std=" + std + "'.");
+        }
+    }
+    if (vm.count("sym-dir")) {
+        config.setSymbolDirectory(vm["sym-dir"].as<string>());
+        const auto path = fs::path(config.getSymbolDirectory());
+        if (!fs::is_directory(path)) {
+            logger.error(PROGRAM_NAME, "path specified by argument '--sym-dir' is not valid.");
+        }
+    }
+    if (vm.count("target")) {
+        if (config.isJit()) {
+            logger.error(PROGRAM_NAME, "argument '--target' is not supported in JIT mode.");
+            return EXIT_FAILURE;
+        }
+        config.setTargetTriple(vm["target"].as<string>());
+    }
+    return EXIT_SUCCESS;
+}
+

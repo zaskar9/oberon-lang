@@ -17,6 +17,13 @@ LanguageStandard CompilerConfig::getLanguageStandard() const {
     return std_;
 }
 
+void CompilerConfig::addInputFile(const path& file) {
+    infiles_.push_back(file);
+}
+
+vector<path>& CompilerConfig::getInputFiles() {
+    return infiles_;
+}
 
 void CompilerConfig::setOutputFile(const string &file) {
     outfile_ = file;

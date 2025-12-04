@@ -58,6 +58,7 @@ set(ANALYZER_SOURCES
 
 set(CODEGEN_SOURCES
         codegen/CodeGen.cpp codegen/CodeGen.h
+        codegen/CodeGenFactory.cpp codegen/CodeGenFactory.h
         codegen/llvm/LLVMIRBuilder.cpp codegen/llvm/LLVMIRBuilder.h
         codegen/llvm/LLVMCodeGen.cpp codegen/llvm/LLVMCodeGen.h)
 
