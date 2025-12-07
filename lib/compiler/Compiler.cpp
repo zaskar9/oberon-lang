@@ -13,7 +13,7 @@
 
 using std::filesystem::path;
 
-unique_ptr<ASTContext> Compiler::run(const path &file) {
+unique_ptr<ASTContext> Compiler::run(const path &file) const {
     // Scan, parse, and analyze the input file
     logger_.debug("Parsing and analyzing...");
     const int errors = logger_.getErrorCount();
@@ -44,7 +44,7 @@ unique_ptr<ASTContext> Compiler::run(const path &file) {
     return ast;
 }
 
-void Compiler::compile(const path &file) {
+void Compiler::compile(const path &file) const {
     const auto path = absolute(file);
     const auto ast = run(file);
     if (ast) {
@@ -53,7 +53,7 @@ void Compiler::compile(const path &file) {
 }
 
 #ifndef _LLVM_LEGACY
-int Compiler::jit(const path &file) {
+int Compiler::jit(const path &file) const {
     const auto path = absolute(file);
     const auto ast = run(path);
     if (ast) {

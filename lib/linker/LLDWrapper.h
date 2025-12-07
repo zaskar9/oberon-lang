@@ -5,18 +5,28 @@
 #ifndef OBERON_LANG_LLDWRAPPER_H
 #define OBERON_LANG_LLDWRAPPER_H
 
-#include <llvm/TargetParser/Triple.h>
+#include <string>
+#include <vector>
 
-using llvm::Triple;
+#include "Logger.h"
+#include "compiler/CompilerConfig.h"
+
+using std::string;
 
 class LLDWrapper {
 
-private:
-    Triple triple_;
-
 public:
-    explicit LLDWrapper(const Triple &triple): triple_(triple) {}
+    explicit LLDWrapper(CompilerConfig &config): config_(config), logger_(config.logger()) {}
     ~LLDWrapper() = default;
+
+    [[nodiscard]] int link() const;
+
+private:
+    CompilerConfig &config_;
+    Logger &logger_;
+
+    void parseTriple(const string&, vector<string>&) const;
+
 };
 
 

@@ -16,6 +16,7 @@
 #include "codegen/CodeGenFactory.h"
 #include "compiler/Compiler.h"
 #include "compiler/CompilerConfig.h"
+#include "linker/LLDWrapper.h"
 
 // For certain modules, LLVM emits stack protection functionality under Windows that
 // involves calls to the standard runtime of the target platform. Since these libraries 
@@ -135,7 +136,7 @@ int main(const int argc, const char **argv) {
             return EXIT_FAILURE;
         }
         vector<fs::path>& inputs = config.getInputFiles();
-        if (config.isJit()) {
+        if (config.hasRunJit()) {
 #ifndef _LLVM_LEGACY
             if (inputs.size() != 1) {
                 logger.error(PROGRAM_NAME, "argument '--run' requires exactly one input module.");
@@ -151,6 +152,13 @@ int main(const int argc, const char **argv) {
         for (auto &input : inputs) {
             logger.debug("Compiling module " + to_string(input) + ".");
             compiler.compile(input);
+        }
+        if (config.hasRunLinker()) {
+            logger.debug("Linking...");
+            auto linker = LLDWrapper(config);
+            if (linker.link()) {
+                logger.error(PROGRAM_NAME, "Linker failed.");
+            }
         }
         string status = logger.getErrorCount() == 0 ? "complete" : "failed";
         logger.info("Compilation " + status + ": " +
@@ -340,7 +348,7 @@ int configure(CompilerConfig& config, const po::variables_map& vm) {
         }
     }
     if (vm.count("run")) {  // run
-        config.setJit(true);
+        config.setRunJit(true);
     } else if (vm.count("-c")) {  // compile and assemble
         if (vm.count("emit-llvm")) {
             config.setFileType(OutputFileType::BitCodeFile);
@@ -357,11 +365,13 @@ int configure(CompilerConfig& config, const po::variables_map& vm) {
         if (vm.count("emit-llvm")) {
             logger.error(PROGRAM_NAME, "argument '--emit-llvm' cannot be used when linking.");
         }
-        logger.error(PROGRAM_NAME, "linking not yet supported.");
-        return EXIT_FAILURE;
+        config.setFileType(OutputFileType::ObjectFile);
+        config.setRunLinker(true);
+        // logger.error(PROGRAM_NAME, "linking not yet supported.");
+        // return EXIT_FAILURE;
     }
     if (vm.count("reloc")) {
-        if (config.isJit()) {
+        if (config.hasRunJit()) {
             logger.error(PROGRAM_NAME, "argument '--reloc' is not compatible with argument '--run'.");
             return EXIT_FAILURE;
         }
@@ -394,7 +404,7 @@ int configure(CompilerConfig& config, const po::variables_map& vm) {
         }
     }
     if (vm.count("target")) {
-        if (config.isJit()) {
+        if (config.hasRunJit()) {
             logger.error(PROGRAM_NAME, "argument '--target' is not supported in JIT mode.");
             return EXIT_FAILURE;
         }
