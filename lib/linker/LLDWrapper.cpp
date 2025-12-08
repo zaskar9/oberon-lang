@@ -48,8 +48,8 @@ int LLDWrapper::link() const {
         opts.emplace_back("-l" + library);
     }
     // Configure input files
-    auto t = Triple(triple);
-    string obj = t.isOSWindows() && !t.isOSCygMing() ? ".obj" : ".o";
+    const auto t = Triple(triple);
+    const string obj = t.isOSWindows() && !t.isOSCygMing() ? ".obj" : ".o";
     for (const auto& input: config_.getInputFiles()) {
         const string ext = input.extension();
         if (ext == ".Mod" || ext == ".mod") {
@@ -73,15 +73,25 @@ int LLDWrapper::link() const {
     // Configure and call lld
     const ArrayRef<const char*> args(argv.data(), argv.size());
     auto [retCode, canRunAgain] = lld::lldMain(args, llvm::outs(),
-                                            llvm::errs(), LLD_ALL_DRIVERS);
+                                               llvm::errs(), LLD_ALL_DRIVERS);
     return retCode;
 }
 
+void LLDWrapper::destroy(const int val) {
+    lld::exitLld(val);
+}
+
+
 void LLDWrapper::parseTriple(const string& triple, vector<string>& opts) const {
     string flavor;
-    auto t = Triple(triple);
+    const auto t = Triple(triple);
     if (t.isOSBinFormatELF()) {
         flavor = "ld.lld";
+        opts.emplace_back("-flavor");
+        opts.emplace_back(flavor);
+        opts.emplace_back("-e");
+        opts.emplace_back("main");
+        return;
     } else if (t.isOSBinFormatMachO()) {
         flavor = "ld64.lld";
         opts.emplace_back("-flavor");
