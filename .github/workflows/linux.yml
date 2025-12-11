@@ -26,13 +26,7 @@ jobs:
     - name: Install package dependencies
       run: |
         sudo apt-get update &&
-        sudo apt-get install ninja-build libboost-all-dev python3-pip
-
-    - name: Install LLVM 17
-      run: |
-        wget https://apt.llvm.org/llvm.sh
-        chmod +x ./llvm.sh
-        sudo ./llvm.sh 17 all
+        sudo apt-get install ninja-build llvm-dev liblld-dev libboost-all-dev python3-pip
 
     - name: Install Python dependencies
       run: |

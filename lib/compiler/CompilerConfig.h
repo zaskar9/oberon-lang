@@ -71,7 +71,7 @@ class CompilerConfig {
 public:
     CompilerConfig() : logger_(LogLevel::INFO, cout), std_(LanguageStandard::TurboOberon),
             type_(OutputFileType::ObjectFile), level_(OptimizationLevel::O0), model_(RelocationModel::DEFAULT),
-            warn_(0), jit_(false) {
+            warn_(0), jit_(false), link_(false) {
         // Activate default compiler flags
         setSanitizeAll();
         setFlag(Flag::INIT_GLOBAL_ZERO);
@@ -118,9 +118,11 @@ public:
     [[nodiscard]] RelocationModel getRelocationModel() const;
 
     void addIncludeDirectory(const path &directory);
+    [[nodiscard]] const vector<path> &getIncludeDirectories();
     [[nodiscard]] optional<path> findInclude(const path &);
 
     void addLibraryDirectory(const path &directory);
+    [[nodiscard]] const vector<path> &getLibraryDirectories();
     [[nodiscard]] optional<path> findLibrary(const path &);
 
     void addLibrary(const string &);
@@ -138,8 +140,11 @@ public:
     void setWarning(Warning);
     [[nodiscard]] bool hasWarning(Warning) const;
 
-    void setJit(bool jit);
-    [[nodiscard]] bool isJit() const;
+    void setRunJit(bool);
+    [[nodiscard]] bool hasRunJit() const;
+
+    void setRunLinker(bool);
+    [[nodiscard]] bool hasRunLinker() const;
 
 private:
     Logger logger_;
@@ -160,9 +165,9 @@ private:
     vector<string> libs_;
     unordered_set<Flag> flags_;
     unordered_set<Trap> traps_;
-
     unsigned warn_;
     bool jit_;
+    bool link_;
 
     static std::optional<path> find(const path &, const vector<path> &);
     void buildCache(vector<path> &, const vector<path> &, const path &) const;

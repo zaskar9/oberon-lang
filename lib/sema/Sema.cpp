@@ -51,7 +51,7 @@ Sema::onTranslationUnitEnd(const string &name) {
 #ifdef _DEBUG
     if (logger_.getErrorCount() == 0) {
 #else
-    if (logger_.getErrorCount() == 0 && !config_.isJit()) {
+    if (logger_.getErrorCount() == 0 && !config_.hasRunJit()) {
 #endif
         exporter_.write(name, symbols_);
     }

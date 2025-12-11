@@ -213,7 +213,7 @@ void LLVMCodeGen::configure() {
 
     }
     // TODO Setup for JIT
-    if (config_.isJit()) {
+    if (config_.hasRunJit()) {
         jit_ = exitOnErr_(orc::LLJITBuilder().create());
         // TODO Remove this when this is moved into compiler_rt for JIT
         // If this is a Mingw or Cygwin executor then we need to alias __main to orc_rt_int_void_return_0.
@@ -407,7 +407,7 @@ void LLVMCodeGen::emit(Module *module, path path, OutputFileType type) const {
             break;
     }
     std::string name = config_.getOutputFile();
-    if (name.empty()) {
+    if (config_.hasRunLinker() || name.empty()) {
         name = path.replace_extension(ext).string();
     }
     std::error_code ec;

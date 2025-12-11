@@ -107,7 +107,6 @@ void CompilerConfig::buildCache(vector<path> &cache, const vector<path> &directo
     cache.push_back(installdir_ / suffix);
 }
 
-
 void CompilerConfig::addIncludeDirectory(const path &directory) {
     if (std::filesystem::exists(directory)) {
         incdirs_.push_back(directory);
@@ -115,11 +114,15 @@ void CompilerConfig::addIncludeDirectory(const path &directory) {
     }
 }
 
-optional<path> CompilerConfig::findInclude(const path &name) {
+const vector<path>& CompilerConfig::getIncludeDirectories() {
     if (inc_search_paths_.empty()) {
         buildCache(inc_search_paths_, incdirs_, "include");
     }
-    return find(name, inc_search_paths_);
+    return inc_search_paths_;
+}
+
+optional<path> CompilerConfig::findInclude(const path &name) {
+    return find(name, getIncludeDirectories());
 }
 
 void CompilerConfig::addLibraryDirectory(const path &directory) {
@@ -129,11 +132,15 @@ void CompilerConfig::addLibraryDirectory(const path &directory) {
     }
 }
 
-optional<path> CompilerConfig::findLibrary(const path &name) {
+const vector<path>& CompilerConfig::getLibraryDirectories() {
     if (libdircache_.empty()) {
         buildCache(libdircache_, libdirs_, "lib");
     }
-    return find(name, libdircache_);
+    return libdircache_;
+}
+
+optional<path> CompilerConfig::findLibrary(const path &name) {
+    return find(name, getLibraryDirectories());
 }
 
 void CompilerConfig::addLibrary(const string &name) {
@@ -190,10 +197,19 @@ bool CompilerConfig::hasWarning(Warning warn) const {
     return warn_ & static_cast<unsigned>(warn);
 }
 
-void CompilerConfig::setJit(const bool jit) {
+void CompilerConfig::setRunJit(const bool jit) {
     jit_ = jit;
 }
 
-bool CompilerConfig::isJit() const {
+bool CompilerConfig::hasRunJit() const {
     return jit_;
 }
+
+void CompilerConfig::setRunLinker(const bool link) {
+    link_ = link;
+}
+
+bool CompilerConfig::hasRunLinker() const {
+    return link_;
+}
+

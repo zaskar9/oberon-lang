@@ -77,8 +77,16 @@ if (LLVM_FOUND)
             add_definitions(-D_LLVM_21)
         endif()
     endif ()
+    # Make sure LLD is found if installed relative to LLVM
+    list(APPEND CMAKE_PREFIX_PATH ${LLVM_INSTALL_PREFIX})
     add_definitions(${LLVM_DEFINITIONS})
-    llvm_map_components_to_libnames(llvm_libs core executionengine jitlink orcjit nativecodegen support passes ${LLVM_TARGETS_TO_BUILD})
+    llvm_map_components_to_libnames(llvm_libs support passes core nativecodegen linker jitlink orcjit ${LLVM_TARGETS_TO_BUILD})
+endif ()
+
+find_package(LLD REQUIRED CONFIG)
+if (LLD_FOUND)
+    message(STATUS "Found LLD: ${LLD_INCLUDE_DIRS} (found version \"${LLD_VERSION}\")")
+    add_definitions(${LLD_DEFINITIONS})
 endif ()
 
 find_package(Boost REQUIRED COMPONENTS headers program_options)

@@ -25,9 +25,9 @@ public:
             config_(config), logger_(config.logger()), codegen_(codegen), system_(std::make_unique<Oberon07>()) {};
     ~Compiler() = default;
 
-    void compile(const path&);
+    void compile(const path&) const;
 #ifndef _LLVM_LEGACY
-    int jit(const path&);
+    int jit(const path&) const;
 #endif
 
 private:
@@ -36,7 +36,7 @@ private:
     CodeGen *codegen_;
     unique_ptr<OberonSystem> system_;
 
-    unique_ptr<ASTContext> run(const path&);
+    unique_ptr<ASTContext> run(const path&) const;
 
 };
 
