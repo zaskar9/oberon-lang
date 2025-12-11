@@ -77,6 +77,8 @@ if (LLVM_FOUND)
             add_definitions(-D_LLVM_21)
         endif()
     endif ()
+    # Make sure LLD is found if installed relative to LLVM
+    list(APPEND CMAKE_PREFIX_PATH ${LLVM_INSTALL_PREFIX})
     add_definitions(${LLVM_DEFINITIONS})
     llvm_map_components_to_libnames(llvm_libs support passes core nativecodegen linker jitlink orcjit ${LLVM_TARGETS_TO_BUILD})
 endif ()
