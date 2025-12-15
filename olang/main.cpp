@@ -16,11 +16,12 @@
 #include "codegen/CodeGenFactory.h"
 #include "compiler/Compiler.h"
 #include "compiler/CompilerConfig.h"
-#include "linker/LLDWrapper.h"
+#include "LLDWrapper.h"
+#include "codegen/llvm/LLVMCodeGen.h"
 
 // For certain modules, LLVM emits stack protection functionality under Windows that
-// involves calls to the standard runtime of the target platform. Since these libraries 
-// are not loaded into the JIT environment by default, running these modules in JIT 
+// involves calls to the standard runtime of the target platform. Since these libraries
+// are not loaded into the JIT environment by default, running these modules in JIT
 // mode will fail. As a work-around, the following pragma directives tell the linker to
 // re-export these symbols.
 #if defined(_WIN32) || defined(_WIN64)
@@ -72,8 +73,8 @@ int main(const int argc, const char **argv) {
     logger.debug("Installed directory: '" + home.string() + "'.");
     config.setInstallDirectory(home);
     // Create the compiler with the LLVM code generator as back-end
-    auto codegen = CodeGenFactory::GetCodeGen(CompilerBackend::LLVM, config);
-    Compiler compiler(config, codegen.get());
+    auto codegen = LLVMCodeGen(config); // CodeGenFactory::GetCodeGen(CompilerBackend::LLVM, config);
+    Compiler compiler(config, nullptr);
     // Define command line options of the compiler
     auto visible = po::options_description("OPTIONS");
     visible.add_options()
@@ -124,7 +125,7 @@ int main(const int argc, const char **argv) {
     if (vm.count("version")) {
         cout << PROGRAM_NAME << " version " << PROJECT_VERSION;
         cout << " (" << GIT_COMMIT << "@" << GIT_BRANCH << ")" << endl;
-        cout << "Target:   " << codegen->getDescription() << endl;
+        cout << "Target:   " << codegen.getDescription() << endl;
         cout << "Install:  " << config.getInstallDirectory().string() << endl;
         cout << "Includes: ";
         cout << "Boost " << BOOST_VERSION / 100000 << "."
@@ -135,7 +136,7 @@ int main(const int argc, const char **argv) {
     }
     if (configure(config, vm) == EXIT_SUCCESS) {
         // Configure the back-end
-        codegen->configure();
+        codegen.configure();
         if (logger.getErrorCount() != 0) {
             exitMain(EXIT_FAILURE);
         }
@@ -159,10 +160,10 @@ int main(const int argc, const char **argv) {
         }
         if (logger.getErrorCount() == 0 && config.hasRunLinker()) {
             logger.debug("Linking...");
-            auto linker = LLDWrapper(config);
-            if (linker.link()) {
-                logger.error(PROGRAM_NAME, "Linker failed.");
-            }
+            // auto linker = LLDWrapper(config);
+            // if (linker.link()) {
+            //     logger.error(PROGRAM_NAME, "Linker failed.");
+            // }
         }
         exitMain(logger);
     }
@@ -179,7 +180,10 @@ void exitMain(Logger &logger) {
 }
 
 void exitMain(const int ret) {
-    LLDWrapper::destroy(ret);
+    std::flush(std::cout);
+    std::flush(std::cerr);
+    // LLDWrapper::destroy(ret);
+    exit(ret);
 }
 
 int configure(CompilerConfig& config, const po::variables_map& vm) {
@@ -424,4 +428,3 @@ int configure(CompilerConfig& config, const po::variables_map& vm) {
     }
     return EXIT_SUCCESS;
 }
-

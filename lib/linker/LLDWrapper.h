@@ -7,11 +7,16 @@
 
 #include <string>
 #include <vector>
+#include <llvm/Support/raw_ostream.h>
 
 #include "Logger.h"
 #include "compiler/CompilerConfig.h"
 
 using std::string;
+
+namespace lld::elf {
+    bool link(llvm::ArrayRef<const char *>, llvm::raw_ostream &, llvm::raw_ostream &, bool, bool);
+}
 
 class LLDWrapper {
 

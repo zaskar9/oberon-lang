@@ -15,7 +15,9 @@ target_include_directories(${OLANG_FRONTEND} PUBLIC . ${CMAKE_CURRENT_BINARY_DIR
 
 # Include internal dependencies
 target_link_libraries(${OLANG_FRONTEND} PUBLIC global)
-target_link_libraries(${OLANG_FRONTEND} PRIVATE ${OLANG_LINK} ${OLANG_BULK} ${OLANG_LEX} ${OLANG_LOG})
+target_link_libraries(${OLANG_FRONTEND} PRIVATE ${OLANG_BULK} ${OLANG_LINK} ${OLANG_LEX} ${OLANG_LOG})
+# Adding the link libraries to the executable rather than to the linker library fixes shutdown problems on Linux
+# target_link_libraries(${OLANG_FRONTEND} PRIVATE ${lld_libs})
 
 # Include external dependencies
 if (Boost_FOUND)
