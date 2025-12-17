@@ -1,13 +1,12 @@
-MODULE LLVMProgramming1;
-
-CONST x = 10;
-
-VAR i: INTEGER;
-    r: REAL;
-    b: BOOLEAN;
-
+MODULE Demo;
+VAR
+  i*: INTEGER;
+  l: LONGINT;
+  f: REAL;
+  b: BOOLEAN;
 BEGIN
-  i := x;
-  r := 5 * i;
-  b := (i >= x) & (r / 2 < i)
-END LLVMProgramming1.
+    i := 10;
+    l := i;
+    f := l / 3;
+    b := (i - l < 10) & (i + l > 10)
+END Demo.
