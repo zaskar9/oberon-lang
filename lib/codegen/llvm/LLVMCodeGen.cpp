@@ -13,6 +13,7 @@
 #include <llvm/Bitcode/BitcodeWriter.h>
 #include <llvm/ExecutionEngine/Orc/ExecutionUtils.h>
 #include <llvm/ExecutionEngine/Orc/LLJIT.h>
+#include <llvm/IR/LegacyPassManager.h>
 #include <llvm/MC/TargetRegistry.h>
 #include <llvm/Passes/PassBuilder.h>
 #include <llvm/Support/ErrorOr.h>
@@ -141,11 +142,11 @@ LLVMCodeGen::LLVMCodeGen(CompilerConfig &config) :
         config_(config), logger_(config_.logger()), type_(OutputFileType::ObjectFile) {
     // Initialize LLVM
     // TODO some can be skipped when running JIT
-    // InitializeAllTargetInfos();
-    // InitializeAllTargets();
-    // InitializeAllTargetMCs();
-    // InitializeAllAsmParsers();
-    // InitializeAllAsmPrinters();
+    InitializeAllTargetInfos();
+    InitializeAllTargets();
+    InitializeAllTargetMCs();
+    InitializeAllAsmParsers();
+    InitializeAllAsmPrinters();
     tm_ = nullptr;
     exitOnErr_.setBanner(logger_.getBanner() + ": [error] ");
 }
@@ -302,49 +303,49 @@ void LLVMCodeGen::generate(ASTContext *ast, const path path) {
     // Generate LLVM intermediate representation
     auto builder = std::make_unique<LLVMIRBuilder>(config_, *context, module.get());
     builder->build(ast);
-//    logger_.debug("Analyzing...");
-//     // Create basic analyses
-//     LoopAnalysisManager lam;
-//     FunctionAnalysisManager fam;
-//     CGSCCAnalysisManager cgam;
-//     ModuleAnalysisManager mam;
-//     // Create a new pass manager builder
-//     PassBuilder pb;
-//     // Register all the basic analyses with the managers
-//     pb.registerModuleAnalyses(mam);
-//     pb.registerCGSCCAnalyses(cgam);
-//     pb.registerFunctionAnalyses(fam);
-//     pb.registerLoopAnalyses(lam);
-//     pb.crossRegisterProxies(lam, fam, cgam, mam);
-//     ModulePassManager mpm;
-//     llvm::OptimizationLevel lvl;
-//     switch (config_.getOptimizationLevel()) {
-//         case ::OptimizationLevel::O1:
-//             lvl = llvm::OptimizationLevel::O1;
-//             break;
-//         case ::OptimizationLevel::O2:
-//             lvl = llvm::OptimizationLevel::O2;
-//             break;
-//         case ::OptimizationLevel::O3:
-//             lvl = llvm::OptimizationLevel::O3;
-//             break;
-//         case ::OptimizationLevel::Os:
-//             lvl = llvm::OptimizationLevel::Os;
-//             break;
-//         case ::OptimizationLevel::Oz:
-//             lvl = llvm::OptimizationLevel::Oz;
-//             break;
-//         default:
-//             lvl = llvm::OptimizationLevel::O0;
-//             break;
-//     }
-//     if (lvl == llvm::OptimizationLevel::O0) {
-//         mpm = pb.buildO0DefaultPipeline(lvl);
-//     } else {
-//         mpm = pb.buildPerModuleDefaultPipeline(lvl);
-//     }
-//     logger_.debug("Optimizing...");
-//     mpm.run(*module, mam);
+    logger_.debug("Analyzing...");
+     // Create basic analyses
+     LoopAnalysisManager lam;
+     FunctionAnalysisManager fam;
+     CGSCCAnalysisManager cgam;
+     ModuleAnalysisManager mam;
+     // Create a new pass manager builder
+     PassBuilder pb;
+     // Register all the basic analyses with the managers
+     pb.registerModuleAnalyses(mam);
+     pb.registerCGSCCAnalyses(cgam);
+     pb.registerFunctionAnalyses(fam);
+     pb.registerLoopAnalyses(lam);
+     pb.crossRegisterProxies(lam, fam, cgam, mam);
+     ModulePassManager mpm;
+     llvm::OptimizationLevel lvl;
+     switch (config_.getOptimizationLevel()) {
+         case ::OptimizationLevel::O1:
+             lvl = llvm::OptimizationLevel::O1;
+             break;
+         case ::OptimizationLevel::O2:
+             lvl = llvm::OptimizationLevel::O2;
+             break;
+         case ::OptimizationLevel::O3:
+             lvl = llvm::OptimizationLevel::O3;
+             break;
+         case ::OptimizationLevel::Os:
+             lvl = llvm::OptimizationLevel::Os;
+             break;
+         case ::OptimizationLevel::Oz:
+             lvl = llvm::OptimizationLevel::Oz;
+             break;
+         default:
+             lvl = llvm::OptimizationLevel::O0;
+             break;
+     }
+     if (lvl == llvm::OptimizationLevel::O0) {
+         mpm = pb.buildO0DefaultPipeline(lvl);
+     } else {
+         mpm = pb.buildPerModuleDefaultPipeline(lvl);
+     }
+     logger_.debug("Optimizing...");
+     mpm.run(*module, mam);
      if (module && logger_.getErrorCount() == 0) {
          logger_.debug("Emitting code...");
          emit(module.get(), path, type_);
@@ -451,10 +452,10 @@ void LLVMCodeGen::emit(Module *module, path path, OutputFileType type) const {
             break;
     }
     legacy::PassManager pass;
-    // if (tm_->addPassesToEmitFile(pass, output, nullptr, ft)) {
-    //     logger_.error(path.string(), "target machine cannot emit a file of this type.");
-    //     return;
-    // }
+    if (tm_->addPassesToEmitFile(pass, output, nullptr, ft)) {
+        logger_.error(path.string(), "target machine cannot emit a file of this type.");
+        return;
+    }
     pass.run(*module);
     output.flush();
 }

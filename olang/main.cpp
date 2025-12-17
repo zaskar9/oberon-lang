@@ -73,8 +73,8 @@ int main(const int argc, const char **argv) {
     logger.debug("Installed directory: '" + home.string() + "'.");
     config.setInstallDirectory(home);
     // Create the compiler with the LLVM code generator as back-end
-    auto codegen = LLVMCodeGen(config); // CodeGenFactory::GetCodeGen(CompilerBackend::LLVM, config);
-    Compiler compiler(config, nullptr);
+    auto codegen = CodeGenFactory::GetCodeGen(CompilerBackend::LLVM, config);
+    Compiler compiler(config, codegen.get());
     // Define command line options of the compiler
     auto visible = po::options_description("OPTIONS");
     visible.add_options()
@@ -125,7 +125,7 @@ int main(const int argc, const char **argv) {
     if (vm.count("version")) {
         cout << PROGRAM_NAME << " version " << PROJECT_VERSION;
         cout << " (" << GIT_COMMIT << "@" << GIT_BRANCH << ")" << endl;
-        cout << "Target:   " << codegen.getDescription() << endl;
+        cout << "Target:   " << codegen->getDescription() << endl;
         cout << "Install:  " << config.getInstallDirectory().string() << endl;
         cout << "Includes: ";
         cout << "Boost " << BOOST_VERSION / 100000 << "."
@@ -136,7 +136,7 @@ int main(const int argc, const char **argv) {
     }
     if (configure(config, vm) == EXIT_SUCCESS) {
         // Configure the back-end
-        codegen.configure();
+        codegen->configure();
         if (logger.getErrorCount() != 0) {
             exitMain(EXIT_FAILURE);
         }
