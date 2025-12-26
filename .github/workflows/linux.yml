@@ -35,14 +35,15 @@ jobs:
         sudo pip3 install sphinx
         sudo pip3 install sphinx_rtd_theme
 
-    - name: Configure CMake
+    - name: Configure CMake (GCC)
+      if: ${{ matrix.cc=='gcc' }}
       run: |
-        if ["$MATRIX_CC" == "gcc"]
-        then
         cmake -B ${{ github.workspace }}/build -S ${{ github.workspace }} -G "Ninja" -DCMAKE_BUILD_TYPE=${{ env.build_type }} -DCMAKE_CXX_COMPILER=g++ -DCMAKE_C_COMPILER=gcc
-        else
+
+    - name: Configure CMake (CLang)
+      if: ${{ matrix.cc=='clang' }}
+      run: |  
         cmake -B ${{ github.workspace }}/build -S ${{ github.workspace }} -G "Ninja" -DCMAKE_BUILD_TYPE=${{ env.build_type }} -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang
-        fi
 
     - name: Build compiler
       run: cmake --build ${{ github.workspace }}/build --parallel
