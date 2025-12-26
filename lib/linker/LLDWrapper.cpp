@@ -64,7 +64,7 @@ int LLDWrapper::link() const {
     const auto t = Triple(triple);
     const string obj = t.isOSWindows() && !t.isOSCygMing() ? ".obj" : ".o";
     for (const auto& input: config_.getInputFiles()) {
-        const string ext = input.extension();
+        const string ext = input.extension().string();
         if (ext == ".Mod" || ext == ".mod") {
             string file = input.filename().string();
             string stem = file.substr(0, file.find_last_of('.'));

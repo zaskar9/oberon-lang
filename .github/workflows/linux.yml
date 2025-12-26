@@ -39,9 +39,9 @@ jobs:
       run: |
         if ["$MATRIX_CC" == "gcc"]
         then
-        cmake -B ${{ github.workspace }}/build -S ${{ github.workspace }} -G "Ninja" -DCMAKE_BUILD_TYPE=${{ env.build_type }} -DLLVM_ROOT=/usr/lib/llvm-17 -DBoost_NO_BOOST_CMAKE=ON
+        cmake -B ${{ github.workspace }}/build -S ${{ github.workspace }} -G "Ninja" -DCMAKE_BUILD_TYPE=${{ env.build_type }} -DCMAKE_CXX_COMPILER=g++ -DCMAKE_C_COMPILER=gcc
         else
-        cmake -B ${{ github.workspace }}/build -S ${{ github.workspace }} -G "Ninja" -DCMAKE_BUILD_TYPE=${{ env.build_type }} -DLLVM_ROOT=/usr/lib/llvm-17 -DBoost_NO_BOOST_CMAKE=ON -DCMAKE_CXX_COMPILER=clang++-17 -DCMAKE_C_COMPILER=clang-17
+        cmake -B ${{ github.workspace }}/build -S ${{ github.workspace }} -G "Ninja" -DCMAKE_BUILD_TYPE=${{ env.build_type }} -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang
         fi
 
     - name: Build compiler
