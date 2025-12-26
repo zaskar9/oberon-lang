@@ -17,7 +17,6 @@
 #include "compiler/Compiler.h"
 #include "compiler/CompilerConfig.h"
 #include "LLDWrapper.h"
-#include "codegen/llvm/LLVMCodeGen.h"
 
 // For certain modules, LLVM emits stack protection functionality under Windows that
 // involves calls to the standard runtime of the target platform. Since these libraries
@@ -160,10 +159,10 @@ int main(const int argc, const char **argv) {
         }
         if (logger.getErrorCount() == 0 && config.hasRunLinker()) {
             logger.debug("Linking...");
-            // auto linker = LLDWrapper(config);
-            // if (linker.link()) {
-            //     logger.error(PROGRAM_NAME, "Linker failed.");
-            // }
+            auto linker = LLDWrapper(config);
+            if (linker.link()) {
+                logger.error(PROGRAM_NAME, "Linker failed.");
+            }
         }
         exitMain(logger);
     }

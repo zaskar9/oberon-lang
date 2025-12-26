@@ -82,7 +82,8 @@ if (LLVM_FOUND)
     list(APPEND CMAKE_PREFIX_PATH ${LLVM_INSTALL_PREFIX})
     add_definitions(${LLVM_DEFINITIONS})
     message(STATUS "Including LLVM Targets: ${LLVM_TARGETS_TO_BUILD}")
-    llvm_map_components_to_libnames(llvm_libs core support passes orcjit ${LLVM_TARGETS_TO_BUILD})
+    # llvm_map_components_to_libnames(llvm_libs core support passes orcjit ${LLVM_TARGETS_TO_BUILD})
+    llvm_map_components_to_libnames(llvm_libs Core Support TargetParser Passes OrcJIT ExecutionEngine Object ${LLVM_TARGETS_TO_BUILD})
     # nativecodegen linker jitlink orcjit -> not needed?
 endif ()
 

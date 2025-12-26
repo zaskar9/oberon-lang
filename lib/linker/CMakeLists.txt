@@ -20,12 +20,11 @@ target_include_directories(${OLANG_LINK} PUBLIC
 target_link_libraries(${OLANG_LINK} PUBLIC global)
 target_link_libraries(${OLANG_LINK} PRIVATE ${OLANG_BULK} ${OLANG_LOG})
 
-if (LLD_FOUND)
-    target_include_directories(${OLANG_LINK} SYSTEM PRIVATE ${LLD_INCLUDE_DIRS})
-    # Adding the link libraries to the linker library rather than executable leads to shutdown problems on Linux
-    target_link_libraries(${OLANG_LINK} PRIVATE ${lld_libs})
-endif ()
 if (LLVM_FOUND)
     target_include_directories(${OLANG_LINK} SYSTEM PRIVATE ${LLVM_INCLUDE_DIRS})
     target_link_libraries(${OLANG_LINK} PRIVATE ${llvm_libs})
+endif ()
+if (LLD_FOUND)
+    target_include_directories(${OLANG_LINK} SYSTEM PRIVATE ${LLD_INCLUDE_DIRS})
+    target_link_libraries(${OLANG_LINK} PRIVATE ${lld_libs})
 endif ()

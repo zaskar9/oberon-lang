@@ -12,29 +12,27 @@
 #include <llvm/TargetParser/Host.h>
 #include <llvm/TargetParser/Triple.h>
 
-// LLD_HAS_DRIVER(coff)
-// LLD_HAS_DRIVER(elf)
-// LLD_HAS_DRIVER(mingw)
-// LLD_HAS_DRIVER(macho)
-// LLD_HAS_DRIVER(wasm)
+LLD_HAS_DRIVER(coff)
+LLD_HAS_DRIVER(elf)
+LLD_HAS_DRIVER(mingw)
+LLD_HAS_DRIVER(macho)
+LLD_HAS_DRIVER(wasm)
 
 using llvm::ArrayRef;
 using llvm::Triple;
 using std::string;
 using std::vector;
 
-static bool lld_link(const ArrayRef<const char*> argv) {
+static int lld_link(const ArrayRef<const char*> argv) {
     std::string outs_string {};
     std::string errs_string {};
     llvm::raw_string_ostream outs { outs_string };
     llvm::raw_string_ostream errs { errs_string };
-    // auto [retCode, canRunAgain] = lld::lldMain(args, outs, errs, LLD_ALL_DRIVERS);
-    if (lld::elf::link(argv, outs, errs, false, false)) {
-        outs.flush();
-        errs.flush();
-        return true;
-    }
-    return false;
+    const ArrayRef<const char*> args(argv.data(), argv.size());
+    auto [retCode, canRunAgain] = lld::lldMain(args, outs, errs, LLD_ALL_DRIVERS);
+    outs.flush();
+    errs.flush();
+    return retCode;
 }
 
 int LLDWrapper::link() const {
@@ -83,14 +81,10 @@ int LLDWrapper::link() const {
     vector<const char*> argv;
     argv.reserve(opts.size());
     for(const auto& opt : opts) {
-        argv.push_back(strdup(opt.c_str()));
+        argv.emplace_back(opt.c_str());
     }
-    // Configure and call lld
-    // const ArrayRef<const char*> args(argv.data(), argv.size());
-    if (lld_link(argv)) {
-        return EXIT_SUCCESS;
-    }
-    return EXIT_FAILURE;
+    // Call lld
+    return lld_link(argv);
 }
 
 void LLDWrapper::destroy(const int val) {
