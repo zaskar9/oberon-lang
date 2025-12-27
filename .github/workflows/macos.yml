@@ -22,6 +22,7 @@ jobs:
     - name: Install package dependencies
       run: |
         brew install llvm
+        brew install lld
         brew install boost
 
     - name: Install Python dependencies

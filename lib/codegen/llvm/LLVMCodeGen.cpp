@@ -7,20 +7,25 @@
 #include "LLVMCodeGen.h"
 #include <sstream>
 #include <unordered_set>
+
+#include <boost/predef.h>
+
 #include <llvm/Bitcode/BitcodeWriter.h>
 #include <llvm/ExecutionEngine/Orc/ExecutionUtils.h>
 #include <llvm/ExecutionEngine/Orc/LLJIT.h>
 #include <llvm/IR/LegacyPassManager.h>
 #include <llvm/MC/TargetRegistry.h>
+#include <llvm/Passes/PassBuilder.h>
 #include <llvm/Support/ErrorOr.h>
 #include <llvm/Support/MemoryBuffer.h>
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/TargetParser/Host.h>
+
 #include "LLVMIRBuilder.h"
 
-using namespace llvm;
+using llvm::PassBuilder;
 
 int mingw_noop_main() {
   // Cygwin and MinGW insert calls from the main function to the runtime
@@ -132,8 +137,9 @@ void register_signal_handler() {
 #endif
 }
 
+
 LLVMCodeGen::LLVMCodeGen(CompilerConfig &config) :
-        config_(config), logger_(config_.logger()), type_(OutputFileType::ObjectFile), lvl_(llvm::OptimizationLevel::O0) {
+        config_(config), logger_(config_.logger()), type_(OutputFileType::ObjectFile) {
     // Initialize LLVM
     // TODO some can be skipped when running JIT
     InitializeAllTargetInfos();
@@ -142,7 +148,6 @@ LLVMCodeGen::LLVMCodeGen(CompilerConfig &config) :
     InitializeAllAsmParsers();
     InitializeAllAsmPrinters();
     tm_ = nullptr;
-    jit_ = nullptr;
     exitOnErr_.setBanner(logger_.getBanner() + ": [error] ");
 }
 
@@ -153,26 +158,6 @@ std::string LLVMCodeGen::getDescription() {
 void LLVMCodeGen::configure() {
     // Set output file type
     type_ = config_.getFileType();
-    // Set optimization level
-    switch (config_.getOptimizationLevel()) {
-        case ::OptimizationLevel::O1:
-            lvl_ = llvm::OptimizationLevel::O1;
-            break;
-        case ::OptimizationLevel::O2:
-            lvl_ = llvm::OptimizationLevel::O2;
-            break;
-        case ::OptimizationLevel::O3:
-            lvl_ = llvm::OptimizationLevel::O3;
-            break;
-        case ::OptimizationLevel::Os:
-            lvl_ = llvm::OptimizationLevel::Os;
-            break;
-        case ::OptimizationLevel::Oz:
-            lvl_ = llvm::OptimizationLevel::Oz;
-            break;
-        default:
-            lvl_ = llvm::OptimizationLevel::O0;
-    }
     std::string triple = config_.getTargetTriple();
     if (triple.empty()) {
         // Use default target triple of host as fallback
@@ -185,9 +170,9 @@ void LLVMCodeGen::configure() {
         logger_.error(string(), error);
     } else {
         // Set up target machine to match host
-        string cpu = "generic";
-        string features;
-        TargetOptions opt;
+        const string cpu = "generic";
+        const string features;
+        const TargetOptions opt;
 #ifdef _LLVM_LEGACY
         auto model = llvm::Optional<Reloc::Model>();
 #else
@@ -205,49 +190,11 @@ void LLVMCodeGen::configure() {
                 break;
         }
 #if defined(_LLVM_21)
-        Triple t(triple);
+        const Triple t(triple);
         tm_ = target->createTargetMachine(t, cpu, features, opt, model);
 #else
         tm_ = target->createTargetMachine(triple, cpu, features, opt, model);
 #endif
-
-    }
-    // TODO Setup for JIT
-    if (config_.isJit()) {
-        jit_ = exitOnErr_(orc::LLJITBuilder().create());
-        // TODO Remove this when this is moved into compiler_rt for JIT
-        // If this is a Mingw or Cygwin executor then we need to alias __main to orc_rt_int_void_return_0.
-        if (jit_->getTargetTriple().isOSCygMing()) {
-            auto dylibsym = jit_->getProcessSymbolsJITDylib()->define(
-                    orc::absoluteSymbols({{jit_->mangleAndIntern("__main"),
-                                           {orc::ExecutorAddr::fromPtr(mingw_noop_main),
-                                            JITSymbolFlags::Exported}}})
-            );
-        }
-        // Add symbols from the current REPL (read-execute-print-loop) process
-        auto layout = jit_->getDataLayout();
-        jit_->getMainJITDylib().addGenerator(
-                cantFail(orc::DynamicLibrarySearchGenerator::GetForCurrentProcess(layout.getGlobalPrefix())));
-        // Load libraries
-        for (const auto& name : config_.getLibraries()) {
-            logger_.debug("Searching for library: '" + name + "'.");
-            if (auto lib = config_.findLibrary(getLibName(name, true, jit_->getTargetTriple()))) {
-                const std::string value(lib.value().string());
-                logger_.debug("Loading dynamic library: '" + value + "'.");
-                sys::DynamicLibrary::LoadLibraryPermanently(value.c_str());
-            } else {
-                lib = config_.findLibrary(getLibName(name, false, jit_->getTargetTriple()));
-                if (lib) {
-                    const std::string value(lib.value().string());
-                    logger_.debug("Loading static library: '" + value + "'.");
-                    auto &dylib = exitOnErr_(jit_->createJITDylib("name"));
-                    exitOnErr_(jit_->linkStaticLibraryInto(dylib, value.c_str()));
-                    jit_->getMainJITDylib().addToLinkOrder(dylib);
-                } else {
-                    logger_.error(string(), "library not found: '" + name + "'.");
-                }
-            }
-        }
     }
 }
 
@@ -280,12 +227,12 @@ std::string LLVMCodeGen::getObjName(const std::string &name, const Triple &tripl
     return ss.str();
 }
 
-void LLVMCodeGen::loadObjects(const ASTContext *ast) const {
+void LLVMCodeGen::loadObjects(const ASTContext *ast, LLJIT *jit) const {
     const auto module = ast->getTranslationUnit();
     for (const auto& imp: module->imports()) {
         const auto name = imp->getModule()->name();
         logger_.debug("Searching object file for module: '" + name + "'.");
-        if (const auto obj = config_.findLibrary(getObjName(name, jit_->getTargetTriple()))) {
+        if (const auto obj = config_.findLibrary(getObjName(name, jit->getTargetTriple()))) {
             // Load the object file from a file
             string file = obj->string();
             logger_.debug("Object file found: '" + file + "'.");
@@ -294,7 +241,7 @@ void LLVMCodeGen::loadObjects(const ASTContext *ast) const {
                 logger_.error(file, ec.message());
             }
             // Add the object file to the JIT
-            if (auto error = jit_->addObjectFile(std::move(buffer.get()))) {
+            if (auto error = jit->addObjectFile(std::move(buffer.get()))) {
                 logger_.error(file, toString(std::move(error)));
             }
             logger_.debug("Object file loaded: '" + file + "'.");
@@ -302,58 +249,49 @@ void LLVMCodeGen::loadObjects(const ASTContext *ast) const {
     }
 }
 
+unique_ptr<LLJIT> LLVMCodeGen::createLlJit() const {
+    auto jit = exitOnErr_(orc::LLJITBuilder().create());
+    // TODO Remove this when this is moved into compiler_rt for JIT
+    // If this is a Mingw or Cygwin executor then we need to alias __main to orc_rt_int_void_return_0.
+    if (jit->getTargetTriple().isOSCygMing()) {
+        auto dylibsym = jit->getProcessSymbolsJITDylib()->define(
+                orc::absoluteSymbols({{jit->mangleAndIntern("__main"),
+                                       {orc::ExecutorAddr::fromPtr(mingw_noop_main),
+                                        JITSymbolFlags::Exported}}})
+        );
+    }
+    // Add symbols from the current REPL (read-execute-print-loop) process
+    const auto layout = jit->getDataLayout();
+    jit->getMainJITDylib().addGenerator(
+            cantFail(orc::DynamicLibrarySearchGenerator::GetForCurrentProcess(layout.getGlobalPrefix())));
+    // Load libraries
+    for (const auto& name : config_.getLibraries()) {
+        logger_.debug("Searching for library: '" + name + "'.");
+        if (auto lib = config_.findLibrary(getLibName(name, true, jit->getTargetTriple()))) {
+            const std::string value(lib.value().string());
+            logger_.debug("Loading dynamic library: '" + value + "'.");
+            sys::DynamicLibrary::LoadLibraryPermanently(value.c_str());
+        } else {
+            lib = config_.findLibrary(getLibName(name, false, jit->getTargetTriple()));
+            if (lib) {
+                const std::string value(lib.value().string());
+                logger_.debug("Loading static library: '" + value + "'.");
+                auto &dylib = exitOnErr_(jit->createJITDylib("name"));
+                exitOnErr_(jit->linkStaticLibraryInto(dylib, value.c_str()));
+                jit->getMainJITDylib().addToLinkOrder(dylib);
+            } else {
+                logger_.error(string(), "library not found: '" + name + "'.");
+            }
+        }
+    }
+    return jit;
+}
+
 void LLVMCodeGen::generate(ASTContext *ast, const path path) {
     // Set up the LLVM module
     logger_.debug("Generating LLVM code...");
     auto name = path.filename().string();
-    auto module = std::make_unique<Module>(path.filename().string(), ctx_);
-    module->setSourceFileName(path.string());
-    module->setDataLayout(tm_->createDataLayout());
-#ifndef _LLVM_21
-    module->setTargetTriple(tm_->getTargetTriple().getTriple());
-#else
-    module->setTargetTriple(tm_->getTargetTriple());
-#endif
-    // Generate LLVM intermediate representation
-    auto builder = std::make_unique<LLVMIRBuilder>(config_, ctx_, module.get());
-    builder->build(ast);
-    logger_.debug("Analyzing...");
-    // Create basic analyses
-    LoopAnalysisManager lam;
-    FunctionAnalysisManager fam;
-    CGSCCAnalysisManager cgam;
-    ModuleAnalysisManager mam;
-    // Create a new pass manager builder
-    PassBuilder pb;
-    // Register all the basic analyses with the managers
-    pb.registerModuleAnalyses(mam);
-    pb.registerCGSCCAnalyses(cgam);
-    pb.registerFunctionAnalyses(fam);
-    pb.registerLoopAnalyses(lam);
-    pb.crossRegisterProxies(lam, fam, cgam, mam);
-    ModulePassManager mpm;
-    if (lvl_ == llvm::OptimizationLevel::O0) {
-        mpm = pb.buildO0DefaultPipeline(lvl_);
-    } else {
-        mpm = pb.buildPerModuleDefaultPipeline(lvl_);
-    }
-    logger_.debug("Optimizing...");
-    mpm.run(*module, mam);
-    if (module && logger_.getErrorCount() == 0) {
-        logger_.debug("Emitting code...");
-        emit(module.get(), path, type_);
-    } else {
-        logger_.error(path.filename().string(), "code generation failed.");
-    }
-}
-
-#ifndef _LLVM_LEGACY
-int LLVMCodeGen::jit(ASTContext *ast, const path path) {
-    // Set up the LLVM module
-    logger_.debug("Generating LLVM code...");
-    // TODO second context created as LLVMIRBuilder needs std::make_unique
-    auto context = std::make_unique<LLVMContext>();
-    auto name = path.filename().string();
+    const auto context = std::make_unique<LLVMContext>();
     auto module = std::make_unique<Module>(path.filename().string(), *context);
     module->setSourceFileName(path.string());
     module->setDataLayout(tm_->createDataLayout());
@@ -363,19 +301,89 @@ int LLVMCodeGen::jit(ASTContext *ast, const path path) {
     module->setTargetTriple(tm_->getTargetTriple());
 #endif
     // Generate LLVM intermediate representation
+    auto builder = std::make_unique<LLVMIRBuilder>(config_, *context, module.get());
+    builder->build(ast);
+    logger_.debug("Analyzing...");
+     // Create basic analyses
+     LoopAnalysisManager lam;
+     FunctionAnalysisManager fam;
+     CGSCCAnalysisManager cgam;
+     ModuleAnalysisManager mam;
+     // Create a new pass manager builder
+     PassBuilder pb;
+     // Register all the basic analyses with the managers
+     pb.registerModuleAnalyses(mam);
+     pb.registerCGSCCAnalyses(cgam);
+     pb.registerFunctionAnalyses(fam);
+     pb.registerLoopAnalyses(lam);
+     pb.crossRegisterProxies(lam, fam, cgam, mam);
+     ModulePassManager mpm;
+     llvm::OptimizationLevel lvl;
+     switch (config_.getOptimizationLevel()) {
+         case ::OptimizationLevel::O1:
+             lvl = llvm::OptimizationLevel::O1;
+             break;
+         case ::OptimizationLevel::O2:
+             lvl = llvm::OptimizationLevel::O2;
+             break;
+         case ::OptimizationLevel::O3:
+             lvl = llvm::OptimizationLevel::O3;
+             break;
+         case ::OptimizationLevel::Os:
+             lvl = llvm::OptimizationLevel::Os;
+             break;
+         case ::OptimizationLevel::Oz:
+             lvl = llvm::OptimizationLevel::Oz;
+             break;
+         default:
+             lvl = llvm::OptimizationLevel::O0;
+             break;
+     }
+     if (lvl == llvm::OptimizationLevel::O0) {
+         mpm = pb.buildO0DefaultPipeline(lvl);
+     } else {
+         mpm = pb.buildPerModuleDefaultPipeline(lvl);
+     }
+     logger_.debug("Optimizing...");
+     mpm.run(*module, mam);
+     if (module && logger_.getErrorCount() == 0) {
+         logger_.debug("Emitting code...");
+         emit(module.get(), path, type_);
+     } else {
+         logger_.error(path.filename().string(), "code generation failed.");
+     }
+}
+
+#ifndef _LLVM_LEGACY
+int LLVMCodeGen::jit(ASTContext *ast, const path path) {
+    const auto jit = createLlJit();
+    // Set up the LLVM module
+    logger_.debug("Generating LLVM code...");
+    // TODO second context created as LLVMIRBuilder needs std::make_unique
+    auto context = std::make_unique<LLVMContext>();
+    auto name = path.filename().string();
+    auto module = std::make_unique<Module>(path.filename().string(), *context);
+    module->setSourceFileName(path.string());
+    // module->setDataLayout(tm_->createDataLayout());
+#ifndef _LLVM_21
+    module->setTargetTriple(tm_->getTargetTriple().getTriple());
+#else
+    // module->setTargetTriple(tm_->getTargetTriple());
+#endif
+    // Generate LLVM intermediate representation
     const auto builder = std::make_unique<LLVMIRBuilder>(config_, *context, module.get());
     builder->build(ast);
     // TODO run optimizer?
     if (module && logger_.getErrorCount() == 0) {
         logger_.debug("Running JIT...");
-        exitOnErr_(jit_->addIRModule(orc::ThreadSafeModule(std::move(module), std::move(context))));
+        exitOnErr_(jit->addIRModule(orc::ThreadSafeModule(std::move(module), std::move(context))));
         // Link with other imported modules (*.o and *.obj files)
-        loadObjects(ast);
+        loadObjects(ast, jit.get());
         // Register signal handler for Oberon traps
         register_signal_handler();
         // Execute Oberon program using ORC JIT
         const string entry = ast->getTranslationUnit()->getIdentifier()->name();
-        const auto mainAddr = exitOnErr_(jit_->lookup(entry));
+        const auto mainAddr = exitOnErr_(jit->lookup(entry));
         const auto mainFn = mainAddr.toPtr<int()>();
         const int result = mainFn();
         logger_.debug("Process finished with exit code " + to_string(result));
@@ -407,7 +415,7 @@ void LLVMCodeGen::emit(Module *module, path path, OutputFileType type) const {
             break;
     }
     std::string name = config_.getOutputFile();
-    if (name.empty()) {
+    if (config_.hasRunLinker() || name.empty()) {
         name = path.replace_extension(ext).string();
     }
     std::error_code ec;
@@ -426,7 +434,7 @@ void LLVMCodeGen::emit(Module *module, path path, OutputFileType type) const {
         output.flush();
         return;
     }
-    CodeGenFileType ft;
+    [[maybe_unused]] CodeGenFileType ft;
     switch (type) {
         case OutputFileType::AssemblyFile:
 #if defined(_LLVM_18) || defined(_LLVM_19)  || defined(_LLVM_20) || defined(_LLVM_21)

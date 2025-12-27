@@ -26,13 +26,7 @@ jobs:
     - name: Install package dependencies
       run: |
         sudo apt-get update &&
-        sudo apt-get install ninja-build libboost-all-dev python3-pip
-
-    - name: Install LLVM 17
-      run: |
-        wget https://apt.llvm.org/llvm.sh
-        chmod +x ./llvm.sh
-        sudo ./llvm.sh 17 all
+        sudo apt-get install ninja-build llvm-dev liblld-dev libboost-all-dev python3-pip
 
     - name: Install Python dependencies
       run: |
@@ -41,14 +35,15 @@ jobs:
         sudo pip3 install sphinx
         sudo pip3 install sphinx_rtd_theme
 
-    - name: Configure CMake
+    - name: Configure CMake (GCC)
+      if: ${{ matrix.cc=='gcc' }}
       run: |
-        if ["$MATRIX_CC" == "gcc"]
-        then
-        cmake -B ${{ github.workspace }}/build -S ${{ github.workspace }} -G "Ninja" -DCMAKE_BUILD_TYPE=${{ env.build_type }} -DLLVM_ROOT=/usr/lib/llvm-17 -DBoost_NO_BOOST_CMAKE=ON
-        else
-        cmake -B ${{ github.workspace }}/build -S ${{ github.workspace }} -G "Ninja" -DCMAKE_BUILD_TYPE=${{ env.build_type }} -DLLVM_ROOT=/usr/lib/llvm-17 -DBoost_NO_BOOST_CMAKE=ON -DCMAKE_CXX_COMPILER=clang++-17 -DCMAKE_C_COMPILER=clang-17
-        fi
+        cmake -B ${{ github.workspace }}/build -S ${{ github.workspace }} -G "Ninja" -DCMAKE_BUILD_TYPE=${{ env.build_type }} -DCMAKE_CXX_COMPILER=g++ -DCMAKE_C_COMPILER=gcc
+
+    - name: Configure CMake (Clang)
+      if: ${{ matrix.cc=='clang' }}
+      run: |  
+        cmake -B ${{ github.workspace }}/build -S ${{ github.workspace }} -G "Ninja" -DCMAKE_BUILD_TYPE=${{ env.build_type }} -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang
 
     - name: Build compiler
       run: cmake --build ${{ github.workspace }}/build --parallel

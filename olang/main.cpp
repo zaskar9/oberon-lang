@@ -16,10 +16,11 @@
 #include "codegen/CodeGenFactory.h"
 #include "compiler/Compiler.h"
 #include "compiler/CompilerConfig.h"
+#include "LLDWrapper.h"
 
 // For certain modules, LLVM emits stack protection functionality under Windows that
-// involves calls to the standard runtime of the target platform. Since these libraries 
-// are not loaded into the JIT environment by default, running these modules in JIT 
+// involves calls to the standard runtime of the target platform. Since these libraries
+// are not loaded into the JIT environment by default, running these modules in JIT
 // mode will fail. As a work-around, the following pragma directives tell the linker to
 // re-export these symbols.
 #if defined(_WIN32) || defined(_WIN64)
@@ -107,14 +108,14 @@ int main(const int argc, const char **argv) {
         vm);
     } catch (po::error &e) {
         logger.error(PROGRAM_NAME, e.what());
-        return EXIT_FAILURE;
+        exit(EXIT_FAILURE);
     }
     po::notify(vm);
     if (vm.count("help")) {
         cout << "OVERVIEW: " << PROGRAM_NAME << " LLVM compiler\n" << endl;
         cout << "USAGE: " << PROGRAM_NAME << " [options] file...\n" << endl;
         cout << visible << endl;
-        return EXIT_SUCCESS;
+        exit(EXIT_SUCCESS);
     }
     if (vm.count("version")) {
         cout << PROGRAM_NAME << " version " << PROJECT_VERSION;
@@ -126,40 +127,47 @@ int main(const int argc, const char **argv) {
                          << BOOST_VERSION / 100 % 1000 << "."
                          << BOOST_VERSION % 100 << ", ";
         cout << "LLVM " << LLVM_VERSION << endl;
-        return EXIT_SUCCESS;
+        exit(EXIT_SUCCESS);
     }
     if (configure(config, vm) == EXIT_SUCCESS) {
         // Configure the back-end
         codegen->configure();
         if (logger.getErrorCount() != 0) {
-            return EXIT_FAILURE;
+            exit(EXIT_FAILURE);
         }
         vector<fs::path>& inputs = config.getInputFiles();
-        if (config.isJit()) {
+        if (config.hasRunJit()) {
 #ifndef _LLVM_LEGACY
             if (inputs.size() != 1) {
                 logger.error(PROGRAM_NAME, "argument '--run' requires exactly one input module.");
-                return EXIT_FAILURE;
+                exit(EXIT_FAILURE);
             }
             auto path = fs::path(inputs[0]);
             exit(compiler.jit(path));
 #else
             logger.error(PROGRAM_NAME, "linked LLVM version does not support JIT mode.");
-            return EXIT_FAILURE;
+            exit(EXIT_FAILURE);
 #endif
         }
         for (auto &input : inputs) {
             logger.debug("Compiling module " + to_string(input) + ".");
             compiler.compile(input);
         }
-        string status = logger.getErrorCount() == 0 ? "complete" : "failed";
+        if (logger.getErrorCount() == 0 && config.hasRunLinker()) {
+            logger.debug("Linking...");
+            auto linker = LLDWrapper(config);
+            if (linker.link()) {
+                logger.error(PROGRAM_NAME, "Linker failed.");
+            }
+        }
+        const string status = logger.getErrorCount() == 0 ? "complete" : "failed";
         logger.info("Compilation " + status + ": " +
                     to_string(logger.getErrorCount()) + " error(s), " +
                     to_string(logger.getWarningCount()) + " warning(s), " +
                     to_string(logger.getInfoCount()) + " message(s).");
         exit(logger.getErrorCount() != 0);
     }
-    return EXIT_FAILURE;
+    exit(EXIT_FAILURE);
 }
 
 int configure(CompilerConfig& config, const po::variables_map& vm) {
@@ -340,7 +348,7 @@ int configure(CompilerConfig& config, const po::variables_map& vm) {
         }
     }
     if (vm.count("run")) {  // run
-        config.setJit(true);
+        config.setRunJit(true);
     } else if (vm.count("-c")) {  // compile and assemble
         if (vm.count("emit-llvm")) {
             config.setFileType(OutputFileType::BitCodeFile);
@@ -357,11 +365,13 @@ int configure(CompilerConfig& config, const po::variables_map& vm) {
         if (vm.count("emit-llvm")) {
             logger.error(PROGRAM_NAME, "argument '--emit-llvm' cannot be used when linking.");
         }
-        logger.error(PROGRAM_NAME, "linking not yet supported.");
-        return EXIT_FAILURE;
+        config.setFileType(OutputFileType::ObjectFile);
+        config.setRunLinker(true);
+        // logger.error(PROGRAM_NAME, "linking not yet supported.");
+        // return EXIT_FAILURE;
     }
     if (vm.count("reloc")) {
-        if (config.isJit()) {
+        if (config.hasRunJit()) {
             logger.error(PROGRAM_NAME, "argument '--reloc' is not compatible with argument '--run'.");
             return EXIT_FAILURE;
         }
@@ -394,7 +404,7 @@ int configure(CompilerConfig& config, const po::variables_map& vm) {
         }
     }
     if (vm.count("target")) {
-        if (config.isJit()) {
+        if (config.hasRunJit()) {
             logger.error(PROGRAM_NAME, "argument '--target' is not supported in JIT mode.");
             return EXIT_FAILURE;
         }
@@ -402,4 +412,3 @@ int configure(CompilerConfig& config, const po::variables_map& vm) {
     }
     return EXIT_SUCCESS;
 }
-

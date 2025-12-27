@@ -4,7 +4,7 @@ set(LIBOBERON_NAME "oberon")
 
 set(O_EXT ${CMAKE_C_OUTPUT_EXTENSION})
 
-if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+if(CMAKE_SYSTEM_NAME MATCHES "Linux|FreeBSD")
   set(OBFLAGS -c -q -O3 --reloc=pic -fenable-extern -fenable-varargs)
   if (CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "aarch64")
     set(OBFLAGS ${OBFLAGS} -fno-stack-protector)

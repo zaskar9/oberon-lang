@@ -11,11 +11,9 @@
 #include <csignal>
 #include <string>
 #include <filesystem>
-
-#include <boost/predef.h>
+#include <memory>
 
 #include <llvm/ExecutionEngine/Orc/LLJIT.h>
-#include <llvm/Passes/PassBuilder.h>
 #include <llvm/Target/TargetMachine.h>
 
 #include "Logger.h"
@@ -31,6 +29,13 @@
 #include <unistd.h>
 #endif
 
+using llvm::Module;
+using llvm::Triple;
+using llvm::orc::LLJIT;
+using std::string;
+using std::unique_ptr;
+using std::filesystem::path;
+
 int mingw_noop_main();
 
 [[noreturn]] void ubsantrap_handler(uint16_t code);
@@ -42,16 +47,13 @@ LONG WINAPI trap_handler(EXCEPTION_POINTERS* info);
 #endif
 void register_signal_handler();
 
-using std::filesystem::path;
-using std::string;
-
 class LLVMCodeGen final : public CodeGen {
 
 public:
     explicit LLVMCodeGen(CompilerConfig &);
     ~LLVMCodeGen() override = default;
 
-    [[nodiscard]] std::string getDescription() override;
+    [[nodiscard]] string getDescription() override;
 
     void configure() override;
 
@@ -64,17 +66,19 @@ private:
     CompilerConfig &config_;
     Logger &logger_;
     OutputFileType type_;
-    llvm::LLVMContext ctx_;
-    llvm::OptimizationLevel lvl_;
     llvm::TargetMachine *tm_;
-    std::unique_ptr<llvm::orc::LLJIT> jit_;
     llvm::ExitOnError exitOnErr_;
 
-    void emit(llvm::Module *, path, OutputFileType) const;
-    static std::string getLibName(const string &, bool, const llvm::Triple &);
-    static std::string getObjName(const string &, const llvm::Triple &);
+    void emit(Module *, path, OutputFileType) const;
+    static std::string getLibName(const string &, bool, const Triple &);
+    static std::string getObjName(const string &, const Triple &);
 
-    void loadObjects(const ASTContext *) const;
+    void loadObjects(const ASTContext *, LLJIT *) const;
+
+#ifndef _LLVM_LEGACY
+    [[nodiscard]] unique_ptr<LLJIT> createLlJit() const;
+#endif
+
 
 };
 
