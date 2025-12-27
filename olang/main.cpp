@@ -50,10 +50,6 @@ using std::vector;
 
 int configure(CompilerConfig& config, const po::variables_map& vm);
 
-[[noreturn]] void exitMain(Logger&);
-
-[[noreturn]] void exitMain(int);
-
 int main(const int argc, const char **argv) {
     CompilerConfig config;
     // Get the logger and configure it with the program name
@@ -112,14 +108,14 @@ int main(const int argc, const char **argv) {
         vm);
     } catch (po::error &e) {
         logger.error(PROGRAM_NAME, e.what());
-        exitMain(EXIT_FAILURE);
+        exit(EXIT_FAILURE);
     }
     po::notify(vm);
     if (vm.count("help")) {
         cout << "OVERVIEW: " << PROGRAM_NAME << " LLVM compiler\n" << endl;
         cout << "USAGE: " << PROGRAM_NAME << " [options] file...\n" << endl;
         cout << visible << endl;
-        exitMain(EXIT_SUCCESS);
+        exit(EXIT_SUCCESS);
     }
     if (vm.count("version")) {
         cout << PROGRAM_NAME << " version " << PROJECT_VERSION;
@@ -131,26 +127,26 @@ int main(const int argc, const char **argv) {
                          << BOOST_VERSION / 100 % 1000 << "."
                          << BOOST_VERSION % 100 << ", ";
         cout << "LLVM " << LLVM_VERSION << endl;
-        exitMain(EXIT_SUCCESS);
+        exit(EXIT_SUCCESS);
     }
     if (configure(config, vm) == EXIT_SUCCESS) {
         // Configure the back-end
         codegen->configure();
         if (logger.getErrorCount() != 0) {
-            exitMain(EXIT_FAILURE);
+            exit(EXIT_FAILURE);
         }
         vector<fs::path>& inputs = config.getInputFiles();
         if (config.hasRunJit()) {
 #ifndef _LLVM_LEGACY
             if (inputs.size() != 1) {
                 logger.error(PROGRAM_NAME, "argument '--run' requires exactly one input module.");
-                exitMain(EXIT_FAILURE);
+                exit(EXIT_FAILURE);
             }
             auto path = fs::path(inputs[0]);
-            exitMain(compiler.jit(path));
+            exit(compiler.jit(path));
 #else
             logger.error(PROGRAM_NAME, "linked LLVM version does not support JIT mode.");
-            exitMain(EXIT_FAILURE);
+            exit(EXIT_FAILURE);
 #endif
         }
         for (auto &input : inputs) {
@@ -164,25 +160,14 @@ int main(const int argc, const char **argv) {
                 logger.error(PROGRAM_NAME, "Linker failed.");
             }
         }
-        exitMain(logger);
+        const string status = logger.getErrorCount() == 0 ? "complete" : "failed";
+        logger.info("Compilation " + status + ": " +
+                    to_string(logger.getErrorCount()) + " error(s), " +
+                    to_string(logger.getWarningCount()) + " warning(s), " +
+                    to_string(logger.getInfoCount()) + " message(s).");
+        exit(logger.getErrorCount() != 0);
     }
-    exitMain(EXIT_FAILURE);
-}
-
-void exitMain(Logger &logger) {
-    const string status = logger.getErrorCount() == 0 ? "complete" : "failed";
-    logger.info("Compilation " + status + ": " +
-                to_string(logger.getErrorCount()) + " error(s), " +
-                to_string(logger.getWarningCount()) + " warning(s), " +
-                to_string(logger.getInfoCount()) + " message(s).");
-    exitMain(logger.getErrorCount() != 0);
-}
-
-void exitMain(const int ret) {
-    std::flush(std::cout);
-    std::flush(std::cerr);
-    // LLDWrapper::destroy(ret);
-    exit(ret);
+    exit(EXIT_FAILURE);
 }
 
 int configure(CompilerConfig& config, const po::variables_map& vm) {

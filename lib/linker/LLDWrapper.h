@@ -20,7 +20,6 @@ public:
     ~LLDWrapper() = default;
 
     [[nodiscard]] int link() const;
-    [[noreturn]] static void destroy(int);
 
 private:
     CompilerConfig &config_;

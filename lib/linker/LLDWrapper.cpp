@@ -6,7 +6,6 @@
 
 #include <string>
 #include <vector>
-#include <lld/Common/CommonLinkerContext.h>
 #include <lld/Common/Driver.h>
 #include <lld/Common/ErrorHandler.h>
 #include <llvm/TargetParser/Host.h>
@@ -22,18 +21,6 @@ using llvm::ArrayRef;
 using llvm::Triple;
 using std::string;
 using std::vector;
-
-static int lld_link(const ArrayRef<const char*> argv) {
-    std::string outs_string {};
-    std::string errs_string {};
-    llvm::raw_string_ostream outs { outs_string };
-    llvm::raw_string_ostream errs { errs_string };
-    const ArrayRef<const char*> args(argv.data(), argv.size());
-    auto [retCode, canRunAgain] = lld::lldMain(args, outs, errs, LLD_ALL_DRIVERS);
-    outs.flush();
-    errs.flush();
-    return retCode;
-}
 
 int LLDWrapper::link() const {
     string triple = config_.getTargetTriple();
@@ -81,23 +68,26 @@ int LLDWrapper::link() const {
     vector<const char*> argv;
     argv.reserve(opts.size());
     for(const auto& opt : opts) {
-        argv.emplace_back(opt.c_str());
+        argv.push_back(opt.c_str());
     }
-    // Call lld
-    return lld_link(argv);
+    // Configure and call lld
+    std::string outs_string {};
+    std::string errs_string {};
+    llvm::raw_string_ostream outs { outs_string };
+    llvm::raw_string_ostream errs { errs_string };
+    const ArrayRef<const char*> args(argv.data(), argv.size());
+    auto [retCode, canRunAgain] = lld::lldMain(args, llvm::outs(),
+                                               llvm::errs(), LLD_ALL_DRIVERS);
+    outs.flush();
+    errs.flush();
+    return retCode;
 }
-
-void LLDWrapper::destroy(const int val) {
-    lld::exitLld(val);
-}
-
 
 void LLDWrapper::parseTriple(const string& triple, vector<string>& opts) const {
     string flavor;
     const auto t = Triple(triple);
     if (t.isOSBinFormatELF()) {
         flavor = "ld.lld";
-        opts.emplace_back("--threads=1");
         opts.emplace_back("-flavor");
         opts.emplace_back(flavor);
         opts.emplace_back("-e");

@@ -40,7 +40,7 @@ jobs:
       run: |
         cmake -B ${{ github.workspace }}/build -S ${{ github.workspace }} -G "Ninja" -DCMAKE_BUILD_TYPE=${{ env.build_type }} -DCMAKE_CXX_COMPILER=g++ -DCMAKE_C_COMPILER=gcc
 
-    - name: Configure CMake (CLang)
+    - name: Configure CMake (Clang)
       if: ${{ matrix.cc=='clang' }}
       run: |  
         cmake -B ${{ github.workspace }}/build -S ${{ github.workspace }} -G "Ninja" -DCMAKE_BUILD_TYPE=${{ env.build_type }} -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang
