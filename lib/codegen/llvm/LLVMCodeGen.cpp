@@ -173,12 +173,17 @@ void LLVMCodeGen::configure() {
         default:
             lvl_ = llvm::OptimizationLevel::O0;
     }
-    std::string triple = config_.getTargetTriple();
-    if (triple.empty()) {
+    string tt = config_.getTargetTriple();
+    if (tt.empty()) {
         // Use default target triple of host as fallback
-        triple = sys::getDefaultTargetTriple();
+        tt = sys::getDefaultTargetTriple();
     }
-    logger_.debug("Using target triple: " + triple + ".");
+    logger_.debug("Using target triple: " + tt + ".");
+#if defined(_LLVM_21) || defined(_LLVM_22)
+    Triple triple(tt);
+#else
+    string triple = tt;
+#endif
     // Set up target
     string error;
     if (const auto target = TargetRegistry::lookupTarget(triple, error); !target) {
@@ -204,13 +209,7 @@ void LLVMCodeGen::configure() {
             default:
                 break;
         }
-#if defined(_LLVM_21)
-        Triple t(triple);
-        tm_ = target->createTargetMachine(t, cpu, features, opt, model);
-#else
         tm_ = target->createTargetMachine(triple, cpu, features, opt, model);
-#endif
-
     }
     // TODO Setup for JIT
     if (config_.isJit()) {
@@ -309,10 +308,10 @@ void LLVMCodeGen::generate(ASTContext *ast, const path path) {
     auto module = std::make_unique<Module>(path.filename().string(), ctx_);
     module->setSourceFileName(path.string());
     module->setDataLayout(tm_->createDataLayout());
-#ifndef _LLVM_21
-    module->setTargetTriple(tm_->getTargetTriple().getTriple());
-#else
+#if defined(_LLVM_21) || defined(_LLVM_22)
     module->setTargetTriple(tm_->getTargetTriple());
+#else
+    module->setTargetTriple(tm_->getTargetTriple().getTriple());
 #endif
     // Generate LLVM intermediate representation
     auto builder = std::make_unique<LLVMIRBuilder>(config_, ctx_, module.get());
@@ -357,10 +356,10 @@ int LLVMCodeGen::jit(ASTContext *ast, const path path) {
     auto module = std::make_unique<Module>(path.filename().string(), *context);
     module->setSourceFileName(path.string());
     module->setDataLayout(tm_->createDataLayout());
-#ifndef _LLVM_21
-    module->setTargetTriple(tm_->getTargetTriple().getTriple());
-#else
+#if defined(_LLVM_21) || defined (_LLVM_22)
     module->setTargetTriple(tm_->getTargetTriple());
+#else
+    module->setTargetTriple(tm_->getTargetTriple().getTriple());
 #endif
     // Generate LLVM intermediate representation
     const auto builder = std::make_unique<LLVMIRBuilder>(config_, *context, module.get());
@@ -429,14 +428,14 @@ void LLVMCodeGen::emit(Module *module, path path, OutputFileType type) const {
     CodeGenFileType ft;
     switch (type) {
         case OutputFileType::AssemblyFile:
-#if defined(_LLVM_18) || defined(_LLVM_19)  || defined(_LLVM_20) || defined(_LLVM_21)
+#if defined(_LLVM_18) || defined(_LLVM_19)  || defined(_LLVM_20) || defined(_LLVM_21) || defined(_LLVM_22)
             ft = CodeGenFileType::AssemblyFile;
 #else
             ft = CodeGenFileType::CGFT_AssemblyFile;
 #endif
             break;
         default:
-#if defined(_LLVM_18) || defined(_LLVM_19)  || defined(_LLVM_20) || defined(_LLVM_21)
+#if defined(_LLVM_18) || defined(_LLVM_19)  || defined(_LLVM_20) || defined(_LLVM_21) || defined(_LLVM_22)
             ft = CodeGenFileType::ObjectFile;
 #else
             ft = CodeGenFileType::CGFT_ObjectFile;
