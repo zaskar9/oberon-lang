@@ -20,14 +20,6 @@ using std::filesystem::path;
 
 class Compiler {
 
-private:
-    CompilerConfig &config_;
-    Logger &logger_;
-    CodeGen *codegen_;
-    unique_ptr<OberonSystem> system_;
-
-    unique_ptr<ASTContext> run(const path&);
-
 public:
     explicit Compiler(CompilerConfig &config, CodeGen *codegen) :
             config_(config), logger_(config.logger()), codegen_(codegen), system_(std::make_unique<Oberon07>()) {};
@@ -37,6 +29,14 @@ public:
 #ifndef _LLVM_LEGACY
     int jit(const path&);
 #endif
+
+private:
+    CompilerConfig &config_;
+    Logger &logger_;
+    CodeGen *codegen_;
+    unique_ptr<OberonSystem> system_;
+
+    unique_ptr<ASTContext> run(const path&);
 
 };
 

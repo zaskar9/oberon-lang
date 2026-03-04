@@ -25,6 +25,7 @@ target_link_libraries(${OLANG_LEX} PRIVATE ${OLANG_LOG})
 
 # Include external dependencies
 if (Boost_FOUND)
+    target_include_directories(${OLANG_LEX} SYSTEM PRIVATE ${Boost_INCLUDE_DIRS})
     target_link_libraries(${OLANG_LEX} PRIVATE Boost::headers)
 endif ()
 

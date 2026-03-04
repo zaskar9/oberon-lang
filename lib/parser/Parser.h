@@ -114,8 +114,8 @@ private:
     bool assertString(const Token *, string &) const;
     bool assertOberonIdent(const Ident *) const;
 
-    void resync(std::set<TokenType>);
-    void expect(std::set<TokenType>);
+    void resync(const std::set<TokenType>&) const;
+    void expect(const std::set<TokenType>&) const;
 
 };
 

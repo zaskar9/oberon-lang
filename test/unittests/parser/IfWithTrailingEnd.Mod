@@ -1,6 +1,6 @@
 (*
   RUN: not %oberon --run %s 2>&1 | filecheck %s
-  Error message could be improved to complain about END in first IF statement
+  Error message could be improved to complain about END in first IF statement.
 *)
 MODULE IfWithTrailingEnd;
 

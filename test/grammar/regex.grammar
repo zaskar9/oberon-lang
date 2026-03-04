@@ -1,0 +1,10 @@
+(* Grammar for Regular Expressions *)
+
+Character     = "a"|"z"|"A"|"Z" .
+Digit         = "0"|"1"|"2"|"3"|"4"|"5"|"6"|"7"|"8"|"9" .
+
+RegEx*        = Alternation .
+Alternation   = Concatenation { "|" Concatenation } .
+Concatenation = Closure { Closure } .
+Closure       = Expr "*" .
+Expr          = ( Character | "(" RegEx ")" ) .

@@ -32,7 +32,7 @@ enum class OutputFileType {
 };
 
 enum class OptimizationLevel {
-    O0, O1, O2, O3
+    O0, O1, O2, O3, Os, Oz
 };
 
 enum class RelocationModel {
@@ -87,11 +87,11 @@ public:
 
     Logger &logger();
 
-    void addInputFile(path file);
-    [[nodiscard]] vector<path> &inputFiles();
-
     void setLanguageStandard(LanguageStandard);
     [[nodiscard]] LanguageStandard getLanguageStandard() const;
+
+    void addInputFile(const path&);
+    [[nodiscard]] vector<path> &getInputFiles();
 
     void setOutputFile(const string &);
     [[nodiscard]] string getOutputFile() const;
