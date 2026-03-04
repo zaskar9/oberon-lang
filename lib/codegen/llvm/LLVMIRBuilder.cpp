@@ -684,7 +684,7 @@ void LLVMIRBuilder::installTrap(Value *cond, const uint8_t code) {
     const auto trap = BasicBlock::Create(builder_.getContext(), "trap", function_);
     builder_.CreateCondBr(cond, tail, trap);
     builder_.SetInsertPoint(trap);
-#if defined(_LLVM_20) || defined(_LLVM_21)
+#if defined(_LLVM_20) || defined(_LLVM_21) || defined(_LLVM_22)
     Function* fun = Intrinsic::getOrInsertDeclaration(module_, Intrinsic::ubsantrap);
 #else
     Function* fun = Intrinsic::getDeclaration(module_, Intrinsic::ubsantrap);
@@ -727,7 +727,7 @@ void LLVMIRBuilder::trapAssert(Value *cond) {
 
 Value *LLVMIRBuilder::trapIntOverflow(const Intrinsic::ID intrinsic, Value *lhs, Value *rhs) {
     const auto type = dyn_cast<IntegerType>(rhs->getType());
-#if defined(_LLVM_20) || defined(_LLVM_21)
+#if defined(_LLVM_20) || defined(_LLVM_21) || defined(_LLVM_22)
     Function* fun = Intrinsic::getOrInsertDeclaration(module_, intrinsic, { type });
 #else
     Function* fun = Intrinsic::getDeclaration(module_, intrinsic, { type });
@@ -1339,13 +1339,13 @@ void LLVMIRBuilder::visit(PointerTypeNode &node) {
             ptrType->setName("record." + createScopedName(record) + ".ptr");
             ptrTypes_[&node] = ptrType;
         }
-#if defined(_LLVM_21)
+#if defined(_LLVM_21) || defined(_LLVM_22)
         types_[&node] = PointerType::get(builder_.getContext(), 0);
 #else
         types_[&node] = PointerType::get(ptrType, 0);
 #endif
     } else {
-#if defined(_LLVM_21)
+#if defined(_LLVM_21) || defined(_LLVM_22)
         types_[&node] = PointerType::get(builder_.getContext(), 0);
 #else
         types_[&node] = PointerType::get(type, 0);
@@ -2243,7 +2243,7 @@ LLVMIRBuilder::createSystemGetCall(const vector<unique_ptr<ExpressionNode>> &act
     auto const type = param->getType();
     if (type->isBasic()) {
         const auto base = getLLVMType(type);
-#if defined(_LLVM_21)
+#if defined(_LLVM_21) || defined(_LLVM_22)
         const auto ptrType = PointerType::get(builder_.getContext(), 0);
 #else
         const auto ptrType = PointerType::get(base, 0);
@@ -2262,7 +2262,7 @@ LLVMIRBuilder::createSystemPutCall(const vector<unique_ptr<ExpressionNode>> &act
     const auto param = actuals[1].get();
     const auto type = param->getType();
     if (type->isBasic()) {
-#if defined(_LLVM_21)
+#if defined(_LLVM_21) || defined(_LLVM_22)
         const auto ptrType = PointerType::get(builder_.getContext(), 0);
 #else
         const auto base = getLLVMType(type);
@@ -2290,7 +2290,7 @@ LLVMIRBuilder::createSystemBitCall(const vector<unique_ptr<ExpressionNode>> &act
         return value_;
     }
     const auto base = builder_.getInt32Ty();
-#if defined(_LLVM_21)
+#if defined(_LLVM_21) || defined(_LLVM_22)
     const auto ptrType = PointerType::get(builder_.getContext(), 0);
 #else
     const auto ptrType = PointerType::get(base, 0);
@@ -2355,7 +2355,7 @@ FunctionType *LLVMIRBuilder::createFunctionType(ProcedureTypeNode &type, const C
     for (const auto &param : type.parameters()) {
         const auto paramTy = param->getType();
         auto param_t = getLLVMType(paramTy);
-#if defined(_LLVM_21)
+#if defined(_LLVM_21) || defined(_LLVM_22)
         params.push_back(param->isVar() || paramTy->isStructured() ? PointerType::get(builder_.getContext(), 0) : param_t);
 #else
         params.push_back(param->isVar() || paramTy->isStructured() ? PointerType::get(param_t, 0) : param_t);
