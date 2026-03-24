@@ -11,7 +11,7 @@
 #include "global.h"
 #include <ostream>
 
-enum class TokenType : char {
+enum class TokenType {
     eof, undef,
     boolean_literal, byte_literal, char_literal,
     short_literal, int_literal, long_literal,

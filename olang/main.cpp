@@ -16,6 +16,7 @@
 #include "codegen/CodeGenFactory.h"
 #include "compiler/Compiler.h"
 #include "compiler/CompilerConfig.h"
+#include "scanner/Scanner.h"
 
 // For certain modules, LLVM emits stack protection functionality under Windows that
 // involves calls to the standard runtime of the target platform. Since these libraries 
@@ -135,6 +136,7 @@ int main(const int argc, const char **argv) {
             return EXIT_FAILURE;
         }
         vector<fs::path>& inputs = config.getInputFiles();
+        try {
         if (config.isJit()) {
 #ifndef _LLVM_LEGACY
             if (inputs.size() != 1) {
@@ -151,6 +153,9 @@ int main(const int argc, const char **argv) {
         for (auto &input : inputs) {
             logger.debug("Compiling module " + to_string(input) + ".");
             compiler.compile(input);
+        }
+        } catch (const ScannerError &) {
+            return EXIT_FAILURE;
         }
         string status = logger.getErrorCount() == 0 ? "complete" : "failed";
         logger.info("Compilation " + status + ": " +

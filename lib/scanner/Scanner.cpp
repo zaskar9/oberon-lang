@@ -11,29 +11,34 @@
 #include <memory>
 #include <sstream>
 #include <string>
+#include <utility>
 
-#include <boost/algorithm/string.hpp>
-#include <boost/algorithm/string/replace.hpp>
 #include <boost/convert.hpp>
-#include <boost/convert/stream.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/algorithm/string.hpp>
+#include <boost/convert/stream.hpp>
 
 #include "IdentToken.h"
 #include "LiteralToken.h"
 #include "UndefinedToken.h"
 
+using std::filesystem::path;
 using std::make_unique;
+using std::queue;
+using std::streampos;
 using std::string;
 using std::stringstream;
 using std::unique_ptr;
 
-Scanner::Scanner(Logger &logger, const path &path) :
-        logger_(logger), path_(path), lineNo_(1), charNo_(0), ch_{}, eof_(false) {
+ScannerError::~ScannerError() = default;
+
+Scanner::Scanner(Logger &logger, path path) :
+        logger_(logger), path_(std::move(path)), lineNo_(1), charNo_(0), ch_{}, eof_(false) {
     init();
     file_.open(path_.string(), std::ifstream::binary);
     if (!file_.is_open()) {
         logger_.error(string(), "cannot open file: " + path_.string() + ".");
-        exit(1);
+        throw ScannerError();
     }
     read();
 }
@@ -66,17 +71,20 @@ void Scanner::init() {
                   { "TRUE", TokenType::boolean_literal}, { "FALSE", TokenType::boolean_literal } };
 }
 
-const Token* Scanner::peek(const bool advance) {
+const Token* Scanner::peek() {
     if (tokens_.empty()) {
         tokens_.push(scanToken());
-        return tokens_.back().get();
-    }
-    if (advance) {
-        const auto token = tokens_.back().get();
-        tokens_.push(scanToken());
-        return token;
     }
     return tokens_.front().get();
+}
+
+const Token* Scanner::peekAhead() {
+    if (tokens_.empty()) {
+        tokens_.push(scanToken());
+    }
+    const auto token = tokens_.back().get();
+    tokens_.push(scanToken());
+    return token;
 }
 
 unique_ptr<const Token> Scanner::next() {
@@ -89,25 +97,27 @@ unique_ptr<const Token> Scanner::next() {
 }
 
 void Scanner::seek(const FilePos &pos) {
+    file_.clear();
     file_.seekg(pos.offset - static_cast<streampos>(1));
     queue<unique_ptr<const Token>> empty;
     std::swap(tokens_, empty);
     lineNo_ = pos.lineNo;
     charNo_ = pos.charNo - 1;
-    ch_ = '\0';
+    eof_ = false;
+    read();
 }
 
 unique_ptr<const Token> Scanner::scanToken() {
     // skip whitespace
-    while (!eof_ && std::isspace(ch_)) {
+    while (!eof_ && std::isspace(static_cast<unsigned char>(ch_))) {
         read();
     }
     FilePos pos = current();
     if (!eof_) {
-        if (std::isalpha(ch_) || ch_ == '_') {
+        if (std::isalpha(static_cast<unsigned char>(ch_)) || ch_ == '_') {
             return scanIdent();
         }
-        if (std::isdigit(ch_)) {
+        if (std::isdigit(static_cast<unsigned char>(ch_))) {
             return scanNumber();
         }
         if (ch_ == '"') {
@@ -168,7 +178,6 @@ unique_ptr<const Token> Scanner::scanToken() {
             case '.':
                 read();
                 if (!eof_ && ch_ == '.') {
-                    FilePos nextPos = current();
                     read();
                     if (!eof_ && ch_ == '.') {
                         read();
@@ -230,7 +239,7 @@ void Scanner::read() {
         eof_ = true;
     } else {
         logger_.error(path_.string(), "error reading file.");
-        exit(1);
+        throw ScannerError();
     }
 
 }
@@ -249,10 +258,14 @@ void Scanner::scanComment(const FilePos &pos) {
     while (true) {
         while (true) {
             while (ch_ == '(') {
-                auto npos = current();
+                auto nextPos = current();
                 read();
+                if (eof_) {
+                    logger_.error(pos, "comment not closed.");
+                    throw ScannerError();
+                }
                 if (ch_ == '*') {
-                    scanComment(npos);
+                    scanComment(nextPos);
                 }
             }
             if (ch_ == '*') {
@@ -261,7 +274,7 @@ void Scanner::scanComment(const FilePos &pos) {
             }
             if (eof_) {
                 logger_.error(pos, "comment not closed.");
-                exit(1);
+                throw ScannerError();
             }
             read();
         }
@@ -271,7 +284,7 @@ void Scanner::scanComment(const FilePos &pos) {
         }
         if (eof_) {
             logger_.error(pos, "comment not closed.");
-            exit(1);
+            throw ScannerError();
         }
     }
 }
@@ -282,7 +295,7 @@ unique_ptr<const Token> Scanner::scanIdent() {
     do {
         ss << ch_;
         read();
-    } while (!eof_ && (std::isalnum(ch_) || ch_ == '_'));
+    } while (!eof_ && (std::isalnum(static_cast<unsigned char>(ch_)) || ch_ == '_'));
     std::string ident = ss.str();
     if (const auto it = keywords_.find(ident); it != keywords_.end()) {
         if (it->second == TokenType::boolean_literal) {
@@ -299,7 +312,8 @@ unique_ptr<const Token> Scanner::scanNumber() {
     bool isChar = false;
     FilePos pos = current();
     std::stringstream ss;
-    while (!eof_ && ((ch_ >= '0' && ch_ <= '9') || (std::toupper(ch_) >= 'A' && std::toupper(ch_) <= 'F'))) {
+    while (!eof_ && ((ch_ >= '0' && ch_ <= '9') ||
+        (std::toupper(static_cast<unsigned char>(ch_)) >= 'A' && std::toupper(static_cast<unsigned char>(ch_)) <= 'F'))) {
         ss << ch_;
         read();
         if (ch_ == '.') {
@@ -307,6 +321,7 @@ unique_ptr<const Token> Scanner::scanNumber() {
             read();
             if (ch_ == '.') {
                 file_.seekg(offset);
+                charNo_--;
                 break;
             }
             ss << '.';
@@ -418,13 +433,19 @@ unique_ptr<const Token> Scanner::scanString() {
     stringstream ss;
     auto pos = current();
     read();
-    while (ch_ != '"') {
+    while (!eof_ && ch_ != '"') {
         ss << ch_;
         if (ch_ == '\\') {
             read();
-            ss << ch_;
+            if (!eof_) {
+                ss << ch_;
+            }
         }
         read();
+    }
+    if (eof_) {
+        logger_.error(pos, "string literal not terminated.");
+        throw ScannerError();
     }
     read();
     string str = unescape(ss.str());
@@ -435,34 +456,54 @@ unique_ptr<const Token> Scanner::scanString() {
     return make_unique<StringLiteralToken>(pos, current(), str);
 }
 
-std::string Scanner::escape(std::string str) {
-    boost::replace_all(str, "\0", "\\0");
-    boost::replace_all(str, "\'", "\\'");
-    boost::replace_all(str, "\"", "\\\"");
-    boost::replace_all(str, "\?", "\\?");
-    boost::replace_all(str, "\\", "\\\\");
-    boost::replace_all(str, "\a", "\\a");
-    boost::replace_all(str, "\b", "\\b");
-    boost::replace_all(str, "\f", "\\f");
-    boost::replace_all(str, "\n",  "\\n");
-    boost::replace_all(str, "\r", "\\r");
-    boost::replace_all(str, "\t", "\\t");
-    boost::replace_all(str, "\v", "\\v");
-    return str;
+std::string Scanner::escape(const std::string& str) {
+    std::string result;
+    result.reserve(str.size() * 2);
+    for (const char c : str) {
+        switch (c) {
+            case '\0': result += "\\0";  break;
+            case '\'': result += "\\'";  break;
+            case '"':  result += "\\\""; break;
+            case '?':  result += "\\?";  break;
+            case '\\': result += "\\\\"; break;
+            case '\a': result += "\\a";  break;
+            case '\b': result += "\\b";  break;
+            case '\f': result += "\\f";  break;
+            case '\n': result += "\\n";  break;
+            case '\r': result += "\\r";  break;
+            case '\t': result += "\\t";  break;
+            case '\v': result += "\\v";  break;
+            default:   result += c;      break;
+        }
+    }
+    return result;
 }
 
-std::string Scanner::unescape(std::string str) {
-    boost::replace_all(str, "\\0", "\0");
-    boost::replace_all(str, "\\'", "\'");
-    boost::replace_all(str, "\\\"", "\"");
-    boost::replace_all(str, "\\?", "\?");
-    boost::replace_all(str, "\\\\", "\\");
-    boost::replace_all(str, "\\a", "\a");
-    boost::replace_all(str, "\\b", "\b");
-    boost::replace_all(str, "\\f", "\f");
-    boost::replace_all(str, "\\n",  "\n");
-    boost::replace_all(str, "\\r", "\r");
-    boost::replace_all(str, "\\t", "\t");
-    boost::replace_all(str, "\\v", "\v");
-    return str;
+std::string Scanner::unescape(const std::string &str) {
+    std::string result;
+    result.reserve(str.size());
+    size_t i = 0;
+    while (i < str.size()) {
+        if (str[i] == '\\' && i + 1 < str.size()) {
+            switch (str[i + 1]) {
+                case '0':  result += '\0'; break;
+                case '\'': result += '\''; break;
+                case '"':  result += '"';  break;
+                case '?':  result += '?';  break;
+                case '\\': result += '\\'; break;
+                case 'a':  result += '\a'; break;
+                case 'b':  result += '\b'; break;
+                case 'f':  result += '\f'; break;
+                case 'n':  result += '\n'; break;
+                case 'r':  result += '\r'; break;
+                case 't':  result += '\t'; break;
+                case 'v':  result += '\v'; break;
+                default:   result += str[i]; i++; continue;
+            }
+            i += 2;
+        } else {
+            result += str[i++];
+        }
+    }
+    return result;
 }
