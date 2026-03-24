@@ -32,18 +32,18 @@ struct SourceLoc {
     SourcePos start, end;
 };
 
-static const FilePos EMPTY_POS = {"", 0, 0, 0 };
-static const SourceLoc EMPTY_LOC = {"", {0, 0, 0}, {0, 0, 0}};
+inline const FilePos EMPTY_POS = {"", 0, 0, 0 };
+inline const SourceLoc EMPTY_LOC = {"", {0, 0, 0}, {0, 0, 0}};
 
 template <typename T>
-static std::string to_string(T obj) {
+inline std::string to_string(T obj) {
     std::stringstream stream;
     stream << obj;
     return stream.str();
 }
 
 template <typename T>
-static std::string to_string(T *obj) {
+inline std::string to_string(T *obj) {
     std::stringstream stream;
     stream << *obj;
     return stream.str();

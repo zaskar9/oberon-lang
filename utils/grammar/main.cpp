@@ -11,6 +11,7 @@
 
 #include <config.h>
 #include "Loader.h"
+#include "Scanner.h"
 #include "Validator.h"
 
 namespace fs = std::filesystem;
@@ -24,7 +25,12 @@ int main(const int argc, const char *argv[]) {
         exit(1);
     }
     Loader loader(logger, path(argv[1]));
-    auto grammar = loader.load();
+    std::unique_ptr<Grammar> grammar;
+    try {
+        grammar = loader.load();
+    } catch (const ScannerError &) {
+        return EXIT_FAILURE;
+    }
     std::cout << *grammar << std::endl;
 
     Validator util(grammar.get());

@@ -17,7 +17,7 @@ public:
             Token(TokenType::undef, pos), value_(value) { };
     ~UndefinedToken() override = default;
 
-    [[nodiscard]] char value();
+    [[nodiscard]] char value() const;
 
     void print(std::ostream &stream) const override;
 
